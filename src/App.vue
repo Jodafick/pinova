@@ -4,14 +4,14 @@ import { useRoute } from 'vue-router'
 import { useAuth } from './composables/useAuth'
 import { usePins } from './composables/usePins'
 import GlobalHeader from './components/GlobalHeader.vue'
-import { useOneTap } from 'vue3-google-signin'
 
 const route = useRoute()
 const { fetchCurrentUser, isAuthenticated, isInitializing, socialLogin } = useAuth()
 const { fetchPins } = usePins()
 
 // Google One Tap Sign-in
-// On n'affiche One Tap que si l'utilisateur n'est pas connecté
+// Désactivé à la demande de l'utilisateur
+/*
 watch(isAuthenticated, (newValue) => {
   if (newValue) {
     // Si l'utilisateur vient de se connecter, on s'assure que One Tap ne s'affiche plus
@@ -39,6 +39,7 @@ useOneTap({
   disable_auto_select: false, // Suggest automatically
   auto_select: true, // Auto select if only one account
 })
+*/
 
 onMounted(async () => {
   console.log('🚀 App mounted, initializing...')
