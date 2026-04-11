@@ -1,44 +1,86 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
+import PinSkeleton from '../components/PinSkeleton.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { getPin, toggleSave, searchPins, formatCount } = usePins()
+
+const { getPin, toggleSave, pins, fetchPins, formatCount, toggleLike, fetchComments, addComment: apiAddComment, toggleFollow, loading: pinsLoading } = usePins()
 const { currentUser, toggleSavePin } = useAuth()
 
 const pinId = computed(() => Number(route.params.id))
 const pin = computed(() => getPin(pinId.value))
 
-const comment = ref('')
-const comments = ref([
-  { user: 'Marie', text: 'Trop beau ! J\'adore cette inspiration.', avatarColor: 'bg-pink-400', time: 'Il y a 2h' },
-  { user: 'Thomas', text: 'J\'ai sauvegardé, merci pour le partage !', avatarColor: 'bg-blue-400', time: 'Il y a 5h' },
-])
+const commentText = ref('')
+const comments = ref<any[]>([])
+
+const fetchPinComments = async () => {
+  if (pinId.value) {
+    comments.value = await fetchComments(pinId.value)
+  }
+}
 
 const relatedPins = computed(() => {
   if (!pin.value) return []
-  return searchPins('', pin.value.topic).filter((p) => p.id !== pin.value!.id).slice(0, 8)
+  return pins.value.filter((p) => p.topic === pin.value?.topic && p.id !== pin.value?.id).slice(0, 8)
 })
 
+onMounted(async () => {
+  if (pins.value.length === 0 || !pin.value) {
+    await fetchPins()
+  }
+  fetchPinComments()
+})
+
+const handleLike = async () => {
+  if (!currentUser.value) {
+    router.push('/login')
+    return
+  }
+  if (pin.value) {
+    await toggleLike(pin.value.id)
+  }
+}
+
 const handleSave = () => {
+  if (!currentUser.value) {
+    router.push('/login')
+    return
+  }
   if (!pin.value) return
   toggleSave(pin.value.id)
   toggleSavePin(pin.value.id)
 }
 
-const addComment = () => {
-  if (!comment.value.trim() || !currentUser.value) return
-  comments.value.unshift({
-    user: currentUser.value.displayName,
-    text: comment.value,
-    avatarColor: currentUser.value.avatarColor,
-    time: "À l'instant",
-  })
-  comment.value = ''
+const handleFollow = async () => {
+  if (!currentUser.value) {
+    router.push('/login')
+    return
+  }
+  if (pin.value && pin.value.userId) {
+    await toggleFollow(pin.value.userId)
+    // Optionnel: refresh l'UI si on track l'état de follow dans le pin
+  }
+}
+
+const handleAddComment = async () => {
+  if (!commentText.value.trim() || !currentUser.value || !pin.value) return
+  try {
+    const newComment = await apiAddComment(pin.value.id, commentText.value)
+    comments.value.unshift(newComment)
+    commentText.value = ''
+  } catch (err) {
+    console.error('Failed to add comment:', err)
+  }
+}
+
+const handleShare = () => {
+  navigator.clipboard.writeText(window.location.href)
+  alert('Lien copié dans le presse-papier !')
 }
 
 const goBack = () => {
@@ -57,7 +99,7 @@ const openRelatedPin = (id: number) => {
       <span class="material-symbols-outlined text-7xl text-neutral-300 mb-4">broken_image</span>
       <h1 class="text-2xl font-bold text-neutral-800 mb-2">Pin introuvable</h1>
       <p class="text-neutral-500 mb-6">Ce pin n'existe pas ou a été supprimé.</p>
-      <router-link to="/" class="px-6 py-2.5 rounded-full bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition">
+      <router-link to="/" class="px-6 py-2.5 rounded-full bg-pink-600 text-white font-semibold text-sm hover:bg-pink-700 transition">
         Retour à l'accueil
       </router-link>
     </div>
@@ -90,11 +132,18 @@ const openRelatedPin = (id: number) => {
             <!-- Actions bar -->
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center gap-2">
-                <button class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition">
-                  <span class="material-symbols-outlined">share</span>
+                <button
+                  class="w-10 h-10 rounded-full flex items-center justify-center transition"
+                  :class="pin.liked ? 'bg-pink-50 text-pink-600' : 'hover:bg-neutral-100 text-neutral-600'"
+                  @click="handleLike"
+                >
+                  <span class="material-symbols-outlined fill-1" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
                 </button>
-                <button class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition">
-                  <span class="material-symbols-outlined">link</span>
+                <button
+                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition"
+                  @click="handleShare"
+                >
+                  <span class="material-symbols-outlined">share</span>
                 </button>
                 <button class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition">
                   <span class="material-symbols-outlined">more_horiz</span>
@@ -104,7 +153,7 @@ const openRelatedPin = (id: number) => {
                 class="px-6 py-2.5 rounded-full font-semibold text-sm transition-all"
                 :class="pin.saved
                   ? 'bg-neutral-900 text-white hover:bg-neutral-800'
-                  : 'bg-red-600 text-white hover:bg-red-700'"
+                  : 'bg-pink-600 text-white hover:bg-pink-700'"
                 @click="handleSave"
               >
                 {{ pin.saved ? 'Enregistré' : 'Enregistrer' }}
@@ -127,33 +176,45 @@ const openRelatedPin = (id: number) => {
             <p class="text-base text-neutral-600 leading-relaxed mb-6">{{ pin.description }}</p>
 
             <!-- Author -->
-            <div class="flex items-center justify-between py-4 border-t border-b border-neutral-100 mb-6">
-              <div class="flex items-center gap-3">
+            <div class="mt-8 flex items-center justify-between">
+              <router-link
+                v-if="pin"
+                :to="`/profile/${pin.userId}`"
+                class="flex items-center gap-3 hover:bg-neutral-50 p-2 rounded-xl transition-colors"
+              >
                 <div
-                  class="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white"
+                  class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm overflow-hidden avatar-shadow"
                   :class="pin.userAvatarColor"
                 >
-                  {{ pin.user[0] }}
+                  <img v-if="pin.userAvatarUrl" :src="pin.userAvatarUrl" class="w-full h-full object-cover" />
+                  <span v-else class="avatar-text">{{ pin.user[0] }}</span>
                 </div>
                 <div>
-                  <p class="font-semibold text-neutral-900">{{ pin.user }}</p>
-                  <p class="text-xs text-neutral-500">{{ formatCount(pin.stats.saves) }} enregistrements</p>
+                  <p class="text-sm font-bold text-neutral-900">{{ pin.user }}</p>
+                  <p class="text-xs text-neutral-500">2,4k abonnés</p>
                 </div>
-              </div>
-              <button class="px-4 py-2 rounded-full bg-neutral-100 text-sm font-semibold text-neutral-900 hover:bg-neutral-200 transition">
-                Suivre
+              </router-link>
+              <button
+                v-if="currentUser && currentUser.id !== pin.userId"
+                class="px-5 py-3 rounded-full text-sm font-bold transition-all"
+                :class="pin.isFollowing
+                  ? 'bg-neutral-900 text-white hover:bg-neutral-800'
+                  : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200'"
+                @click="handleFollow"
+              >
+                {{ pin.isFollowing ? 'Abonné' : 'S\'abonner' }}
               </button>
             </div>
 
             <!-- Stats -->
             <div class="flex items-center gap-6 mb-6 text-sm text-neutral-500">
               <span class="flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-lg">bookmark</span>
-                {{ formatCount(pin.stats.saves) }} enreg.
+                {{ formatCount(pin.stats.saves) }}
+                <span class="material-symbols-outlined text-lg" :class="{ 'fill-1 text-neutral-600': pin.saved }">bookmark</span>
               </span>
               <span class="flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-lg">favorite</span>
-                {{ formatCount(pin.stats.reactions) }} j'aime
+                {{ formatCount(pin.stats.reactions) }}
+                <span class="material-symbols-outlined text-lg fill-1" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
               </span>
               <span class="flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-lg">sell</span>
@@ -169,17 +230,17 @@ const openRelatedPin = (id: number) => {
               </h3>
 
               <div class="space-y-3 max-h-48 overflow-y-auto mb-4">
-                <div v-for="(c, i) in comments" :key="i" class="flex gap-3">
+                <div v-for="c in comments" :key="c.id" class="flex gap-3">
                   <div
                     class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                    :class="c.avatarColor"
+                    :class="c.avatar_color"
                   >
-                    {{ c.user[0] }}
+                    {{ (c.display_name || c.username)[0] }}
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
-                      <span class="text-sm font-semibold">{{ c.user }}</span>
-                      <span class="text-xs text-neutral-400">{{ c.time }}</span>
+                      <span class="text-sm font-semibold">{{ c.display_name || c.username }}</span>
+                      <span class="text-xs text-neutral-400">{{ new Date(c.created_at).toLocaleDateString() }}</span>
                     </div>
                     <p class="text-sm text-neutral-600">{{ c.text }}</p>
                   </div>
@@ -197,16 +258,16 @@ const openRelatedPin = (id: number) => {
                 </div>
                 <div class="flex-1 flex items-center gap-2">
                   <input
-                    v-model="comment"
+                    v-model="commentText"
                     type="text"
                     placeholder="Ajouter un commentaire..."
-                    class="flex-1 py-2.5 px-4 rounded-full bg-neutral-100 text-sm outline-none focus:ring-2 focus:ring-red-500"
-                    @keyup.enter="addComment"
+                    class="flex-1 py-2.5 px-4 rounded-full bg-neutral-100 text-sm outline-none focus:ring-2 focus:ring-pink-500"
+                    @keyup.enter="handleAddComment"
                   />
                   <button
-                    class="w-9 h-9 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition disabled:opacity-40"
-                    :disabled="!comment.trim()"
-                    @click="addComment"
+                    class="w-9 h-9 rounded-full bg-pink-600 text-white flex items-center justify-center hover:bg-pink-700 transition disabled:opacity-40"
+                    :disabled="!commentText.trim()"
+                    @click="handleAddComment"
                   >
                     <span class="material-symbols-outlined text-lg">send</span>
                   </button>
@@ -218,9 +279,11 @@ const openRelatedPin = (id: number) => {
       </div>
 
       <!-- Related pins -->
-      <section v-if="relatedPins.length > 0" class="px-3 sm:px-6 lg:px-10 xl:px-16 pb-10">
+      <section v-if="relatedPins.length > 0 || pinsLoading" class="px-3 sm:px-6 lg:px-10 xl:px-16 pb-10">
         <h2 class="text-xl font-bold text-neutral-900 mb-5">Plus comme ça</h2>
+        <PinSkeleton v-if="pinsLoading && relatedPins.length === 0" />
         <PinGrid
+          v-else
           :pins="relatedPins"
           @toggle-save="(id) => { toggleSave(id); toggleSavePin(id) }"
           @open-pin="openRelatedPin"

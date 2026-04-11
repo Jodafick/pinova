@@ -1,39 +1,86 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from './composables/useAuth'
+import { usePins } from './composables/usePins'
 import GlobalHeader from './components/GlobalHeader.vue'
+import { useOneTap } from 'vue3-google-signin'
 
 const route = useRoute()
-const { isAuthenticated } = useAuth()
+const { fetchCurrentUser, isAuthenticated, isInitializing, socialLogin } = useAuth()
+const { fetchPins } = usePins()
+
+// Google One Tap Sign-in
+// On n'affiche One Tap que si l'utilisateur n'est pas connecté
+watch(isAuthenticated, (newValue) => {
+  if (newValue) {
+    // Si l'utilisateur vient de se connecter, on s'assure que One Tap ne s'affiche plus
+  }
+}, { immediate: true })
+
+useOneTap({
+  onSuccess: async (response) => {
+    if (isAuthenticated.value) return
+    
+    console.log('✅ Google One Tap success:', response)
+    if (response.credential) {
+      const result = await socialLogin('google', response.credential)
+      if (result.success) {
+        console.log('🎉 Successfully logged in via One Tap!')
+      }
+    }
+  },
+  onError: (error) => {
+    // Ne pas afficher d'erreur si l'utilisateur a simplement fermé la suggestion
+    if (!isAuthenticated.value && error?.type !== 'skipped' && error?.type !== 'dismissed') {
+      console.error('❌ Google One Tap error:', error)
+    }
+  },
+  disable_auto_select: false, // Suggest automatically
+  auto_select: true, // Auto select if only one account
+})
+
+onMounted(async () => {
+  console.log('🚀 App mounted, initializing...')
+  try {
+    await Promise.all([
+      fetchCurrentUser(),
+      fetchPins()
+    ])
+    console.log('✅ Initialization complete.')
+  } catch (err) {
+    console.error('❌ Initialization error:', err)
+  }
+})
 
 const isAuthPage = computed(() => {
-  return route.name === 'login' || route.name === 'register'
+  const name = route.name as string | undefined
+  return name === 'login' || name === 'register'
 })
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
-    <GlobalHeader v-if="!isAuthPage" />
+    <!-- Full screen loading while initializing -->
+    <div v-if="isInitializing" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
+      <div class="w-12 h-12 rounded-full border-4 border-pink-100 border-t-pink-600 animate-spin mb-4"></div>
+      <p class="text-neutral-500 font-medium">Chargement de Pinova...</p>
+    </div>
 
-    <main class="flex-1">
-      <router-view v-slot="{ Component }">
-        <transition name="page" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+    <GlobalHeader v-if="!isAuthPage && !isInitializing" />
+
+    <main class="flex-1" v-if="!isInitializing">
+      <router-view />
     </main>
 
     <!-- Footer -->
-    <footer v-if="isAuthenticated && !isAuthPage" class="border-t border-neutral-100 bg-white py-6 px-6 sm:px-10">
+    <footer v-if="isAuthenticated && !isAuthPage && !isInitializing" class="border-t border-neutral-100 bg-white py-6 px-6 sm:px-10">
       <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center">
-            <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
-            </svg>
+          <div class="w-6 h-6 rounded-full bg-pink-600 flex items-center justify-center overflow-hidden">
+            <img src="./assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          <span class="text-sm font-semibold text-neutral-700">Pinterest Clone</span>
+          <span class="text-sm font-semibold text-neutral-700">Pinova</span>
         </div>
 
         <nav class="flex items-center gap-5 text-xs text-neutral-500">
@@ -44,20 +91,9 @@ const isAuthPage = computed(() => {
         </nav>
 
         <p class="text-xs text-neutral-400">
-          &copy; 2026 Pinterest Clone. Tous droits réservés.
+          &copy; 2026 Pinova. Tous droits réservés.
         </p>
       </div>
     </footer>
   </div>
 </template>
-
-<style>
-.page-enter-active,
-.page-leave-active {
-  transition: opacity 0.15s ease;
-}
-.page-enter-from,
-.page-leave-to {
-  opacity: 0;
-}
-</style>

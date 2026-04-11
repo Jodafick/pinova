@@ -1,174 +1,262 @@
 import { ref, computed } from 'vue'
-import type { User } from '../types'
-
-const currentUser = ref<User | null>(null)
-const isAuthenticated = computed(() => currentUser.value !== null)
-
-const STORAGE_KEY = 'pinterest_user'
-const USERS_KEY = 'pinterest_users'
-
-function loadUser() {
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored) {
-    try {
-      currentUser.value = JSON.parse(stored)
-    } catch {
-      localStorage.removeItem(STORAGE_KEY)
-    }
-  }
-}
-
-function getUsers(): User[] {
-  const stored = localStorage.getItem(USERS_KEY)
-  if (stored) {
-    try {
-      return JSON.parse(stored)
-    } catch {
-      return []
-    }
-  }
-  return []
-}
-
-function saveUsers(users: User[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users))
-}
+import type { User, Board } from '../types'
+import api from '../api'
 
 const defaultUser: User = {
   id: 1,
-  username: 'utilisateur',
-  displayName: 'Utilisateur',
-  email: 'utilisateur@pinterest.local',
-  avatarColor: 'bg-red-500',
-  bio: '',
-  followers: 12,
-  following: 34,
-  boards: [
-    {
-      id: 2,
-      name: 'Mes favoris',
-      description: 'Pins enregistrés',
-      coverUrl: '',
-      pinCount: 0,
-      isPrivate: false,
-    },
-  ],
+  username: 'admin',
+  displayName: 'Admin Pinova',
+  email: 'admin@pinova.local',
+  avatarColor: 'bg-pink-500',
+  bio: 'Développeur et passionné de design.',
+  followers: 120,
+  following: 85,
+  boards: [],
   savedPins: [],
 }
 
+const currentUser = ref<User | null>(null)
+const isAuthenticated = computed(() => currentUser.value !== null)
+const isInitializing = ref(true)
+const token = ref<string | null>(localStorage.getItem('pinova_token'))
+
+const API_BASE_URL = 'http://127.0.0.1:8000'
+
+function getFullMediaUrl(url: string | null): string | null {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
+}
+
+function mapDjangoUserToFrontend(djangoUser: any): User {
+  if (!djangoUser) return defaultUser
+  const profile = djangoUser.profile || {}
+  // On utilise l'ID du profile pour être cohérent avec l'API follow
+  return {
+    id: profile.id || djangoUser.id,
+    username: djangoUser.username,
+    displayName: profile.display_name || djangoUser.username,
+    email: djangoUser.email,
+    avatarUrl: getFullMediaUrl(profile.avatar),
+    avatarColor: profile.avatar_color || 'bg-pink-500',
+    bio: profile.bio || '',
+    followers: profile.followers_count || 0,
+    following: profile.following_count || 0,
+    isFollowing: profile.is_following || false,
+    boards: (djangoUser.boards || []).map((b: any) => ({
+      id: b.id,
+      name: b.name,
+      description: b.description,
+      coverUrl: '', // Could be the image of the first pin in the board
+      pinCount: b.pin_count || 0,
+      isPrivate: b.is_private || false
+    })),
+    savedPins: djangoUser.saved_pins || [],
+  }
+}
+
 export function useAuth() {
-  loadUser()
-  // Auto-login avec un utilisateur par défaut si personne n'est connecté
-  if (!currentUser.value) {
-    currentUser.value = defaultUser
+  async function fetchCurrentUser() {
+    if (!token.value) {
+      isInitializing.value = false
+      return
+    }
+    isInitializing.value = true
+    console.log('📡 Fetching user from API...')
+    try {
+      const response = await api.get('me/')
+      if (response.data) {
+        console.log('✅ User received:', response.data.username)
+        currentUser.value = mapDjangoUserToFrontend(response.data)
+      }
+    } catch (err) {
+      console.warn('❌ Backend injoignable ou token invalide.')
+      logout()
+    } finally {
+      isInitializing.value = false
+    }
   }
 
-  function login(email: string, password: string): { success: boolean; error?: string } {
-    const users = getUsers()
-    const user = users.find((u) => u.email === email)
-    if (!user) {
-      return { success: false, error: 'Aucun compte trouvé avec cet email.' }
+  async function fetchUserProfile(id: string | number): Promise<User | null> {
+    try {
+      const response = await api.get(`profiles/${id}/`)
+      return mapDjangoUserToFrontend(response.data)
+    } catch (err) {
+      console.error(`❌ Erreur lors du chargement du profil ${id}:`, err)
+      return null
     }
-    const passwords: Record<string, string> = JSON.parse(localStorage.getItem('pinterest_passwords') || '{}')
-    if (passwords[email] !== password) {
-      return { success: false, error: 'Mot de passe incorrect.' }
-    }
-    currentUser.value = user
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
-    return { success: true }
   }
 
-  function register(data: {
-    displayName: string
-    username: string
-    email: string
-    password: string
-  }): { success: boolean; error?: string } {
-    const users = getUsers()
-    if (users.find((u) => u.email === data.email)) {
-      return { success: false, error: 'Un compte existe déjà avec cet email.' }
+  async function toggleFollow(profileId: number) {
+    try {
+      const response = await api.post(`profiles/${profileId}/follow/`)
+      return response.data
+    } catch (err) {
+      console.error('Error toggling follow:', err)
+      throw err
     }
-    if (users.find((u) => u.username === data.username)) {
-      return { success: false, error: "Ce nom d'utilisateur est déjà pris." }
-    }
+  }
 
-    const avatarColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500']
-    const color = avatarColors[Math.floor(Math.random() * avatarColors.length)]!
-
-    const newUser: User = {
-      id: Date.now(),
-      username: data.username,
-      displayName: data.displayName,
-      email: data.email,
-      avatarColor: color,
-      bio: '',
-      followers: 0,
-      following: 0,
-      boards: [
-        {
-          id: Date.now() + 1,
-          name: 'Mes favoris',
-          description: 'Pins enregistrés',
-          coverUrl: '',
-          pinCount: 0,
-          isPrivate: false,
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File }) {
+    try {
+      const formData = new FormData()
+      if (data.displayName) formData.append('display_name', data.displayName)
+      if (data.bio !== undefined) formData.append('bio', data.bio)
+      if (data.email) formData.append('email', data.email)
+      if (data.avatar) formData.append('avatar', data.avatar)
+      
+      const response = await api.patch('me/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
         },
-      ],
-      savedPins: [],
+      })
+      if (response.data) {
+        currentUser.value = mapDjangoUserToFrontend(response.data)
+      }
+      return response.data
+    } catch (err) {
+      console.error('Error updating profile:', err)
+      throw err
     }
+  }
 
-    users.push(newUser)
-    saveUsers(users)
+  async function login(email: string, password: string) {
+    try {
+      const response = await api.post('auth/login/', { email, password })
+      // dj-rest-auth with JWT returns access and refresh tokens
+      token.value = response.data.access
+      localStorage.setItem('pinova_token', token.value)
+      if (response.data.refresh) {
+        localStorage.setItem('pinova_refresh_token', response.data.refresh)
+      }
+      
+      // Get full user profile after login
+      await fetchCurrentUser()
+      return { success: true }
+    } catch (err: any) {
+      console.error('Login error:', err)
+      const errorMsg = err.response?.data?.non_field_errors?.[0] || 'Identifiants incorrects.'
+      return { success: false, error: errorMsg }
+    }
+  }
 
-    const passwords: Record<string, string> = JSON.parse(localStorage.getItem('pinterest_passwords') || '{}')
-    passwords[data.email] = data.password
-    localStorage.setItem('pinterest_passwords', JSON.stringify(passwords))
+  async function register(data: any) {
+    try {
+      const payload = {
+        email: data.email,
+        username: data.email.split('@')[0], // Utilise le début de l'email comme username
+        password1: data.password,
+        password2: data.password,
+        display_name: data.displayName
+      }
+      const response = await api.post('auth/registration/', payload)
+      // Ne pas stocker le token immédiatement car l'email doit être vérifié via OTP
+      return { success: true }
+    } catch (err: any) {
+      console.error('Register error:', err)
+      const errorMsg = Object.values(err.response?.data || {}).flat()[0] as string
+      return { success: false, error: errorMsg || 'Erreur lors de la création du compte.' }
+    }
+  }
 
-    currentUser.value = newUser
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
-    return { success: true }
+  async function forgotPassword(email: string) {
+    try {
+      await api.post('auth/password/reset/', { email })
+      return { success: true }
+    } catch (err: any) {
+      console.error('Forgot password error:', err)
+      return { success: false, error: 'Erreur lors de la demande de réinitialisation.' }
+    }
+  }
+
+  async function resetPassword(data: any) {
+    try {
+      await api.post('auth/password/reset/confirm/', data)
+      return { success: true }
+    } catch (err: any) {
+      console.error('Reset password error:', err)
+      return { success: false, error: 'Erreur lors de la réinitialisation du mot de passe.' }
+    }
+  }
+
+  async function socialLogin(provider: 'google' | 'facebook', tokenValue: string) {
+    try {
+      // Pour Google One Tap (ID Token) ou Google Token Client (Access Token)
+      // dj-rest-auth accepte access_token pour les deux selon la configuration, 
+      // mais on peut essayer de passer id_token si c'est un JWT (One Tap)
+      const isIdToken = tokenValue.split('.').length === 3
+      const payload: any = {}
+      
+      if (provider === 'google' && isIdToken) {
+        payload.id_token = tokenValue
+      } else {
+        payload.access_token = tokenValue
+      }
+
+      const response = await api.post(`auth/social/${provider}/`, payload)
+      token.value = response.data.access
+      localStorage.setItem('pinova_token', token.value)
+      await fetchCurrentUser()
+      return { success: true }
+    } catch (err: any) {
+      console.error(`${provider} login error:`, err)
+      return { success: false, error: `Erreur lors de la connexion avec ${provider}.` }
+    }
   }
 
   function logout() {
     currentUser.value = null
-    localStorage.removeItem(STORAGE_KEY)
+    token.value = null
+    localStorage.removeItem('pinova_token')
+    localStorage.removeItem('pinova_refresh_token')
+    console.log('🚪 Logged out successfully.')
   }
 
-  function updateProfile(updates: Partial<Pick<User, 'displayName' | 'bio' | 'username'>>) {
-    if (!currentUser.value) return
-    Object.assign(currentUser.value, updates)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser.value))
-    const users = getUsers()
-    const idx = users.findIndex((u) => u.id === currentUser.value!.id)
-    if (idx !== -1) {
-      users[idx] = { ...users[idx]!, ...updates }
-      saveUsers(users)
+  async function createBoard(data: { name: string, description?: string, is_private?: boolean }) {
+    try {
+      const response = await api.post('boards/', data)
+      if (currentUser.value) {
+        currentUser.value.boards.push({
+          id: response.data.id,
+          name: response.data.name,
+          description: response.data.description,
+          coverUrl: '',
+          pinCount: 0,
+          isPrivate: response.data.is_private
+        })
+      }
+      return response.data
+    } catch (err) {
+      console.error('Error creating board:', err)
+      throw err
     }
   }
 
   function toggleSavePin(pinId: number) {
     if (!currentUser.value) return
-    const idx = currentUser.value.savedPins.indexOf(pinId)
-    if (idx === -1) {
+    const index = currentUser.value.savedPins.indexOf(pinId)
+    if (index === -1) {
       currentUser.value.savedPins.push(pinId)
     } else {
-      currentUser.value.savedPins.splice(idx, 1)
+      currentUser.value.savedPins.splice(index, 1)
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser.value))
-  }
-
-  function isPinSaved(pinId: number): boolean {
-    return currentUser.value?.savedPins.includes(pinId) ?? false
   }
 
   return {
     currentUser,
     isAuthenticated,
+    isInitializing,
     login,
     register,
     logout,
     updateProfile,
+    forgotPassword,
+    resetPassword,
+    socialLogin,
     toggleSavePin,
-    isPinSaved,
+    toggleFollow,
+    fetchCurrentUser,
+    fetchUserProfile,
+    createBoard
   }
 }

@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { useAuth } from '../composables/useAuth'
+
 const router = createRouter({
   history: createWebHistory(),
   scrollBehavior() {
@@ -10,19 +12,19 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('../pages/HomePage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: false },
     },
     {
       path: '/explore',
       name: 'explore',
       component: () => import('../pages/ExplorePage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: false },
     },
     {
       path: '/pin/:id',
       name: 'pin-detail',
       component: () => import('../pages/PinDetailPage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: false },
     },
     {
       path: '/create',
@@ -31,10 +33,10 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/profile',
+      path: '/profile/:id?',
       name: 'profile',
       component: () => import('../pages/ProfilePage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: false },
     },
     {
       path: '/settings',
@@ -55,6 +57,24 @@ const router = createRouter({
       meta: { guest: true },
     },
     {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('../pages/ForgotPasswordPage.vue'),
+      meta: { guest: true },
+    },
+    {
+      path: '/password-reset-confirm/:uid/:token',
+      name: 'password-reset-confirm',
+      component: () => import('../pages/ResetPasswordPage.vue'),
+      meta: { guest: true },
+    },
+    {
+      path: '/verify-otp',
+      name: 'verify-otp',
+      component: () => import('../pages/VerifyOTPPage.vue'),
+      meta: { guest: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../pages/NotFoundPage.vue'),
@@ -62,15 +82,46 @@ const router = createRouter({
   ],
 })
 
-// Guard d'auth désactivé — pas de backend pour le moment
-// router.beforeEach((to) => {
-//   const { isAuthenticated } = useAuth()
-//   if (to.meta.requiresAuth && !isAuthenticated.value) {
-//     return { name: 'login' }
-//   }
-//   if (to.meta.guest && isAuthenticated.value) {
-//     return { name: 'home' }
-//   }
-// })
+import { watch } from 'vue'
+
+// Navigation Guard
+router.beforeEach(async (to, from) => {
+  console.log(`🧭 Navigating from ${String(from.name)} to ${String(to.name)}`)
+  const { isAuthenticated, isInitializing, fetchCurrentUser } = useAuth()
+  
+  // Attendre l'initialisation de l'auth si elle est en cours
+  if (isInitializing.value) {
+    console.log('⏳ Auth is initializing, waiting...')
+    // On attend que fetchCurrentUser soit terminé via une promesse sur watch
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(isInitializing, (val) => {
+        if (!val) {
+          unwatch()
+          resolve()
+        }
+      }, { immediate: true })
+    })
+  }
+
+  // Si la route demande d'être authentifié et que l'utilisateur n'est pas connecté
+  if (to.meta.requiresAuth && !isAuthenticated.value) {
+    console.warn('🔒 Route requires auth, redirecting to login...')
+    return { name: 'login' }
+  }
+  
+  // Si l'utilisateur est déjà connecté et essaie d'aller sur login/register
+  if (to.meta.guest && isAuthenticated.value) {
+    console.log('🚪 Already logged in, redirecting to home...')
+    return { name: 'home' }
+  }
+})
+
+router.afterEach((to) => {
+  console.log(`✅ Navigated to ${String(to.name)}`)
+})
+
+router.onError((error) => {
+  console.error('❌ Router error:', error)
+})
 
 export default router

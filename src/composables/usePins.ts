@@ -1,177 +1,45 @@
 import { ref, computed } from 'vue'
 import type { Pin } from '../types'
+import api from '../api'
 
-const STORAGE_KEY = 'pinterest_pins'
+const pins = ref<Pin[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
+const currentPage = ref(1)
+const hasNextPage = ref(true)
+const isFetchingNextPage = ref(false)
 
-const defaultPins: Pin[] = [
-  {
-    id: 1,
-    title: 'Salon minimaliste beige & bois',
-    description: 'Ambiance douce pour petit espace avec des tons naturels et du mobilier épuré.',
-    imageUrl: 'https://images.pexels.com/photos/1080696/pexels-photo-1080696.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Clara',
-    userAvatarColor: 'bg-amber-400',
-    link: 'archi-deco.fr',
-    stats: { saves: 5100, reactions: 132 },
-    topic: 'Maison et déco',
-    tall: true,
-    createdAt: '2026-03-20',
-  },
-  {
-    id: 2,
-    title: 'Idées de brunch du dimanche',
-    description: 'Recettes faciles et colorées pour un brunch parfait entre amis.',
-    imageUrl: 'https://images.pexels.com/photos/1438672/pexels-photo-1438672.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Léo',
-    userAvatarColor: 'bg-emerald-400',
-    link: 'foodlover.blog',
-    stats: { saves: 2300, reactions: 64 },
-    topic: 'Recettes faciles',
-    createdAt: '2026-03-18',
-  },
-  {
-    id: 3,
-    title: 'Voyage au Japon – Itinéraire 10 jours',
-    description: 'Tokyo, Kyoto, Osaka — conseils, budget et itinéraire détaillé.',
-    imageUrl: 'https://images.pexels.com/photos/208745/pexels-photo-208745.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Aya',
-    userAvatarColor: 'bg-rose-400',
-    link: 'travel-notes.jp',
-    stats: { saves: 9800, reactions: 421 },
-    topic: 'Voyages',
-    tall: true,
-    createdAt: '2026-03-15',
-  },
-  {
-    id: 4,
-    title: 'Setup bureau productif & cosy',
-    description: 'Idées de lumières, rangements et déco pour un espace de travail inspirant.',
-    imageUrl: 'https://images.pexels.com/photos/3746311/pexels-photo-3746311.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Max',
-    userAvatarColor: 'bg-sky-400',
-    link: 'notionlover.io',
-    stats: { saves: 4400, reactions: 98 },
-    topic: 'Inspiration design',
-    createdAt: '2026-03-12',
-  },
-  {
-    id: 5,
-    title: 'Tatouages fins inspiration floral',
-    description: 'Lignes délicates et minimalistes — les plus beaux tatouages floraux.',
-    imageUrl: 'https://images.pexels.com/photos/2706187/pexels-photo-2706187.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Zoé',
-    userAvatarColor: 'bg-indigo-400',
-    link: 'tattoo-inspo.fr',
-    stats: { saves: 6100, reactions: 211 },
-    topic: 'Art & illustration',
-    createdAt: '2026-03-10',
-  },
-  {
-    id: 6,
-    title: "Plantes d'intérieur faciles",
-    description: "Top 10 des plantes pour débuter — faciles à entretenir et décoratives.",
-    imageUrl: 'https://images.pexels.com/photos/3076899/pexels-photo-3076899.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Nina',
-    userAvatarColor: 'bg-lime-400',
-    link: 'greenhome.studio',
-    stats: { saves: 3700, reactions: 77 },
-    topic: 'Plantes',
-    tall: true,
-    createdAt: '2026-03-08',
-  },
-  {
-    id: 7,
-    title: 'Recette de banana bread moelleux',
-    description: 'La recette parfaite pour un banana bread ultra moelleux et gourmand.',
-    imageUrl: 'https://images.pexels.com/photos/1277202/pexels-photo-1277202.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Emma',
-    userAvatarColor: 'bg-orange-400',
-    link: 'chefmaison.fr',
-    stats: { saves: 8200, reactions: 345 },
-    topic: 'Recettes faciles',
-    createdAt: '2026-03-05',
-  },
-  {
-    id: 8,
-    title: 'Mode streetwear automne 2026',
-    description: 'Les tendances streetwear incontournables pour cet automne.',
-    imageUrl: 'https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Karim',
-    userAvatarColor: 'bg-violet-400',
-    link: 'streetstyle.co',
-    stats: { saves: 3400, reactions: 156 },
-    topic: 'Mode',
-    tall: true,
-    createdAt: '2026-03-03',
-  },
-  {
-    id: 9,
-    title: 'Yoga matinal — routine 15 min',
-    description: 'Une routine simple et efficace pour bien démarrer la journée.',
-    imageUrl: 'https://images.pexels.com/photos/3822906/pexels-photo-3822906.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Sofia',
-    userAvatarColor: 'bg-teal-400',
-    link: 'zenlife.app',
-    stats: { saves: 7600, reactions: 289 },
-    topic: 'Bien-être',
-    createdAt: '2026-03-01',
-  },
-  {
-    id: 10,
-    title: 'Palette de couleurs terracotta',
-    description: 'Inspiration couleurs chaudes pour intérieurs et projets graphiques.',
-    imageUrl: 'https://images.pexels.com/photos/5797903/pexels-photo-5797903.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Lucas',
-    userAvatarColor: 'bg-red-400',
-    link: 'designpalette.cc',
-    stats: { saves: 4100, reactions: 167 },
-    topic: 'Inspiration design',
-    tall: true,
-    createdAt: '2026-02-28',
-  },
-  {
-    id: 11,
-    title: 'Photographie de rue à Paris',
-    description: 'Les plus beaux spots parisiens pour la photographie urbaine.',
-    imageUrl: 'https://images.pexels.com/photos/2363/france-landmark-lights-night.jpg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Julien',
-    userAvatarColor: 'bg-cyan-400',
-    link: 'photostreet.paris',
-    stats: { saves: 5500, reactions: 198 },
-    topic: 'Photographie',
-    createdAt: '2026-02-25',
-  },
-  {
-    id: 12,
-    title: 'DIY macramé mural débutant',
-    description: 'Tutoriel pas à pas pour créer une suspension murale en macramé.',
-    imageUrl: 'https://images.pexels.com/photos/6444267/pexels-photo-6444267.jpeg?auto=compress&cs=tinysrgb&w=600',
-    user: 'Chloé',
-    userAvatarColor: 'bg-pink-400',
-    link: 'crafthome.diy',
-    stats: { saves: 2900, reactions: 88 },
-    topic: 'DIY & Crafts',
-    tall: true,
-    createdAt: '2026-02-22',
-  },
-]
+const API_BASE_URL = 'http://127.0.0.1:8000'
 
-function loadPins(): Pin[] {
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored) {
-    try {
-      return JSON.parse(stored)
-    } catch {
-      return [...defaultPins]
-    }
-  }
-  return [...defaultPins]
+function getFullMediaUrl(url: string | null): string {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
 }
 
-const pins = ref<Pin[]>(loadPins())
-
-function savePins() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pins.value))
+// Mapper pour convertir les données Django vers le format attendu par le Frontend
+function mapDjangoPinToFrontend(djangoPin: any): Pin {
+  const author = djangoPin.author_profile || {}
+  return {
+    id: djangoPin.id,
+    title: djangoPin.title,
+    description: djangoPin.description,
+    imageUrl: getFullMediaUrl(djangoPin.image),
+    user: author.display_name || author.username || 'Inconnu',
+    userId: author.id,
+    userAvatarUrl: getFullMediaUrl(author.avatar),
+    userAvatarColor: author.avatar_color || 'bg-gray-400',
+    link: '',
+    stats: { 
+      saves: djangoPin.saves_count || 0, 
+      reactions: djangoPin.likes_count || 0 
+    },
+    topic: djangoPin.topic || 'Général',
+    createdAt: djangoPin.created_at,
+    liked: djangoPin.is_liked || false,
+    saved: djangoPin.is_saved || false,
+    isFollowing: author.is_following || false,
+  }
 }
 
 export function usePins() {
@@ -181,78 +49,216 @@ export function usePins() {
     return Array.from(set).sort()
   })
 
-  function addPin(pin: Omit<Pin, 'id' | 'createdAt'>) {
-    const newPin: Pin = {
-      ...pin,
-      id: Date.now(),
-      createdAt: new Date().toISOString().split('T')[0]!,
+  async function fetchPins(reset = false) {
+    if (reset) {
+      currentPage.value = 1
+      hasNextPage.value = true
+      pins.value = []
     }
-    pins.value.unshift(newPin)
-    savePins()
-    return newPin
+    
+    if (!hasNextPage.value || loading.value || isFetchingNextPage.value) return
+
+    loading.value = currentPage.value === 1
+    isFetchingNextPage.value = currentPage.value > 1
+    error.value = null
+    
+    console.log(`📡 Fetching pins page ${currentPage.value}...`)
+    try {
+      const response = await api.get('pins/', {
+        params: { page: currentPage.value }
+      })
+      
+      const pinsData = response.data.results || response.data
+      const next = response.data.next
+      
+      if (Array.isArray(pinsData) && pinsData.length > 0) {
+        const newPins = pinsData.map(mapDjangoPinToFrontend)
+        pins.value = [...pins.value, ...newPins]
+        currentPage.value++
+        hasNextPage.value = !!next
+      } else {
+        hasNextPage.value = false
+      }
+    } catch (err) {
+      console.warn('❌ Erreur lors de la récupération des pins.')
+      hasNextPage.value = false
+    } finally {
+      loading.value = false
+      isFetchingNextPage.value = false
+    }
+  }
+
+  async function fetchRecommendations(reset = false) {
+    if (reset) {
+      currentPage.value = 1
+      hasNextPage.value = true
+      pins.value = []
+    }
+
+    if (!hasNextPage.value || loading.value || isFetchingNextPage.value) return
+
+    loading.value = currentPage.value === 1
+    isFetchingNextPage.value = currentPage.value > 1
+    error.value = null
+    
+    try {
+      const response = await api.get('pins/recommendations/', {
+        params: { page: currentPage.value }
+      })
+      
+      const pinsData = response.data.results || response.data
+      const next = response.data.next
+
+      if (Array.isArray(pinsData) && pinsData.length > 0) {
+        const newPins = pinsData.map(mapDjangoPinToFrontend)
+        pins.value = [...pins.value, ...newPins]
+        currentPage.value++
+        hasNextPage.value = !!next
+      } else {
+        hasNextPage.value = false
+      }
+    } catch (err) {
+      console.warn('Error fetching recommendations, falling back to all pins')
+      await fetchPins(reset)
+    } finally {
+      loading.value = false
+      isFetchingNextPage.value = false
+    }
+  }
+
+  async function toggleLike(pinId: number) {
+    try {
+      const response = await api.post(`pins/${pinId}/like/`)
+      const pin = pins.value.find(p => p.id === pinId)
+      if (pin) {
+        pin.liked = response.data.status === 'liked'
+        pin.stats.reactions = response.data.likes_count
+      }
+      return response.data
+    } catch (err) {
+      console.error('Error toggling like:', err)
+      throw err
+    }
+  }
+
+  async function fetchComments(pinId: number) {
+    try {
+      const response = await api.get(`pins/${pinId}/comments/`)
+      return response.data
+    } catch (err) {
+      console.error('Error fetching comments:', err)
+      return []
+    }
+  }
+
+  async function addComment(pinId: number, text: string) {
+    try {
+      const response = await api.post(`pins/${pinId}/comments/`, { text })
+      const pin = pins.value.find(p => p.id === pinId)
+      if (pin) {
+        pin.stats.reactions += 0 // On pourrait mettre à jour le count ici si on l'avait séparément
+      }
+      return response.data
+    } catch (err) {
+      console.error('Error adding comment:', err)
+      throw err
+    }
+  }
+
+  async function addPin(pinData: FormData) {
+    loading.value = true
+    try {
+      // Pour Django, on envoie un FormData car il y a une image
+      const response = await api.post('pins/', pinData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      const newPin = mapDjangoPinToFrontend(response.data)
+      pins.value.unshift(newPin)
+      return newPin
+    } catch (err) {
+      console.error('Erreur lors de l\'ajout du pin:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   function getPin(id: number): Pin | undefined {
     return pins.value.find((p) => p.id === id)
   }
 
-  function toggleSave(id: number) {
-    const pin = pins.value.find((p) => p.id === id)
-    if (pin) {
-      pin.saved = !pin.saved
-      if (pin.saved) {
-        pin.stats.saves++
-      } else {
-        pin.stats.saves = Math.max(0, pin.stats.saves - 1)
+  async function toggleSave(id: number) {
+    try {
+      const response = await api.post(`pins/${id}/save/`)
+      const pin = pins.value.find((p) => p.id === id)
+      if (pin) {
+        pin.saved = response.data.status === 'saved'
+        pin.stats.saves = response.data.saves_count
+        
+        // Cache image proactively if saved
+        if (pin.saved && pin.imageUrl && 'caches' in window) {
+          try {
+            const cache = await caches.open('local-media-cache')
+            const response = await fetch(pin.imageUrl, { mode: 'no-cors' })
+            if (response.ok || response.type === 'opaque') {
+              await cache.put(pin.imageUrl, response)
+              console.log('✅ Image cached for offline:', pin.imageUrl)
+            }
+          } catch (e) {
+            console.warn('Failed to proactively cache image:', e)
+          }
+        }
       }
-      savePins()
+      return response.data
+    } catch (err) {
+      console.error('Error toggling save:', err)
+      throw err
     }
   }
 
-  function deletePin(id: number) {
-    const idx = pins.value.findIndex((p) => p.id === id)
-    if (idx !== -1) {
-      pins.value.splice(idx, 1)
-      savePins()
+  async function toggleFollow(profileId: number) {
+    try {
+      const response = await api.post(`profiles/${profileId}/follow/`)
+      const isFollowed = response.data.status === 'followed'
+      
+      // Update all pins from this author
+      pins.value.forEach(pin => {
+        if (pin.userId === profileId) {
+          pin.isFollowing = isFollowed
+        }
+      })
+      
+      return response.data
+    } catch (err) {
+      console.error('Error toggling follow:', err)
+      throw err
     }
   }
 
-  function searchPins(query: string, topic?: string | null): Pin[] {
-    return pins.value.filter((pin) => {
-      const matchesTopic = topic ? pin.topic === topic : true
-      const q = query.trim().toLowerCase()
-      const matchesQuery = q
-        ? [pin.title, pin.description, pin.link, pin.topic, pin.user].some((f) =>
-            f.toLowerCase().includes(q),
-          )
-        : true
-      return matchesTopic && matchesQuery
-    })
-  }
-
-  function getPinsByTopic(topic: string): Pin[] {
-    return pins.value.filter((p) => p.topic === topic)
-  }
-
-  function getTrendingPins(): Pin[] {
-    return [...pins.value].sort((a, b) => b.stats.saves - a.stats.saves).slice(0, 20)
-  }
-
-  function formatCount(n: number): string {
-    if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + ' k'
-    return String(n)
+  function formatCount(count: number): string {
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M'
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'k'
+    return count.toString()
   }
 
   return {
     pins,
     topics,
+    loading,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchPins,
+    fetchRecommendations,
     addPin,
     getPin,
     toggleSave,
-    deletePin,
-    searchPins,
-    getPinsByTopic,
-    getTrendingPins,
+    toggleLike,
+    toggleFollow,
+    fetchComments,
+    addComment,
     formatCount,
   }
 }

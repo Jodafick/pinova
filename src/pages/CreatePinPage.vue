@@ -49,27 +49,28 @@ const clearImage = () => {
 }
 
 const submitPin = async () => {
-  if (!title.value || !imagePreviewUrl.value) return
+  if (!title.value || !imageFile.value) return
   saving.value = true
-  await new Promise((r) => setTimeout(r, 500))
 
-  const randomColor = avatarColors[Math.floor(Math.random() * avatarColors.length)]!
+  try {
+    const formData = new FormData()
+    formData.append('title', title.value)
+    formData.append('description', description.value || '')
+    formData.append('image', imageFile.value)
+    formData.append('topic', topic.value || 'Général')
+    
+    if (currentUser.value) {
+      formData.append('author', currentUser.value.id.toString())
+    }
 
-  addPin({
-    title: title.value,
-    description: description.value || 'Nouveau pin',
-    imageUrl: imagePreviewUrl.value,
-    user: currentUser.value?.displayName || 'Utilisateur',
-    userAvatarColor: currentUser.value?.avatarColor || randomColor,
-    link: link.value || 'pinterest-clone.local',
-    stats: { saves: 0, reactions: 0 },
-    topic: topic.value || 'Autre',
-    tall: Math.random() > 0.5,
-    saved: false,
-  })
-
-  saving.value = false
-  router.push('/')
+    await addPin(formData)
+    router.push('/')
+  } catch (err) {
+    console.error('Erreur lors de la publication:', err)
+    window.alert('Erreur lors de la publication du pin.')
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -89,7 +90,7 @@ const submitPin = async () => {
           Annuler
         </button>
         <button
-          class="px-6 py-2.5 rounded-full bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition flex items-center gap-2"
+          class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition flex items-center gap-2"
           :disabled="!title || !imagePreviewUrl || saving"
           @click="submitPin"
         >
@@ -111,8 +112,8 @@ const submitPin = async () => {
             v-if="!imagePreviewUrl"
             class="h-80 lg:h-full min-h-[320px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 text-center cursor-pointer transition-colors"
             :class="isDragging
-              ? 'border-red-400 bg-red-50/60'
-              : 'border-neutral-300 hover:border-red-300 hover:bg-red-50/30'"
+              ? 'border-pink-400 bg-pink-50/60'
+              : 'border-neutral-300 hover:border-pink-300 hover:bg-pink-50/30'"
             @dragover.prevent="isDragging = true"
             @dragleave.prevent="isDragging = false"
             @drop="onDrop"
@@ -159,7 +160,7 @@ const submitPin = async () => {
               v-model="title"
               type="text"
               placeholder="Ajoutez un titre accrocheur"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition placeholder:text-neutral-400"
+              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-base focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
             />
           </div>
 
@@ -169,7 +170,7 @@ const submitPin = async () => {
               v-model="description"
               rows="4"
               placeholder="Décrivez votre pin en détail pour aider les autres à le découvrir"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition resize-none placeholder:text-neutral-400"
+              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition resize-none placeholder:text-neutral-400"
             />
           </div>
 
@@ -181,7 +182,7 @@ const submitPin = async () => {
                 v-model="link"
                 type="url"
                 placeholder="https://votre-site.com/article"
-                class="w-full pl-11 pr-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition placeholder:text-neutral-400"
+                class="w-full pl-11 pr-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
               />
             </div>
           </div>
@@ -191,7 +192,7 @@ const submitPin = async () => {
             <div class="relative">
               <select
                 v-model="topic"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition appearance-none bg-white"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition appearance-none bg-white"
               >
                 <option value="">Sélectionnez une catégorie</option>
                 <option v-for="t in topics" :key="t" :value="t">{{ t }}</option>

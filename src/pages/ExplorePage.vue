@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import PinGrid from '../components/PinGrid.vue'
+import PinSkeleton from '../components/PinSkeleton.vue'
 
 const router = useRouter()
-const { topics, getTrendingPins, getPinsByTopic, toggleSave } = usePins()
+const { pins, topics, loading, fetchPins, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
 
 const selectedCategory = ref<string | null>(null)
 
@@ -32,16 +33,43 @@ const categoryColors: Record<string, string> = {
   'Mode': 'from-fuchsia-400 to-pink-600',
   'Bien-être': 'from-teal-400 to-cyan-600',
   'Photographie': 'from-slate-400 to-gray-600',
-  'DIY & Crafts': 'from-orange-400 to-red-500',
+  'DIY & Crafts': 'from-orange-400 to-pink-500',
 }
 
-const trending = computed(() => getTrendingPins().slice(0, 6))
+const getPinsByTopic = (topic: string) => {
+  return pins.value.filter((p) => p.topic === topic)
+}
+
+const trending = computed(() => [...pins.value].sort((a, b) => b.id - a.id).slice(0, 6))
 
 const displayPins = computed(() => {
   if (selectedCategory.value) {
     return getPinsByTopic(selectedCategory.value)
   }
   return []
+})
+
+const handleScroll = () => {
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = document.documentElement.scrollTop
+  const clientHeight = document.documentElement.clientHeight
+
+  if (scrollTop + clientHeight >= scrollHeight - 100) {
+    if (hasNextPage.value && !isFetchingNextPage.value) {
+      fetchPins()
+    }
+  }
+}
+
+onMounted(() => {
+  if (pins.value.length === 0) {
+    fetchPins(true)
+  }
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 
 const selectCategory = (topic: string) => {
@@ -78,7 +106,7 @@ const openPin = (id: number) => {
           :class="[
             'bg-gradient-to-br',
             categoryColors[topic] || 'from-neutral-400 to-neutral-600',
-            selectedCategory === topic ? 'ring-2 ring-offset-2 ring-red-500 scale-[1.02] shadow-lg' : ''
+            selectedCategory === topic ? 'ring-2 ring-offset-2 ring-pink-500 scale-[1.02] shadow-lg' : ''
           ]"
           @click="selectCategory(topic)"
         >
@@ -105,7 +133,11 @@ const openPin = (id: number) => {
           Fermer
         </button>
       </div>
+      
+      <PinSkeleton v-if="loading && displayPins.length === 0" />
+      
       <PinGrid
+        v-else
         :pins="displayPins"
         @toggle-save="handleToggleSave"
         @open-pin="openPin"
@@ -117,17 +149,26 @@ const openPin = (id: number) => {
     <section v-if="!selectedCategory">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-neutral-900">Tendances du moment</h2>
-        <span class="flex items-center gap-1 text-sm text-red-600 font-medium">
+        <span class="flex items-center gap-1 text-sm text-pink-600 font-medium">
           <span class="material-symbols-outlined text-lg">trending_up</span>
           Populaire
         </span>
       </div>
+
+      <PinSkeleton v-if="loading && trending.length === 0" />
+
       <PinGrid
+        v-else
         :pins="trending"
         @toggle-save="handleToggleSave"
         @open-pin="openPin"
         @more="openPin"
       />
     </section>
+
+    <!-- Loading indicator for infinite scroll -->
+    <div v-if="isFetchingNextPage" class="flex justify-center py-8">
+      <div class="w-8 h-8 border-4 border-neutral-200 border-t-pink-600 rounded-full animate-spin"></div>
+    </div>
   </div>
 </template>

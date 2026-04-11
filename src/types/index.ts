@@ -4,6 +4,8 @@ export type Pin = {
   description: string
   imageUrl: string
   user: string
+  userId: number
+  userAvatarUrl?: string
   userAvatarColor: string
   link: string
   stats: {
@@ -13,6 +15,8 @@ export type Pin = {
   topic: string
   tall?: boolean
   saved?: boolean
+  liked?: boolean
+  isFollowing?: boolean
   boardId?: number
   createdAt: string
 }
@@ -36,6 +40,7 @@ export type User = {
   bio: string
   followers: number
   following: number
+  isFollowing?: boolean
   boards: Board[]
   savedPins: number[]
 }
