@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { API_BASE_URL } from './src/env'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -61,7 +62,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /^http:\/\/localhost:8000\/api\/(pins|me|profiles)\/.*/i,
+            urlPattern: new RegExp(`^${API_BASE_URL.replace(/\//g, '\\/')}/api/(pins|me|profiles)/.*`, 'i'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
@@ -73,7 +74,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /^http:\/\/localhost:8000\/media\/.*/i,
+            urlPattern: new RegExp(`^${API_BASE_URL.replace(/\//g, '\\/')}/media/.*`, 'i'),
             handler: 'CacheFirst',
             options: {
               cacheName: 'local-media-cache',

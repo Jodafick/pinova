@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_URL } from './env';
 
 const api = axios.create({
-  baseURL: 'https://pinova-backend-4dt4.onrender.com/api/',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

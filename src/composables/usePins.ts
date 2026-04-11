@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import type { Pin } from '../types'
 import api from '../api'
+import { API_BASE_URL } from '../env'
 
 const pins = ref<Pin[]>([])
 const loading = ref(false)
@@ -8,8 +9,6 @@ const error = ref<string | null>(null)
 const currentPage = ref(1)
 const hasNextPage = ref(true)
 const isFetchingNextPage = ref(false)
-
-const API_BASE_URL = 'http://127.0.0.1:8000'
 
 function getFullMediaUrl(url: string | null): string {
   if (!url) return ''

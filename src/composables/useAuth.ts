@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import type { User } from '../types'
 import api from '../api'
+import { API_BASE_URL } from '../env'
 
 const defaultUser: User = {
   id: 1,
@@ -19,8 +20,6 @@ const currentUser = ref<User | null>(null)
 const isAuthenticated = computed(() => currentUser.value !== null)
 const isInitializing = ref(true)
 const token = ref<string | null>(localStorage.getItem('pinova_token'))
-
-const API_BASE_URL = 'http://127.0.0.1:8000'
 
 function getFullMediaUrl(url: string | null): string | undefined {
   if (!url) return undefined
