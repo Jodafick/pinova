@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
-const { currentUser, updateProfile, logout, resetPassword } = useAuth()
+const { currentUser, updateProfile, logout } = useAuth()
 
 const displayName = ref('')
 const username = ref('')

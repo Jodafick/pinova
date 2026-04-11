@@ -87,7 +87,7 @@ import { watch } from 'vue'
 // Navigation Guard
 router.beforeEach(async (to, from) => {
   console.log(`🧭 Navigating from ${String(from.name)} to ${String(to.name)}`)
-  const { isAuthenticated, isInitializing, fetchCurrentUser } = useAuth()
+  const { isAuthenticated, isInitializing } = useAuth()
   
   // Attendre l'initialisation de l'auth si elle est en cours
   if (isInitializing.value) {
