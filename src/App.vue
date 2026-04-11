@@ -55,8 +55,7 @@ onMounted(async () => {
 })
 
 const isAuthPage = computed(() => {
-  const name = route.name as string | undefined
-  return name === 'login' || name === 'register'
+  return route.meta.guest === true
 })
 </script>
 
