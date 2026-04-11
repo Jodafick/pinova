@@ -37,7 +37,10 @@ onUnmounted(() => {
 const columns = computed(() => {
   const cols = Array.from({ length: columnCount.value }, () => [] as Pin[])
   props.pins.forEach((pin, index) => {
-    cols[index % columnCount.value].push(pin)
+    const targetCol = cols[index % columnCount.value]
+    if (targetCol) {
+      targetCol.push(pin)
+    }
   })
   return cols
 })

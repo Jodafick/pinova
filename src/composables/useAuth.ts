@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import type { User, Board } from '../types'
+import type { User } from '../types'
 import api from '../api'
 
 const defaultUser: User = {
@@ -22,8 +22,8 @@ const token = ref<string | null>(localStorage.getItem('pinova_token'))
 
 const API_BASE_URL = 'http://127.0.0.1:8000'
 
-function getFullMediaUrl(url: string | null): string | null {
-  if (!url) return null
+function getFullMediaUrl(url: string | null): string | undefined {
+  if (!url) return undefined
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
 }
@@ -125,7 +125,9 @@ export function useAuth() {
       const response = await api.post('auth/login/', { email, password })
       // dj-rest-auth with JWT returns access and refresh tokens
       token.value = response.data.access
-      localStorage.setItem('pinova_token', token.value)
+      if (token.value) {
+        localStorage.setItem('pinova_token', token.value)
+      }
       if (response.data.refresh) {
         localStorage.setItem('pinova_refresh_token', response.data.refresh)
       }
@@ -149,7 +151,7 @@ export function useAuth() {
         password2: data.password,
         display_name: data.displayName
       }
-      const response = await api.post('auth/registration/', payload)
+      await api.post('auth/registration/', payload)
       // Ne pas stocker le token immédiatement car l'email doit être vérifié via OTP
       return { success: true }
     } catch (err: any) {
@@ -195,7 +197,9 @@ export function useAuth() {
 
       const response = await api.post(`auth/social/${provider}/`, payload)
       token.value = response.data.access
-      localStorage.setItem('pinova_token', token.value)
+      if (token.value) {
+        localStorage.setItem('pinova_token', token.value)
+      }
       await fetchCurrentUser()
       return { success: true }
     } catch (err: any) {

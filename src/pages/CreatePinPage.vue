@@ -18,8 +18,6 @@ const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const saving = ref(false)
 
-const avatarColors = ['bg-amber-400', 'bg-emerald-400', 'bg-rose-400', 'bg-sky-400', 'bg-indigo-400', 'bg-lime-400']
-
 const setImageFile = (file: File) => {
   if (!file.type.startsWith('image/')) {
     window.alert('Merci de déposer un fichier image (JPG, PNG, WEBP).')

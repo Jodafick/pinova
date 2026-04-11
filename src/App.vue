@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from './composables/useAuth'
 import { usePins } from './composables/usePins'
 import GlobalHeader from './components/GlobalHeader.vue'
 
 const route = useRoute()
-const { fetchCurrentUser, isAuthenticated, isInitializing, socialLogin } = useAuth()
+const { fetchCurrentUser, isAuthenticated, isInitializing } = useAuth()
 const { fetchPins } = usePins()
 
 // Google One Tap Sign-in

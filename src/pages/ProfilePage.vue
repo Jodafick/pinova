@@ -77,7 +77,7 @@ watch(() => route.params.id, loadProfile)
 type Tab = 'created' | 'saved'
 const activeTab = ref<Tab>('created')
 
-const createdPins = Bird = computed(() => {
+const createdPins = computed(() => {
   if (!profileUser.value) return []
   return pins.value.filter((p) => p.user === profileUser.value!.displayName || p.user === profileUser.value!.username)
 })

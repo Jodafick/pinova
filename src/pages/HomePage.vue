@@ -8,7 +8,7 @@ import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 
 const router = useRouter()
-const { pins, topics, loading, error, fetchRecommendations, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
+const { pins, topics, loading, fetchRecommendations, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
 const { currentUser, toggleSavePin } = useAuth()
 
 const searchQuery = ref('')
