@@ -1,9 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useTokenClient } from 'vue3-google-signin'
 
 const loading = ref(false)
 const error = ref('')
+
+onMounted(() => {
+  // Check if we are returning from Google OAuth redirect
+  const hash = window.location.hash
+  if (hash) {
+      const params = new URLSearchParams(hash.substring(1))
+      const accessToken = params.get('access_token')
+      if (accessToken) {
+        // Redirection vers l'application mobile via le schéma personnalisé
+        const redirectUrl = `pinova://login-success?google_token=${accessToken}`
+        window.location.href = redirectUrl
+        
+        // Message de secours si la redirection ne se lance pas
+        setTimeout(() => {
+          loading.value = false
+          error.value = "Si l'application ne s'ouvre pas, assurez-vous qu'elle est installée."
+        }, 3000)
+      }
+    }
+})
 
 const { login: googleLogin } = useTokenClient({
   onSuccess: (response) => {
@@ -30,7 +50,15 @@ const { login: googleLogin } = useTokenClient({
 
 const handleGoogleClick = () => {
   loading.value = true
-  googleLogin()
+  // Google OAuth URL for Implicit Flow (Redirect)
+  const clientId = '274683910451-u52eib3lr7t5qehu23bhnafn85ovaub3.apps.googleusercontent.com'
+  const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
+  const scope = encodeURIComponent('email profile openid')
+  const responseType = 'token'
+  
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}`
+  
+  window.location.href = googleAuthUrl
 }
 </script>
 
