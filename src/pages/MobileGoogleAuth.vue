@@ -52,7 +52,7 @@ onMounted(() => {
       <h1 class="text-xl font-bold text-neutral-800">Erreur de connexion</h1>
       <p class="text-neutral-500 mt-2 mb-6">{{ error }}</p>
       <button 
-        @click="googleLogin"
+        @click="() => googleLogin()"
         class="w-full py-3 bg-pink-600 text-white font-bold rounded-xl hover:bg-pink-700 transition-colors"
       >
         Réessayer
