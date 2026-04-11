@@ -5,21 +5,42 @@ const loading = ref(false)
 const error = ref('')
 
 onMounted(() => {
+  // Sauvegarde de l'URL de redirection mobile si présente dans les paramètres
+  const urlParams = new URLSearchParams(window.location.search)
+  const redirectTo = urlParams.get('redirect_to')
+  if (redirectTo) {
+    sessionStorage.setItem('mobile_redirect_url', redirectTo)
+  }
+
   // Check if we are returning from Google OAuth redirect
   const hash = window.location.hash
   if (hash) {
       const params = new URLSearchParams(hash.substring(1))
       const accessToken = params.get('access_token')
       if (accessToken) {
-        // Redirection vers l'application mobile via le schéma personnalisé
-        const redirectUrl = `pinova://login-success?google_token=${accessToken}`
+        loading.value = true
+        
+        // Récupération de l'URL de redirection (Expo Go ou Schéma personnalisé)
+        const savedRedirectUrl = sessionStorage.getItem('mobile_redirect_url')
+        let redirectUrl = ''
+        
+        if (savedRedirectUrl) {
+          // Si on a une URL d'Expo (ex: exp://192.168.../--/login-success)
+          // On ajoute le token Google à cette URL
+          const separator = savedRedirectUrl.includes('?') ? '&' : '?'
+          redirectUrl = `${savedRedirectUrl}${separator}google_token=${accessToken}`
+        } else {
+          // Fallback sur le schéma par défaut pour les builds de production
+          redirectUrl = `pinova://login-success?google_token=${accessToken}`
+        }
+
         window.location.href = redirectUrl
         
         // Message de secours si la redirection ne se lance pas
         setTimeout(() => {
           loading.value = false
           error.value = "Si l'application ne s'ouvre pas, assurez-vous qu'elle est installée."
-        }, 3000)
+        }, 4000)
       }
     }
 })
