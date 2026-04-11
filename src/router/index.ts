@@ -51,6 +51,12 @@ const router = createRouter({
       meta: { guest: true },
     },
     {
+      path: '/auth/mobile/google',
+      name: 'mobile-google-auth',
+      component: () => import('../pages/MobileGoogleAuth.vue'),
+      meta: { guest: true },
+    },
+    {
       path: '/register',
       name: 'register',
       component: () => import('../pages/RegisterPage.vue'),

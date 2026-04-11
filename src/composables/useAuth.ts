@@ -133,7 +133,11 @@ export function useAuth() {
       
       // Get full user profile after login
       await fetchCurrentUser()
-      return { success: true }
+      return { 
+        success: true, 
+        access: response.data.access, 
+        refresh: response.data.refresh 
+      }
     } catch (err: any) {
       console.error('Login error:', err)
       const errorMsg = err.response?.data?.non_field_errors?.[0] || 'Identifiants incorrects.'
@@ -199,8 +203,15 @@ export function useAuth() {
       if (token.value) {
         localStorage.setItem('pinova_token', token.value)
       }
+      if (response.data.refresh) {
+        localStorage.setItem('pinova_refresh_token', response.data.refresh)
+      }
       await fetchCurrentUser()
-      return { success: true }
+      return { 
+        success: true, 
+        access: response.data.access, 
+        refresh: response.data.refresh 
+      }
     } catch (err: any) {
       console.error(`${provider} login error:`, err)
       return { success: false, error: `Erreur lors de la connexion avec ${provider}.` }

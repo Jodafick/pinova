@@ -26,6 +26,7 @@ const handleLogin = async () => {
     error.value = result.error || 'Erreur de connexion.'
     return
   }
+  
   router.push('/')
 }
 
