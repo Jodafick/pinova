@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useTokenClient } from 'vue3-google-signin'
 
 const loading = ref(false)
 const error = ref('')
@@ -23,29 +22,6 @@ onMounted(() => {
         }, 3000)
       }
     }
-})
-
-const { login: googleLogin } = useTokenClient({
-  onSuccess: (response) => {
-    loading.value = true
-    try {
-      if (response.access_token) {
-        // Envoi du token Google vers le mobile via redirection
-        const redirectUrl = `https://${window.location.host}/login-success?google_token=${response.access_token}`
-        window.location.href = redirectUrl
-      } else {
-        error.value = 'Aucun token reçu de Google.'
-        loading.value = false
-      }
-    } catch (err) {
-      error.value = 'Erreur lors du traitement du token Google.'
-      loading.value = false
-    }
-  },
-  onError: () => {
-    error.value = 'Erreur lors de la connexion avec Google.'
-    loading.value = false
-  }
 })
 
 const handleGoogleClick = () => {
