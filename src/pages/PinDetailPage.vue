@@ -79,6 +79,14 @@ const handleAddComment = async () => {
   }
 }
 
+const handleToggleSaveRelated = (slug: string) => {
+  toggleSave(slug)
+  const pin = pins.value.find(p => p.slug === slug)
+  if (pin) {
+    toggleSavePin(pin.id)
+  }
+}
+
 const handleShare = () => {
   navigator.clipboard.writeText(window.location.href)
   alert('Lien copié dans le presse-papier !')
@@ -286,7 +294,7 @@ const openRelatedPin = (slug: string) => {
         <PinGrid
           v-else
           :pins="relatedPins"
-          @toggle-save="(id) => { toggleSave(id); toggleSavePin(id) }"
+          @toggle-save="handleToggleSaveRelated"
           @open-pin="openRelatedPin"
           @more="openRelatedPin"
         />

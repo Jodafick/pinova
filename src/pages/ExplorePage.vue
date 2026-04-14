@@ -2,11 +2,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
+import { useAuth } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 
 const router = useRouter()
 const { pins, topics, loading, fetchPins, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
+const { toggleSavePin } = useAuth()
 
 const selectedCategory = ref<string | null>(null)
 
@@ -78,6 +80,10 @@ const selectCategory = (topic: string) => {
 
 const handleToggleSave = (slug: string) => {
   toggleSave(slug)
+  const pin = pins.value.find(p => p.slug === slug)
+  if (pin) {
+    toggleSavePin(pin.id)
+  }
 }
 
 const openPin = (slug: string) => {
