@@ -2,8 +2,10 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Pin } from '../types'
 import { usePins } from '../composables/usePins'
+import { useAuth } from '../composables/useAuth'
 
 const { formatCount } = usePins()
+const { isAuthenticated } = useAuth()
 
 const props = defineProps<{
   pins: Pin[]
@@ -73,6 +75,7 @@ const columns = computed(() => {
 
           <!-- Save button -->
           <button
+            v-if="isAuthenticated"
             class="absolute top-3 right-3 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 shadow-lg z-10"
             :class="pin.saved ? 'bg-neutral-900 text-white' : 'bg-pink-600 text-white hover:bg-pink-700'"
             @click.stop="emit('toggle-save', pin.id)"

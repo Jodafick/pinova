@@ -21,12 +21,16 @@ const handleLogin = async () => {
   }
   loading.value = true
   const result = await login(email.value, password.value)
-  loading.value = false
   if (!result.success) {
+    loading.value = false
     error.value = result.error || 'Erreur de connexion.'
     return
   }
   
+  // Attendre que fetchCurrentUser soit terminé avant de rediriger
+  // login() appelle déjà fetchCurrentUser() mais on peut forcer une petite pause
+  // ou vérifier si currentUser est rempli
+  loading.value = false
   router.push('/')
 }
 
@@ -34,10 +38,11 @@ const { login: googleLogin } = useTokenClient({
   onSuccess: async (response) => {
     loading.value = true
     const result = await socialLogin('google', response.access_token)
-    loading.value = false
     if (result.success) {
+      loading.value = false
       router.push('/')
     } else {
+      loading.value = false
       error.value = result.error || 'Erreur de connexion avec Google.'
     }
   },

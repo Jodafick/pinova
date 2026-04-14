@@ -10,7 +10,7 @@ const route = useRoute()
 const router = useRouter()
 
 const { getPin, toggleSave, pins, fetchPins, formatCount, toggleLike, fetchComments, addComment: apiAddComment, toggleFollow, loading: pinsLoading } = usePins()
-const { currentUser, toggleSavePin } = useAuth()
+const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
 const pinId = computed(() => Number(route.params.id))
 const pin = computed(() => getPin(pinId.value))
@@ -37,7 +37,7 @@ onMounted(async () => {
 })
 
 const handleLike = async () => {
-  if (!currentUser.value) {
+  if (!isAuthenticated.value) {
     router.push('/login')
     return
   }
@@ -47,7 +47,7 @@ const handleLike = async () => {
 }
 
 const handleSave = () => {
-  if (!currentUser.value) {
+  if (!isAuthenticated.value) {
     router.push('/login')
     return
   }
@@ -57,18 +57,17 @@ const handleSave = () => {
 }
 
 const handleFollow = async () => {
-  if (!currentUser.value) {
+  if (!isAuthenticated.value) {
     router.push('/login')
     return
   }
   if (pin.value && pin.value.userId) {
     await toggleFollow(pin.value.userId)
-    // Optionnel: refresh l'UI si on track l'état de follow dans le pin
   }
 }
 
 const handleAddComment = async () => {
-  if (!commentText.value.trim() || !currentUser.value || !pin.value) return
+  if (!commentText.value.trim() || !isAuthenticated.value || !pin.value) return
   try {
     const newComment = await apiAddComment(pin.value.id, commentText.value)
     comments.value.unshift(newComment)

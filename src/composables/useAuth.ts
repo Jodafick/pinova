@@ -140,6 +140,8 @@ export function useAuth() {
       }
     } catch (err: any) {
       console.error('Login error:', err)
+      // Si on a un token mais que fetchCurrentUser a échoué, on logout
+      logout()
       const errorMsg = err.response?.data?.non_field_errors?.[0] || 'Identifiants incorrects.'
       return { success: false, error: errorMsg }
     }
@@ -214,6 +216,7 @@ export function useAuth() {
       }
     } catch (err: any) {
       console.error(`${provider} login error:`, err)
+      logout()
       return { success: false, error: `Erreur lors de la connexion avec ${provider}.` }
     }
   }
