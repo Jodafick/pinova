@@ -21,7 +21,7 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
-      path: '/pin/:id',
+      path: '/pin/:slug',
       name: 'pin-detail',
       component: () => import('../pages/PinDetailPage.vue'),
       meta: { requiresAuth: false },
@@ -33,7 +33,7 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/profile/:id?',
+      path: '/profile/:username?',
       name: 'profile',
       component: () => import('../pages/ProfilePage.vue'),
       meta: { requiresAuth: false },

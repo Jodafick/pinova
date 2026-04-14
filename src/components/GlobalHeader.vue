@@ -289,7 +289,7 @@ const closeDropdowns = () => {
 
             <div class="py-1">
               <router-link
-                :to="`/profile/${currentUser?.id}`"
+                :to="`/profile/${currentUser?.username}`"
                 class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700"
                 @click="closeDropdowns"
               >

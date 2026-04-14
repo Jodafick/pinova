@@ -54,17 +54,20 @@ const selectTopic = (topic: string | null) => {
   activeTopic.value = topic
 }
 
-const handleToggleSave = (id: number) => {
-  toggleSave(id)
-  toggleSavePin(id)
+const handleToggleSave = (slug: string) => {
+  toggleSave(slug)
+  const pin = pins.value.find(p => p.slug === slug)
+  if (pin) {
+    toggleSavePin(pin.id)
+  }
 }
 
-const openPin = (id: number) => {
-  router.push(`/pin/${id}`)
+const openPin = (slug: string) => {
+  router.push(`/pin/${slug}`)
 }
 
-const openMore = (id: number) => {
-  router.push(`/pin/${id}`)
+const openMore = (slug: string) => {
+  router.push(`/pin/${slug}`)
 }
 </script>
 

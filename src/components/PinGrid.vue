@@ -12,9 +12,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'toggle-save', id: number): void
-  (e: 'open-pin', id: number): void
-  (e: 'more', id: number): void
+  (e: 'toggle-save', slug: string): void
+  (e: 'open-pin', slug: string): void
+  (e: 'more', slug: string): void
 }>()
 
 const columnCount = ref(2)
@@ -59,7 +59,7 @@ const columns = computed(() => {
         v-for="pin in column"
         :key="pin.id"
         class="group relative rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all cursor-pointer"
-        @click="emit('open-pin', pin.id)"
+        @click="emit('open-pin', pin.slug)"
       >
         <!-- Image container -->
         <div class="relative overflow-hidden rounded-2xl">
@@ -78,7 +78,7 @@ const columns = computed(() => {
             v-if="isAuthenticated"
             class="absolute top-3 right-3 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 shadow-lg z-10"
             :class="pin.saved ? 'bg-neutral-900 text-white' : 'bg-pink-600 text-white hover:bg-pink-700'"
-            @click.stop="emit('toggle-save', pin.id)"
+            @click.stop="emit('toggle-save', pin.slug)"
           >
             {{ pin.saved ? 'Enregistré' : 'Enregistrer' }}
           </button>
@@ -101,7 +101,7 @@ const columns = computed(() => {
             <div class="flex items-center gap-1.5">
               <button
                 class="w-8 h-8 rounded-full bg-white/95 flex items-center justify-center text-neutral-700 shadow-md hover:bg-white transition"
-                @click.stop="emit('more', pin.id)"
+                @click.stop="emit('more', pin.slug)"
               >
                 <span class="material-symbols-outlined text-lg">more_horiz</span>
               </button>
@@ -116,7 +116,7 @@ const columns = computed(() => {
           </h2>
 
           <router-link
-            :to="`/profile/${pin.userId}`"
+            :to="`/profile/${pin.username}`"
             class="mt-1.5 flex items-center gap-2 hover:bg-neutral-100 p-1 rounded-lg transition-colors"
             @click.stop
           >

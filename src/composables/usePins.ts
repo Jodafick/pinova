@@ -21,10 +21,12 @@ function mapDjangoPinToFrontend(djangoPin: any): Pin {
   const author = djangoPin.author_profile || {}
   return {
     id: djangoPin.id,
+    slug: djangoPin.slug,
     title: djangoPin.title,
     description: djangoPin.description,
     imageUrl: getFullMediaUrl(djangoPin.image),
     user: author.display_name || author.username || 'Inconnu',
+    username: author.username || 'inconnu',
     userId: author.id,
     userAvatarUrl: getFullMediaUrl(author.avatar),
     userAvatarColor: author.avatar_color || 'bg-gray-400',
@@ -125,10 +127,10 @@ export function usePins() {
     }
   }
 
-  async function toggleLike(pinId: number) {
+  async function toggleLike(pinSlug: string) {
     try {
-      const response = await api.post(`pins/${pinId}/like/`)
-      const pin = pins.value.find(p => p.id === pinId)
+      const response = await api.post(`pins/${pinSlug}/like/`)
+      const pin = pins.value.find(p => p.slug === pinSlug)
       if (pin) {
         pin.liked = response.data.status === 'liked'
         pin.stats.reactions = response.data.likes_count
@@ -140,9 +142,9 @@ export function usePins() {
     }
   }
 
-  async function fetchComments(pinId: number) {
+  async function fetchComments(pinSlug: string) {
     try {
-      const response = await api.get(`pins/${pinId}/comments/`)
+      const response = await api.get(`pins/${pinSlug}/comments/`)
       return response.data
     } catch (err) {
       console.error('Error fetching comments:', err)
@@ -150,10 +152,10 @@ export function usePins() {
     }
   }
 
-  async function addComment(pinId: number, text: string) {
+  async function addComment(pinSlug: string, text: string) {
     try {
-      const response = await api.post(`pins/${pinId}/comments/`, { text })
-      const pin = pins.value.find(p => p.id === pinId)
+      const response = await api.post(`pins/${pinSlug}/comments/`, { text })
+      const pin = pins.value.find(p => p.slug === pinSlug)
       if (pin) {
         pin.stats.reactions += 0 // On pourrait mettre à jour le count ici si on l'avait séparément
       }
@@ -184,14 +186,14 @@ export function usePins() {
     }
   }
 
-  function getPin(id: number): Pin | undefined {
-    return pins.value.find((p) => p.id === id)
+  function getPin(slug: string): Pin | undefined {
+    return pins.value.find((p) => p.slug === slug)
   }
 
-  async function toggleSave(id: number) {
+  async function toggleSave(slug: string) {
     try {
-      const response = await api.post(`pins/${id}/save/`)
-      const pin = pins.value.find((p) => p.id === id)
+      const response = await api.post(`pins/${slug}/save/`)
+      const pin = pins.value.find((p) => p.slug === slug)
       if (pin) {
         pin.saved = response.data.status === 'saved'
         pin.stats.saves = response.data.saves_count
@@ -217,14 +219,14 @@ export function usePins() {
     }
   }
 
-  async function toggleFollow(profileId: number) {
+  async function toggleFollow(username: string) {
     try {
-      const response = await api.post(`profiles/${profileId}/follow/`)
+      const response = await api.post(`profiles/${username}/follow/`)
       const isFollowed = response.data.status === 'followed'
       
       // Update all pins from this author
       pins.value.forEach(pin => {
-        if (pin.userId === profileId) {
+        if (pin.username === username) {
           pin.isFollowing = isFollowed
         }
       })

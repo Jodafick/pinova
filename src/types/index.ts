@@ -1,9 +1,11 @@
 export type Pin = {
   id: number
+  slug: string
   title: string
   description: string
   imageUrl: string
   user: string
+  username: string
   userId: number
   userAvatarUrl?: string
   userAvatarColor: string

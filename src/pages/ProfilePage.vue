@@ -37,16 +37,16 @@ const handleCreateBoard = async () => {
 }
 
 const isMyProfile = computed(() => {
-  return !route.params.id || (currentUser.value && Number(route.params.id) === currentUser.value.id)
+  return !route.params.username || (currentUser.value && route.params.username === currentUser.value.username)
 })
 
 const loadProfile = async () => {
   loading.value = true
-  if (!route.params.id) {
+  if (!route.params.username) {
     profileUser.value = currentUser.value
     isFollowing.value = false
   } else {
-    profileUser.value = await fetchUserProfile(route.params.id as string)
+    profileUser.value = await fetchUserProfile(route.params.username as string)
     isFollowing.value = profileUser.value?.isFollowing || false
   }
   loading.value = false
@@ -58,7 +58,7 @@ const handleFollow = async () => {
     return
   }
   if (profileUser.value) {
-    const res = await apiToggleFollow(profileUser.value.id)
+    const res = await apiToggleFollow(profileUser.value.username)
     isFollowing.value = res.status === 'followed'
     // Refresh stats
     if (profileUser.value) {
@@ -72,7 +72,7 @@ onMounted(async () => {
   if (pins.value.length === 0) fetchPins()
 })
 
-watch(() => route.params.id, loadProfile)
+watch(() => route.params.username, loadProfile)
 
 type Tab = 'created' | 'saved'
 const activeTab = ref<Tab>('created')
@@ -95,17 +95,20 @@ const displayPins = computed(() => {
   return activeTab.value === 'created' ? createdPins.value : savedPins.value
 })
 
-const handleToggleSave = (id: number) => {
+const handleToggleSave = (slug: string) => {
   if (!currentUser.value) {
     router.push('/login')
     return
   }
-  toggleSave(id)
-  toggleSavePin(id)
+  toggleSave(slug)
+  const pin = pins.value.find(p => p.slug === slug)
+  if (pin) {
+    toggleSavePin(pin.id)
+  }
 }
 
-const openPin = (id: number) => {
-  router.push(`/pin/${id}`)
+const openPin = (slug: string) => {
+  router.push(`/pin/${slug}`)
 }
 </script>
 

@@ -76,19 +76,19 @@ export function useAuth() {
     }
   }
 
-  async function fetchUserProfile(id: string | number): Promise<User | null> {
+  async function fetchUserProfile(username: string): Promise<User | null> {
     try {
-      const response = await api.get(`profiles/${id}/`)
+      const response = await api.get(`profiles/${username}/`)
       return mapDjangoUserToFrontend(response.data)
     } catch (err) {
-      console.error(`❌ Erreur lors du chargement du profil ${id}:`, err)
+      console.error(`❌ Erreur lors du chargement du profil ${username}:`, err)
       return null
     }
   }
 
-  async function toggleFollow(profileId: number) {
+  async function toggleFollow(username: string) {
     try {
-      const response = await api.post(`profiles/${profileId}/follow/`)
+      const response = await api.post(`profiles/${username}/follow/`)
       return response.data
     } catch (err) {
       console.error('Error toggling follow:', err)

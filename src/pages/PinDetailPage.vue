@@ -12,28 +12,30 @@ const router = useRouter()
 const { getPin, toggleSave, pins, fetchPins, formatCount, toggleLike, fetchComments, addComment: apiAddComment, toggleFollow, loading: pinsLoading } = usePins()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
-const pinId = computed(() => Number(route.params.id))
-const pin = computed(() => getPin(pinId.value))
+const pinSlug = computed(() => route.params.slug as string)
+const pin = computed(() => getPin(pinSlug.value))
 
 const commentText = ref('')
 const comments = ref<any[]>([])
 
 const fetchPinComments = async () => {
-  if (pinId.value) {
-    comments.value = await fetchComments(pinId.value)
+  if (pinSlug.value) {
+    comments.value = await fetchComments(pinSlug.value)
   }
 }
 
 const relatedPins = computed(() => {
   if (!pin.value) return []
-  return pins.value.filter((p) => p.topic === pin.value?.topic && p.id !== pin.value?.id).slice(0, 8)
+  return pins.value.filter((p) => p.topic === pin.value?.topic && p.slug !== pin.value?.slug).slice(0, 8)
 })
 
 onMounted(async () => {
   if (pins.value.length === 0 || !pin.value) {
     await fetchPins()
   }
-  fetchPinComments()
+  if (pinSlug.value) {
+    fetchPinComments()
+  }
 })
 
 const handleLike = async () => {
@@ -42,7 +44,7 @@ const handleLike = async () => {
     return
   }
   if (pin.value) {
-    await toggleLike(pin.value.id)
+    await toggleLike(pin.value.slug)
   }
 }
 
@@ -52,7 +54,7 @@ const handleSave = () => {
     return
   }
   if (!pin.value) return
-  toggleSave(pin.value.id)
+  toggleSave(pin.value.slug)
   toggleSavePin(pin.value.id)
 }
 
@@ -61,15 +63,15 @@ const handleFollow = async () => {
     router.push('/login')
     return
   }
-  if (pin.value && pin.value.userId) {
-    await toggleFollow(pin.value.userId)
+  if (pin.value && pin.value.username) {
+    await toggleFollow(pin.value.username)
   }
 }
 
 const handleAddComment = async () => {
   if (!commentText.value.trim() || !isAuthenticated.value || !pin.value) return
   try {
-    const newComment = await apiAddComment(pin.value.id, commentText.value)
+    const newComment = await apiAddComment(pin.value.slug, commentText.value)
     comments.value.unshift(newComment)
     commentText.value = ''
   } catch (err) {
@@ -86,8 +88,8 @@ const goBack = () => {
   router.back()
 }
 
-const openRelatedPin = (id: number) => {
-  router.push(`/pin/${id}`)
+const openRelatedPin = (slug: string) => {
+  router.push(`/pin/${slug}`)
 }
 </script>
 
@@ -178,7 +180,7 @@ const openRelatedPin = (id: number) => {
             <div class="mt-8 flex items-center justify-between">
               <router-link
                 v-if="pin"
-                :to="`/profile/${pin.userId}`"
+                :to="`/profile/${pin.username}`"
                 class="flex items-center gap-3 hover:bg-neutral-50 p-2 rounded-xl transition-colors"
               >
                 <div

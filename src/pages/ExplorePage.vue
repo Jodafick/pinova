@@ -76,12 +76,12 @@ const selectCategory = (topic: string) => {
   selectedCategory.value = selectedCategory.value === topic ? null : topic
 }
 
-const handleToggleSave = (id: number) => {
-  toggleSave(id)
+const handleToggleSave = (slug: string) => {
+  toggleSave(slug)
 }
 
-const openPin = (id: number) => {
-  router.push(`/pin/${id}`)
+const openPin = (slug: string) => {
+  router.push(`/pin/${slug}`)
 }
 </script>
 
