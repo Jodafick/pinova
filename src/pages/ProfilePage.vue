@@ -56,6 +56,9 @@ watch(() => route.params.username, loadProfile)
 
 type Tab = 'created' | 'saved'
 const activeTab = ref<Tab>('created')
+const showCreateBoard = ref(false)
+const newBoardName = ref('')
+const newBoardPrivate = ref(false)
 
 const createdPins = computed(() => {
   if (!profileUser.value) return []
@@ -74,6 +77,24 @@ const savedPins = computed(() => {
 const displayPins = computed(() => {
   return activeTab.value === 'created' ? createdPins.value : savedPins.value
 })
+
+const boards = computed(() => profileUser.value?.boards ?? [])
+
+const handleCreateBoard = () => {
+  if (!profileUser.value || !newBoardName.value.trim()) return
+
+  const nextBoard = {
+    id: Date.now(),
+    name: newBoardName.value.trim(),
+    pinCount: 0,
+    isPrivate: newBoardPrivate.value,
+  }
+
+  profileUser.value.boards = [...(profileUser.value.boards ?? []), nextBoard]
+  newBoardName.value = ''
+  newBoardPrivate.value = false
+  showCreateBoard.value = false
+}
 
 const handleToggleSave = (slug: string) => {
   if (!currentUser.value) {
@@ -153,11 +174,11 @@ const openPin = (slug: string) => {
     </section>
 
     <!-- Boards section -->
-    <section class="mb-10" v-if="profileUser.boards.length > 0 || isMyProfile">
+    <section class="mb-10" v-if="boards.length > 0 || isMyProfile">
       <h2 class="text-lg font-semibold text-neutral-900 mb-4">Tableaux</h2>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <div
-          v-for="board in profileUser.boards"
+          v-for="board in boards"
           :key="board.id"
           class="group relative bg-neutral-100 rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer hover:shadow-md transition"
         >
