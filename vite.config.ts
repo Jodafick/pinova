@@ -34,34 +34,6 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,vue}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/images\.pexels\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'pexels-images-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'unsplash-images-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
             urlPattern: new RegExp(`^${API_BASE_URL.replace(/\//g, '\\/')}/api/(pins|me|profiles)/.*`, 'i'),
             handler: 'NetworkFirst',
             options: {
@@ -71,20 +43,6 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 * 7, // 1 Week for profile/pins metadata
               },
               networkTimeoutSeconds: 10,
-            },
-          },
-          {
-            urlPattern: new RegExp(`^${API_BASE_URL.replace(/\//g, '\\/')}/media/.*`, 'i'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'local-media-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
             },
           }
         ]

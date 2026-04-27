@@ -197,20 +197,6 @@ export function usePins() {
       if (pin) {
         pin.saved = response.data.status === 'saved'
         pin.stats.saves = response.data.saves_count
-        
-        // Cache image proactively if saved
-        if (pin.saved && pin.imageUrl && 'caches' in window) {
-          try {
-            const cache = await caches.open('local-media-cache')
-            const response = await fetch(pin.imageUrl, { mode: 'no-cors' })
-            if (response.ok || response.type === 'opaque') {
-              await cache.put(pin.imageUrl, response)
-              console.log('✅ Image cached for offline:', pin.imageUrl)
-            }
-          } catch (e) {
-            console.warn('Failed to proactively cache image:', e)
-          }
-        }
       }
       return response.data
     } catch (err) {
