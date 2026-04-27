@@ -50,7 +50,7 @@ export function usePins() {
     return Array.from(set).sort()
   })
 
-  async function fetchPins(reset = false) {
+  async function fetchPins(reset = false, topic?: string | null) {
     if (reset) {
       currentPage.value = 1
       hasNextPage.value = true
@@ -66,7 +66,10 @@ export function usePins() {
     console.log(`📡 Fetching pins page ${currentPage.value}...`)
     try {
       const response = await api.get('pins/', {
-        params: { page: currentPage.value }
+        params: {
+          page: currentPage.value,
+          ...(topic ? { topic } : {}),
+        }
       })
       
       const pinsData = response.data.results || response.data
