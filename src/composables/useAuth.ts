@@ -12,7 +12,6 @@ const defaultUser: User = {
   bio: 'Développeur et passionné de design.',
   followers: 120,
   following: 85,
-  boards: [],
   savedPins: [],
 }
 
@@ -42,14 +41,6 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     followers: profile.followers_count || 0,
     following: profile.following_count || 0,
     isFollowing: profile.is_following || false,
-    boards: (djangoUser.boards || []).map((b: any) => ({
-      id: b.id,
-      name: b.name,
-      description: b.description,
-      coverUrl: '', // Could be the image of the first pin in the board
-      pinCount: b.pin_count || 0,
-      isPrivate: b.is_private || false
-    })),
     savedPins: djangoUser.saved_pins || [],
   }
 }
@@ -229,26 +220,6 @@ export function useAuth() {
     console.log('🚪 Logged out successfully.')
   }
 
-  async function createBoard(data: { name: string, description?: string, is_private?: boolean }) {
-    try {
-      const response = await api.post('boards/', data)
-      if (currentUser.value) {
-        currentUser.value.boards.push({
-          id: response.data.id,
-          name: response.data.name,
-          description: response.data.description,
-          coverUrl: '',
-          pinCount: 0,
-          isPrivate: response.data.is_private
-        })
-      }
-      return response.data
-    } catch (err) {
-      console.error('Error creating board:', err)
-      throw err
-    }
-  }
-
   function toggleSavePin(pinId: number) {
     if (!currentUser.value) return
     const index = currentUser.value.savedPins.indexOf(pinId)
@@ -273,7 +244,6 @@ export function useAuth() {
     toggleSavePin,
     toggleFollow,
     fetchCurrentUser,
-    fetchUserProfile,
-    createBoard
+    fetchUserProfile
   }
 }

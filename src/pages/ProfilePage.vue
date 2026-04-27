@@ -9,32 +9,12 @@ import PinSkeleton from '../components/PinSkeleton.vue'
 
 const router = useRouter()
 const route = useRoute()
-const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow, createBoard: apiCreateBoard } = useAuth()
+const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow } = useAuth()
 const { pins, toggleSave, fetchPins, loading: pinsLoading } = usePins()
 
 const profileUser = ref<User | null>(null)
 const loading = ref(true)
 const isFollowing = ref(false)
-const showCreateBoard = ref(false)
-const newBoardName = ref('')
-const newBoardPrivate = ref(false)
-
-const handleCreateBoard = async () => {
-  if (!newBoardName.value.trim()) return
-  try {
-    await apiCreateBoard({
-      name: newBoardName.value,
-      is_private: newBoardPrivate.value
-    })
-    showCreateBoard.value = false
-    newBoardName.value = ''
-    newBoardPrivate.value = false
-    // Refresh profile to show new board
-    await loadProfile()
-  } catch (err) {
-    console.error('Failed to create board:', err)
-  }
-}
 
 const isMyProfile = computed(() => {
   return !route.params.username || (currentUser.value && route.params.username === currentUser.value.username)

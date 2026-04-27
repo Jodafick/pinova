@@ -19,17 +19,7 @@ export type Pin = {
   saved?: boolean
   liked?: boolean
   isFollowing?: boolean
-  boardId?: number
   createdAt: string
-}
-
-export type Board = {
-  id: number
-  name: string
-  description: string
-  coverUrl: string
-  pinCount: number
-  isPrivate: boolean
 }
 
 export type User = {
@@ -43,7 +33,6 @@ export type User = {
   followers: number
   following: number
   isFollowing?: boolean
-  boards: Board[]
   savedPins: number[]
 }
 
