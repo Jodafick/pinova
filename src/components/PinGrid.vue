@@ -18,6 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const columnCount = ref(2)
+const loadedImages = ref<Record<number, boolean>>({})
 
 const updateColumnCount = () => {
   const width = window.innerWidth
@@ -46,6 +47,12 @@ const columns = computed(() => {
   })
   return cols
 })
+
+const markImageLoaded = (pinId: number) => {
+  loadedImages.value[pinId] = true
+}
+
+const isImageLoaded = (pinId: number) => !!loadedImages.value[pinId]
 </script>
 
 <template>
@@ -62,12 +69,18 @@ const columns = computed(() => {
         @click="emit('open-pin', pin.slug)"
       >
         <!-- Image container -->
-        <div class="relative overflow-hidden rounded-2xl">
+        <div class="relative overflow-hidden rounded-2xl bg-neutral-100 aspect-[3/4]">
+          <div
+            v-if="!isImageLoaded(pin.id)"
+            class="absolute inset-0 animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200"
+          ></div>
           <img
             :src="pin.imageUrl"
             :alt="pin.title"
-            class="w-full object-cover group-hover:scale-105 transition-transform duration-500"
+            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
+            :class="isImageLoaded(pin.id) ? 'opacity-100' : 'opacity-0'"
             loading="lazy"
+            @load="markImageLoaded(pin.id)"
           />
 
           <!-- Dark overlay on hover -->
