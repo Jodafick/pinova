@@ -14,6 +14,8 @@ const searchQuery = ref('')
 const showUserMenu = ref(false)
 const showNotifications = ref(false)
 const showSearchResults = ref(false)
+const showMessages = ref(false)
+const conversations = ref<any[]>([])
 const isOffline = ref(!navigator.onLine)
 
 window.addEventListener('online', () => (isOffline.value = false))
@@ -50,6 +52,20 @@ const fetchNotifications = async () => {
     console.error('Error fetching notifications:', err)
   }
 }
+const fetchConversations = async () => {
+  if (!isAuthenticated.value) return
+  try {
+    const response = await api.get('conversations/')
+    conversations.value = response.data.results || response.data
+  } catch (err) {
+    console.error('Error fetching conversations:', err)
+  }
+}
+
+const handleConversationClick = (conversation: any) => {
+  router.push(`/messages/${conversation.id}`)
+  closeDropdowns()
+}
 
 const markAllAsRead = async () => {
   try {
@@ -77,6 +93,7 @@ const handleNotificationClick = async (notification: any) => {
 
 onMounted(() => {
   fetchNotifications()
+  fetchConversations()
 })
 
 const handleSearch = () => {
@@ -96,6 +113,7 @@ const closeDropdowns = () => {
   showUserMenu.value = false
   showNotifications.value = false
   showSearchResults.value = false
+  showMessages.value = false
 }
 </script>
 
@@ -200,7 +218,7 @@ const closeDropdowns = () => {
         <div class="relative z-30">
           <button
             class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 text-neutral-600 transition relative"
-            @click.stop="showNotifications = !showNotifications; showUserMenu = false"
+            @click.stop="showNotifications = !showNotifications; showUserMenu = false; showMessages = false"
           >
             <span class="material-symbols-outlined text-xl">notifications</span>
             <span v-if="notifications.some(n => !n.is_read)" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white"></span>
@@ -253,25 +271,82 @@ const closeDropdowns = () => {
         </div>
 
         <!-- Messages -->
-        <button
+        <!-- <button
           class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 text-neutral-600 transition"
           @click="router.push('/')"
         >
           <span class="material-symbols-outlined text-xl">chat_bubble_outline</span>
-        </button>
+        </button> -->
+
+        <!-- Messages -->
+        <div class="relative z-30">
+          <button
+            class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 text-neutral-600 transition relative"
+            @click.stop="showMessages = !showMessages; showUserMenu = false; showNotifications = false"
+          >
+            <span class="material-symbols-outlined text-xl">chat_bubble_outline</span>
+            <span v-if="conversations.some(c => c.unread_count > 0)" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white"></span>
+          </button>
+
+          <!-- Messages dropdown -->
+          <div
+            v-if="showMessages"
+            class="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+          >
+            <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
+              <h3 class="font-semibold text-neutral-900">Messages</h3>
+              <router-link
+                to="/messages"
+                class="text-xs text-pink-600 font-medium hover:underline"
+                @click="closeDropdowns"
+              >
+                Voir tout
+              </router-link>
+            </div>
+            <div class="max-h-80 overflow-y-auto">
+              <div v-if="conversations.length === 0" class="p-8 text-center text-neutral-400">
+                <span class="material-symbols-outlined text-4xl mb-2">chat_bubble_outline</span>
+                <p class="text-sm">Aucun message</p>
+              </div>
+              <div
+                v-for="conversation in conversations"
+                :key="conversation.id"
+                class="p-4 hover:bg-neutral-50 transition flex items-start gap-3 border-b border-neutral-50 last:border-0 cursor-pointer"
+                :class="{ 'bg-blue-50/30': conversation.unread_count > 0 }"
+                @click="handleConversationClick(conversation)"
+              >
+                <div class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 overflow-hidden">
+                  <img
+                    v-if="conversation.other_user?.avatarUrl"
+                    :src="conversation.other_user.avatarUrl"
+                    class="w-full h-full object-cover"
+                  />
+                  <span v-else class="text-sm font-bold text-neutral-500">
+                    {{ conversation.other_user?.username?.slice(0, 2).toUpperCase() }}
+                  </span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-neutral-800">@{{ conversation.other_user?.username }}</p>
+                  <p class="text-xs text-neutral-400 truncate mt-0.5">{{ conversation.last_message }}</p>
+                </div>
+                <div v-if="conversation.unread_count > 0" class="w-2 h-2 rounded-full bg-pink-600 mt-2 shrink-0"></div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- User menu -->
         <div class="relative z-30">
           <button
-            class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 transition"
-            @click.stop="showUserMenu = !showUserMenu; showNotifications = false"
+            class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 transition border-2 border-[#E92389] focus:border-pink-500 focus:outline-none avatar-shadow hover:border-pink-500 hover:scale-105"
+            @click.stop="showUserMenu = !showUserMenu; showNotifications = false; showMessages = false"
           >
             <div
-              class="w-8 h-8 flex items-center justify-center rounded-full text-white text-xs font-bold overflow-hidden avatar-shadow"
+              class="w-8 h-8 flex items-center justify-center rounded-full  text-xs font-bold overflow-hidden avatar-shadow"
               :class="currentUser?.avatarColor || 'bg-neutral-800'"
             >
               <img v-if="currentUser?.avatarUrl" :src="currentUser.avatarUrl" class="w-full h-full object-cover rounded-full" />
-              <span v-else class="avatar-text">{{ userInitials }}</span>
+              <span v-else class="avatar-text text-[#E92389]">{{ userInitials }}</span>
             </div>
           </button>
 
