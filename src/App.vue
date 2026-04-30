@@ -7,9 +7,9 @@ import { useI18n } from './i18n'
 import GlobalHeader from './components/GlobalHeader.vue'
 
 const route = useRoute()
-const { fetchCurrentUser, isAuthenticated, isInitializing } = useAuth()
+const { fetchCurrentUser, isAuthenticated, isInitializing, currentUser } = useAuth()
 const { fetchPins } = usePins()
-const { t, setLang, currentLang } = useI18n()
+const { t, setLang, currentLang, languages } = useI18n()
 // Apply current language on app start (sets html lang/dir attributes).
 setLang(currentLang.value)
 
@@ -52,6 +52,10 @@ onMounted(async () => {
       fetchCurrentUser(),
       fetchPins()
     ])
+    const preferred = currentUser.value?.preferredLanguage
+    if (preferred && languages.some((lang) => lang.code === preferred)) {
+      setLang(preferred as typeof languages[number]['code'])
+    }
     console.log('✅ Initialization complete.')
   } catch (err) {
     console.error('❌ Initialization error:', err)

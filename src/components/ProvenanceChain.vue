@@ -4,41 +4,47 @@ import { useI18n } from '../i18n'
 
 const { t } = useI18n()
 
-defineProps<{
+const open = ref(false)
+
+const props = defineProps<{
   creator: string
   creatorAvatar: string
   certifiedAt?: string
   hash?: string
+  events?: {
+    id: number
+    actor: string
+    action: string
+    current_hash: string
+    created_at: string
+  }[]
 }>()
 
-const open = ref(false)
-
-const chain = computed(() => [
-  {
-    type: 'creation',
-    user: 'sarah_design',
-    label: t('provenance.step.creation'),
-    date: '12/01/2026',
-    avatar: 'bg-pink-500',
-    verified: true,
-  },
-  {
-    type: 'remix',
-    user: 'mohamed',
-    label: t('provenance.step.remix'),
-    date: '03/03/2026',
-    avatar: 'bg-blue-500',
-    verified: true,
-  },
-  {
-    type: 'repin',
-    user: 'lea_archi',
-    label: t('provenance.step.repin'),
-    date: '18/04/2026',
-    avatar: 'bg-amber-500',
-    verified: true,
-  },
-])
+const chain = computed(() => {
+  if (props.events && props.events.length > 0) {
+    return props.events.map((event, index) => {
+      const actionType = event.action === 'create' ? 'creation' : event.action === 'save' ? 'repin' : 'remix'
+      return {
+        type: actionType,
+        user: event.actor,
+        label: actionType === 'creation' ? t('provenance.step.creation') : actionType === 'repin' ? t('provenance.step.repin') : t('provenance.step.remix'),
+        date: new Date(event.created_at).toLocaleDateString(),
+        avatar: ['bg-pink-500', 'bg-blue-500', 'bg-amber-500', 'bg-purple-500'][index % 4] || 'bg-neutral-500',
+        verified: true,
+      }
+    })
+  }
+  return [
+    {
+      type: 'creation',
+      user: 'sarah_design',
+      label: t('provenance.step.creation'),
+      date: '12/01/2026',
+      avatar: 'bg-pink-500',
+      verified: true,
+    },
+  ]
+})
 </script>
 
 <template>
@@ -96,7 +102,7 @@ const chain = computed(() => [
                 class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ring-4 ring-white relative z-10"
                 :class="step.avatar"
               >
-                {{ step.user[0].toUpperCase() }}
+                {{ step.user.charAt(0).toUpperCase() }}
               </div>
               <div class="flex-1 min-w-0 pt-0.5">
                 <div class="flex items-center gap-1.5 flex-wrap">

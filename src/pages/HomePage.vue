@@ -81,7 +81,7 @@ const openMore = (slug: string) => {
       <div class="flex items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-1">
-            {{ currentUser ? t('home.greetingNamed', { name: currentUser.displayName.split(' ')[0] }) : t('home.greeting') + ' !' }}
+            {{ currentUser ? t('home.greetingNamed', { name: currentUser.displayName.split(' ')[0] || currentUser.displayName }) : t('home.greeting') + ' !' }}
           </h1>
           <p class="text-sm sm:text-base text-neutral-500">
             {{ t('home.subtitle') }}

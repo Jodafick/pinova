@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import PrivateTags from '../components/PrivateTags.vue'
+import api from '../api'
 
 const { t } = useI18n()
 
@@ -30,8 +31,20 @@ const privateTags = ref<string[]>([])
 
 // Crédit créateur certifié
 const certifyCredit = ref(true)
+const dynamicTopics = ref<string[]>([])
 
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
+const resolvedTopics = computed(() => dynamicTopics.value.length > 0 ? dynamicTopics.value : topics.value)
+
+onMounted(async () => {
+  try {
+    const lang = navigator.language?.split('-')[0] || 'fr'
+    const response = await api.get('pins/topics/', { params: { lang } })
+    dynamicTopics.value = (response.data || []).map((item: any) => item.name)
+  } catch (err) {
+    console.warn('Impossible de charger les catégories dynamiques', err)
+  }
+})
 
 const setImageFile = (file: File) => {
   if (!file.type.startsWith('image/')) {
@@ -71,6 +84,9 @@ const submitPin = async () => {
     formData.append('description', description.value || '')
     formData.append('image', imageFile.value)
     formData.append('topic', topic.value || 'Général')
+    formData.append('visibility', visibility.value)
+    formData.append('certified_credit', certifyCredit.value ? 'true' : 'false')
+    privateTags.value.forEach((tag) => formData.append('private_tags_input', tag))
     
     if (currentUser.value) {
       formData.append('author', currentUser.value.id.toString())
@@ -224,7 +240,7 @@ const submitPin = async () => {
                 class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition appearance-none bg-white"
               >
                 <option value="">{{ t('create.field.category.placeholder') }}</option>
-                <option v-for="topicName in topics" :key="topicName" :value="topicName">{{ topicName }}</option>
+                <option v-for="topicName in resolvedTopics" :key="topicName" :value="topicName">{{ topicName }}</option>
                 <option value="Autre">{{ t('create.field.category.other') }}</option>
               </select>
               <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">expand_more</span>

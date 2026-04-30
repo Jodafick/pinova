@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -17,7 +17,23 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const { getPin, toggleSave, pins, fetchPins, formatCount, toggleLike, toggleFollow, loading: pinsLoading } = usePins()
+const {
+  getPin,
+  toggleSave,
+  pins,
+  fetchPins,
+  formatCount,
+  toggleLike,
+  toggleFollow,
+  loading: pinsLoading,
+  fetchComments,
+  addComment,
+  translateComment,
+  translatePinDescription,
+  fetchProvenance,
+  fetchPrivateTags,
+  savePrivateTags,
+} = usePins()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
 const pinSlug = computed(() => route.params.slug as string)
@@ -32,6 +48,14 @@ onMounted(async () => {
   if (pins.value.length === 0 || !pin.value) {
     await fetchPins()
   }
+  await loadPinMetadata()
+})
+
+watch(pinSlug, async () => {
+  if (!pin.value) {
+    await fetchPins(true)
+  }
+  await loadPinMetadata()
 })
 
 const handleLike = async () => {
@@ -64,64 +88,80 @@ const handleFollow = async () => {
   }
 }
 
-// --- UI demo : commentaires riches (gif + mentions + threads) ---
-const richComments = ref([
-  {
-    id: 1,
-    user: 'Sarah Design',
-    username: 'sarah_design',
-    avatar: 'bg-pink-500',
-    text: 'J\'adore cette idée @mohamed ! La palette est juste parfaite 🌸',
-    gif: null as string | null,
-    createdAt: 'il y a 2 h',
-    liked: true,
-    likes: 12,
-    originalLang: 'EN',
-    translated: false,
-    replies: [
-      {
-        id: 11,
-        user: 'Mohamed',
-        username: 'mohamed',
-        avatar: 'bg-blue-500',
-        text: 'Merci @sarah_design ! Inspiré de ton dernier board 😍',
-        gif: null,
-        createdAt: 'il y a 1 h',
-        likes: 4,
-      },
-    ],
-  },
-  {
-    id: 2,
-    user: 'Léa Architecte',
-    username: 'lea_archi',
-    avatar: 'bg-amber-500',
-    text: 'À épingler immédiatement !',
-    gif: 'https://media.tenor.com/c0jElkPm00MAAAAi/fire-flame.gif',
-    createdAt: 'il y a 30 min',
-    likes: 7,
-    replies: [],
-  },
-])
+type UiComment = {
+  id: number
+  user: string
+  username: string
+  avatar: string
+  text: string
+  gif?: string | null
+  createdAt: string
+  liked?: boolean
+  likes: number
+  translated?: boolean
+  originalLang?: string
+  replies?: UiComment[]
+}
 
-const handleRichSubmit = (payload: { text: string; gif?: string | null; replyTo?: string | null; parentId?: number }) => {
-  const newComment = {
-    id: Date.now(),
-    user: currentUser.value?.displayName || 'Vous',
-    username: currentUser.value?.username || 'vous',
-    avatar: currentUser.value?.avatarColor || 'bg-pink-500',
+const richComments = ref<UiComment[]>([])
+const descriptionText = ref('')
+const provenanceHash = ref('')
+const provenanceEvents = ref<any[]>([])
+const privateTags = ref<string[]>([])
+
+const mapComment = (comment: any): UiComment => ({
+  id: comment.id,
+  user: comment.display_name || comment.username,
+  username: comment.username,
+  avatar: comment.avatar_color || 'bg-pink-500',
+  text: comment.translated_text || comment.text || '',
+  gif: comment.gif_url || null,
+  createdAt: new Date(comment.created_at).toLocaleString(),
+  likes: 0,
+  translated: !!comment.translated_text,
+  originalLang: comment.original_language || undefined,
+  replies: (comment.replies || []).map(mapComment),
+})
+
+const loadPinMetadata = async () => {
+  if (!pin.value) return
+  descriptionText.value = pin.value.description
+  try {
+    const comments = await fetchComments(pin.value.slug)
+    richComments.value = (comments || []).map(mapComment)
+  } catch (err) {
+    console.error('Erreur lors du chargement des commentaires', err)
+  }
+  try {
+    const provenance = await fetchProvenance(pin.value.slug)
+    provenanceHash.value = provenance?.root_hash || pin.value.provenanceRootHash || ''
+    provenanceEvents.value = provenance?.events || []
+  } catch (err) {
+    console.error('Erreur lors du chargement de la provenance', err)
+    provenanceHash.value = pin.value.provenanceRootHash || ''
+    provenanceEvents.value = []
+  }
+  if (isAuthenticated.value) {
+    try {
+      privateTags.value = await fetchPrivateTags(pin.value.slug)
+    } catch (err) {
+      console.error('Erreur lors du chargement des tags privés', err)
+      privateTags.value = []
+    }
+  }
+}
+
+const handleRichSubmit = async (payload: { text: string; gif?: string | null; replyTo?: string | null; parentId?: number }) => {
+  if (!pin.value || !isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  await addComment(pin.value.slug, {
     text: payload.text,
     gif: payload.gif || null,
-    createdAt: 'à l\'instant',
-    likes: 0,
-    replies: [] as any[],
-  }
-  if (payload.parentId) {
-    const parent = richComments.value.find(c => c.id === payload.parentId)
-    if (parent) parent.replies = [...(parent.replies || []), newComment]
-  } else {
-    richComments.value.unshift(newComment as any)
-  }
+    parentId: payload.parentId,
+  })
+  await loadPinMetadata()
 }
 
 const handleLikeComment = (id: number) => {
@@ -132,13 +172,25 @@ const handleLikeComment = (id: number) => {
   }
 }
 
-const handleTranslateComment = (id: number) => {
-  const c = richComments.value.find(c => c.id === id)
-  if (c) c.translated = !c.translated
+const handleTranslateComment = async (id: number) => {
+  await translateComment(id)
+  await loadPinMetadata()
 }
 
-// Mode privé du pin (UI demo)
-const pinVisibility = ref<'public' | 'followers' | 'private'>('public')
+const pinVisibility = computed<'public' | 'followers' | 'private'>(() => {
+  return (pin.value?.visibility as 'public' | 'followers' | 'private') || 'public'
+})
+
+const handleTranslateDescription = async () => {
+  if (!pin.value) return
+  const result = await translatePinDescription(pin.value.slug)
+  descriptionText.value = result?.translated || pin.value.description
+}
+
+const handlePrivateTagsUpdate = async (tags: string[]) => {
+  if (!pin.value || !isAuthenticated.value) return
+  privateTags.value = await savePrivateTags(pin.value.slug, tags)
+}
 
 const handleToggleSaveRelated = (slug: string) => {
   toggleSave(slug)
@@ -254,11 +306,18 @@ const openRelatedPin = (slug: string) => {
               </span>
             </div>
             <div class="mb-6">
-              <TranslateButton
-                :original="pin.description"
-                original-lang="EN"
-                target-lang="FR"
-              />
+              <div class="space-y-2">
+                <p class="text-sm text-neutral-700 leading-relaxed">
+                  {{ descriptionText || pin.description }}
+                </p>
+                <TranslateButton :original="descriptionText || pin.description" original-lang="AUTO" target-lang="FR" />
+                <button
+                  class="text-xs font-semibold text-pink-600 hover:text-pink-700"
+                  @click="handleTranslateDescription"
+                >
+                  {{ t('comment.translate') }}
+                </button>
+              </div>
             </div>
 
             <!-- Crédit créateur certifié (provenance) -->
@@ -266,12 +325,18 @@ const openRelatedPin = (slug: string) => {
               <ProvenanceChain
                 :creator="pin.user"
                 :creator-avatar="pin.userAvatarColor"
+                :hash="provenanceHash || pin.provenanceRootHash"
+                :events="provenanceEvents"
               />
             </div>
 
             <!-- Tags privés -->
             <div class="mb-6">
-              <PrivateTags />
+              <PrivateTags
+                :model-value="privateTags"
+                :editable="isAuthenticated"
+                @update:model-value="handlePrivateTagsUpdate"
+              />
             </div>
 
             <!-- Author -->
@@ -318,6 +383,16 @@ const openRelatedPin = (slug: string) => {
               <span class="flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-lg">sell</span>
                 {{ pin.topic }}
+              </span>
+            </div>
+
+            <div v-if="pin.hashtags && pin.hashtags.length" class="mb-5 flex flex-wrap gap-2">
+              <span
+                v-for="tag in pin.hashtags"
+                :key="tag"
+                class="px-2.5 py-1 rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600"
+              >
+                {{ tag }}
               </span>
             </div>
 

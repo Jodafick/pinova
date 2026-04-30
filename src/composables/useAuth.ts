@@ -8,17 +8,23 @@ const defaultUser: User = {
   username: 'admin',
   displayName: 'Admin Pinova',
   email: 'admin@pinova.local',
+  preferredLanguage: 'fr',
   avatarColor: 'bg-pink-500',
   bio: 'Développeur et passionné de design.',
   followers: 120,
   following: 85,
   savedPins: [],
+  subscription: {
+    plan: 'free',
+    renewalAt: null,
+    translationQuotaMonthly: 5,
+    translationUsedMonthly: 0,
+  },
 }
 
 const currentUser = ref<User | null>(null)
 const isAuthenticated = computed(() => currentUser.value !== null)
 const isInitializing = ref(true)
-const token = ref<string | null>(localStorage.getItem('pinova_token'))
 
 function getFullMediaUrl(url: string | null): string | undefined {
   if (!url) return undefined
@@ -28,13 +34,14 @@ function getFullMediaUrl(url: string | null): string | undefined {
 
 function mapDjangoUserToFrontend(djangoUser: any): User {
   if (!djangoUser) return defaultUser
-  const profile = djangoUser.profile || {}
+  const profile = djangoUser.profile || djangoUser || {}
   // On utilise l'ID du profile pour être cohérent avec l'API follow
   return {
     id: profile.id || djangoUser.id,
     username: djangoUser.username,
     displayName: profile.display_name || djangoUser.username,
     email: djangoUser.email,
+    preferredLanguage: profile.preferred_language || 'fr',
     avatarUrl: getFullMediaUrl(profile.avatar),
     avatarColor: profile.avatar_color || 'bg-pink-500',
     bio: profile.bio || '',
@@ -42,15 +49,18 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     following: profile.following_count || 0,
     isFollowing: profile.is_following || false,
     savedPins: djangoUser.saved_pins || [],
+    subscription: {
+      plan: djangoUser.subscription?.plan || profile.subscription_plan || 'free',
+      renewalAt: djangoUser.subscription?.renewal_at || profile.subscription_renewal_at || null,
+      translationQuotaMonthly: djangoUser.subscription?.translation_quota_monthly || profile.translation_quota_monthly || 5,
+      translationUsedMonthly: djangoUser.subscription?.translation_used_monthly || profile.translation_used_monthly || 0,
+    },
+    boards: djangoUser.boards || [],
   }
 }
 
 export function useAuth() {
   async function fetchCurrentUser() {
-    if (!token.value) {
-      isInitializing.value = false
-      return
-    }
     isInitializing.value = true
     console.log('📡 Fetching user from API...')
     try {
@@ -60,8 +70,8 @@ export function useAuth() {
         currentUser.value = mapDjangoUserToFrontend(response.data)
       }
     } catch (err) {
-      console.warn('❌ Backend injoignable ou token invalide.')
-      logout()
+      currentUser.value = null
+      console.warn('❌ Session absente ou expirée.')
     } finally {
       isInitializing.value = false
     }
@@ -87,13 +97,14 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string }) {
     try {
       const formData = new FormData()
       if (data.displayName) formData.append('display_name', data.displayName)
       if (data.bio !== undefined) formData.append('bio', data.bio)
       if (data.email) formData.append('email', data.email)
       if (data.avatar) formData.append('avatar', data.avatar)
+      if (data.preferredLanguage) formData.append('preferred_language', data.preferredLanguage)
       
       const response = await api.patch('me/', formData, {
         headers: {
@@ -113,21 +124,13 @@ export function useAuth() {
   async function login(email: string, password: string) {
     try {
       const response = await api.post('auth/login/', { email, password })
-      // dj-rest-auth with JWT returns access and refresh tokens
-      token.value = response.data.access
-      if (token.value) {
-        localStorage.setItem('pinova_token', token.value)
-      }
-      if (response.data.refresh) {
-        localStorage.setItem('pinova_refresh_token', response.data.refresh)
-      }
       
       // Get full user profile after login
       await fetchCurrentUser()
       return { 
-        success: true, 
-        access: response.data.access, 
-        refresh: response.data.refresh 
+        success: true,
+        access: response.data?.access,
+        refresh: response.data?.refresh,
       }
     } catch (err: any) {
       console.error('Login error:', err)
@@ -192,18 +195,11 @@ export function useAuth() {
       }
 
       const response = await api.post(`auth/social/${provider}/`, payload)
-      token.value = response.data.access
-      if (token.value) {
-        localStorage.setItem('pinova_token', token.value)
-      }
-      if (response.data.refresh) {
-        localStorage.setItem('pinova_refresh_token', response.data.refresh)
-      }
       await fetchCurrentUser()
       return { 
         success: true, 
-        access: response.data.access, 
-        refresh: response.data.refresh 
+        access: response.data?.access, 
+        refresh: response.data?.refresh, 
       }
     } catch (err: any) {
       console.error(`${provider} login error:`, err)
@@ -213,10 +209,8 @@ export function useAuth() {
   }
 
   function logout() {
+    api.post('auth/logout/').catch(() => undefined)
     currentUser.value = null
-    token.value = null
-    localStorage.removeItem('pinova_token')
-    localStorage.removeItem('pinova_refresh_token')
     console.log('🚪 Logged out successfully.')
   }
 
@@ -228,6 +222,20 @@ export function useAuth() {
     } else {
       currentUser.value.savedPins.splice(index, 1)
     }
+  }
+
+  async function createBoard(payload: { name: string; description?: string; isPrivate?: boolean }) {
+    const response = await api.post('boards/', {
+      name: payload.name,
+      description: payload.description || '',
+      is_private: !!payload.isPrivate,
+    })
+    return response.data
+  }
+
+  async function fetchMyBoards() {
+    const response = await api.get('boards/')
+    return response.data?.results || response.data || []
   }
 
   return {
@@ -244,6 +252,8 @@ export function useAuth() {
     toggleSavePin,
     toggleFollow,
     fetchCurrentUser,
-    fetchUserProfile
+    fetchUserProfile,
+    createBoard,
+    fetchMyBoards,
   }
 }

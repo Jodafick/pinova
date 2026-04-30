@@ -38,29 +38,23 @@ const dictionaries: Record<LangCode, Record<string, string>> = {
   fon,
 }
 
-const STORAGE_KEY = 'pinova_lang'
-
 const detectBrowserLang = (): LangCode => {
   if (typeof navigator === 'undefined') return 'en'
   const candidates: string[] = []
   if (Array.isArray((navigator as any).languages)) candidates.push(...(navigator as any).languages)
   if (navigator.language) candidates.push(navigator.language)
   for (const raw of candidates) {
-    const code = raw.toLowerCase().split('-')[0]
-    if (code in dictionaries) return code as LangCode
+    const code = (raw.toLowerCase().split('-')[0] || '').trim()
+    if (code && code in dictionaries) return code as LangCode
   }
   return 'en'
 }
 
-const stored = (typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_KEY)) as LangCode | null
-const currentLang = ref<LangCode>(
-  stored && stored in dictionaries ? stored : detectBrowserLang()
-)
+const currentLang = ref<LangCode>(detectBrowserLang())
 
 export const useI18n = () => {
   const setLang = (code: LangCode) => {
     currentLang.value = code
-    if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_KEY, code)
     if (typeof document !== 'undefined') {
       document.documentElement.lang = code
       const meta = languages.find(l => l.code === code)

@@ -12,7 +12,7 @@ const { t } = useI18n()
 
 const router = useRouter()
 const route = useRoute()
-const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow } = useAuth()
+const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow, createBoard, fetchMyBoards } = useAuth()
 const { pins, toggleSave, fetchPins, loading: pinsLoading } = usePins()
 
 const profileUser = ref<User | null>(null)
@@ -27,6 +27,19 @@ const loadProfile = async () => {
   loading.value = true
   if (!route.params.username) {
     profileUser.value = currentUser.value
+    if (profileUser.value) {
+      try {
+        const myBoards = await fetchMyBoards()
+        profileUser.value.boards = myBoards.map((board: any) => ({
+          id: board.id,
+          name: board.name,
+          pinCount: board.pin_count ?? board.pinCount ?? 0,
+          isPrivate: board.is_private ?? board.isPrivate ?? false,
+        }))
+      } catch (err) {
+        console.error('Erreur chargement tableaux:', err)
+      }
+    }
     isFollowing.value = false
   } else {
     profileUser.value = await fetchUserProfile(route.params.username as string)
@@ -82,21 +95,33 @@ const displayPins = computed(() => {
 })
 
 const boards = computed(() => profileUser.value?.boards ?? [])
+const currentPlanLabel = computed(() => {
+  const plan = profileUser.value?.subscription?.plan || 'free'
+  if (plan === 'pro') return 'PRO'
+  if (plan === 'plus') return 'PLUS'
+  return 'FREE'
+})
 
-const handleCreateBoard = () => {
+const handleCreateBoard = async () => {
   if (!profileUser.value || !newBoardName.value.trim()) return
-
-  const nextBoard = {
-    id: Date.now(),
-    name: newBoardName.value.trim(),
-    pinCount: 0,
-    isPrivate: newBoardPrivate.value,
+  try {
+    const board = await createBoard({
+      name: newBoardName.value.trim(),
+      isPrivate: newBoardPrivate.value,
+    })
+    const nextBoard = {
+      id: board.id,
+      name: board.name,
+      pinCount: board.pin_count ?? board.pinCount ?? 0,
+      isPrivate: board.is_private ?? board.isPrivate ?? false,
+    }
+    profileUser.value.boards = [nextBoard, ...(profileUser.value.boards ?? [])]
+    newBoardName.value = ''
+    newBoardPrivate.value = false
+    showCreateBoard.value = false
+  } catch (err) {
+    console.error('Erreur création tableau:', err)
   }
-
-  profileUser.value.boards = [...(profileUser.value.boards ?? []), nextBoard]
-  newBoardName.value = ''
-  newBoardPrivate.value = false
-  showCreateBoard.value = false
 }
 
 const handleToggleSave = (slug: string) => {
@@ -170,6 +195,13 @@ const openPin = (slug: string) => {
             {{ isFollowing ? t('pin.following') : t('pin.follow') }}
           </button>
         </template>
+        <router-link
+          to="/premium"
+          class="px-5 py-2.5 rounded-full bg-amber-50 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition inline-flex items-center gap-1.5"
+        >
+          <span class="material-symbols-outlined text-base">workspace_premium</span>
+          Plan {{ currentPlanLabel }}
+        </router-link>
         <button class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition">
           <span class="material-symbols-outlined text-neutral-600">share</span>
         </button>

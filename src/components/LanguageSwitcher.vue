@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n, type LangCode } from '../i18n'
+import { useAuth } from '../composables/useAuth'
 
 const { t, languages, currentLangMeta, setLang } = useI18n()
+const { isAuthenticated, updateProfile } = useAuth()
 const open = ref(false)
 
-const select = (code: LangCode) => {
+const select = async (code: LangCode) => {
   setLang(code)
+  if (isAuthenticated.value) {
+    try {
+      await updateProfile({ preferredLanguage: code })
+    } catch (err) {
+      console.warn('Impossible de synchroniser la langue préférée', err)
+    }
+  }
   open.value = false
 }
 </script>

@@ -6,7 +6,7 @@ import { useI18n } from '../i18n'
 
 const router = useRouter()
 const { currentUser, updateProfile, logout } = useAuth()
-const { t } = useI18n()
+const { t, currentLang } = useI18n()
 
 const displayName = ref('')
 const username = ref('')
@@ -53,7 +53,8 @@ const handleSave = async () => {
       displayName: displayName.value,
       bio: bio.value,
       email: email.value,
-      avatar: avatarFile.value || undefined
+      avatar: avatarFile.value || undefined,
+      preferredLanguage: currentLang.value,
     })
     saved.value = true
     setTimeout(() => (saved.value = false), 3000)

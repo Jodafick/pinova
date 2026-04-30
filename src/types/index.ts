@@ -15,6 +15,11 @@ export type Pin = {
     reactions: number
   }
   topic: string
+  visibility?: 'public' | 'followers' | 'private'
+  hashtags?: string[]
+  privateTags?: string[]
+  certifiedCredit?: boolean
+  provenanceRootHash?: string
   tall?: boolean
   saved?: boolean
   liked?: boolean
@@ -27,6 +32,7 @@ export type User = {
   username: string
   displayName: string
   email: string
+  preferredLanguage?: string
   avatarUrl?: string
   avatarColor: string
   bio: string
@@ -34,6 +40,12 @@ export type User = {
   following: number
   isFollowing?: boolean
   savedPins: number[]
+  subscription?: {
+    plan: 'free' | 'plus' | 'pro'
+    renewalAt?: string | null
+    translationQuotaMonthly: number
+    translationUsedMonthly: number
+  }
   boards?: {
     id: number
     name: string

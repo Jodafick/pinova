@@ -36,6 +36,11 @@ function mapDjangoPinToFrontend(djangoPin: any): Pin {
       reactions: djangoPin.likes_count || 0 
     },
     topic: djangoPin.topic || 'Général',
+    visibility: djangoPin.visibility || 'public',
+    hashtags: djangoPin.hashtags || [],
+    privateTags: djangoPin.private_tags || [],
+    certifiedCredit: djangoPin.certified_credit || false,
+    provenanceRootHash: djangoPin.provenance_root_hash || '',
     createdAt: djangoPin.created_at,
     liked: djangoPin.is_liked || false,
     saved: djangoPin.is_saved || false,
@@ -155,9 +160,12 @@ export function usePins() {
     }
   }
 
-  async function addComment(pinSlug: string, text: string) {
+  async function addComment(
+    pinSlug: string,
+    payload: { text: string; gif?: string | null; parentId?: number | null },
+  ) {
     try {
-      const response = await api.post(`pins/${pinSlug}/comments/`, { text })
+      const response = await api.post(`pins/${pinSlug}/comments/`, payload)
       const pin = pins.value.find(p => p.slug === pinSlug)
       if (pin) {
         pin.stats.reactions += 0 // On pourrait mettre à jour le count ici si on l'avait séparément
@@ -167,6 +175,35 @@ export function usePins() {
       console.error('Error adding comment:', err)
       throw err
     }
+  }
+
+  async function translatePinDescription(pinSlug: string, targetLang = 'fr') {
+    const response = await api.post(`pins/${pinSlug}/translate-description/`, {
+      target_lang: targetLang,
+    })
+    return response.data
+  }
+
+  async function translateComment(commentId: number, targetLang = 'fr') {
+    const response = await api.post(`pins/comments/${commentId}/translate/`, {
+      target_lang: targetLang,
+    })
+    return response.data
+  }
+
+  async function fetchProvenance(pinSlug: string) {
+    const response = await api.get(`pins/${pinSlug}/provenance/`)
+    return response.data
+  }
+
+  async function fetchPrivateTags(pinSlug: string) {
+    const response = await api.get(`pins/${pinSlug}/private-tags/`)
+    return response.data.tags || []
+  }
+
+  async function savePrivateTags(pinSlug: string, tags: string[]) {
+    const response = await api.post(`pins/${pinSlug}/private-tags/`, { tags })
+    return response.data.tags || []
   }
 
   async function addPin(pinData: FormData) {
@@ -249,6 +286,11 @@ export function usePins() {
     toggleFollow,
     fetchComments,
     addComment,
+    translatePinDescription,
+    translateComment,
+    fetchProvenance,
+    fetchPrivateTags,
+    savePrivateTags,
     formatCount,
   }
 }
