@@ -11,6 +11,7 @@ type Comment = {
   username: string
   avatar: string
   text: string
+  translatedText?: string
   gif?: string | null
   createdAt: string
   liked?: boolean
@@ -22,6 +23,7 @@ type Comment = {
 
 defineProps<{
   comments: Comment[]
+  canTranslate?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -67,9 +69,9 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
             >{{ comment.originalLang }}</span>
           </div>
           <p
-            v-if="comment.text"
+            v-if="comment.text || comment.translatedText"
             class="text-sm text-neutral-700 leading-snug break-words"
-            v-html="renderRichText(comment.text)"
+            v-html="renderRichText(comment.translated && comment.translatedText ? comment.translatedText : comment.text)"
           ></p>
           <img v-if="comment.gif" :src="comment.gif" class="mt-2 max-h-40 rounded-lg" />
           <div
@@ -99,7 +101,7 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
             {{ t('comment.reply') }}
           </button>
           <button
-            v-if="comment.originalLang"
+            v-if="canTranslate && comment.originalLang"
             class="font-semibold hover:text-pink-600 transition flex items-center gap-1"
             @click="emit('translate', comment.id)"
           >

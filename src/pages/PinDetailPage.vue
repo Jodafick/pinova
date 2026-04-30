@@ -9,7 +9,6 @@ import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
 import ProvenanceChain from '../components/ProvenanceChain.vue'
 import PrivateTags from '../components/PrivateTags.vue'
-import TranslateButton from '../components/TranslateButton.vue'
 import { useI18n } from '../i18n'
 
 const { t } = useI18n()
@@ -96,6 +95,7 @@ type UiComment = {
   username: string
   avatar: string
   text: string
+  translatedText?: string
   gif?: string | null
   createdAt: string
   liked?: boolean
@@ -116,11 +116,12 @@ const mapComment = (comment: any): UiComment => ({
   user: comment.display_name || comment.username,
   username: comment.username,
   avatar: comment.avatar_color || 'bg-pink-500',
-  text: comment.translated_text || comment.text || '',
+  text: comment.text || '',
+  translatedText: comment.translated_text || '',
   gif: comment.gif_url || null,
   createdAt: new Date(comment.created_at).toLocaleString(),
   likes: 0,
-  translated: !!comment.translated_text,
+  translated: false,
   originalLang: comment.original_language || undefined,
   replies: (comment.replies || []).map(mapComment),
 })
@@ -177,8 +178,63 @@ const handleLikeComment = (id: number) => {
 }
 
 const handleTranslateComment = async (id: number) => {
-  await translateComment(id, targetLang.value)
-  await loadPinMetadata()
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+
+  const updateCommentById = (
+    comments: UiComment[],
+    commentId: number,
+    updater: (comment: UiComment) => void,
+  ): boolean => {
+    for (const comment of comments) {
+      if (comment.id === commentId) {
+        updater(comment)
+        return true
+      }
+      if (comment.replies && updateCommentById(comment.replies, commentId, updater)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  const existing = richComments.value
+  let alreadyTranslated = false
+  updateCommentById(existing, id, (comment) => {
+    alreadyTranslated = !!comment.translated
+  })
+
+  if (alreadyTranslated) {
+    updateCommentById(existing, id, (comment) => {
+      comment.translated = false
+    })
+    richComments.value = [...existing]
+    return
+  }
+
+  let hasLocalTranslation = false
+  updateCommentById(existing, id, (comment) => {
+    hasLocalTranslation = !!comment.translatedText
+  })
+  if (hasLocalTranslation) {
+    updateCommentById(existing, id, (comment) => {
+      comment.translated = true
+    })
+    richComments.value = [...existing]
+    return
+  }
+
+  const result = await translateComment(id, targetLang.value)
+  updateCommentById(existing, id, (comment) => {
+    comment.translatedText = result?.translated || ''
+    comment.translated = true
+    if (result?.original_language) {
+      comment.originalLang = result.original_language
+    }
+  })
+  richComments.value = [...existing]
 }
 
 const pinVisibility = computed<'public' | 'followers' | 'private'>(() => {
@@ -187,6 +243,10 @@ const pinVisibility = computed<'public' | 'followers' | 'private'>(() => {
 
 const handleTranslateDescription = async () => {
   if (!pin.value) return
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
   const result = await translatePinDescription(pin.value.slug, targetLang.value)
   descriptionText.value = result?.translated || pin.value.description
 }
@@ -314,8 +374,8 @@ const openRelatedPin = (slug: string) => {
                 <p class="text-sm text-neutral-700 leading-relaxed">
                   {{ descriptionText || pin.description }}
                 </p>
-                <TranslateButton :original="descriptionText || pin.description" original-lang="AUTO" :target-lang="targetLang.toUpperCase()" />
                 <button
+                  v-if="isAuthenticated"
                   class="text-xs font-semibold text-pink-600 hover:text-pink-700"
                   @click="handleTranslateDescription"
                 >
@@ -418,6 +478,7 @@ const openRelatedPin = (slug: string) => {
               <div class="max-h-[420px] overflow-y-auto mb-5 pr-1">
                 <CommentThread
                   :comments="richComments"
+                  :can-translate="isAuthenticated"
                   @add="handleRichSubmit"
                   @like="handleLikeComment"
                   @translate="handleTranslateComment"
