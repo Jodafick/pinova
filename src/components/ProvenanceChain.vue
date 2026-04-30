@@ -9,6 +9,7 @@ const open = ref(false)
 const props = defineProps<{
   creator: string
   creatorAvatar: string
+  certified?: boolean
   certifiedAt?: string
   hash?: string
   events?: {
@@ -34,16 +35,7 @@ const chain = computed(() => {
       }
     })
   }
-  return [
-    {
-      type: 'creation',
-      user: 'sarah_design',
-      label: t('provenance.step.creation'),
-      date: '12/01/2026',
-      avatar: 'bg-pink-500',
-      verified: true,
-    },
-  ]
+  return []
 })
 </script>
 
@@ -54,13 +46,18 @@ const chain = computed(() => {
       @click="open = !open"
     >
       <div class="flex items-center gap-3 min-w-0">
-        <div class="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-          <span class="material-symbols-outlined text-white text-lg fill-1">verified</span>
+        <div
+          class="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+          :class="certified ? 'bg-emerald-500' : 'bg-neutral-400'"
+        >
+          <span class="material-symbols-outlined text-white text-lg fill-1">
+            {{ certified ? 'verified' : 'gpp_bad' }}
+          </span>
         </div>
         <div class="text-left min-w-0">
           <p class="text-sm font-bold text-neutral-900 flex items-center gap-1.5">
             {{ t('provenance.title') }}
-            <span class="material-symbols-outlined text-xs text-emerald-600">lock</span>
+            <span class="material-symbols-outlined text-xs" :class="certified ? 'text-emerald-600' : 'text-neutral-400'">lock</span>
           </p>
           <p class="text-[11px] text-neutral-500 truncate">
             {{ t('provenance.subtitle') }}
@@ -83,10 +80,17 @@ const chain = computed(() => {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
               <p class="text-sm font-bold text-neutral-900">{{ creator }}</p>
-              <span class="material-symbols-outlined text-base text-emerald-600 fill-1">verified</span>
+              <span
+                class="material-symbols-outlined text-base fill-1"
+                :class="certified ? 'text-emerald-600' : 'text-neutral-400'"
+              >
+                {{ certified ? 'verified' : 'gpp_bad' }}
+              </span>
             </div>
             <p class="text-xs text-neutral-500">{{ t('provenance.creator') }}</p>
-            <p class="text-[10px] text-neutral-400 mt-1">{{ t('provenance.certifiedOn', { date: certifiedAt || '12/01/2026' }) }}</p>
+            <p class="text-[10px] text-neutral-400 mt-1">
+              {{ certified ? t('provenance.certifiedOn', { date: certifiedAt || new Date().toLocaleDateString() }) : t('provenance.subtitle') }}
+            </p>
           </div>
         </div>
 
@@ -116,6 +120,9 @@ const chain = computed(() => {
                 <p class="text-[11px] text-neutral-500">{{ step.date }}</p>
               </div>
             </div>
+            <p v-if="chain.length === 0" class="text-xs text-neutral-400 italic">
+              Aucune activité de provenance disponible pour ce pin.
+            </p>
           </div>
         </div>
 

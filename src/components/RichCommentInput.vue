@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import { useI18n } from '../i18n'
+import api from '../api'
 
 const { t } = useI18n()
 
@@ -28,20 +29,30 @@ const trendingGifs = [
   { id: 6, label: 'Thumbs', preview: 'https://media.tenor.com/HtdAulSCQDoAAAAi/like-thumbs-up.gif' },
 ]
 
-const suggestedUsers = [
-  { username: 'sarah_design', name: 'Sarah Design', avatar: 'bg-pink-500' },
-  { username: 'mohamed', name: 'Mohamed', avatar: 'bg-blue-500' },
-  { username: 'lea_archi', name: 'Léa Architecte', avatar: 'bg-amber-500' },
-  { username: 'tech_jo', name: 'Jonathan Tech', avatar: 'bg-emerald-500' },
-]
+const suggestedUsers = ref<{ username: string; name: string; avatar: string }[]>([])
+let mentionTimer: ReturnType<typeof setTimeout> | null = null
 
 const mentionFilter = ref('')
 
 const filteredUsers = computed(() => {
-  if (!mentionFilter.value) return suggestedUsers
+  if (!mentionFilter.value) return suggestedUsers.value
   const q = mentionFilter.value.toLowerCase()
-  return suggestedUsers.filter(u => u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q))
+  return suggestedUsers.value.filter(u => u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q))
 })
+
+const fetchMentionUsers = async (query: string) => {
+  try {
+    const response = await api.get('users/mentions/', { params: { q: query } })
+    suggestedUsers.value = (response.data || []).map((user: any) => ({
+      username: user.username,
+      name: user.display_name || user.username,
+      avatar: user.avatar_color || 'bg-pink-500',
+    }))
+  } catch (err) {
+    console.error('Erreur chargement suggestions de mention', err)
+    suggestedUsers.value = []
+  }
+}
 
 const handleInput = () => {
   const value = text.value
@@ -51,6 +62,10 @@ const handleInput = () => {
     if (!after.includes(' ') && after.length <= 20) {
       mentionFilter.value = after
       showMentionList.value = true
+      if (mentionTimer) clearTimeout(mentionTimer)
+      mentionTimer = setTimeout(() => {
+        void fetchMentionUsers(after)
+      }, 200)
       return
     }
   }

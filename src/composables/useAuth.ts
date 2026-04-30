@@ -25,6 +25,7 @@ const defaultUser: User = {
 const currentUser = ref<User | null>(null)
 const isAuthenticated = computed(() => currentUser.value !== null)
 const isInitializing = ref(true)
+const inMemoryAccessToken = ref<string | null>(null)
 
 function getFullMediaUrl(url: string | null): string | undefined {
   if (!url) return undefined
@@ -60,6 +61,15 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
 }
 
 export function useAuth() {
+  function applyAccessToken(token: string | null) {
+    inMemoryAccessToken.value = token
+    if (token) {
+      api.defaults.headers.common.Authorization = `Bearer ${token}`
+    } else {
+      delete api.defaults.headers.common.Authorization
+    }
+  }
+
   async function fetchCurrentUser() {
     isInitializing.value = true
     console.log('📡 Fetching user from API...')
@@ -70,7 +80,9 @@ export function useAuth() {
         currentUser.value = mapDjangoUserToFrontend(response.data)
       }
     } catch (err) {
-      currentUser.value = null
+      if (!currentUser.value) {
+        currentUser.value = null
+      }
       console.warn('❌ Session absente ou expirée.')
     } finally {
       isInitializing.value = false
@@ -124,6 +136,12 @@ export function useAuth() {
   async function login(email: string, password: string) {
     try {
       const response = await api.post('auth/login/', { email, password })
+      if (response.data?.access) {
+        applyAccessToken(response.data.access)
+      }
+      if (response.data?.user) {
+        currentUser.value = mapDjangoUserToFrontend(response.data.user)
+      }
       
       // Get full user profile after login
       await fetchCurrentUser()
@@ -195,6 +213,12 @@ export function useAuth() {
       }
 
       const response = await api.post(`auth/social/${provider}/`, payload)
+      if (response.data?.access) {
+        applyAccessToken(response.data.access)
+      }
+      if (response.data?.user) {
+        currentUser.value = mapDjangoUserToFrontend(response.data.user)
+      }
       await fetchCurrentUser()
       return { 
         success: true, 
@@ -210,6 +234,7 @@ export function useAuth() {
 
   function logout() {
     api.post('auth/logout/').catch(() => undefined)
+    applyAccessToken(null)
     currentUser.value = null
     console.log('🚪 Logged out successfully.')
   }

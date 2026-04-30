@@ -38,6 +38,8 @@ const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
 const pinSlug = computed(() => route.params.slug as string)
 const pin = computed(() => getPin(pinSlug.value))
+const isPinOwner = computed(() => !!(currentUser.value && pin.value && currentUser.value.username === pin.value.username))
+const targetLang = computed(() => currentUser.value?.preferredLanguage || navigator.language?.split('-')[0] || 'fr')
 
 const relatedPins = computed(() => {
   if (!pin.value) return []
@@ -141,13 +143,15 @@ const loadPinMetadata = async () => {
     provenanceHash.value = pin.value.provenanceRootHash || ''
     provenanceEvents.value = []
   }
-  if (isAuthenticated.value) {
+  if (isAuthenticated.value && isPinOwner.value) {
     try {
       privateTags.value = await fetchPrivateTags(pin.value.slug)
     } catch (err) {
       console.error('Erreur lors du chargement des tags privés', err)
       privateTags.value = []
     }
+  } else {
+    privateTags.value = []
   }
 }
 
@@ -173,7 +177,7 @@ const handleLikeComment = (id: number) => {
 }
 
 const handleTranslateComment = async (id: number) => {
-  await translateComment(id)
+  await translateComment(id, targetLang.value)
   await loadPinMetadata()
 }
 
@@ -183,7 +187,7 @@ const pinVisibility = computed<'public' | 'followers' | 'private'>(() => {
 
 const handleTranslateDescription = async () => {
   if (!pin.value) return
-  const result = await translatePinDescription(pin.value.slug)
+  const result = await translatePinDescription(pin.value.slug, targetLang.value)
   descriptionText.value = result?.translated || pin.value.description
 }
 
@@ -310,7 +314,7 @@ const openRelatedPin = (slug: string) => {
                 <p class="text-sm text-neutral-700 leading-relaxed">
                   {{ descriptionText || pin.description }}
                 </p>
-                <TranslateButton :original="descriptionText || pin.description" original-lang="AUTO" target-lang="FR" />
+                <TranslateButton :original="descriptionText || pin.description" original-lang="AUTO" :target-lang="targetLang.toUpperCase()" />
                 <button
                   class="text-xs font-semibold text-pink-600 hover:text-pink-700"
                   @click="handleTranslateDescription"
@@ -325,13 +329,14 @@ const openRelatedPin = (slug: string) => {
               <ProvenanceChain
                 :creator="pin.user"
                 :creator-avatar="pin.userAvatarColor"
+                :certified="!!pin.certifiedCredit"
                 :hash="provenanceHash || pin.provenanceRootHash"
                 :events="provenanceEvents"
               />
             </div>
 
             <!-- Tags privés -->
-            <div class="mb-6">
+            <div v-if="isPinOwner" class="mb-6">
               <PrivateTags
                 :model-value="privateTags"
                 :editable="isAuthenticated"
