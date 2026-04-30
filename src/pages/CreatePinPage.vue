@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
+import { useI18n } from '../i18n'
+import PrivateTags from '../components/PrivateTags.vue'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const { addPin, topics } = usePins()
@@ -18,9 +22,20 @@ const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const saving = ref(false)
 
+// Privacy mode (qui peut voir ce pin)
+const visibility = ref<'public' | 'followers' | 'private'>('public')
+
+// Tags privés
+const privateTags = ref<string[]>([])
+
+// Crédit créateur certifié
+const certifyCredit = ref(true)
+
+const isGif = computed(() => imageFile.value?.type === 'image/gif')
+
 const setImageFile = (file: File) => {
   if (!file.type.startsWith('image/')) {
-    window.alert('Merci de déposer un fichier image (JPG, PNG, WEBP).')
+    window.alert(t('create.upload.invalid'))
     return
   }
   if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
@@ -65,7 +80,7 @@ const submitPin = async () => {
     router.push('/')
   } catch (err) {
     console.error('Erreur lors de la publication:', err)
-    window.alert('Erreur lors de la publication du pin.')
+    window.alert(t('create.publish.error'))
   } finally {
     saving.value = false
   }
@@ -77,15 +92,15 @@ const submitPin = async () => {
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">Créer un Pin</h1>
-        <p class="text-sm text-neutral-500 mt-1">Partagez une idée inspirante avec la communauté</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">{{ t('create.title') }}</h1>
+        <p class="text-sm text-neutral-500 mt-1">{{ t('create.subtitle') }}</p>
       </div>
       <div class="flex items-center gap-3">
         <button
           class="px-5 py-2.5 rounded-full text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition"
           @click="router.back()"
         >
-          Annuler
+          {{ t('common.cancel') }}
         </button>
         <button
           class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition flex items-center gap-2"
@@ -96,7 +111,7 @@ const submitPin = async () => {
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          {{ saving ? 'Publication...' : 'Publier' }}
+          {{ saving ? t('create.publishing') : t('create.publish') }}
         </button>
       </div>
     </div>
@@ -122,13 +137,22 @@ const submitPin = async () => {
             </div>
             <div>
               <p class="text-sm font-semibold text-neutral-700 mb-1">
-                Glissez-déposez une image
+                {{ t('create.upload.title') }}
               </p>
               <p class="text-xs text-neutral-500">
-                ou cliquez pour parcourir vos fichiers
+                {{ t('create.upload.subtitle') }}
               </p>
+              <div class="flex items-center justify-center gap-2 mt-3">
+                <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded font-bold">JPG</span>
+                <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded font-bold">PNG</span>
+                <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded font-bold">WEBP</span>
+                <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-pink-100 text-pink-700 rounded font-bold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">animation</span>
+                  {{ t('create.upload.gifBadge') }}
+                </span>
+              </div>
               <p class="text-xs text-neutral-400 mt-2">
-                JPG, PNG, WEBP — recommandé 1000x1500px
+                {{ t('create.upload.specs') }}
               </p>
             </div>
           </div>
@@ -139,6 +163,13 @@ const submitPin = async () => {
               alt="Aperçu"
               class="w-full rounded-2xl object-cover max-h-[500px]"
             />
+            <span
+              v-if="isGif"
+              class="absolute top-3 left-3 px-2 py-1 rounded-md bg-pink-600 text-white text-[10px] font-bold tracking-wider flex items-center gap-1 shadow"
+            >
+              <span class="material-symbols-outlined text-sm">animation</span>
+              {{ t('create.gif.label') }}
+            </span>
             <button
               class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition"
               @click="clearImage"
@@ -147,63 +178,126 @@ const submitPin = async () => {
             </button>
           </div>
 
-          <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileChange" />
+          <input ref="fileInput" type="file" accept="image/*,image/gif" class="hidden" @change="onFileChange" />
         </div>
 
         <!-- Fields -->
         <div class="lg:w-3/5 p-6 sm:p-8 space-y-5">
           <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-2">Titre *</label>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.title') }}</label>
             <input
               v-model="title"
               type="text"
-              placeholder="Ajoutez un titre accrocheur"
+              :placeholder="t('create.field.title.placeholder')"
               class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-base focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-2">Description</label>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.description') }}</label>
             <textarea
               v-model="description"
               rows="4"
-              placeholder="Décrivez votre pin en détail pour aider les autres à le découvrir"
+              :placeholder="t('create.field.description.placeholder')"
               class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition resize-none placeholder:text-neutral-400"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-2">Lien de destination</label>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.link') }}</label>
             <div class="relative">
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-lg">link</span>
               <input
                 v-model="link"
                 type="url"
-                placeholder="https://votre-site.com/article"
+                :placeholder="t('create.field.link.placeholder')"
                 class="w-full pl-11 pr-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
               />
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-2">Catégorie</label>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.category') }}</label>
             <div class="relative">
               <select
                 v-model="topic"
                 class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition appearance-none bg-white"
               >
-                <option value="">Sélectionnez une catégorie</option>
-                <option v-for="t in topics" :key="t" :value="t">{{ t }}</option>
-                <option value="Autre">Autre</option>
+                <option value="">{{ t('create.field.category.placeholder') }}</option>
+                <option v-for="topicName in topics" :key="topicName" :value="topicName">{{ topicName }}</option>
+                <option value="Autre">{{ t('create.field.category.other') }}</option>
               </select>
               <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">expand_more</span>
             </div>
           </div>
 
+          <!-- Visibilité / Mode privé -->
           <div class="pt-4 border-t border-neutral-100">
-            <div class="flex items-center gap-3 text-sm text-neutral-500">
-              <span class="material-symbols-outlined text-lg">info</span>
-              <p>Votre pin sera visible par tous les utilisateurs après publication.</p>
+            <label class="block text-sm font-medium text-neutral-700 mb-3">
+              {{ t('create.visibility.label') }}
+            </label>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="option in [
+                  { id: 'public', label: t('create.visibility.public'), icon: 'public', desc: t('create.visibility.public.desc') },
+                  { id: 'followers', label: t('create.visibility.followers'), icon: 'group', desc: t('create.visibility.followers.desc') },
+                  { id: 'private', label: t('create.visibility.private'), icon: 'lock', desc: t('create.visibility.private.desc') },
+                ]"
+                :key="option.id"
+                type="button"
+                class="px-3 py-3 rounded-xl border-2 text-left transition-all"
+                :class="visibility === option.id
+                  ? 'border-pink-500 bg-pink-50/40'
+                  : 'border-neutral-200 hover:border-neutral-300'"
+                @click="visibility = option.id as typeof visibility"
+              >
+                <div class="flex items-center gap-1.5 mb-0.5">
+                  <span
+                    class="material-symbols-outlined text-base"
+                    :class="visibility === option.id ? 'text-pink-600' : 'text-neutral-500'"
+                  >{{ option.icon }}</span>
+                  <span
+                    class="text-xs font-bold"
+                    :class="visibility === option.id ? 'text-pink-700' : 'text-neutral-700'"
+                  >{{ option.label }}</span>
+                </div>
+                <p class="text-[10px] text-neutral-500 leading-tight">{{ option.desc }}</p>
+              </button>
+            </div>
+          </div>
+
+          <!-- Crédit créateur certifié -->
+          <div class="pt-4 border-t border-neutral-100">
+            <label class="flex items-start gap-3 cursor-pointer">
+              <div class="relative mt-0.5">
+                <input v-model="certifyCredit" type="checkbox" class="sr-only peer" />
+                <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-emerald-500 rounded-full transition-colors"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-base text-emerald-600 fill-1">verified</span>
+                  <p class="text-sm font-semibold text-neutral-800">{{ t('create.certify.title') }}</p>
+                </div>
+                <p class="text-xs text-neutral-500 mt-0.5">
+                  {{ t('create.certify.desc') }}
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <!-- Tags privés -->
+          <div class="pt-4 border-t border-neutral-100">
+            <PrivateTags v-model="privateTags" />
+          </div>
+
+          <div class="pt-4 border-t border-neutral-100">
+            <div class="flex items-start gap-3 text-sm text-neutral-500 bg-blue-50/40 border border-blue-100 rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-lg text-blue-600">shield</span>
+              <p class="text-xs leading-relaxed">
+                <span v-html="t('create.noTracking').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')"></span>
+                <router-link to="/premium" class="text-blue-600 font-semibold hover:underline ml-1">{{ t('create.noTracking.learnMore') }}</router-link>
+              </p>
             </div>
           </div>
         </div>

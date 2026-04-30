@@ -45,6 +45,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/premium',
+      name: 'premium',
+      component: () => import('../pages/PremiumPage.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../pages/LoginPage.vue'),

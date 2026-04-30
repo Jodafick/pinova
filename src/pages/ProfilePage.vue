@@ -6,6 +6,9 @@ import { usePins } from '../composables/usePins'
 import type { User } from '../types'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const route = useRoute()
@@ -138,15 +141,15 @@ const openPin = (slug: string) => {
         {{ profileUser.bio }}
       </p>
       <p v-else class="text-neutral-400 text-sm mb-4 italic">
-        Aucune bio pour le moment
+        {{ t('profile.noBio') }}
       </p>
 
       <div class="flex items-center gap-6 text-sm text-neutral-600 mb-6">
-        <span><strong class="text-neutral-900">{{ profileUser.followers }}</strong> abonnés</span>
+        <span><strong class="text-neutral-900">{{ profileUser.followers }}</strong> {{ t('profile.followers') }}</span>
         <span class="w-1 h-1 rounded-full bg-neutral-300"></span>
-        <span><strong class="text-neutral-900">{{ profileUser.following }}</strong> abonnements</span>
+        <span><strong class="text-neutral-900">{{ profileUser.following }}</strong> {{ t('profile.following') }}</span>
         <span class="w-1 h-1 rounded-full bg-neutral-300"></span>
-        <span><strong class="text-neutral-900">{{ createdPins.length }}</strong> pins</span>
+        <span><strong class="text-neutral-900">{{ createdPins.length }}</strong> {{ t('profile.pinsCount') }}</span>
       </div>
 
       <div class="flex items-center gap-3">
@@ -155,7 +158,7 @@ const openPin = (slug: string) => {
             to="/settings"
             class="px-5 py-2.5 rounded-full bg-neutral-100 text-sm font-semibold text-neutral-800 hover:bg-neutral-200 transition"
           >
-            Modifier le profil
+            {{ t('profile.editProfile') }}
           </router-link>
         </template>
         <template v-else>
@@ -164,7 +167,7 @@ const openPin = (slug: string) => {
             :class="isFollowing ? 'bg-neutral-900 text-white hover:bg-neutral-800' : 'bg-pink-600 text-white hover:bg-pink-700'"
             @click="handleFollow"
           >
-            {{ isFollowing ? 'Abonné' : "S'abonner" }}
+            {{ isFollowing ? t('pin.following') : t('pin.follow') }}
           </button>
         </template>
         <button class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition">
@@ -175,7 +178,7 @@ const openPin = (slug: string) => {
 
     <!-- Boards section -->
     <section class="mb-10" v-if="boards.length > 0 || isMyProfile">
-      <h2 class="text-lg font-semibold text-neutral-900 mb-4">Tableaux</h2>
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">{{ t('profile.boards') }}</h2>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <div
           v-for="board in boards"
@@ -185,7 +188,7 @@ const openPin = (slug: string) => {
           <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
           <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
             <p class="font-semibold text-sm">{{ board.name }}</p>
-            <p class="text-xs opacity-80">{{ board.pinCount }} pins</p>
+            <p class="text-xs opacity-80">{{ t('explore.pinsCount', { count: board.pinCount }) }}</p>
           </div>
           <div v-if="board.isPrivate" class="absolute top-3 right-3">
             <span class="material-symbols-outlined text-white text-sm">lock</span>
@@ -199,7 +202,7 @@ const openPin = (slug: string) => {
           @click="showCreateBoard = true"
         >
           <span class="material-symbols-outlined text-3xl">add</span>
-          <span class="text-sm font-medium">Nouveau tableau</span>
+          <span class="text-sm font-medium">{{ t('profile.boards.new') }}</span>
         </button>
       </div>
     </section>
@@ -207,14 +210,14 @@ const openPin = (slug: string) => {
     <!-- Create Board Modal -->
     <div v-if="showCreateBoard" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
       <div class="bg-white rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl">
-        <h3 class="text-xl font-bold text-neutral-900 mb-6">Créer un tableau</h3>
+        <h3 class="text-xl font-bold text-neutral-900 mb-6">{{ t('profile.boards.modal.title') }}</h3>
         <div class="space-y-5">
           <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-2">Nom</label>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('profile.boards.modal.name') }}</label>
             <input
               v-model="newBoardName"
               type="text"
-              placeholder='Par exemple : "Idées déco" ou "Recettes"'
+              :placeholder="t('profile.boards.modal.namePlaceholder')"
               class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             />
           </div>
@@ -226,7 +229,7 @@ const openPin = (slug: string) => {
               class="w-5 h-5 accent-pink-600 rounded cursor-pointer"
             />
             <label for="is_private" class="text-sm text-neutral-700 cursor-pointer">
-              Garder ce tableau secret
+              {{ t('profile.boards.modal.private') }}
             </label>
           </div>
           <div class="flex gap-3 pt-4">
@@ -234,14 +237,14 @@ const openPin = (slug: string) => {
               class="flex-1 px-4 py-2.5 rounded-full bg-neutral-100 text-sm font-bold text-neutral-800 hover:bg-neutral-200 transition"
               @click="showCreateBoard = false"
             >
-              Annuler
+              {{ t('common.cancel') }}
             </button>
             <button
               class="flex-1 px-4 py-2.5 rounded-full bg-pink-600 text-sm font-bold text-white hover:bg-pink-700 disabled:opacity-50 transition"
               :disabled="!newBoardName.trim()"
               @click="handleCreateBoard"
             >
-              Créer
+              {{ t('profile.boards.modal.create') }}
             </button>
           </div>
         </div>
@@ -257,7 +260,7 @@ const openPin = (slug: string) => {
           : 'border-transparent text-neutral-500 hover:text-neutral-700'"
         @click="activeTab = 'created'"
       >
-        Créés
+        {{ t('profile.tab.created') }}
       </button>
       <button
         class="px-6 py-3 text-sm font-semibold transition-colors border-b-2"
@@ -266,7 +269,7 @@ const openPin = (slug: string) => {
           : 'border-transparent text-neutral-500 hover:text-neutral-700'"
         @click="activeTab = 'saved'"
       >
-        Enregistrés
+        {{ t('profile.tab.saved') }}
       </button>
     </div>
 
@@ -278,26 +281,24 @@ const openPin = (slug: string) => {
         {{ activeTab === 'created' ? 'add_photo_alternate' : 'bookmark_border' }}
       </span>
       <h3 class="text-lg font-semibold text-neutral-700 mb-1">
-        {{ activeTab === 'created' ? 'Aucun pin créé' : 'Aucun pin enregistré' }}
+        {{ activeTab === 'created' ? t('profile.empty.created.title') : t('profile.empty.saved.title') }}
       </h3>
       <p class="text-sm text-neutral-500 mb-4">
-        {{ activeTab === 'created'
-          ? 'Commencez à créer des pins pour les voir apparaître ici.'
-          : 'Enregistrez des pins pour les retrouver facilement.' }}
+        {{ activeTab === 'created' ? t('profile.empty.created.desc') : t('profile.empty.saved.desc') }}
       </p>
       <router-link
         v-if="activeTab === 'created'"
         to="/create"
         class="px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition"
       >
-        Créer un pin
+        {{ t('home.createPin') }}
       </router-link>
       <router-link
         v-else
         to="/explore"
         class="px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition"
       >
-        Explorer
+        {{ t('nav.explore') }}
       </router-link>
     </div>
 

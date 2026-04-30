@@ -3,9 +3,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
+import { useI18n } from '../i18n'
 import TopicScroller from '../components/TopicScroller.vue'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const { pins, topics, loading, fetchRecommendations, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
@@ -78,10 +81,10 @@ const openMore = (slug: string) => {
       <div class="flex items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-1">
-            Bonjour{{ currentUser ? ', ' + currentUser.displayName.split(' ')[0] : '' }} !
+            {{ currentUser ? t('home.greetingNamed', { name: currentUser.displayName.split(' ')[0] }) : t('home.greeting') + ' !' }}
           </h1>
           <p class="text-sm sm:text-base text-neutral-500">
-            Voici des idées inspirées par vos centres d'intérêt
+            {{ t('home.subtitle') }}
           </p>
         </div>
         <router-link
@@ -89,7 +92,7 @@ const openMore = (slug: string) => {
           class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold shadow-sm hover:bg-pink-700 hover:shadow-md transition-all"
         >
           <span class="material-symbols-outlined text-lg">add</span>
-          Créer un pin
+          {{ t('home.createPin') }}
         </router-link>
       </div>
     </section>
@@ -101,7 +104,7 @@ const openMore = (slug: string) => {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Rechercher des idées..."
+          :placeholder="t('home.search.placeholder')"
           class="bg-transparent outline-none flex-1 text-sm"
         />
       </div>
@@ -115,9 +118,9 @@ const openMore = (slug: string) => {
     <!-- Empty state -->
     <div v-else-if="filteredPins.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
       <span class="material-symbols-outlined text-6xl text-neutral-300 mb-4">search_off</span>
-      <h2 class="text-xl font-semibold text-neutral-700 mb-2">Aucun résultat</h2>
+      <h2 class="text-xl font-semibold text-neutral-700 mb-2">{{ t('home.empty.title') }}</h2>
       <p class="text-sm text-neutral-500 max-w-sm">
-        Essayez une autre recherche ou explorez d'autres catégories pour trouver de l'inspiration.
+        {{ t('home.empty.desc') }}
       </p>
     </div>
 
@@ -136,7 +139,7 @@ const openMore = (slug: string) => {
     <router-link
       to="/create"
       class="sm:hidden fixed bottom-6 right-6 w-14 h-14 rounded-full bg-pink-600 text-white flex items-center justify-center shadow-xl hover:bg-pink-700 hover:scale-105 transition-all z-10"
-      aria-label="Créer un pin"
+      :aria-label="t('home.fab.aria')"
     >
       <span class="material-symbols-outlined text-2xl">add</span>
     </router-link>

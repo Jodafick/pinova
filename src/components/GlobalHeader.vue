@@ -3,7 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
+import { useI18n } from '../i18n'
 import api from '../api'
+import LanguageSwitcher from './LanguageSwitcher.vue'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -35,11 +39,11 @@ const userInitials = computed(() => {
   return name.slice(0, 2).toUpperCase()
 })
 
-const navItems = [
-  { name: 'home', label: 'Accueil', to: '/' },
-  { name: 'explore', label: 'Explorer', to: '/explore' },
-  { name: 'create', label: 'Créer', to: '/create' },
-]
+const navItems = computed(() => [
+  { name: 'home', label: t('nav.home'), to: '/' },
+  { name: 'explore', label: t('nav.explore'), to: '/explore' },
+  { name: 'create', label: t('nav.create'), to: '/create' },
+])
 
 const notifications = ref<any[]>([])
 
@@ -153,12 +157,12 @@ const closeDropdowns = () => {
       </router-link>
       
       <!-- Offline Badge -->
-      <div 
+      <div
         v-if="isOffline"
         class="ml-4 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1 animate-pulse"
       >
         <span class="material-symbols-outlined text-sm">cloud_off</span>
-        MODE HORS LIGNE
+        {{ t('app.offline') }}
       </div>
     </nav>
 
@@ -174,7 +178,7 @@ const closeDropdowns = () => {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Rechercher des idées, des inspirations..."
+          :placeholder="t('header.search.placeholder')"
           class="bg-transparent outline-none flex-1 text-sm"
           @focus="showSearchResults = true"
           @keyup.enter="handleSearch"
@@ -194,7 +198,7 @@ const closeDropdowns = () => {
         class="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
       >
         <div class="p-2">
-          <p class="px-3 py-1.5 text-xs font-medium text-neutral-400">Résultats</p>
+          <p class="px-3 py-1.5 text-xs font-medium text-neutral-400">{{ t('header.search.results') }}</p>
           <router-link
             v-for="pin in searchResults"
             :key="pin.id"
@@ -214,6 +218,9 @@ const closeDropdowns = () => {
 
     <!-- Right icons / Actions -->
     <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
+      <!-- Language switcher (toujours visible) -->
+      <LanguageSwitcher />
+
       <template v-if="isAuthenticated">
         <!-- Notifications -->
         <div class="relative z-30">
@@ -231,19 +238,19 @@ const closeDropdowns = () => {
             class="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
           >
             <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
-              <h3 class="font-semibold text-neutral-900">Notifications</h3>
+              <h3 class="font-semibold text-neutral-900">{{ t('header.notifications') }}</h3>
               <button
                 v-if="notifications.some(n => !n.is_read)"
                 class="text-xs text-pink-600 font-medium hover:underline"
                 @click="markAllAsRead"
               >
-                Tout marquer comme lu
+                {{ t('header.notifications.markAllRead') }}
               </button>
             </div>
             <div class="max-h-80 overflow-y-auto">
               <div v-if="notifications.length === 0" class="p-8 text-center text-neutral-400">
                 <span class="material-symbols-outlined text-4xl mb-2">notifications_off</span>
-                <p class="text-sm">Aucune notification</p>
+                <p class="text-sm">{{ t('header.notifications.empty') }}</p>
               </div>
               <div
                 v-for="notification in notifications"
@@ -295,19 +302,19 @@ const closeDropdowns = () => {
             class="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
           >
             <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
-              <h3 class="font-semibold text-neutral-900">Messages</h3>
+              <h3 class="font-semibold text-neutral-900">{{ t('header.messages') }}</h3>
               <router-link
                 to="/messages"
                 class="text-xs text-pink-600 font-medium hover:underline"
                 @click="closeDropdowns"
               >
-                Voir tout
+                {{ t('header.messages.viewAll') }}
               </router-link>
             </div>
             <div class="max-h-80 overflow-y-auto">
               <div v-if="conversations.length === 0" class="p-8 text-center text-neutral-400">
                 <span class="material-symbols-outlined text-4xl mb-2">chat_bubble_outline</span>
-                <p class="text-sm">Aucun message</p>
+                <p class="text-sm">{{ t('header.messages.empty') }}</p>
               </div>
               <div
                 v-for="conversation in conversations"
@@ -370,7 +377,7 @@ const closeDropdowns = () => {
                 @click="closeDropdowns"
               >
                 <span class="material-symbols-outlined text-lg">person</span>
-                Mon profil
+                {{ t('header.user.myProfile') }}
               </router-link>
               <router-link
                 to="/create"
@@ -378,7 +385,7 @@ const closeDropdowns = () => {
                 @click="showUserMenu = false"
               >
                 <span class="material-symbols-outlined text-lg">add_circle</span>
-                Créer un pin
+                {{ t('header.user.createPin') }}
               </router-link>
               <router-link
                 to="/explore"
@@ -386,7 +393,7 @@ const closeDropdowns = () => {
                 @click="showUserMenu = false"
               >
                 <span class="material-symbols-outlined text-lg">explore</span>
-                Explorer
+                {{ t('nav.explore') }}
               </router-link>
               <router-link
                 to="/settings"
@@ -394,7 +401,16 @@ const closeDropdowns = () => {
                 @click="showUserMenu = false"
               >
                 <span class="material-symbols-outlined text-lg">settings</span>
-                Paramètres
+                {{ t('nav.settings') }}
+              </router-link>
+              <router-link
+                to="/premium"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-pink-50 transition text-sm text-pink-600 font-semibold"
+                @click="showUserMenu = false"
+              >
+                <span class="material-symbols-outlined text-lg">workspace_premium</span>
+                {{ t('nav.premium') }}
+                <span class="ml-auto text-[9px] uppercase tracking-wider bg-pink-100 text-pink-700 px-1.5 py-0.5 rounded font-bold">{{ t('nav.premium.badge') }}</span>
               </router-link>
             </div>
 
@@ -404,7 +420,7 @@ const closeDropdowns = () => {
                 @click="handleLogout"
               >
                 <span class="material-symbols-outlined text-lg">logout</span>
-                Se déconnecter
+                {{ t('nav.logout') }}
               </button>
             </div>
           </div>
@@ -417,13 +433,13 @@ const closeDropdowns = () => {
             to="/login"
             class="px-4 py-2 rounded-full text-sm font-semibold text-neutral-700 hover:bg-neutral-100 transition"
           >
-            Connexion
+            {{ t('nav.login') }}
           </router-link>
           <router-link
             to="/register"
             class="px-4 py-2 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition"
           >
-            S'inscrire
+            {{ t('nav.register') }}
           </router-link>
         </div>
       </template>

@@ -6,6 +6,9 @@ import { useAuth } from '../composables/useAuth'
 import api from '../api'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const { pins, loading, fetchPins, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
@@ -108,15 +111,15 @@ const openPin = (slug: string) => {
   <div class="px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8">
     <!-- Hero section -->
     <section class="mb-10">
-      <h1 class="text-3xl sm:text-4xl font-bold text-neutral-900 mb-2">Explorer</h1>
+      <h1 class="text-3xl sm:text-4xl font-bold text-neutral-900 mb-2">{{ t('explore.title') }}</h1>
       <p class="text-base text-neutral-500 max-w-lg">
-        Découvrez les tendances du moment et explorez par catégories
+        {{ t('explore.subtitle') }}
       </p>
     </section>
 
     <!-- Categories grid -->
     <section class="mb-10">
-      <h2 class="text-lg font-semibold text-neutral-900 mb-4">Parcourir par catégorie</h2>
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">{{ t('explore.byCategory') }}</h2>
       <div v-if="categoriesLoading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <div
           v-for="i in 10"
@@ -141,7 +144,7 @@ const openPin = (slug: string) => {
           </span>
           <p class="text-sm font-semibold leading-tight">{{ category.name }}</p>
           <p class="text-xs opacity-80 mt-0.5">
-            {{ category.pinCount }} pins
+            {{ t('explore.pinsCount', { count: category.pinCount }) }}
           </p>
         </button>
       </div>
@@ -156,7 +159,7 @@ const openPin = (slug: string) => {
           @click="selectedCategory = null"
         >
           <span class="material-symbols-outlined text-base">close</span>
-          Fermer
+          {{ t('common.close') }}
         </button>
       </div>
       
@@ -174,10 +177,10 @@ const openPin = (slug: string) => {
     <!-- Trending section -->
     <section v-if="!selectedCategory">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-neutral-900">Tendances du moment</h2>
+        <h2 class="text-lg font-semibold text-neutral-900">{{ t('explore.trending') }}</h2>
         <span class="flex items-center gap-1 text-sm text-pink-600 font-medium">
           <span class="material-symbols-outlined text-lg">trending_up</span>
-          Populaire
+          {{ t('explore.popular') }}
         </span>
       </div>
 

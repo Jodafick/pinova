@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from '../i18n'
 
+const { t } = useI18n()
 const loading = ref(false)
 const error = ref('')
 
@@ -39,7 +41,7 @@ onMounted(() => {
         // Message de secours si la redirection ne se lance pas
         setTimeout(() => {
           loading.value = false
-          error.value = "Si l'application ne s'ouvre pas, assurez-vous qu'elle est installée."
+          error.value = t('mobile.error.notInstalled')
         }, 4000)
       }
     }
@@ -66,19 +68,19 @@ const handleGoogleClick = () => {
       <div class="w-20 h-20 rounded-full bg-pink-600 flex items-center justify-center overflow-hidden shadow-lg mb-4">
         <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
       </div>
-      <span class="text-3xl font-bold text-neutral-900 tracking-tight">Pinova Mobile</span>
+      <span class="text-3xl font-bold text-neutral-900 tracking-tight">{{ t('mobile.brand') }}</span>
     </div>
 
     <div v-if="!loading" class="w-full max-w-sm">
-      <h1 class="text-2xl font-bold text-neutral-800 mb-2">Connexion Google</h1>
-      <p class="text-neutral-500 mb-8 px-4">Connectez-vous pour synchroniser vos idées avec votre application mobile.</p>
-      
-      <button 
+      <h1 class="text-2xl font-bold text-neutral-800 mb-2">{{ t('mobile.title') }}</h1>
+      <p class="text-neutral-500 mb-8 px-4">{{ t('mobile.desc') }}</p>
+
+      <button
         @click="handleGoogleClick"
         class="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white border-2 border-neutral-200 rounded-2xl text-neutral-700 font-bold text-lg hover:bg-neutral-50 transition-all shadow-sm active:scale-95"
       >
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6" />
-        Continuer avec Google
+        {{ t('mobile.cta') }}
       </button>
 
       <div v-if="error" class="mt-6 p-4 bg-pink-50 border border-pink-100 rounded-xl text-pink-600 text-sm">
@@ -88,8 +90,8 @@ const handleGoogleClick = () => {
 
     <div v-else class="flex flex-col items-center">
       <div class="w-12 h-12 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin mb-4"></div>
-      <h1 class="text-xl font-bold text-neutral-800">Redirection...</h1>
-      <p class="text-neutral-500 mt-2">Veuillez patienter pendant que nous vous renvoyons vers l'application.</p>
+      <h1 class="text-xl font-bold text-neutral-800">{{ t('mobile.redirecting.title') }}</h1>
+      <p class="text-neutral-500 mt-2">{{ t('mobile.redirecting.desc') }}</p>
     </div>
   </div>
 </template>

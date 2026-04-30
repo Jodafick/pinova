@@ -3,9 +3,11 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useTokenClient } from 'vue3-google-signin'
+import { useI18n } from '../i18n'
 
 const router = useRouter()
 const { register, socialLogin } = useAuth()
+const { t } = useI18n()
 
 const displayName = ref('')
 const email = ref('')
@@ -19,19 +21,19 @@ const acceptTerms = ref(false)
 const handleRegister = async () => {
   error.value = ''
   if (!displayName.value || !email.value || !password.value) {
-    error.value = 'Veuillez remplir tous les champs obligatoires.'
+    error.value = t('register.error.empty')
     return
   }
   if (password.value.length < 8) {
-    error.value = 'Le mot de passe doit contenir au moins 8 caractères.'
+    error.value = t('register.error.passwordShort')
     return
   }
   if (password.value !== confirmPassword.value) {
-    error.value = 'Les mots de passe ne correspondent pas.'
+    error.value = t('register.error.passwordMismatch')
     return
   }
   if (!acceptTerms.value) {
-    error.value = "Veuillez accepter les conditions d'utilisation."
+    error.value = t('register.error.acceptTerms')
     return
   }
 
@@ -44,7 +46,7 @@ const handleRegister = async () => {
   loading.value = false
 
   if (!result.success) {
-    error.value = result.error || "Erreur lors de l'inscription."
+    error.value = result.error || t('register.error.generic')
     return
   }
   // Rediriger vers la page OTP après inscription
@@ -59,11 +61,11 @@ const { login: googleLogin } = useTokenClient({
     if (result.success) {
       router.push('/')
     } else {
-      error.value = result.error || 'Erreur de connexion avec Google.'
+      error.value = result.error || t('login.error.google')
     }
   },
   onError: () => {
-    error.value = 'Erreur lors de la connexion avec Google.'
+    error.value = t('login.error.google')
   }
 })
 </script>
@@ -86,10 +88,10 @@ const { login: googleLogin } = useTokenClient({
           <span class="text-3xl font-bold">Pinova</span>
         </div>
         <h1 class="text-5xl font-bold leading-tight mb-4">
-          Rejoignez la<br />communauté
+          {{ t('register.hero.title') }}
         </h1>
         <p class="text-lg text-white/90 max-w-md">
-          Créez un compte gratuit et commencez à sauvegarder, organiser et partager toutes vos inspirations.
+          {{ t('register.hero.desc') }}
         </p>
       </div>
     </div>
@@ -106,8 +108,8 @@ const { login: googleLogin } = useTokenClient({
         </div>
 
         <div class="text-center mb-10">
-          <h2 class="text-3xl font-extrabold text-neutral-900 mb-2">Inscription</h2>
-          <p class="text-neutral-500">Créez votre compte en quelques secondes</p>
+          <h2 class="text-3xl font-extrabold text-neutral-900 mb-2">{{ t('register.title') }}</h2>
+          <p class="text-neutral-500">{{ t('register.subtitle') }}</p>
         </div>
 
         <form @submit.prevent="handleRegister" class="space-y-5">
@@ -121,25 +123,25 @@ const { login: googleLogin } = useTokenClient({
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">Nom complet</label>
+              <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('register.fullName') }}</label>
               <div class="relative group">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">person</span>
                 <input
                   v-model="displayName"
                   type="text"
-                  placeholder="Jean Dupont"
+                  :placeholder="t('register.fullName.placeholder')"
                   class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                 />
               </div>
             </div>
             <div>
-              <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">Email</label>
+              <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('login.email') }}</label>
               <div class="relative group">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">mail</span>
                 <input
                   v-model="email"
                   type="email"
-                  placeholder="jean@exemple.com"
+                  :placeholder="t('register.email.placeholder')"
                   class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                 />
               </div>
@@ -147,13 +149,13 @@ const { login: googleLogin } = useTokenClient({
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">Mot de passe</label>
+            <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('login.password') }}</label>
             <div class="relative group">
               <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">lock</span>
               <input
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="Au moins 8 caractères"
+                :placeholder="t('register.password.placeholder')"
                 class="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
               />
               <button
@@ -167,13 +169,13 @@ const { login: googleLogin } = useTokenClient({
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">Confirmer le mot de passe</label>
+            <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('register.confirmPassword') }}</label>
             <div class="relative group">
               <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">verified_user</span>
               <input
                 v-model="confirmPassword"
                 type="password"
-                placeholder="Répétez votre mot de passe"
+                :placeholder="t('register.confirmPassword.placeholder')"
                 class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
               />
             </div>
@@ -189,7 +191,7 @@ const { login: googleLogin } = useTokenClient({
               <span class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none material-symbols-outlined text-sm font-bold">check</span>
             </div>
             <span class="text-sm text-neutral-500 font-medium select-none">
-              J'accepte les <a href="#" class="text-pink-600 font-bold hover:underline">Conditions d'utilisation</a> et la <a href="#" class="text-pink-600 font-bold hover:underline">Politique de confidentialité</a>.
+              {{ t('register.acceptTerms.before') }} <a href="#" class="text-pink-600 font-bold hover:underline">{{ t('register.acceptTerms.terms') }}</a> {{ t('register.acceptTerms.middle') }} <a href="#" class="text-pink-600 font-bold hover:underline">{{ t('register.acceptTerms.privacy') }}</a>.
             </span>
           </label>
 
@@ -199,13 +201,13 @@ const { login: googleLogin } = useTokenClient({
             :disabled="loading"
           >
             <span v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            {{ loading ? 'Création du compte...' : "S'inscrire" }}
+            {{ loading ? t('register.submitting') : t('register.submit') }}
           </button>
         </form>
 
         <div class="my-8 flex items-center gap-4 text-neutral-400">
           <div class="flex-1 h-px bg-neutral-200"></div>
-          <span class="text-xs font-bold uppercase tracking-wider">ou s'inscrire avec</span>
+          <span class="text-xs font-bold uppercase tracking-wider">{{ t('register.divider') }}</span>
           <div class="flex-1 h-px bg-neutral-200"></div>
         </div>
 
@@ -216,13 +218,13 @@ const { login: googleLogin } = useTokenClient({
             class="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl border border-neutral-200 bg-white hover:bg-neutral-50 transition-all text-sm font-bold text-neutral-700 w-full"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" />
-            Continuer avec Google
+            {{ t('login.googleCta') }}
           </button>
         </div>
 
         <p class="mt-10 text-center text-sm text-neutral-500 font-medium">
-          Déjà un compte ?
-          <router-link to="/login" class="text-pink-600 font-bold hover:underline">Connectez-vous ici</router-link>
+          {{ t('register.haveAccount') }}
+          <router-link to="/login" class="text-pink-600 font-bold hover:underline">{{ t('register.signIn') }}</router-link>
         </p>
       </div>
     </div>

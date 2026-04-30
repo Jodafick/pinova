@@ -5,24 +5,23 @@ import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
+import RichCommentInput from '../components/RichCommentInput.vue'
+import CommentThread from '../components/CommentThread.vue'
+import ProvenanceChain from '../components/ProvenanceChain.vue'
+import PrivateTags from '../components/PrivateTags.vue'
+import TranslateButton from '../components/TranslateButton.vue'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
 
-const { getPin, toggleSave, pins, fetchPins, formatCount, toggleLike, fetchComments, addComment: apiAddComment, toggleFollow, loading: pinsLoading } = usePins()
+const { getPin, toggleSave, pins, fetchPins, formatCount, toggleLike, toggleFollow, loading: pinsLoading } = usePins()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
 const pinSlug = computed(() => route.params.slug as string)
 const pin = computed(() => getPin(pinSlug.value))
-
-const commentText = ref('')
-const comments = ref<any[]>([])
-
-const fetchPinComments = async () => {
-  if (pinSlug.value) {
-    comments.value = await fetchComments(pinSlug.value)
-  }
-}
 
 const relatedPins = computed(() => {
   if (!pin.value) return []
@@ -32,9 +31,6 @@ const relatedPins = computed(() => {
 onMounted(async () => {
   if (pins.value.length === 0 || !pin.value) {
     await fetchPins()
-  }
-  if (pinSlug.value) {
-    fetchPinComments()
   }
 })
 
@@ -68,16 +64,81 @@ const handleFollow = async () => {
   }
 }
 
-const handleAddComment = async () => {
-  if (!commentText.value.trim() || !isAuthenticated.value || !pin.value) return
-  try {
-    const newComment = await apiAddComment(pin.value.slug, commentText.value)
-    comments.value.unshift(newComment)
-    commentText.value = ''
-  } catch (err) {
-    console.error('Failed to add comment:', err)
+// --- UI demo : commentaires riches (gif + mentions + threads) ---
+const richComments = ref([
+  {
+    id: 1,
+    user: 'Sarah Design',
+    username: 'sarah_design',
+    avatar: 'bg-pink-500',
+    text: 'J\'adore cette idée @mohamed ! La palette est juste parfaite 🌸',
+    gif: null as string | null,
+    createdAt: 'il y a 2 h',
+    liked: true,
+    likes: 12,
+    originalLang: 'EN',
+    translated: false,
+    replies: [
+      {
+        id: 11,
+        user: 'Mohamed',
+        username: 'mohamed',
+        avatar: 'bg-blue-500',
+        text: 'Merci @sarah_design ! Inspiré de ton dernier board 😍',
+        gif: null,
+        createdAt: 'il y a 1 h',
+        likes: 4,
+      },
+    ],
+  },
+  {
+    id: 2,
+    user: 'Léa Architecte',
+    username: 'lea_archi',
+    avatar: 'bg-amber-500',
+    text: 'À épingler immédiatement !',
+    gif: 'https://media.tenor.com/c0jElkPm00MAAAAi/fire-flame.gif',
+    createdAt: 'il y a 30 min',
+    likes: 7,
+    replies: [],
+  },
+])
+
+const handleRichSubmit = (payload: { text: string; gif?: string | null; replyTo?: string | null; parentId?: number }) => {
+  const newComment = {
+    id: Date.now(),
+    user: currentUser.value?.displayName || 'Vous',
+    username: currentUser.value?.username || 'vous',
+    avatar: currentUser.value?.avatarColor || 'bg-pink-500',
+    text: payload.text,
+    gif: payload.gif || null,
+    createdAt: 'à l\'instant',
+    likes: 0,
+    replies: [] as any[],
+  }
+  if (payload.parentId) {
+    const parent = richComments.value.find(c => c.id === payload.parentId)
+    if (parent) parent.replies = [...(parent.replies || []), newComment]
+  } else {
+    richComments.value.unshift(newComment as any)
   }
 }
+
+const handleLikeComment = (id: number) => {
+  const c = richComments.value.find(c => c.id === id)
+  if (c) {
+    c.liked = !c.liked
+    c.likes += c.liked ? 1 : -1
+  }
+}
+
+const handleTranslateComment = (id: number) => {
+  const c = richComments.value.find(c => c.id === id)
+  if (c) c.translated = !c.translated
+}
+
+// Mode privé du pin (UI demo)
+const pinVisibility = ref<'public' | 'followers' | 'private'>('public')
 
 const handleToggleSaveRelated = (slug: string) => {
   toggleSave(slug)
@@ -89,7 +150,7 @@ const handleToggleSaveRelated = (slug: string) => {
 
 const handleShare = () => {
   navigator.clipboard.writeText(window.location.href)
-  alert('Lien copié dans le presse-papier !')
+  alert(t('pin.share.copied'))
 }
 
 const goBack = () => {
@@ -106,10 +167,10 @@ const openRelatedPin = (slug: string) => {
     <!-- Not found -->
     <div v-if="!pin" class="flex flex-col items-center justify-center py-32 text-center px-6">
       <span class="material-symbols-outlined text-7xl text-neutral-300 mb-4">broken_image</span>
-      <h1 class="text-2xl font-bold text-neutral-800 mb-2">Pin introuvable</h1>
-      <p class="text-neutral-500 mb-6">Ce pin n'existe pas ou a été supprimé.</p>
+      <h1 class="text-2xl font-bold text-neutral-800 mb-2">{{ t('pin.notFound.title') }}</h1>
+      <p class="text-neutral-500 mb-6">{{ t('pin.notFound.desc') }}</p>
       <router-link to="/" class="px-6 py-2.5 rounded-full bg-pink-600 text-white font-semibold text-sm hover:bg-pink-700 transition">
-        Retour à l'accueil
+        {{ t('pin.notFound.cta') }}
       </router-link>
     </div>
 
@@ -122,7 +183,7 @@ const openRelatedPin = (slug: string) => {
           @click="goBack"
         >
           <span class="material-symbols-outlined text-lg">arrow_back</span>
-          Retour
+          {{ t('common.back') }}
         </button>
 
         <!-- Main card -->
@@ -165,7 +226,7 @@ const openRelatedPin = (slug: string) => {
                   : 'bg-pink-600 text-white hover:bg-pink-700'"
                 @click="handleSave"
               >
-                {{ pin.saved ? 'Enregistré' : 'Enregistrer' }}
+                {{ pin.saved ? t('pin.saved') : t('pin.save') }}
               </button>
             </div>
 
@@ -181,8 +242,37 @@ const openRelatedPin = (slug: string) => {
             </a>
 
             <!-- Title & Description -->
-            <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-3">{{ pin.title }}</h1>
-            <p class="text-base text-neutral-600 leading-relaxed mb-6">{{ pin.description }}</p>
+            <div class="flex items-start gap-2 mb-3">
+              <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 flex-1">{{ pin.title }}</h1>
+              <span
+                v-if="pinVisibility !== 'public'"
+                class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0"
+                :class="pinVisibility === 'private' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'"
+              >
+                <span class="material-symbols-outlined text-xs">{{ pinVisibility === 'private' ? 'lock' : 'group' }}</span>
+                {{ pinVisibility === 'private' ? t('pin.visibility.private') : t('pin.visibility.followers') }}
+              </span>
+            </div>
+            <div class="mb-6">
+              <TranslateButton
+                :original="pin.description"
+                original-lang="EN"
+                target-lang="FR"
+              />
+            </div>
+
+            <!-- Crédit créateur certifié (provenance) -->
+            <div class="mb-6">
+              <ProvenanceChain
+                :creator="pin.user"
+                :creator-avatar="pin.userAvatarColor"
+              />
+            </div>
+
+            <!-- Tags privés -->
+            <div class="mb-6">
+              <PrivateTags />
+            </div>
 
             <!-- Author -->
             <div class="mt-8 flex items-center justify-between">
@@ -200,7 +290,7 @@ const openRelatedPin = (slug: string) => {
                 </div>
                 <div>
                   <p class="text-sm font-bold text-neutral-900">{{ pin.user }}</p>
-                  <p class="text-xs text-neutral-500">2,4k abonnés</p>
+                  <p class="text-xs text-neutral-500">{{ t('pin.followers', { count: '2,4k' }) }}</p>
                 </div>
               </router-link>
               <button
@@ -211,7 +301,7 @@ const openRelatedPin = (slug: string) => {
                   : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200'"
                 @click="handleFollow"
               >
-                {{ pin.isFollowing ? 'Abonné' : 'S\'abonner' }}
+                {{ pin.isFollowing ? t('pin.following') : t('pin.follow') }}
               </button>
             </div>
 
@@ -231,55 +321,40 @@ const openRelatedPin = (slug: string) => {
               </span>
             </div>
 
-            <!-- Comments section -->
+            <!-- Comments section (rich) -->
             <div class="flex-1">
-              <h3 class="font-semibold text-neutral-900 mb-3">
-                Commentaires
-                <span class="text-neutral-400 font-normal text-sm">({{ comments.length }})</span>
-              </h3>
-
-              <div class="space-y-3 max-h-48 overflow-y-auto mb-4">
-                <div v-for="c in comments" :key="c.id" class="flex gap-3">
-                  <div
-                    class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                    :class="c.avatar_color"
-                  >
-                    {{ (c.display_name || c.username)[0] }}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span class="text-sm font-semibold">{{ c.display_name || c.username }}</span>
-                      <span class="text-xs text-neutral-400">{{ new Date(c.created_at).toLocaleDateString() }}</span>
-                    </div>
-                    <p class="text-sm text-neutral-600">{{ c.text }}</p>
-                  </div>
-                </div>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-neutral-900 flex items-center gap-2">
+                  {{ t('pin.comments') }}
+                  <span class="text-neutral-400 font-normal text-sm">({{ richComments.length }})</span>
+                </h3>
+                <button class="text-xs text-neutral-500 font-medium hover:text-neutral-700 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-base">sort</span>
+                  {{ t('pin.comments.sortRecent') }}
+                </button>
               </div>
 
-              <!-- Add comment -->
-              <div class="flex items-center gap-3 pt-3 border-t border-neutral-100">
+              <!-- Rich threads -->
+              <div class="max-h-[420px] overflow-y-auto mb-5 pr-1">
+                <CommentThread
+                  :comments="richComments"
+                  @add="handleRichSubmit"
+                  @like="handleLikeComment"
+                  @translate="handleTranslateComment"
+                />
+              </div>
+
+              <!-- Add comment (rich) -->
+              <div class="flex items-start gap-3 pt-3 border-t border-neutral-100">
                 <div
                   v-if="currentUser"
-                  class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                  class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-1"
                   :class="currentUser.avatarColor"
                 >
                   {{ currentUser.displayName[0] }}
                 </div>
-                <div class="flex-1 flex items-center gap-2">
-                  <input
-                    v-model="commentText"
-                    type="text"
-                    placeholder="Ajouter un commentaire..."
-                    class="flex-1 py-2.5 px-4 rounded-full bg-neutral-100 text-sm outline-none focus:ring-2 focus:ring-pink-500"
-                    @keyup.enter="handleAddComment"
-                  />
-                  <button
-                    class="w-9 h-9 rounded-full bg-pink-600 text-white flex items-center justify-center hover:bg-pink-700 transition disabled:opacity-40"
-                    :disabled="!commentText.trim()"
-                    @click="handleAddComment"
-                  >
-                    <span class="material-symbols-outlined text-lg">send</span>
-                  </button>
+                <div class="flex-1 min-w-0">
+                  <RichCommentInput @submit="handleRichSubmit" />
                 </div>
               </div>
             </div>
@@ -289,7 +364,7 @@ const openRelatedPin = (slug: string) => {
 
       <!-- Related pins -->
       <section v-if="relatedPins.length > 0 || pinsLoading" class="px-3 sm:px-6 lg:px-10 xl:px-16 pb-10">
-        <h2 class="text-xl font-bold text-neutral-900 mb-5">Plus comme ça</h2>
+        <h2 class="text-xl font-bold text-neutral-900 mb-5">{{ t('pin.related') }}</h2>
         <PinSkeleton v-if="pinsLoading && relatedPins.length === 0" />
         <PinGrid
           v-else

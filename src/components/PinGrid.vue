@@ -3,9 +3,11 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Pin } from '../types'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
+import { useI18n } from '../i18n'
 
 const { formatCount } = usePins()
 const { isAuthenticated } = useAuth()
+const { t } = useI18n()
 
 const props = defineProps<{
   pins: Pin[]
@@ -56,7 +58,7 @@ const isImageLoaded = (pinId: number) => !!loadedImages.value[pinId]
 </script>
 
 <template>
-  <div class="flex gap-3 sm:gap-4 items-start" aria-label="Flux de pins">
+  <div class="flex gap-3 sm:gap-4 items-start" :aria-label="t('pin.related')">
     <div
       v-for="(column, colIndex) in columns"
       :key="colIndex"
@@ -93,7 +95,7 @@ const isImageLoaded = (pinId: number) => !!loadedImages.value[pinId]
             :class="pin.saved ? 'bg-neutral-900 text-white' : 'bg-pink-600 text-white hover:bg-pink-700'"
             @click.stop="emit('toggle-save', pin.slug)"
           >
-            {{ pin.saved ? 'Enregistré' : 'Enregistrer' }}
+            {{ pin.saved ? t('pin.saved') : t('pin.save') }}
           </button>
 
           <!-- Bottom actions on hover -->

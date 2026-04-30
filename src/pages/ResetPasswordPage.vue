@@ -2,10 +2,12 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { useI18n } from '../i18n'
 
 const route = useRoute()
 const router = useRouter()
 const { resetPassword } = useAuth()
+const { t } = useI18n()
 
 const password = ref('')
 const confirmPassword = ref('')
@@ -17,11 +19,11 @@ const showPassword = ref(false)
 const handleResetPassword = async () => {
   error.value = ''
   if (password.value !== confirmPassword.value) {
-    error.value = 'Les mots de passe ne correspondent pas.'
+    error.value = t('register.error.passwordMismatch')
     return
   }
   if (password.value.length < 8) {
-    error.value = 'Le mot de passe doit contenir au moins 8 caractères.'
+    error.value = t('register.error.passwordShort')
     return
   }
 
@@ -37,7 +39,7 @@ const handleResetPassword = async () => {
     success.value = true
     setTimeout(() => router.push('/login'), 3000)
   } else {
-    error.value = result.error || 'Lien invalide ou expiré.'
+    error.value = result.error || t('reset.error.invalid')
   }
 }
 </script>
@@ -46,14 +48,14 @@ const handleResetPassword = async () => {
   <div class="min-h-screen flex items-center justify-center bg-neutral-50 px-6 py-12">
     <div class="w-full max-w-md bg-white p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100">
       <div class="text-center mb-8">
-        <h2 class="text-3xl font-extrabold text-neutral-900 mb-2">Nouveau mot de passe</h2>
-        <p class="text-neutral-500">Choisissez un mot de passe robuste pour votre compte.</p>
+        <h2 class="text-3xl font-extrabold text-neutral-900 mb-2">{{ t('reset.title') }}</h2>
+        <p class="text-neutral-500">{{ t('reset.subtitle') }}</p>
       </div>
 
       <div v-if="success" class="bg-green-50 border border-green-100 rounded-2xl p-6 text-center animate-fade-in">
         <span class="material-symbols-outlined text-green-600 text-4xl mb-3">check_circle</span>
-        <h3 class="text-green-800 font-bold mb-1">Mot de passe réinitialisé !</h3>
-        <p class="text-green-700 text-sm">Vous allez être redirigé vers la page de connexion...</p>
+        <h3 class="text-green-800 font-bold mb-1">{{ t('reset.success.title') }}</h3>
+        <p class="text-green-700 text-sm">{{ t('reset.success.desc') }}</p>
       </div>
 
       <form v-else @submit.prevent="handleResetPassword" class="space-y-5">
@@ -63,7 +65,7 @@ const handleResetPassword = async () => {
         </div>
 
         <div>
-          <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">Nouveau mot de passe</label>
+          <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('reset.newPassword') }}</label>
           <div class="relative group">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">lock</span>
             <input
@@ -83,7 +85,7 @@ const handleResetPassword = async () => {
         </div>
 
         <div>
-          <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">Confirmer le mot de passe</label>
+          <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('reset.confirmPassword') }}</label>
           <div class="relative group">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">verified_user</span>
             <input
@@ -101,7 +103,7 @@ const handleResetPassword = async () => {
           :disabled="loading"
         >
           <span v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-          Réinitialiser le mot de passe
+          {{ t('reset.submit') }}
         </button>
       </form>
     </div>

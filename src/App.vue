@@ -3,11 +3,15 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from './composables/useAuth'
 import { usePins } from './composables/usePins'
+import { useI18n } from './i18n'
 import GlobalHeader from './components/GlobalHeader.vue'
 
 const route = useRoute()
 const { fetchCurrentUser, isAuthenticated, isInitializing } = useAuth()
 const { fetchPins } = usePins()
+const { t, setLang, currentLang } = useI18n()
+// Apply current language on app start (sets html lang/dir attributes).
+setLang(currentLang.value)
 
 // Google One Tap Sign-in
 // Désactivé à la demande de l'utilisateur
@@ -64,7 +68,7 @@ const isAuthPage = computed(() => {
     <!-- Full screen loading while initializing -->
     <div v-if="isInitializing" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
       <div class="w-12 h-12 rounded-full border-4 border-pink-100 border-t-pink-600 animate-spin mb-4"></div>
-      <p class="text-neutral-500 font-medium">Chargement de Pinova...</p>
+      <p class="text-neutral-500 font-medium">{{ t('app.loading') }}</p>
     </div>
 
     <GlobalHeader v-if="!isAuthPage && !isInitializing" />
@@ -84,14 +88,14 @@ const isAuthPage = computed(() => {
         </div>
 
         <nav class="flex items-center gap-5 text-xs text-neutral-500">
-          <router-link to="/" class="hover:text-neutral-700 transition">Accueil</router-link>
-          <router-link to="/explore" class="hover:text-neutral-700 transition">Explorer</router-link>
-          <router-link to="/profile" class="hover:text-neutral-700 transition">Profil</router-link>
-          <router-link to="/settings" class="hover:text-neutral-700 transition">Paramètres</router-link>
+          <router-link to="/" class="hover:text-neutral-700 transition">{{ t('nav.home') }}</router-link>
+          <router-link to="/explore" class="hover:text-neutral-700 transition">{{ t('nav.explore') }}</router-link>
+          <router-link to="/profile" class="hover:text-neutral-700 transition">{{ t('nav.profile') }}</router-link>
+          <router-link to="/settings" class="hover:text-neutral-700 transition">{{ t('nav.settings') }}</router-link>
         </nav>
 
         <p class="text-xs text-neutral-400">
-          &copy; 2026 Pinova. Tous droits réservés.
+          {{ t('app.copyright') }}
         </p>
       </div>
     </footer>
