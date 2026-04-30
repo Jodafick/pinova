@@ -52,6 +52,7 @@ const fetchNotifications = async () => {
     console.error('Error fetching notifications:', err)
   }
 }
+
 const fetchConversations = async () => {
   if (!isAuthenticated.value) return
   try {
