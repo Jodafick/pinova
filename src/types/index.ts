@@ -34,6 +34,12 @@ export type User = {
   following: number
   isFollowing?: boolean
   savedPins: number[]
+  boards?: {
+    id: number
+    name: string
+    pinCount: number
+    isPrivate: boolean
+  }[]
 }
 
 export type Notification = {

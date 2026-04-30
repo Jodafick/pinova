@@ -129,10 +129,8 @@ const openMore = (slug: string) => {
       @more="openMore"
     />
 
-    <!-- Loading indicator for infinite scroll -->
-    <div v-if="isFetchingNextPage" class="flex justify-center py-8">
-      <div class="w-8 h-8 border-4 border-neutral-200 border-t-pink-600 rounded-full animate-spin"></div>
-    </div>
+    <!-- Pinterest-like skeleton while fetching next page -->
+    <PinSkeleton v-if="isFetchingNextPage" class="mt-6" />
 
     <!-- Floating create button mobile -->
     <router-link
