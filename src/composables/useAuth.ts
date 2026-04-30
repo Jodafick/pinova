@@ -25,7 +25,9 @@ const defaultUser: User = {
 const currentUser = ref<User | null>(null)
 const isAuthenticated = computed(() => currentUser.value !== null)
 const isInitializing = ref(true)
-const inMemoryAccessToken = ref<string | null>(null)
+const inMemoryAccessToken = ref<string | null>(
+  typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null,
+)
 
 function getFullMediaUrl(url: string | null): string | undefined {
   if (!url) return undefined
@@ -65,9 +67,19 @@ export function useAuth() {
     inMemoryAccessToken.value = token
     if (token) {
       api.defaults.headers.common.Authorization = `Bearer ${token}`
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('pinova_token', token)
+      }
     } else {
       delete api.defaults.headers.common.Authorization
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('pinova_token')
+      }
     }
+  }
+
+  if (inMemoryAccessToken.value) {
+    api.defaults.headers.common.Authorization = `Bearer ${inMemoryAccessToken.value}`
   }
 
   async function fetchCurrentUser() {
@@ -138,6 +150,9 @@ export function useAuth() {
       const response = await api.post('auth/login/', { email, password })
       if (response.data?.access) {
         applyAccessToken(response.data.access)
+      }
+      if (response.data?.refresh && typeof window !== 'undefined') {
+        window.localStorage.setItem('pinova_refresh_token', response.data.refresh)
       }
       if (response.data?.user) {
         currentUser.value = mapDjangoUserToFrontend(response.data.user)
@@ -216,6 +231,9 @@ export function useAuth() {
       if (response.data?.access) {
         applyAccessToken(response.data.access)
       }
+      if (response.data?.refresh && typeof window !== 'undefined') {
+        window.localStorage.setItem('pinova_refresh_token', response.data.refresh)
+      }
       if (response.data?.user) {
         currentUser.value = mapDjangoUserToFrontend(response.data.user)
       }
@@ -235,6 +253,9 @@ export function useAuth() {
   function logout() {
     api.post('auth/logout/').catch(() => undefined)
     applyAccessToken(null)
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('pinova_refresh_token')
+    }
     currentUser.value = null
     console.log('🚪 Logged out successfully.')
   }
