@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
+import { useAuth } from '../composables/useAuth'
+import api from '../api'
 
 const { t } = useI18n()
+const router = useRouter()
+const { currentUser, isAuthenticated, fetchCurrentUser } = useAuth()
 
 const billingCycle = ref<'monthly' | 'yearly'>('monthly')
 const selectedPlan = ref<string | null>('plus')
+const checkoutPendingPlan = ref<string | null>(null)
+const confirmPending = ref(false)
+const paymentInfoMessage = ref('')
+const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
 
 const plans = computed(() => [
   {
@@ -82,6 +91,66 @@ const faqs = computed(() => [
   { q: t('premium.faq.q3'), a: t('premium.faq.a3') },
   { q: t('premium.faq.q4'), a: t('premium.faq.a4') },
 ])
+
+const handleCheckout = async (planId: string) => {
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  checkoutPendingPlan.value = planId
+  paymentInfoMessage.value = ''
+  try {
+    const response = await api.post('subscription/checkout/', {
+      plan: planId,
+      billing_cycle: billingCycle.value,
+    })
+    const checkoutUrl = response.data?.checkout_url
+    const transactionId = response.data?.transaction_id
+    if (transactionId && typeof window !== 'undefined') {
+      window.localStorage.setItem(PENDING_TX_STORAGE_KEY, String(transactionId))
+    }
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl
+      return
+    }
+    paymentInfoMessage.value = t('premium.payment.checkoutError')
+  } catch (err: any) {
+    paymentInfoMessage.value = err?.response?.data?.error || t('premium.payment.checkoutError')
+  } finally {
+    checkoutPendingPlan.value = null
+  }
+}
+
+const confirmPendingPayment = async () => {
+  if (typeof window === 'undefined') return
+  const transactionId = window.localStorage.getItem(PENDING_TX_STORAGE_KEY)
+  if (!transactionId) {
+    paymentInfoMessage.value = t('premium.payment.noPending')
+    return
+  }
+  confirmPending.value = true
+  paymentInfoMessage.value = ''
+  try {
+    const response = await api.post('subscription/confirm/', { transaction_id: transactionId })
+    if (response.data?.status === 'approved') {
+      await fetchCurrentUser()
+      window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
+      paymentInfoMessage.value = t('premium.payment.success', { plan: String(response.data?.plan || '').toUpperCase() })
+    } else {
+      paymentInfoMessage.value = t('premium.payment.pending')
+    }
+  } catch (err: any) {
+    paymentInfoMessage.value = err?.response?.data?.error || t('premium.payment.confirmError')
+  } finally {
+    confirmPending.value = false
+  }
+}
+
+onMounted(() => {
+  if (currentUser.value?.subscription?.plan) {
+    selectedPlan.value = currentUser.value.subscription.plan
+  }
+})
 </script>
 
 <template>
@@ -158,10 +227,11 @@ const faqs = computed(() => [
             : plan.id === 'pro'
               ? 'bg-neutral-900 text-white hover:bg-neutral-800'
               : 'bg-neutral-100 text-neutral-500 cursor-not-allowed'"
-          :disabled="plan.ctaDisabled"
-          @click="selectedPlan = plan.id"
+          :disabled="plan.ctaDisabled || checkoutPendingPlan === plan.id"
+          @click="handleCheckout(plan.id)"
         >
-          {{ plan.cta }}
+          <span v-if="checkoutPendingPlan === plan.id" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+          <span v-else>{{ plan.cta }}</span>
         </button>
 
         <ul class="space-y-2.5">
@@ -216,6 +286,16 @@ const faqs = computed(() => [
 
     <!-- FAQ -->
     <div>
+      <div class="max-w-2xl mx-auto mb-6 flex items-center justify-between gap-3">
+        <button
+          class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
+          :disabled="confirmPending"
+          @click="confirmPendingPayment"
+        >
+          {{ confirmPending ? t('premium.payment.checking') : t('premium.payment.confirmCta') }}
+        </button>
+        <p v-if="paymentInfoMessage" class="text-xs text-neutral-600">{{ paymentInfoMessage }}</p>
+      </div>
       <h2 class="text-2xl font-bold text-neutral-900 mb-6 text-center">{{ t('premium.faq.title') }}</h2>
       <div class="max-w-2xl mx-auto space-y-3">
         <details
