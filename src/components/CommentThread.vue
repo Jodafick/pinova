@@ -19,17 +19,21 @@ type Comment = {
   translated?: boolean
   originalLang?: string
   replies?: Comment[]
+  repliesNextPage?: number | null
+  repliesCount?: number
 }
 
 defineProps<{
   comments: Comment[]
   canTranslate?: boolean
+  highlightedCommentId?: number | null
 }>()
 
 const emit = defineEmits<{
   (e: 'add', payload: { text: string; gif?: string | null; replyTo?: string | null; parentId?: number }): void
   (e: 'like', commentId: number): void
   (e: 'translate', commentId: number): void
+  (e: 'load-more-replies', commentId: number): void
 }>()
 
 const replyingTo = ref<number | null>(null)
@@ -50,7 +54,13 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
 
 <template>
   <div class="space-y-4">
-    <div v-for="comment in comments" :key="comment.id" class="flex gap-3">
+    <div
+      v-for="comment in comments"
+      :id="`comment-${comment.id}`"
+      :key="comment.id"
+      class="flex gap-3 rounded-xl transition-all duration-300"
+      :class="comment.id === highlightedCommentId ? 'bg-pink-50 ring-2 ring-pink-200 p-2' : ''"
+    >
       <div
         class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
         :class="comment.avatar"
@@ -120,7 +130,13 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
 
         <!-- Nested replies -->
         <div v-if="comment.replies && comment.replies.length" class="mt-3 pl-4 border-l-2 border-neutral-100 space-y-3">
-          <div v-for="reply in comment.replies" :key="reply.id" class="flex gap-3">
+          <div
+            v-for="reply in comment.replies"
+            :id="`comment-${reply.id}`"
+            :key="reply.id"
+            class="flex gap-3 rounded-xl transition-all duration-300"
+            :class="reply.id === highlightedCommentId ? 'bg-pink-50 ring-2 ring-pink-200 p-2' : ''"
+          >
             <div
               class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
               :class="reply.avatar"
@@ -148,6 +164,14 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
               </div>
             </div>
           </div>
+        </div>
+        <div v-if="comment.repliesNextPage" class="mt-2 pl-4">
+          <button
+            class="text-xs font-semibold text-pink-600 hover:text-pink-700"
+            @click="emit('load-more-replies', comment.id)"
+          >
+            {{ t('comment.loadMoreReplies') }}
+          </button>
         </div>
       </div>
     </div>

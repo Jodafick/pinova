@@ -106,6 +106,9 @@ export const en: Record<string, string> = {
   'comment.translate': 'Translate',
   'comment.viewOriginal': 'View original',
   'comment.replyTo.placeholder': 'Reply to @{user}...',
+  'comment.loadMoreReplies': 'Load more replies',
+  'comment.loadMoreComments': 'Load more comments',
+  'comment.loadingMoreComments': 'Loading...',
 
   'provenance.title': 'Certified creator credit',
   'provenance.subtitle': 'Verified provenance chain · Anti-theft',

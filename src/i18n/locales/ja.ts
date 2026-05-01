@@ -104,6 +104,9 @@ export const ja: Record<string, string> = {
   'comment.translate': '翻訳',
   'comment.viewOriginal': '原文を表示',
   'comment.replyTo.placeholder': '@{user} に返信...',
+  'comment.loadMoreReplies': '返信をさらに表示',
+  'comment.loadMoreComments': 'コメントをさらに表示',
+  'comment.loadingMoreComments': '読み込み中...',
 
   'provenance.title': '認証済みクリエイタークレジット',
   'provenance.subtitle': '出所チェーン認証済み・盗用防止',

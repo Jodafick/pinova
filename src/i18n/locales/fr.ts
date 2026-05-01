@@ -114,6 +114,9 @@ export const fr: Record<string, string> = {
   'comment.translate': 'Traduire',
   'comment.viewOriginal': 'Voir l\'original',
   'comment.replyTo.placeholder': 'Répondre à @{user}...',
+  'comment.loadMoreReplies': 'Charger plus de réponses',
+  'comment.loadMoreComments': 'Charger plus de commentaires',
+  'comment.loadingMoreComments': 'Chargement...',
 
   // Provenance
   'provenance.title': 'Crédit créateur certifié',

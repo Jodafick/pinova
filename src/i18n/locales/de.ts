@@ -104,6 +104,9 @@ export const de: Record<string, string> = {
   'comment.translate': 'Übersetzen',
   'comment.viewOriginal': 'Original anzeigen',
   'comment.replyTo.placeholder': 'Antwort an @{user}...',
+  'comment.loadMoreReplies': 'Mehr Antworten laden',
+  'comment.loadMoreComments': 'Mehr Kommentare laden',
+  'comment.loadingMoreComments': 'Wird geladen...',
 
   'provenance.title': 'Zertifizierter Urheber-Kredit',
   'provenance.subtitle': 'Geprüfte Provenienzkette · Diebstahlschutz',

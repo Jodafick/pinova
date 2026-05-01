@@ -10,6 +10,13 @@ const currentPage = ref(1)
 const hasNextPage = ref(true)
 const isFetchingNextPage = ref(false)
 
+type PaginatedResponse<T> = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+
 function getFullMediaUrl(url: string | null): string {
   if (!url) return ''
   if (url.startsWith('http')) return url
@@ -150,13 +157,41 @@ export function usePins() {
     }
   }
 
-  async function fetchComments(pinSlug: string) {
+  async function fetchComments(pinSlug: string, page = 1) {
     try {
-      const response = await api.get(`pins/${pinSlug}/comments/`)
-      return response.data
+      const response = await api.get(`pins/${pinSlug}/comments/`, { params: { page } })
+      const data = response.data
+      if (Array.isArray(data)) {
+        return {
+          count: data.length,
+          next: null,
+          previous: null,
+          results: data,
+        } as PaginatedResponse<any>
+      }
+      return data as PaginatedResponse<any>
     } catch (err) {
       console.error('Error fetching comments:', err)
-      return []
+      return { count: 0, next: null, previous: null, results: [] } as PaginatedResponse<any>
+    }
+  }
+
+  async function fetchCommentReplies(commentId: number, page = 1) {
+    try {
+      const response = await api.get(`pins/comments/${commentId}/replies/`, { params: { page } })
+      const data = response.data
+      if (Array.isArray(data)) {
+        return {
+          count: data.length,
+          next: null,
+          previous: null,
+          results: data,
+        } as PaginatedResponse<any>
+      }
+      return data as PaginatedResponse<any>
+    } catch (err) {
+      console.error('Error fetching comment replies:', err)
+      return { count: 0, next: null, previous: null, results: [] } as PaginatedResponse<any>
     }
   }
 
@@ -285,6 +320,7 @@ export function usePins() {
     toggleLike,
     toggleFollow,
     fetchComments,
+    fetchCommentReplies,
     addComment,
     translatePinDescription,
     translateComment,

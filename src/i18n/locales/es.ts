@@ -104,6 +104,9 @@ export const es: Record<string, string> = {
   'comment.translate': 'Traducir',
   'comment.viewOriginal': 'Ver original',
   'comment.replyTo.placeholder': 'Responder a @{user}...',
+  'comment.loadMoreReplies': 'Cargar más respuestas',
+  'comment.loadMoreComments': 'Cargar más comentarios',
+  'comment.loadingMoreComments': 'Cargando...',
 
   'provenance.title': 'Crédito de creador certificado',
   'provenance.subtitle': 'Cadena de procedencia verificada · Anti-robo',

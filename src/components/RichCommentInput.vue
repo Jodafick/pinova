@@ -33,6 +33,9 @@ const suggestedUsers = ref<{ username: string; name: string; avatar: string }[]>
 let mentionTimer: ReturnType<typeof setTimeout> | null = null
 
 const mentionFilter = ref('')
+const mentionPage = ref(1)
+const mentionHasNext = ref(false)
+const mentionLoading = ref(false)
 
 const filteredUsers = computed(() => {
   if (!mentionFilter.value) return suggestedUsers.value
@@ -40,17 +43,41 @@ const filteredUsers = computed(() => {
   return suggestedUsers.value.filter(u => u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q))
 })
 
-const fetchMentionUsers = async (query: string) => {
+const fetchMentionUsers = async (query: string, reset = true) => {
+  if (mentionLoading.value) return
+  if (!reset && !mentionHasNext.value) return
+  mentionLoading.value = true
+  if (reset) {
+    mentionPage.value = 1
+    mentionHasNext.value = false
+    suggestedUsers.value = []
+  }
   try {
-    const response = await api.get('users/mentions/', { params: { q: query } })
-    suggestedUsers.value = (response.data || []).map((user: any) => ({
+    const response = await api.get('users/mentions/', { params: { q: query, page: mentionPage.value, page_size: 10 } })
+    const payload = response.data || {}
+    const users = Array.isArray(payload) ? payload : payload.results || []
+    const mapped = users.map((user: any) => ({
       username: user.username,
       name: user.display_name || user.username,
       avatar: user.avatar_color || 'bg-pink-500',
     }))
+    suggestedUsers.value = reset
+      ? mapped
+      : [
+          ...suggestedUsers.value,
+          ...mapped.filter((u: { username: string }) => !suggestedUsers.value.some((e) => e.username === u.username)),
+        ]
+    mentionHasNext.value = !!payload.next
+    if (payload.next) {
+      mentionPage.value += 1
+    }
   } catch (err) {
     console.error('Erreur chargement suggestions de mention', err)
-    suggestedUsers.value = []
+    if (reset) {
+      suggestedUsers.value = []
+    }
+  } finally {
+    mentionLoading.value = false
   }
 }
 
@@ -64,12 +91,21 @@ const handleInput = () => {
       showMentionList.value = true
       if (mentionTimer) clearTimeout(mentionTimer)
       mentionTimer = setTimeout(() => {
-        void fetchMentionUsers(after)
+        void fetchMentionUsers(after, true)
       }, 200)
       return
     }
   }
   showMentionList.value = false
+}
+
+const handleMentionListScroll = (event: Event) => {
+  const element = event.target as HTMLElement
+  if (!element || mentionLoading.value || !mentionHasNext.value) return
+  const nearBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 20
+  if (nearBottom) {
+    void fetchMentionUsers(mentionFilter.value, false)
+  }
 }
 
 const insertMention = (username: string) => {
@@ -167,7 +203,7 @@ defineExpose({ setReply })
       <button
         class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
         :title="t('comment.mention.title')"
-        @click="text += '@'; showMentionList = true; inputEl?.focus()"
+        @click="text += '@'; mentionFilter = ''; showMentionList = true; inputEl?.focus(); void fetchMentionUsers('', true)"
       >
         <span class="material-symbols-outlined text-lg">alternate_email</span>
       </button>
@@ -233,7 +269,7 @@ defineExpose({ setReply })
       <div class="px-4 py-2 text-[11px] uppercase tracking-wider text-neutral-400 font-semibold border-b border-neutral-100">
         {{ t('comment.mention.list') }}
       </div>
-      <div class="max-h-60 overflow-y-auto py-1">
+      <div class="max-h-60 overflow-y-auto py-1" @scroll="handleMentionListScroll">
         <button
           v-for="user in filteredUsers"
           :key="user.username"

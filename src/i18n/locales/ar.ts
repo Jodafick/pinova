@@ -104,6 +104,9 @@ export const ar: Record<string, string> = {
   'comment.translate': 'ترجمة',
   'comment.viewOriginal': 'عرض الأصل',
   'comment.replyTo.placeholder': 'الرد على @{user}...',
+  'comment.loadMoreReplies': 'تحميل المزيد من الردود',
+  'comment.loadMoreComments': 'تحميل المزيد من التعليقات',
+  'comment.loadingMoreComments': 'جاري التحميل...',
 
   'provenance.title': 'اعتماد المنشئ المعتمد',
   'provenance.subtitle': 'سلسلة مصدر متحقق منها · مكافحة السرقة',

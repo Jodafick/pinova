@@ -104,6 +104,9 @@ export const zh: Record<string, string> = {
   'comment.translate': '翻译',
   'comment.viewOriginal': '查看原文',
   'comment.replyTo.placeholder': '回复 @{user}...',
+  'comment.loadMoreReplies': '加载更多回复',
+  'comment.loadMoreComments': '加载更多评论',
+  'comment.loadingMoreComments': '加载中...',
 
   'provenance.title': '认证创作者署名',
   'provenance.subtitle': '已验证来源链 · 防盗用',

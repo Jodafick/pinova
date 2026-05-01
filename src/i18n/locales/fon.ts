@@ -106,6 +106,9 @@ export const fon: Record<string, string> = {
   'comment.translate': 'Tinmɛ',
   'comment.viewOriginal': 'Kpɔ́n original',
   'comment.replyTo.placeholder': 'Yí gbe nú @{user}...',
+  'comment.loadMoreReplies': 'Yígbẹ lɛ sɔ do',
+  'comment.loadMoreComments': 'Nùɖoɖo lɛ sɔ do',
+  'comment.loadingMoreComments': 'E le jɛ...',
 
   'provenance.title': 'Crédit créateur certifié',
   'provenance.subtitle': 'Provenance e è kpɔ́n ganji · Cíɖíɖí gbɛ',

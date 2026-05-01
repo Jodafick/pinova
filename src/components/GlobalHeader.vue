@@ -90,8 +90,15 @@ const handleNotificationClick = async (notification: any) => {
       console.error('Error marking notification as read:', err)
     }
   }
-  if (notification.pin_id) {
-    router.push(`/pin/${notification.pin_id}`)
+  if (notification.pin_slug) {
+    const query: Record<string, string> = {}
+    if (notification.comment_id) {
+      query.commentId = String(notification.comment_id)
+    }
+    router.push({ path: `/pin/${notification.pin_slug}`, query })
+  } else if (notification.pin_id) {
+    // Fallback legacy notifications lacking slug.
+    router.push('/')
   }
   closeDropdowns()
 }
@@ -263,6 +270,7 @@ const closeDropdowns = () => {
                   <span class="material-symbols-outlined text-neutral-600">
                     {{ 
                       notification.notification_type === 'follow' ? 'person_add' : 
+                      notification.notification_type === 'comment' ? 'chat' :
                       notification.notification_type === 'welcome' ? 'celebration' : 
                       'bookmark' 
                     }}

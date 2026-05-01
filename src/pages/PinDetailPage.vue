@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -26,6 +26,7 @@ const {
   toggleFollow,
   loading: pinsLoading,
   fetchComments,
+  fetchCommentReplies,
   addComment,
   translateComment,
   translatePinDescription,
@@ -58,6 +59,13 @@ watch(pinSlug, async () => {
   }
   await loadPinMetadata()
 })
+
+watch(
+  () => route.query.commentId,
+  async () => {
+    await focusHighlightedComment()
+  },
+)
 
 const handleLike = async () => {
   if (!isAuthenticated.value) {
@@ -103,35 +111,87 @@ type UiComment = {
   translated?: boolean
   originalLang?: string
   replies?: UiComment[]
+  repliesNextPage?: number | null
+  repliesCount?: number
 }
 
 const richComments = ref<UiComment[]>([])
+const commentsTotalCount = ref(0)
+const commentsPage = ref(1)
+const commentsHasNext = ref(false)
+const commentsLoadingMore = ref(false)
 const descriptionText = ref('')
 const provenanceHash = ref('')
 const provenanceEvents = ref<any[]>([])
 const privateTags = ref<string[]>([])
-
-const mapComment = (comment: any): UiComment => ({
-  id: comment.id,
-  user: comment.display_name || comment.username,
-  username: comment.username,
-  avatar: comment.avatar_color || 'bg-pink-500',
-  text: comment.text || '',
-  translatedText: comment.translated_text || '',
-  gif: comment.gif_url || null,
-  createdAt: new Date(comment.created_at).toLocaleString(),
-  likes: 0,
-  translated: false,
-  originalLang: comment.original_language || undefined,
-  replies: (comment.replies || []).map(mapComment),
+const highlightedCommentId = computed<number | null>(() => {
+  const raw = route.query.commentId
+  if (typeof raw !== 'string') return null
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : null
 })
+
+const focusHighlightedComment = async () => {
+  if (!highlightedCommentId.value) return
+  await nextTick()
+  const node = document.getElementById(`comment-${highlightedCommentId.value}`)
+  if (node) {
+    node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+const mapComment = (comment: any): UiComment => {
+  const repliesPayload = Array.isArray(comment.replies)
+    ? comment.replies
+    : Array.isArray(comment.replies?.results)
+      ? comment.replies.results
+      : []
+  return {
+    id: comment.id,
+    user: comment.display_name || comment.username,
+    username: comment.username,
+    avatar: comment.avatar_color || 'bg-pink-500',
+    text: comment.text || '',
+    translatedText: comment.translated_text || '',
+    gif: comment.gif_url || null,
+    createdAt: new Date(comment.created_at).toLocaleString(),
+    likes: 0,
+    translated: false,
+    originalLang: comment.original_language || undefined,
+    replies: repliesPayload.map(mapComment),
+    repliesNextPage: comment.replies_next_page || comment.replies?.next_page || null,
+    repliesCount: comment.replies_count || repliesPayload.length,
+  }
+}
+
+const loadComments = async (reset = true) => {
+  if (!pin.value) return
+  if (reset) {
+    commentsPage.value = 1
+    commentsHasNext.value = false
+    richComments.value = []
+  }
+  const pageToFetch = commentsPage.value
+  const response = await fetchComments(pin.value.slug, pageToFetch)
+  const mapped = (response.results || []).map(mapComment)
+  if (reset) {
+    richComments.value = mapped
+  } else {
+    richComments.value = [...richComments.value, ...mapped]
+  }
+  commentsTotalCount.value = response.count || 0
+  commentsHasNext.value = !!response.next
+  if (response.next) {
+    commentsPage.value = pageToFetch + 1
+  }
+  await focusHighlightedComment()
+}
 
 const loadPinMetadata = async () => {
   if (!pin.value) return
   descriptionText.value = pin.value.description
   try {
-    const comments = await fetchComments(pin.value.slug)
-    richComments.value = (comments || []).map(mapComment)
+    await loadComments(true)
   } catch (err) {
     console.error('Erreur lors du chargement des commentaires', err)
   }
@@ -166,7 +226,7 @@ const handleRichSubmit = async (payload: { text: string; gif?: string | null; re
     gif: payload.gif || null,
     parentId: payload.parentId,
   })
-  await loadPinMetadata()
+  await loadComments(true)
 }
 
 const handleLikeComment = (id: number) => {
@@ -262,6 +322,27 @@ const handleToggleSaveRelated = (slug: string) => {
   if (pin) {
     toggleSavePin(pin.id)
   }
+}
+
+const handleLoadMoreComments = async () => {
+  if (!commentsHasNext.value || commentsLoadingMore.value) return
+  commentsLoadingMore.value = true
+  try {
+    await loadComments(false)
+  } finally {
+    commentsLoadingMore.value = false
+  }
+}
+
+const handleLoadMoreReplies = async (commentId: number) => {
+  if (!pin.value) return
+  const parent = richComments.value.find((comment) => comment.id === commentId)
+  if (!parent?.repliesNextPage) return
+  const response = await fetchCommentReplies(commentId, parent.repliesNextPage)
+  const mappedReplies = (response.results || []).map(mapComment)
+  parent.replies = [...(parent.replies || []), ...mappedReplies]
+  parent.repliesNextPage = response.next ? parent.repliesNextPage + 1 : null
+  richComments.value = [...richComments.value]
 }
 
 const handleShare = () => {
@@ -466,7 +547,7 @@ const openRelatedPin = (slug: string) => {
               <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-neutral-900 flex items-center gap-2">
                   {{ t('pin.comments') }}
-                  <span class="text-neutral-400 font-normal text-sm">({{ richComments.length }})</span>
+                  <span class="text-neutral-400 font-normal text-sm">({{ commentsTotalCount }})</span>
                 </h3>
                 <button class="text-xs text-neutral-500 font-medium hover:text-neutral-700 flex items-center gap-1">
                   <span class="material-symbols-outlined text-base">sort</span>
@@ -479,10 +560,21 @@ const openRelatedPin = (slug: string) => {
                 <CommentThread
                   :comments="richComments"
                   :can-translate="isAuthenticated"
+                  :highlighted-comment-id="highlightedCommentId"
                   @add="handleRichSubmit"
                   @like="handleLikeComment"
                   @translate="handleTranslateComment"
+                  @load-more-replies="handleLoadMoreReplies"
                 />
+                <div v-if="commentsHasNext" class="mt-3 text-center">
+                  <button
+                    class="text-sm font-semibold text-pink-600 hover:text-pink-700 disabled:opacity-50"
+                    :disabled="commentsLoadingMore"
+                    @click="handleLoadMoreComments"
+                  >
+                    {{ commentsLoadingMore ? t('comment.loadingMoreComments') : t('comment.loadMoreComments') }}
+                  </button>
+                </div>
               </div>
 
               <!-- Add comment (rich) -->
