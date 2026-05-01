@@ -226,6 +226,11 @@ export function usePins() {
     return response.data
   }
 
+  async function toggleCommentLike(commentId: number) {
+    const response = await api.post(`pins/comments/${commentId}/like/`)
+    return response.data
+  }
+
   async function fetchProvenance(pinSlug: string) {
     const response = await api.get(`pins/${pinSlug}/provenance/`)
     return response.data
@@ -324,6 +329,7 @@ export function usePins() {
     addComment,
     translatePinDescription,
     translateComment,
+    toggleCommentLike,
     fetchProvenance,
     fetchPrivateTags,
     savePrivateTags,

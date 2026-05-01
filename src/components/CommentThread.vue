@@ -148,18 +148,41 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
                 <div class="flex items-center gap-2 mb-0.5">
                   <span class="text-xs font-semibold text-neutral-900">{{ reply.user }}</span>
                   <span class="text-[10px] text-neutral-400">@{{ reply.username }}</span>
+                  <span
+                    v-if="reply.originalLang"
+                    class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 bg-white text-neutral-500 rounded font-bold"
+                  >{{ reply.originalLang }}</span>
                 </div>
                 <p
                   class="text-sm text-neutral-700 leading-snug break-words"
-                  v-html="renderRichText(reply.text)"
+                  v-html="renderRichText(reply.translated && reply.translatedText ? reply.translatedText : reply.text)"
                 ></p>
                 <img v-if="reply.gif" :src="reply.gif" class="mt-2 max-h-32 rounded-lg" />
+                <div
+                  v-if="reply.translated"
+                  class="mt-1 text-[11px] text-neutral-400 italic flex items-center gap-1"
+                >
+                  <span class="material-symbols-outlined text-xs">translate</span>
+                  {{ t('translate.auto') }}
+                </div>
               </div>
               <div class="flex items-center gap-3 mt-1 px-2 text-xs text-neutral-500">
                 <span>{{ reply.createdAt }}</span>
-                <button class="font-semibold hover:text-neutral-800 transition flex items-center gap-1">
-                  <span class="material-symbols-outlined text-xs">favorite</span>
+                <button
+                  class="font-semibold hover:text-neutral-800 transition flex items-center gap-1"
+                  :class="{ 'text-pink-600': reply.liked }"
+                  @click="emit('like', reply.id)"
+                >
+                  <span class="material-symbols-outlined text-xs" :class="{ 'fill-1': reply.liked }">favorite</span>
                   {{ reply.likes }}
+                </button>
+                <button
+                  v-if="canTranslate && reply.originalLang"
+                  class="font-semibold hover:text-pink-600 transition flex items-center gap-1"
+                  @click="emit('translate', reply.id)"
+                >
+                  <span class="material-symbols-outlined text-sm">translate</span>
+                  {{ reply.translated ? t('comment.viewOriginal') : t('comment.translate') }}
                 </button>
               </div>
             </div>

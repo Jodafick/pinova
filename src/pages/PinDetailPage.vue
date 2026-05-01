@@ -29,6 +29,7 @@ const {
   fetchCommentReplies,
   addComment,
   translateComment,
+  toggleCommentLike,
   translatePinDescription,
   fetchProvenance,
   fetchPrivateTags,
@@ -155,7 +156,8 @@ const mapComment = (comment: any): UiComment => {
     translatedText: comment.translated_text || '',
     gif: comment.gif_url || null,
     createdAt: new Date(comment.created_at).toLocaleString(),
-    likes: 0,
+    likes: comment.likes_count || 0,
+    liked: !!comment.is_liked,
     translated: false,
     originalLang: comment.original_language || undefined,
     replies: repliesPayload.map(mapComment),
@@ -165,14 +167,14 @@ const mapComment = (comment: any): UiComment => {
 }
 
 const loadComments = async (reset = true) => {
-  if (!pin.value) return
+  if (!pinSlug.value) return
   if (reset) {
     commentsPage.value = 1
     commentsHasNext.value = false
     richComments.value = []
   }
   const pageToFetch = commentsPage.value
-  const response = await fetchComments(pin.value.slug, pageToFetch)
+  const response = await fetchComments(pinSlug.value, pageToFetch)
   const mapped = (response.results || []).map(mapComment)
   if (reset) {
     richComments.value = mapped
@@ -188,13 +190,13 @@ const loadComments = async (reset = true) => {
 }
 
 const loadPinMetadata = async () => {
-  if (!pin.value) return
-  descriptionText.value = pin.value.description
   try {
     await loadComments(true)
   } catch (err) {
     console.error('Erreur lors du chargement des commentaires', err)
   }
+  if (!pin.value) return
+  descriptionText.value = pin.value.description
   try {
     const provenance = await fetchProvenance(pin.value.slug)
     provenanceHash.value = provenance?.root_hash || pin.value.provenanceRootHash || ''
@@ -230,11 +232,29 @@ const handleRichSubmit = async (payload: { text: string; gif?: string | null; re
 }
 
 const handleLikeComment = (id: number) => {
-  const c = richComments.value.find(c => c.id === id)
-  if (c) {
-    c.liked = !c.liked
-    c.likes += c.liked ? 1 : -1
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
   }
+  const updateCommentById = (comments: UiComment[]): boolean => {
+    for (const comment of comments) {
+      if (comment.id === id) {
+        toggleCommentLike(id)
+          .then((result) => {
+            comment.liked = result.status === 'liked'
+            comment.likes = result.likes_count
+            richComments.value = [...richComments.value]
+          })
+          .catch((err) => console.error('Erreur like commentaire', err))
+        return true
+      }
+      if (comment.replies && updateCommentById(comment.replies)) {
+        return true
+      }
+    }
+    return false
+  }
+  updateCommentById(richComments.value)
 }
 
 const handleTranslateComment = async (id: number) => {
@@ -335,7 +355,6 @@ const handleLoadMoreComments = async () => {
 }
 
 const handleLoadMoreReplies = async (commentId: number) => {
-  if (!pin.value) return
   const parent = richComments.value.find((comment) => comment.id === commentId)
   if (!parent?.repliesNextPage) return
   const response = await fetchCommentReplies(commentId, parent.repliesNextPage)
