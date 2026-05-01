@@ -267,9 +267,10 @@ export function useAuth() {
 
   function logout() {
     const hadToken = !!inMemoryAccessToken.value
+    const refreshToken = typeof window !== 'undefined' ? window.localStorage.getItem('pinova_refresh_token') : null
     clearAuthState()
     if (hadToken) {
-      api.post('auth/logout/').catch(() => undefined)
+      api.post('auth/logout/', refreshToken ? { refresh: refreshToken } : undefined).catch(() => undefined)
     }
     console.log('🚪 Logged out successfully.')
   }

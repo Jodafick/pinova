@@ -11,50 +11,15 @@ const api = axios.create({
   },
 });
 
-const PUBLIC_AUTH_PATH_PREFIXES = [
-  'auth/login/',
-  'auth/registration/',
-  'auth/registration/verify-email/',
-  'auth/social/',
-  'auth/password/reset/',
-  'auth/password/reset/confirm/',
-  'verify-otp/',
-  'resend-otp/',
-]
-
-const PRIVATE_GET_PATH_PREFIXES = [
-  'me/',
-  'boards/',
-  'notifications/',
-  'conversations/',
-  'pins/recommendations/',
-]
-
-function shouldSkipBearerForRequest(url?: string, method?: string) {
-  if (!url) return false
-  if (!PUBLIC_AUTH_PATH_PREFIXES.some((prefix) => url.includes(prefix))) {
-    return false
-  }
-  return method !== 'post' || !url.includes('auth/logout/')
-}
-
-function shouldAttachBearer(url?: string, method?: string) {
-  if (!url) return false
-  if (method && ['post', 'put', 'patch', 'delete'].includes(method)) return true
-  if (url.includes('/private-tags/')) return true
-  return PRIVATE_GET_PATH_PREFIXES.some((prefix) => url.includes(prefix))
+function clearStoredTokens() {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem('pinova_token')
+  window.localStorage.removeItem('pinova_refresh_token')
+  delete api.defaults.headers.common.Authorization
+  window.dispatchEvent(new Event(AUTH_INVALIDATED_EVENT))
 }
 
 api.interceptors.request.use((config) => {
-  const method = (config.method || 'get').toLowerCase()
-
-  if (shouldSkipBearerForRequest(config.url, method) || !shouldAttachBearer(config.url, method)) {
-    if (config.headers?.Authorization) {
-      delete config.headers.Authorization
-    }
-    return config
-  }
-
   const existingAuth = config.headers?.Authorization
   if (existingAuth) return config
 
@@ -67,15 +32,52 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error?.response?.status
     const code = error?.response?.data?.code
 
-    if (status === 401 && code === 'user_not_found' && typeof window !== 'undefined') {
-      window.localStorage.removeItem('pinova_token')
-      window.localStorage.removeItem('pinova_refresh_token')
-      delete api.defaults.headers.common.Authorization
-      window.dispatchEvent(new Event(AUTH_INVALIDATED_EVENT))
+    if (status === 401 && code === 'user_not_found') {
+      clearStoredTokens()
+      return Promise.reject(error)
+    }
+
+    const originalRequest = error?.config || {}
+    const requestUrl = originalRequest.url || ''
+    const isRefreshRequest = requestUrl.includes('auth/token/refresh/')
+    const isRetried = !!originalRequest._retry
+
+    if (status === 401 && !isRefreshRequest && !isRetried) {
+      const refreshToken = typeof window !== 'undefined' ? window.localStorage.getItem('pinova_refresh_token') : null
+      if (!refreshToken) {
+        clearStoredTokens()
+        return Promise.reject(error)
+      }
+
+      originalRequest._retry = true
+      try {
+        const refreshResponse = await api.post('auth/token/refresh/', { refresh: refreshToken })
+        const newAccess = refreshResponse.data?.access
+        const newRefresh = refreshResponse.data?.refresh
+
+        if (!newAccess) {
+          clearStoredTokens()
+          return Promise.reject(error)
+        }
+
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('pinova_token', newAccess)
+          if (newRefresh) {
+            window.localStorage.setItem('pinova_refresh_token', newRefresh)
+          }
+        }
+        api.defaults.headers.common.Authorization = `Bearer ${newAccess}`
+        originalRequest.headers = originalRequest.headers || {}
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`
+        return api.request(originalRequest)
+      } catch (refreshError) {
+        clearStoredTokens()
+        return Promise.reject(refreshError)
+      }
     }
 
     return Promise.reject(error)
