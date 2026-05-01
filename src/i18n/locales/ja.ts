@@ -19,6 +19,7 @@ export const ja: Record<string, string> = {
   'nav.home': 'ホーム',
   'nav.explore': '探す',
   'nav.create': '作成',
+  'nav.following': 'フォロー中',
   'nav.profile': 'プロフィール',
   'nav.settings': '設定',
   'nav.login': 'ログイン',
@@ -213,6 +214,10 @@ export const ja: Record<string, string> = {
   'explore.pinsCount': '{count} ピン',
   'explore.trending': '今のトレンド',
   'explore.popular': '人気',
+  'following.title': 'フォロー中ユーザーのピン',
+  'following.subtitle': 'フォローしているアカウントのピンのみ表示します。',
+  'following.empty': 'まだ誰もフォローしていません。',
+  'following.suggest': 'おすすめを見る',
 
   'profile.noBio': 'まだプロフィールがありません',
   'profile.followers': 'フォロワー',

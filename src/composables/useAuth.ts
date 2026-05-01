@@ -58,6 +58,10 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       renewalAt: djangoUser.subscription?.renewal_at || profile.subscription_renewal_at || null,
       translationQuotaMonthly: djangoUser.subscription?.translation_quota_monthly || profile.translation_quota_monthly || 5,
       translationUsedMonthly: djangoUser.subscription?.translation_used_monthly || profile.translation_used_monthly || 0,
+      adAdsEnabled: djangoUser.subscription?.ad_ads_enabled ?? profile.ad_ads_enabled ?? true,
+      partnerAdsEnabled: djangoUser.subscription?.partner_ads_enabled ?? profile.partner_ads_enabled ?? true,
+      tipsEnabled: djangoUser.subscription?.tips_enabled ?? profile.tips_enabled ?? false,
+      tipsUrl: djangoUser.subscription?.tips_url ?? profile.tips_url ?? '',
     },
     boards: djangoUser.boards || [],
   }
@@ -137,7 +141,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string }) {
     try {
       const formData = new FormData()
       if (data.displayName) formData.append('display_name', data.displayName)
@@ -145,6 +149,10 @@ export function useAuth() {
       if (data.email) formData.append('email', data.email)
       if (data.avatar) formData.append('avatar', data.avatar)
       if (data.preferredLanguage) formData.append('preferred_language', data.preferredLanguage)
+      if (data.adAdsEnabled !== undefined) formData.append('ad_ads_enabled', data.adAdsEnabled ? 'true' : 'false')
+      if (data.partnerAdsEnabled !== undefined) formData.append('partner_ads_enabled', data.partnerAdsEnabled ? 'true' : 'false')
+      if (data.tipsEnabled !== undefined) formData.append('tips_enabled', data.tipsEnabled ? 'true' : 'false')
+      if (data.tipsUrl !== undefined) formData.append('tips_url', data.tipsUrl)
       
       const response = await api.patch('me/', formData, {
         headers: {
@@ -299,6 +307,21 @@ export function useAuth() {
     return response.data?.results || response.data || []
   }
 
+  async function fetchBoardCollaborators(boardId: number) {
+    const response = await api.get(`boards/${boardId}/collaborators/`)
+    return response.data?.collaborators || []
+  }
+
+  async function addBoardCollaborator(boardId: number, username: string) {
+    const response = await api.post(`boards/${boardId}/collaborators/`, { username })
+    return response.data
+  }
+
+  async function removeBoardCollaborator(boardId: number, username: string) {
+    const response = await api.delete(`boards/${boardId}/collaborators/`, { data: { username } })
+    return response.data
+  }
+
   return {
     currentUser,
     isAuthenticated,
@@ -316,5 +339,8 @@ export function useAuth() {
     fetchUserProfile,
     createBoard,
     fetchMyBoards,
+    fetchBoardCollaborators,
+    addBoardCollaborator,
+    removeBoardCollaborator,
   }
 }

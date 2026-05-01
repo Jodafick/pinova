@@ -23,6 +23,16 @@ const saving = ref(false)
 const passwordChanging = ref(false)
 const passwordSaved = ref(false)
 const passwordError = ref('')
+const adPrefsSaving = ref(false)
+const adAdsEnabled = ref(true)
+const partnerAdsEnabled = ref(true)
+const adPrefsSaved = ref(false)
+const tipsEnabled = ref(false)
+const tipsUrl = ref('')
+const tipsSaving = ref(false)
+const tipsSaved = ref(false)
+
+const currentPlan = ref<'free' | 'plus' | 'pro'>('free')
 
 onMounted(() => {
   if (currentUser.value) {
@@ -31,8 +41,48 @@ onMounted(() => {
     bio.value = currentUser.value.bio
     email.value = currentUser.value.email
     avatarPreview.value = currentUser.value.avatarUrl || null
+    currentPlan.value = currentUser.value.subscription?.plan || 'free'
+    adAdsEnabled.value = currentUser.value.subscription?.adAdsEnabled ?? true
+    partnerAdsEnabled.value = currentUser.value.subscription?.partnerAdsEnabled ?? true
+    tipsEnabled.value = currentUser.value.subscription?.tipsEnabled ?? false
+    tipsUrl.value = currentUser.value.subscription?.tipsUrl || ''
   }
+  enforceAdPreferencesByPlan()
 })
+
+const canToggleAdAds = () => currentPlan.value === 'plus' || currentPlan.value === 'pro'
+const canTogglePartnerAds = () => currentPlan.value === 'pro'
+
+const enforceAdPreferencesByPlan = () => {
+  if (currentPlan.value === 'free') {
+    adAdsEnabled.value = true
+    partnerAdsEnabled.value = true
+    return
+  }
+  if (currentPlan.value === 'plus') {
+    partnerAdsEnabled.value = true
+  }
+}
+
+const persistAdPreferences = async () => {
+  adPrefsSaving.value = true
+  try {
+    enforceAdPreferencesByPlan()
+    await updateProfile({
+      adAdsEnabled: adAdsEnabled.value,
+      partnerAdsEnabled: partnerAdsEnabled.value,
+    })
+    currentPlan.value = currentUser.value?.subscription?.plan || currentPlan.value
+    adAdsEnabled.value = currentUser.value?.subscription?.adAdsEnabled ?? adAdsEnabled.value
+    partnerAdsEnabled.value = currentUser.value?.subscription?.partnerAdsEnabled ?? partnerAdsEnabled.value
+    adPrefsSaved.value = true
+    setTimeout(() => (adPrefsSaved.value = false), 2500)
+  } catch (err) {
+    console.error('Failed to save ad preferences:', err)
+  } finally {
+    adPrefsSaving.value = false
+  }
+}
 
 const handleFileChange = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
@@ -58,11 +108,21 @@ const handleSave = async () => {
     })
     saved.value = true
     setTimeout(() => (saved.value = false), 3000)
+    currentPlan.value = currentUser.value?.subscription?.plan || 'free'
+    adAdsEnabled.value = currentUser.value?.subscription?.adAdsEnabled ?? adAdsEnabled.value
+    partnerAdsEnabled.value = currentUser.value?.subscription?.partnerAdsEnabled ?? partnerAdsEnabled.value
+    enforceAdPreferencesByPlan()
   } catch (err) {
     console.error('Failed to update profile:', err)
   } finally {
     saving.value = false
   }
+}
+
+const adSectionHint = () => {
+  if (currentPlan.value === 'pro') return t('settings.ads.hint.pro')
+  if (currentPlan.value === 'plus') return t('settings.ads.hint.plus')
+  return t('settings.ads.hint.free')
 }
 
 const handlePasswordChange = async () => {
@@ -91,6 +151,24 @@ const handlePasswordChange = async () => {
     passwordError.value = err.response?.data?.non_field_errors?.[0] || t('settings.password.error.generic')
   } finally {
     passwordChanging.value = false
+  }
+}
+
+const persistTipsSettings = async () => {
+  tipsSaving.value = true
+  try {
+    await updateProfile({
+      tipsEnabled: currentPlan.value === 'pro' ? tipsEnabled.value : false,
+      tipsUrl: currentPlan.value === 'pro' ? tipsUrl.value : '',
+    })
+    tipsEnabled.value = currentUser.value?.subscription?.tipsEnabled ?? false
+    tipsUrl.value = currentUser.value?.subscription?.tipsUrl || ''
+    tipsSaved.value = true
+    setTimeout(() => (tipsSaved.value = false), 2500)
+  } catch (err) {
+    console.error('Failed to save tips settings:', err)
+  } finally {
+    tipsSaving.value = false
   }
 }
 
@@ -280,6 +358,104 @@ const handleLogout = () => {
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
+        </div>
+      </section>
+
+      <!-- Ads preferences -->
+      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.ads.title') }}</h2>
+            <p class="text-xs text-neutral-500 mt-0.5">{{ adSectionHint() }}</p>
+          </div>
+          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
+            {{ currentPlan.toUpperCase() }}
+          </span>
+        </div>
+        <div class="p-6 space-y-4">
+          <label class="flex items-center justify-between py-2 cursor-pointer">
+            <div>
+              <p class="text-sm font-medium text-neutral-700">{{ t('settings.ads.network.title') }}</p>
+              <p class="text-xs text-neutral-500">{{ t('settings.ads.network.desc') }}</p>
+            </div>
+            <div class="relative">
+              <input v-model="adAdsEnabled" type="checkbox" class="sr-only peer" :disabled="!canToggleAdAds()" />
+              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+            </div>
+          </label>
+
+          <label class="flex items-center justify-between py-2 cursor-pointer">
+            <div>
+              <p class="text-sm font-medium text-neutral-700">{{ t('settings.ads.partner.title') }}</p>
+              <p class="text-xs text-neutral-500">{{ t('settings.ads.partner.desc') }}</p>
+            </div>
+            <div class="relative">
+              <input v-model="partnerAdsEnabled" type="checkbox" class="sr-only peer" :disabled="!canTogglePartnerAds()" />
+              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+            </div>
+          </label>
+
+          <div class="flex items-center justify-between pt-2">
+            <p class="text-xs text-neutral-500">
+              {{ t('settings.ads.note') }}
+            </p>
+            <button
+              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
+              :disabled="adPrefsSaving"
+              @click="persistAdPreferences"
+            >
+              {{ adPrefsSaving ? t('settings.ads.saving') : t('settings.ads.save') }}
+            </button>
+          </div>
+          <p v-if="adPrefsSaved" class="text-xs text-emerald-700">{{ t('settings.ads.saved') }}</p>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.tips.title') }}</h2>
+            <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.tips.subtitle') }}</p>
+          </div>
+          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
+            {{ currentPlan.toUpperCase() }}
+          </span>
+        </div>
+        <div class="p-6 space-y-4">
+          <label class="flex items-center justify-between py-2 cursor-pointer">
+            <div>
+              <p class="text-sm font-medium text-neutral-700">{{ t('settings.tips.enable') }}</p>
+              <p class="text-xs text-neutral-500">{{ t('settings.tips.enable.desc') }}</p>
+            </div>
+            <div class="relative">
+              <input v-model="tipsEnabled" type="checkbox" class="sr-only peer" :disabled="currentPlan !== 'pro'" />
+              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+            </div>
+          </label>
+          <div>
+            <label class="block text-xs font-medium text-neutral-600 mb-1">{{ t('settings.tips.url') }}</label>
+            <input
+              v-model="tipsUrl"
+              type="url"
+              :disabled="currentPlan !== 'pro'"
+              :placeholder="t('settings.tips.url.placeholder')"
+              class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm disabled:bg-neutral-50 disabled:text-neutral-400"
+            />
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <p class="text-xs text-neutral-500">{{ t('settings.tips.note') }}</p>
+            <button
+              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
+              :disabled="tipsSaving"
+              @click="persistTipsSettings"
+            >
+              {{ tipsSaving ? t('settings.tips.saving') : t('settings.tips.save') }}
+            </button>
+          </div>
+          <p v-if="tipsSaved" class="text-xs text-emerald-700">{{ t('settings.tips.saved') }}</p>
         </div>
       </section>
 

@@ -11,7 +11,7 @@ import { useI18n } from '../i18n'
 const { t } = useI18n()
 
 const router = useRouter()
-const { pins, loading, fetchPins, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
+const { pins, loading, fetchDiscoverPins, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
 const { toggleSavePin } = useAuth()
 
 type TopicCategory = {
@@ -75,14 +75,14 @@ const handleScroll = () => {
 
   if (scrollTop + clientHeight >= scrollHeight - 100) {
     if (hasNextPage.value && !isFetchingNextPage.value) {
-      fetchPins(false, selectedCategory.value)
+      fetchDiscoverPins(false, selectedCategory.value)
     }
   }
 }
 
 onMounted(async () => {
   await loadCategories('')
-  await fetchPins(true)
+  await fetchDiscoverPins(true)
   window.addEventListener('scroll', handleScroll)
 })
 
@@ -102,7 +102,7 @@ watch(categorySearch, (value) => {
 })
 
 watch(selectedCategory, async (topic) => {
-  await fetchPins(true, topic)
+  await fetchDiscoverPins(true, topic)
 })
 
 const handleToggleSave = async (slug: string) => {

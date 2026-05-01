@@ -13,11 +13,11 @@ type Comment = {
   text: string
   translatedText?: string
   gif?: string | null
+  media?: string | null
   createdAt: string
   liked?: boolean
   likes: number
   translated?: boolean
-  originalLang?: string
   replies?: Comment[]
   repliesNextPage?: number | null
   repliesCount?: number
@@ -30,7 +30,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'add', payload: { text: string; gif?: string | null; replyTo?: string | null; parentId?: number }): void
+  (e: 'add', payload: { text: string; gif?: string | null; mediaFile?: File | null; replyTo?: string | null; parentId?: number }): void
   (e: 'like', commentId: number): void
   (e: 'translate', commentId: number): void
   (e: 'load-more-replies', commentId: number): void
@@ -46,7 +46,10 @@ const toggleReply = (commentId: number) => {
   replyingTo.value = replyingTo.value === commentId ? null : commentId
 }
 
-const handleSubmitReply = (commentId: number, payload: { text: string; gif?: string | null; replyTo?: string | null }) => {
+const handleSubmitReply = (
+  commentId: number,
+  payload: { text: string; gif?: string | null; mediaFile?: File | null; replyTo?: string | null },
+) => {
   emit('add', { ...payload, parentId: commentId })
   replyingTo.value = null
 }
@@ -73,10 +76,6 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
           <div class="flex items-center gap-2 mb-0.5">
             <span class="text-sm font-semibold text-neutral-900">{{ comment.user }}</span>
             <span class="text-xs text-neutral-400">@{{ comment.username }}</span>
-            <span
-              v-if="comment.originalLang"
-              class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 bg-white text-neutral-500 rounded font-bold"
-            >{{ comment.originalLang }}</span>
           </div>
           <p
             v-if="comment.text || comment.translatedText"
@@ -84,6 +83,7 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
             v-html="renderRichText(comment.translated && comment.translatedText ? comment.translatedText : comment.text)"
           ></p>
           <img v-if="comment.gif" :src="comment.gif" class="mt-2 max-h-40 rounded-lg" />
+          <img v-if="comment.media" :src="comment.media" class="mt-2 max-h-40 rounded-lg" />
           <div
             v-if="comment.translated"
             class="mt-1 text-[11px] text-neutral-400 italic flex items-center gap-1"
@@ -111,7 +111,7 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
             {{ t('comment.reply') }}
           </button>
           <button
-            v-if="canTranslate && comment.originalLang"
+            v-if="canTranslate"
             class="font-semibold hover:text-pink-600 transition flex items-center gap-1"
             @click="emit('translate', comment.id)"
           >
@@ -148,16 +148,13 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
                 <div class="flex items-center gap-2 mb-0.5">
                   <span class="text-xs font-semibold text-neutral-900">{{ reply.user }}</span>
                   <span class="text-[10px] text-neutral-400">@{{ reply.username }}</span>
-                  <span
-                    v-if="reply.originalLang"
-                    class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 bg-white text-neutral-500 rounded font-bold"
-                  >{{ reply.originalLang }}</span>
                 </div>
                 <p
                   class="text-sm text-neutral-700 leading-snug break-words"
                   v-html="renderRichText(reply.translated && reply.translatedText ? reply.translatedText : reply.text)"
                 ></p>
                 <img v-if="reply.gif" :src="reply.gif" class="mt-2 max-h-32 rounded-lg" />
+                <img v-if="reply.media" :src="reply.media" class="mt-2 max-h-32 rounded-lg" />
                 <div
                   v-if="reply.translated"
                   class="mt-1 text-[11px] text-neutral-400 italic flex items-center gap-1"
@@ -177,7 +174,7 @@ const handleSubmitReply = (commentId: number, payload: { text: string; gif?: str
                   {{ reply.likes }}
                 </button>
                 <button
-                  v-if="canTranslate && reply.originalLang"
+                  v-if="canTranslate"
                   class="font-semibold hover:text-pink-600 transition flex items-center gap-1"
                   @click="emit('translate', reply.id)"
                 >

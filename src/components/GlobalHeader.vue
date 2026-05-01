@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
@@ -12,7 +12,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { currentUser, isAuthenticated, logout } = useAuth()
-const { pins } = usePins()
+const { pins, trackSearchInteraction } = usePins()
 
 const searchQuery = ref('')
 const showUserMenu = ref(false)
@@ -21,6 +21,7 @@ const showSearchResults = ref(false)
 const showMessages = ref(false)
 const conversations = ref<any[]>([])
 const isOffline = ref(!navigator.onLine)
+let searchTrackTimer: ReturnType<typeof setTimeout> | null = null
 
 window.addEventListener('online', () => (isOffline.value = false))
 window.addEventListener('offline', () => (isOffline.value = true))
@@ -42,8 +43,18 @@ const userInitials = computed(() => {
 const navItems = computed(() => [
   { name: 'home', label: t('nav.home'), to: '/' },
   { name: 'explore', label: t('nav.explore'), to: '/explore' },
+  ...(isAuthenticated.value ? [{ name: 'following', label: t('nav.following'), to: '/following' }] : []),
   { name: 'create', label: t('nav.create'), to: '/create' },
 ])
+
+watch(searchQuery, (value) => {
+  if (searchTrackTimer) clearTimeout(searchTrackTimer)
+  const query = value.trim()
+  if (query.length < 2 || !isAuthenticated.value) return
+  searchTrackTimer = setTimeout(() => {
+    void trackSearchInteraction(query)
+  }, 500)
+})
 
 const notifications = ref<any[]>([])
 
@@ -209,7 +220,7 @@ const closeDropdowns = () => {
           <router-link
             v-for="pin in searchResults"
             :key="pin.id"
-            :to="`/pin/${pin.id}`"
+            :to="`/pin/${pin.slug}`"
             class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 transition"
             @click="showSearchResults = false"
           >
@@ -402,6 +413,14 @@ const closeDropdowns = () => {
               >
                 <span class="material-symbols-outlined text-lg">explore</span>
                 {{ t('nav.explore') }}
+              </router-link>
+              <router-link
+                to="/following"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700 md:hidden"
+                @click="showUserMenu = false"
+              >
+                <span class="material-symbols-outlined text-lg">groups</span>
+                {{ t('nav.following') }}
               </router-link>
               <router-link
                 to="/settings"

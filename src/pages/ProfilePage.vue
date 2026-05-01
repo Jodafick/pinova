@@ -12,13 +12,17 @@ const { t } = useI18n()
 
 const router = useRouter()
 const route = useRoute()
-const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow, createBoard, fetchMyBoards } = useAuth()
-const { pins, toggleSave, fetchPins, loading: pinsLoading } = usePins()
+const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow, createBoard, fetchMyBoards, addBoardCollaborator } = useAuth()
+const { pins, toggleSave, fetchPins, fetchCreatorStats, loading: pinsLoading } = usePins()
 
 const profileUser = ref<User | null>(null)
 const loading = ref(true)
 const isFollowing = ref(false)
 const followingProfilePending = ref(false)
+const creatorStatsLoading = ref(false)
+const creatorStats = ref<{
+  totals?: { pins?: number; likes?: number; saves?: number; comments?: number; views?: number }
+} | null>(null)
 
 const isMyProfile = computed(() => {
   return !route.params.username || (currentUser.value && route.params.username === currentUser.value.username)
@@ -36,6 +40,7 @@ const loadProfile = async () => {
           name: board.name,
           pinCount: board.pin_count ?? board.pinCount ?? 0,
           isPrivate: board.is_private ?? board.isPrivate ?? false,
+          collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
         }))
       } catch (err) {
         console.error('Erreur chargement tableaux:', err)
@@ -45,6 +50,19 @@ const loadProfile = async () => {
   } else {
     profileUser.value = await fetchUserProfile(route.params.username as string)
     isFollowing.value = profileUser.value?.isFollowing || false
+  }
+  if (isMyProfile.value && currentPlan.value === 'pro') {
+    creatorStatsLoading.value = true
+    try {
+      creatorStats.value = await fetchCreatorStats()
+    } catch (err) {
+      console.error('Erreur chargement statistiques créateur:', err)
+      creatorStats.value = null
+    } finally {
+      creatorStatsLoading.value = false
+    }
+  } else {
+    creatorStats.value = null
   }
   loading.value = false
 }
@@ -104,15 +122,46 @@ const displayPins = computed(() => {
 })
 
 const boards = computed(() => profileUser.value?.boards ?? [])
+const currentPlan = computed<'free' | 'plus' | 'pro'>(() => {
+  return profileUser.value?.subscription?.plan || 'free'
+})
 const currentPlanLabel = computed(() => {
-  const plan = profileUser.value?.subscription?.plan || 'free'
+  const plan = currentPlan.value
   if (plan === 'pro') return 'PRO'
   if (plan === 'plus') return 'PLUS'
   return 'FREE'
 })
+const boardLimits = computed(() => {
+  if (currentPlan.value === 'pro') return { private: Number.POSITIVE_INFINITY, public: Number.POSITIVE_INFINITY }
+  if (currentPlan.value === 'plus') return { private: 10, public: Number.POSITIVE_INFINITY }
+  return { private: 3, public: 10 }
+})
+const privateBoardsCount = computed(() => boards.value.filter((board) => board.isPrivate).length)
+const publicBoardsCount = computed(() => boards.value.filter((board) => !board.isPrivate).length)
+const isPrivateLimitReached = computed(() => privateBoardsCount.value >= boardLimits.value.private)
+const isPublicLimitReached = computed(() => publicBoardsCount.value >= boardLimits.value.public)
+const canCreateSelectedBoardType = computed(() => {
+  return newBoardPrivate.value ? !isPrivateLimitReached.value : !isPublicLimitReached.value
+})
+const boardLimitHint = computed(() => {
+  if (newBoardPrivate.value && isPrivateLimitReached.value) {
+    return t('profile.boards.modal.limitPrivate', { count: boardLimits.value.private })
+  }
+  if (!newBoardPrivate.value && isPublicLimitReached.value) {
+    return t('profile.boards.modal.limitPublic', { count: boardLimits.value.public })
+  }
+  return ''
+})
+const canSubmitBoardCreation = computed(() => !!newBoardName.value.trim() && canCreateSelectedBoardType.value)
 
 const handleCreateBoard = async () => {
   if (!profileUser.value || !newBoardName.value.trim()) return
+  if (!canCreateSelectedBoardType.value) {
+    if (boardLimitHint.value) {
+      window.alert(boardLimitHint.value)
+    }
+    return
+  }
   try {
     const board = await createBoard({
       name: newBoardName.value.trim(),
@@ -123,6 +172,7 @@ const handleCreateBoard = async () => {
       name: board.name,
       pinCount: board.pin_count ?? board.pinCount ?? 0,
       isPrivate: board.is_private ?? board.isPrivate ?? false,
+      collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
     }
     profileUser.value.boards = [nextBoard, ...(profileUser.value.boards ?? [])]
     newBoardName.value = ''
@@ -155,6 +205,28 @@ const handleToggleSave = async (slug: string) => {
 const openPin = (slug: string) => {
   router.push(`/pin/${slug}`)
 }
+
+const handleInviteCollaborator = async (boardId: number) => {
+  if (!isMyProfile.value) return
+  const plan = currentPlan.value
+  if (plan === 'free') {
+    window.alert('Les boards collaboratifs nécessitent Plus ou Pro.')
+    return
+  }
+  const username = window.prompt('Nom utilisateur à inviter :')?.trim()
+  if (!username) return
+  try {
+    await addBoardCollaborator(boardId, username)
+    const targetBoard = profileUser.value?.boards?.find((board) => board.id === boardId)
+    if (targetBoard && profileUser.value?.boards) {
+      targetBoard.collaboratorCount = (targetBoard.collaboratorCount || 0) + 1
+      profileUser.value.boards = [...profileUser.value.boards]
+    }
+  } catch (err: any) {
+    console.error('Erreur invitation collaborateur:', err)
+    window.alert(err?.response?.data?.error || 'Impossible d\'ajouter ce collaborateur.')
+  }
+}
 </script>
 
 <template>
@@ -176,6 +248,13 @@ const openPin = (slug: string) => {
       <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-1">
         {{ profileUser.displayName }}
       </h1>
+      <div
+        v-if="currentPlan === 'pro'"
+        class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold mb-2"
+      >
+        <span class="material-symbols-outlined text-sm">verified</span>
+        Badge Créateur certifié
+      </div>
       <p class="text-neutral-500 text-sm mb-3">@{{ profileUser.username }}</p>
 
       <p v-if="profileUser.bio" class="text-neutral-600 text-sm max-w-md mb-4">
@@ -239,10 +318,20 @@ const openPin = (slug: string) => {
           <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
             <p class="font-semibold text-sm">{{ board.name }}</p>
             <p class="text-xs opacity-80">{{ t('explore.pinsCount', { count: board.pinCount }) }}</p>
+            <p v-if="board.collaboratorCount" class="text-[11px] opacity-80">
+              {{ board.collaboratorCount }} collab.
+            </p>
           </div>
           <div v-if="board.isPrivate" class="absolute top-3 right-3">
             <span class="material-symbols-outlined text-white text-sm">lock</span>
           </div>
+          <button
+            v-if="isMyProfile && currentPlan !== 'free'"
+            class="absolute top-3 left-3 px-2 py-1 rounded-full bg-white/90 text-[10px] font-bold text-neutral-700 hover:bg-white"
+            @click.stop="handleInviteCollaborator(board.id)"
+          >
+            + Collab
+          </button>
         </div>
 
         <!-- Create new board -->
@@ -254,6 +343,39 @@ const openPin = (slug: string) => {
           <span class="material-symbols-outlined text-3xl">add</span>
           <span class="text-sm font-medium">{{ t('profile.boards.new') }}</span>
         </button>
+      </div>
+    </section>
+
+    <section
+      v-if="isMyProfile && currentPlan === 'pro'"
+      class="mb-10 bg-white rounded-2xl border border-amber-200 p-5 sm:p-6"
+    >
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-neutral-900">Statistiques avancées</h2>
+        <span class="text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-1 rounded-full">PRO</span>
+      </div>
+      <div v-if="creatorStatsLoading" class="text-sm text-neutral-500">{{ t('common.loading') }}</div>
+      <div v-else class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+        <div class="rounded-xl bg-neutral-50 py-3">
+          <p class="text-xs text-neutral-500">Pins</p>
+          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.pins ?? 0 }}</p>
+        </div>
+        <div class="rounded-xl bg-neutral-50 py-3">
+          <p class="text-xs text-neutral-500">Vues</p>
+          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.views ?? 0 }}</p>
+        </div>
+        <div class="rounded-xl bg-neutral-50 py-3">
+          <p class="text-xs text-neutral-500">Saves</p>
+          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.saves ?? 0 }}</p>
+        </div>
+        <div class="rounded-xl bg-neutral-50 py-3">
+          <p class="text-xs text-neutral-500">Likes</p>
+          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.likes ?? 0 }}</p>
+        </div>
+        <div class="rounded-xl bg-neutral-50 py-3">
+          <p class="text-xs text-neutral-500">Commentaires</p>
+          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.comments ?? 0 }}</p>
+        </div>
       </div>
     </section>
 
@@ -277,11 +399,15 @@ const openPin = (slug: string) => {
               type="checkbox"
               id="is_private"
               class="w-5 h-5 accent-pink-600 rounded cursor-pointer"
+              :disabled="isPrivateLimitReached"
             />
             <label for="is_private" class="text-sm text-neutral-700 cursor-pointer">
               {{ t('profile.boards.modal.private') }}
             </label>
           </div>
+          <p v-if="boardLimitHint" class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            {{ boardLimitHint }}
+          </p>
           <div class="flex gap-3 pt-4">
             <button
               class="flex-1 px-4 py-2.5 rounded-full bg-neutral-100 text-sm font-bold text-neutral-800 hover:bg-neutral-200 transition"
@@ -291,7 +417,7 @@ const openPin = (slug: string) => {
             </button>
             <button
               class="flex-1 px-4 py-2.5 rounded-full bg-pink-600 text-sm font-bold text-white hover:bg-pink-700 disabled:opacity-50 transition"
-              :disabled="!newBoardName.trim()"
+              :disabled="!canSubmitBoardCreation"
               @click="handleCreateBoard"
             >
               {{ t('profile.boards.modal.create') }}

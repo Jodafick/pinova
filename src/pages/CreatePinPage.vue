@@ -42,6 +42,8 @@ const categorySearch = ref('')
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
+const currentPlan = computed<'free' | 'plus' | 'pro'>(() => currentUser.value?.subscription?.plan || 'free')
+const canUsePrivateTags = computed(() => currentPlan.value !== 'free')
 const resolvedTopics = computed<TopicOption[]>(() => {
   if (dynamicTopics.value.length > 0) return dynamicTopics.value
   return topics.value.map((topicName) => ({ name: topicName, originalName: topicName }))
@@ -149,7 +151,9 @@ const submitPin = async () => {
       .map((tag) => tag.trim())
       .filter(Boolean)
       .forEach((tag) => formData.append('public_tags_input', tag))
-    privateTags.value.forEach((tag) => formData.append('private_tags_input', tag))
+    if (canUsePrivateTags.value) {
+      privateTags.value.forEach((tag) => formData.append('private_tags_input', tag))
+    }
     selectedBoardIds.value.forEach((boardId) => formData.append('board_ids_input', String(boardId)))
     
     if (currentUser.value) {
@@ -441,9 +445,17 @@ const selectCategory = (selected: TopicOption) => {
             </label>
           </div> -->
 
-          <!-- Tags privés -->
           <div class="pt-4 border-t border-neutral-100">
-            <PrivateTags v-model="privateTags" />
+            <PrivateTags v-if="canUsePrivateTags" v-model="privateTags" />
+            <div
+              v-else
+              class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 leading-relaxed"
+            >
+              {{ t('create.privateTags.upgradeRequired') }}
+              <router-link to="/premium" class="ml-1 font-semibold underline hover:no-underline">
+                {{ t('create.privateTags.upgradeCta') }}
+              </router-link>
+            </div>
           </div>
 
           <div class="pt-4 border-t border-neutral-100">

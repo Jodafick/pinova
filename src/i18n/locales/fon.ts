@@ -19,6 +19,7 @@ export const fon: Record<string, string> = {
   'nav.home': 'Xwé',
   'nav.explore': 'Ba kpɔ́n',
   'nav.create': 'Bló',
+  'nav.following': 'Mɛ́ siwo n nyá',
   'nav.profile': 'Profil',
   'nav.settings': 'Ðòɖó',
   'nav.login': 'Wá nu',
@@ -215,6 +216,10 @@ export const fon: Record<string, string> = {
   'explore.pinsCount': 'Pin {count}',
   'explore.trending': 'Tendance e ɖè jí lɛ',
   'explore.popular': 'Popular',
+  'following.title': 'Pin lɛ tso mɛ siwo n nyá gbɔ',
+  'following.subtitle': 'Kpɔ́n pin lɛ ɖe mɛ siwo n le nyá ko gbɔ.',
+  'following.empty': 'Mèga nyá ame aɖeke o.',
+  'following.suggest': 'Kpɔ́n suggestion lɛ',
 
   'profile.noBio': 'Bio ɖè ǎ ɖie',
   'profile.followers': 'xwé-mɛ́ lɛ',

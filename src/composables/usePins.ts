@@ -40,6 +40,8 @@ function mapDjangoPinToFrontend(djangoPin: any): Pin {
     userId: author.id,
     userAvatarUrl: getFullMediaUrl(author.avatar),
     userAvatarColor: author.avatar_color || 'bg-gray-400',
+    authorTipsEnabled: !!author.tips_enabled,
+    authorTipsUrl: author.tips_url || '',
     link: '',
     stats: { 
       saves: djangoPin.saves_count || 0, 
@@ -88,83 +90,90 @@ export function usePins() {
       .map(([topic]) => topic)
   })
 
-  async function fetchPins(reset = false, topic?: string | null) {
+  const loadPinCollection = async (
+    endpoint: string,
+    reset = false,
+    extraParams: Record<string, string | number | null | undefined> = {},
+  ) => {
     if (reset) {
       currentPage.value = 1
       hasNextPage.value = true
       pins.value = []
     }
-    
     if (!hasNextPage.value || loading.value || isFetchingNextPage.value) return
-
     loading.value = currentPage.value === 1
     isFetchingNextPage.value = currentPage.value > 1
     error.value = null
-    
-    console.log(`📡 Fetching pins page ${currentPage.value}...`)
     try {
-      const response = await api.get('pins/', {
+      const response = await api.get(endpoint, {
         params: {
           page: currentPage.value,
-          ...(topic ? { topic } : {}),
-        }
+          ...extraParams,
+        },
       })
-      
       const pinsData = response.data.results || response.data
       const next = response.data.next
-      
       if (Array.isArray(pinsData) && pinsData.length > 0) {
         const newPins = pinsData.map(mapDjangoPinToFrontend)
         pins.value = [...pins.value, ...newPins]
-        currentPage.value++
+        currentPage.value += 1
         hasNextPage.value = !!next
       } else {
         hasNextPage.value = false
       }
     } catch (err) {
-      console.warn('❌ Erreur lors de la récupération des pins.')
       hasNextPage.value = false
+      throw err
     } finally {
       loading.value = false
       isFetchingNextPage.value = false
     }
   }
 
-  async function fetchRecommendations(reset = false) {
-    if (reset) {
-      currentPage.value = 1
-      hasNextPage.value = true
-      pins.value = []
-    }
-
-    if (!hasNextPage.value || loading.value || isFetchingNextPage.value) return
-
-    loading.value = currentPage.value === 1
-    isFetchingNextPage.value = currentPage.value > 1
-    error.value = null
-    
+  async function fetchPins(reset = false, topic?: string | null) {
     try {
-      const response = await api.get('pins/recommendations/', {
-        params: { page: currentPage.value }
-      })
-      
-      const pinsData = response.data.results || response.data
-      const next = response.data.next
+      await loadPinCollection('pins/', reset, topic ? { topic } : {})
+    } catch (err) {
+      console.warn('❌ Erreur lors de la récupération des pins.')
+    }
+  }
 
-      if (Array.isArray(pinsData) && pinsData.length > 0) {
-        const newPins = pinsData.map(mapDjangoPinToFrontend)
-        pins.value = [...pins.value, ...newPins]
-        currentPage.value++
-        hasNextPage.value = !!next
-      } else {
-        hasNextPage.value = false
-      }
+  async function fetchRecommendations(reset = false) {
+    try {
+      await loadPinCollection('pins/recommendations/', reset)
     } catch (err) {
       console.warn('Error fetching recommendations, falling back to all pins')
       await fetchPins(reset)
-    } finally {
-      loading.value = false
-      isFetchingNextPage.value = false
+    }
+  }
+
+  async function fetchHomeFeed(reset = false, topic?: string | null) {
+    try {
+      await loadPinCollection('pins/home-feed/', reset, topic ? { topic } : {})
+    } catch (err) {
+      console.warn('Error fetching home feed, fallback to recommendations')
+      await fetchRecommendations(reset)
+    }
+  }
+
+  async function fetchDiscoverPins(reset = false, topic?: string | null) {
+    try {
+      await loadPinCollection('pins/discover/', reset, topic ? { topic } : {})
+    } catch (err) {
+      console.warn('Error fetching discover pins, fallback to public pins')
+      await fetchPins(reset, topic)
+    }
+  }
+
+  async function fetchFollowingPins(reset = false) {
+    try {
+      await loadPinCollection('pins/following/', reset)
+    } catch (err) {
+      console.warn('Error fetching following pins')
+      if (reset) {
+        pins.value = []
+        hasNextPage.value = false
+      }
     }
   }
 
@@ -258,10 +267,13 @@ export function usePins() {
 
   async function addComment(
     pinSlug: string,
-    payload: { text: string; gif?: string | null; parentId?: number | null },
+    payload: FormData | { text: string; gif?: string | null; parentId?: number | null },
   ) {
     try {
-      const response = await api.post(`pins/${pinSlug}/comments/`, payload)
+      const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData
+      const response = await api.post(`pins/${pinSlug}/comments/`, payload, isFormData ? {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      } : undefined)
       const pin = pins.value.find(p => p.slug === pinSlug)
       if (pin) {
         pin.stats.reactions += 0 // On pourrait mettre à jour le count ici si on l'avait séparément
@@ -289,6 +301,18 @@ export function usePins() {
 
   async function toggleCommentLike(commentId: number) {
     const response = await api.post(`pins/comments/${commentId}/like/`)
+    return response.data
+  }
+
+  async function getPinDownload(pinSlug: string, quality: 'standard' | 'hd' | '4k' = 'standard') {
+    const response = await api.get(`pins/${pinSlug}/download/`, {
+      params: { quality },
+    })
+    return response.data
+  }
+
+  async function fetchCreatorStats() {
+    const response = await api.get('pins/creator-stats/')
     return response.data
   }
 
@@ -395,6 +419,22 @@ export function usePins() {
     return count.toString()
   }
 
+  async function trackPinView(pinSlug: string) {
+    try {
+      await api.post(`pins/${pinSlug}/view/`)
+    } catch (err) {
+      // non-blocking analytics call
+    }
+  }
+
+  async function trackSearchInteraction(query: string) {
+    try {
+      await api.post('pins/search-interactions/', { query })
+    } catch (err) {
+      // non-blocking analytics call
+    }
+  }
+
   return {
     pins,
     topics,
@@ -404,6 +444,9 @@ export function usePins() {
     isFetchingNextPage,
     fetchPins,
     fetchRecommendations,
+    fetchHomeFeed,
+    fetchDiscoverPins,
+    fetchFollowingPins,
     addPin,
     getPin,
     toggleSave,
@@ -418,9 +461,13 @@ export function usePins() {
     translatePinDescription,
     translateComment,
     toggleCommentLike,
+    getPinDownload,
+    fetchCreatorStats,
     fetchProvenance,
     fetchPrivateTags,
     savePrivateTags,
+    trackPinView,
+    trackSearchInteraction,
     formatCount,
   }
 }

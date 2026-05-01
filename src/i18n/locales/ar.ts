@@ -19,6 +19,7 @@ export const ar: Record<string, string> = {
   'nav.home': 'الرئيسية',
   'nav.explore': 'استكشاف',
   'nav.create': 'إنشاء',
+  'nav.following': 'المتابَعون',
   'nav.profile': 'الملف الشخصي',
   'nav.settings': 'الإعدادات',
   'nav.login': 'تسجيل الدخول',
@@ -213,6 +214,10 @@ export const ar: Record<string, string> = {
   'explore.pinsCount': '{count} بِن',
   'explore.trending': 'الاتجاهات الحالية',
   'explore.popular': 'شائع',
+  'following.title': 'منشورات الحسابات التي تتابعها',
+  'following.subtitle': 'اعرض فقط منشورات الحسابات التي تتابعها.',
+  'following.empty': 'أنت لا تتابع أحدا بعد.',
+  'following.suggest': 'عرض الاقتراحات',
 
   'profile.noBio': 'لا توجد سيرة ذاتية حتى الآن',
   'profile.followers': 'متابع',

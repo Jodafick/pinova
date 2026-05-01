@@ -9,6 +9,8 @@ export type Pin = {
   userId: number
   userAvatarUrl?: string
   userAvatarColor: string
+  authorTipsEnabled?: boolean
+  authorTipsUrl?: string
   link: string
   stats: {
     saves: number
@@ -50,12 +52,17 @@ export type User = {
     renewalAt?: string | null
     translationQuotaMonthly: number
     translationUsedMonthly: number
+    adAdsEnabled?: boolean
+    partnerAdsEnabled?: boolean
+    tipsEnabled?: boolean
+    tipsUrl?: string
   }
   boards?: {
     id: number
     name: string
     pinCount: number
     isPrivate: boolean
+    collaboratorCount?: number
   }[]
 }
 

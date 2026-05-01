@@ -19,6 +19,7 @@ export const it: Record<string, string> = {
   'nav.home': 'Home',
   'nav.explore': 'Esplora',
   'nav.create': 'Crea',
+  'nav.following': 'Seguiti',
   'nav.profile': 'Profilo',
   'nav.settings': 'Impostazioni',
   'nav.login': 'Accedi',
@@ -213,6 +214,10 @@ export const it: Record<string, string> = {
   'explore.pinsCount': '{count} pin',
   'explore.trending': 'Tendenze del momento',
   'explore.popular': 'Popolare',
+  'following.title': 'Pin dei profili seguiti',
+  'following.subtitle': 'Vedi solo i pin degli account che segui.',
+  'following.empty': 'Non segui ancora nessuno.',
+  'following.suggest': 'Mostra suggerimenti',
 
   'profile.noBio': 'Nessuna biografia per ora',
   'profile.followers': 'follower',

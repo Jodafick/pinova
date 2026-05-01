@@ -19,15 +19,15 @@ const plans = computed(() => [
     cta: t('premium.plan.free.cta'),
     ctaDisabled: true,
     features: [
-      { label: t('premium.feature.noAds'), included: true },
+      { label: t('premium.feature.adsEnabled'), included: true },
+      { label: t('premium.feature.partnerAdsEnabled'), included: true },
       { label: t('premium.feature.noTracking'), included: true },
       { label: t('premium.feature.unlimitedPins'), included: true },
-      { label: t('premium.feature.privateTags10'), included: true },
-      { label: t('premium.feature.privateBoards3'), included: true },
-      { label: t('premium.feature.translate5'), included: true },
+      { label: t('premium.feature.privateTagsFree'), included: false },
+      { label: t('premium.feature.boardsFreeLimits'), included: true },
       { label: t('premium.feature.gifs'), included: false },
-      // { label: t('premium.feature.creatorCredit'), included: false },
       { label: t('premium.feature.collabBoards'), included: false },
+      { label: t('premium.feature.download'), included: false },
     ],
   },
   {
@@ -42,14 +42,14 @@ const plans = computed(() => [
     ctaDisabled: false,
     features: [
       { label: t('premium.feature.allFree'), included: true },
+      { label: t('premium.feature.disableAdsOnly'), included: true },
+      { label: t('premium.feature.disablePartnerAds'), included: false },
       { label: t('premium.feature.privateTagsUnlimited'), included: true },
-      { label: t('premium.feature.privateBoardsUnlimited'), included: true },
+      { label: t('premium.feature.boardsPlusLimits'), included: true },
       { label: t('premium.feature.gifs'), included: true },
-      { label: t('premium.feature.translate30'), included: true },
-      // { label: t('premium.feature.creatorCredit'), included: true },
       { label: t('premium.feature.collab10'), included: true },
-      { label: t('premium.feature.reverseSearch'), included: true },
-      { label: t('premium.feature.hd'), included: false },
+      // { label: t('premium.feature.reverseSearch'), included: true },
+      { label: t('premium.feature.download'), included: true },
     ],
   },
   {
@@ -64,12 +64,12 @@ const plans = computed(() => [
     ctaDisabled: false,
     features: [
       { label: t('premium.feature.allPlus'), included: true },
+      { label: t('premium.feature.disableAllAds'), included: true },
       { label: t('premium.feature.collabUnlimited'), included: true },
       { label: t('premium.feature.hd4k'), included: true },
       { label: t('premium.feature.stats'), included: true },
       { label: t('premium.feature.tips'), included: true },
       { label: t('premium.feature.blockchain'), included: true },
-      { label: t('premium.feature.longVideos'), included: true },
       { label: t('premium.feature.support'), included: true },
       { label: t('premium.feature.badge'), included: true },
     ],
@@ -189,8 +189,8 @@ const faqs = computed(() => [
             <span class="material-symbols-outlined text-emerald-600">block</span>
           </div>
           <div>
-            <p class="text-sm font-bold text-neutral-900">{{ t('premium.trust.noAds') }}</p>
-            <p class="text-xs text-neutral-500 mt-1">{{ t('premium.trust.noAds.desc') }}</p>
+            <p class="text-sm font-bold text-neutral-900">{{ t('premium.trust.planLimits') }}</p>
+            <p class="text-xs text-neutral-500 mt-1">{{ t('premium.trust.planLimits.desc') }}</p>
           </div>
         </div>
         <div class="flex items-start gap-3">

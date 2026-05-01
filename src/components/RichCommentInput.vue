@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import { useI18n } from '../i18n'
+import { useAuth } from '../composables/useAuth'
 import api from '../api'
 
 const { t } = useI18n()
+const { currentUser } = useAuth()
 
 const text = ref('')
 const showGifPicker = ref(false)
 const showMentionList = ref(false)
 const selectedGif = ref<string | null>(null)
+const selectedMediaFile = ref<File | null>(null)
+const selectedMediaPreview = ref<string | null>(null)
 const replyingTo = ref<string | null>(null)
 const inputEl = ref<HTMLInputElement | null>(null)
+const mediaInputEl = ref<HTMLInputElement | null>(null)
 
 defineProps<{
   placeholder?: string
@@ -18,7 +23,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'submit', payload: { text: string; gif?: string | null; replyTo?: string | null }): void
+  (e: 'submit', payload: { text: string; gif?: string | null; mediaFile?: File | null; replyTo?: string | null }): void
 }>()
 
 const trendingGifs = [
@@ -42,6 +47,10 @@ const filteredUsers = computed(() => {
   if (!mentionFilter.value) return suggestedUsers.value
   const q = mentionFilter.value.toLowerCase()
   return suggestedUsers.value.filter(u => u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q))
+})
+const canUseGifComments = computed(() => {
+  const plan = currentUser.value?.subscription?.plan || 'free'
+  return plan === 'plus' || plan === 'pro'
 })
 
 const fetchMentionUsers = async (query: string, reset = true) => {
@@ -117,12 +126,55 @@ const insertMention = (username: string) => {
 }
 
 const pickGif = (url: string) => {
+  if (!canUseGifComments.value) {
+    window.alert(t('comment.gif.upgradeRequired'))
+    return
+  }
   selectedGif.value = url
+  if (selectedMediaPreview.value) {
+    URL.revokeObjectURL(selectedMediaPreview.value)
+  }
+  selectedMediaFile.value = null
+  selectedMediaPreview.value = null
   showGifPicker.value = false
 }
 
 const removeGif = () => {
   selectedGif.value = null
+}
+
+const pickMediaFile = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    window.alert('Fichier image uniquement.')
+    return
+  }
+  if (file.type === 'image/gif' && !canUseGifComments.value) {
+    window.alert(t('comment.gif.upgradeRequired'))
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    window.alert('Image/GIF trop lourd (max 5MB).')
+    return
+  }
+  if (selectedMediaPreview.value) {
+    URL.revokeObjectURL(selectedMediaPreview.value)
+  }
+  selectedGif.value = null
+  selectedMediaFile.value = file
+  selectedMediaPreview.value = URL.createObjectURL(file)
+}
+
+const removeMedia = () => {
+  if (selectedMediaPreview.value) {
+    URL.revokeObjectURL(selectedMediaPreview.value)
+  }
+  selectedMediaFile.value = null
+  selectedMediaPreview.value = null
+  if (mediaInputEl.value) {
+    mediaInputEl.value.value = ''
+  }
 }
 
 const setReply = (username: string) => {
@@ -132,14 +184,16 @@ const setReply = (username: string) => {
 }
 
 const submit = () => {
-  if (!text.value.trim() && !selectedGif.value) return
+  if (!text.value.trim() && !selectedGif.value && !selectedMediaFile.value) return
   emit('submit', {
     text: text.value,
     gif: selectedGif.value,
+    mediaFile: selectedMediaFile.value,
     replyTo: replyingTo.value,
   })
   text.value = ''
   selectedGif.value = null
+  removeMedia()
   replyingTo.value = null
   showGifPicker.value = false
   showMentionList.value = false
@@ -179,6 +233,17 @@ defineExpose({ setReply })
       </button>
     </div>
 
+    <!-- Selected media preview -->
+    <div v-if="selectedMediaPreview" class="mb-2 relative inline-block">
+      <img :src="selectedMediaPreview" class="max-h-32 rounded-lg" />
+      <button
+        class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-neutral-900 text-white flex items-center justify-center shadow"
+        @click="removeMedia"
+      >
+        <span class="material-symbols-outlined text-sm">close</span>
+      </button>
+    </div>
+
     <!-- Input bar -->
     <div class="flex items-center gap-2 bg-neutral-100 rounded-full px-2 pl-4 py-1 focus-within:ring-2 focus-within:ring-pink-500 focus-within:bg-white transition">
       <input
@@ -193,8 +258,9 @@ defineExpose({ setReply })
 
       <!-- GIF button -->
       <button
-        class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition relative"
-        :title="t('comment.gif.title')"
+        class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition relative disabled:opacity-40 disabled:cursor-not-allowed"
+        :title="canUseGifComments ? t('comment.gif.title') : t('comment.gif.upgradeRequired')"
+        :disabled="!canUseGifComments"
         @click="showGifPicker = !showGifPicker; showMentionList = false"
       >
         <span class="text-[10px] font-bold border border-current rounded px-1 leading-none py-0.5">{{ t('comment.gif') }}</span>
@@ -209,6 +275,22 @@ defineExpose({ setReply })
         <span class="material-symbols-outlined text-lg">alternate_email</span>
       </button>
 
+      <input
+        ref="mediaInputEl"
+        type="file"
+        accept="image/*"
+        class="hidden"
+        @change="pickMediaFile"
+      />
+
+      <button
+        class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
+        title="Image/GIF"
+        @click="mediaInputEl?.click()"
+      >
+        <span class="material-symbols-outlined text-lg">add_photo_alternate</span>
+      </button>
+
       <!-- Emoji placeholder -->
       <button
         class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
@@ -220,7 +302,7 @@ defineExpose({ setReply })
       <!-- Submit -->
       <button
         class="w-9 h-9 rounded-full bg-pink-600 text-white flex items-center justify-center hover:bg-pink-700 transition disabled:opacity-40"
-        :disabled="(!text.trim() && !selectedGif) || submitting"
+        :disabled="(!text.trim() && !selectedGif && !selectedMediaFile) || submitting"
         @click="submit"
       >
         <span v-if="submitting" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

@@ -19,6 +19,7 @@ export const zh: Record<string, string> = {
   'nav.home': '首页',
   'nav.explore': '探索',
   'nav.create': '创建',
+  'nav.following': '已关注',
   'nav.profile': '个人资料',
   'nav.settings': '设置',
   'nav.login': '登录',
@@ -213,6 +214,10 @@ export const zh: Record<string, string> = {
   'explore.pinsCount': '{count} 个 pins',
   'explore.trending': '当前热门',
   'explore.popular': '热门',
+  'following.title': '你关注账号的 Pins',
+  'following.subtitle': '只显示你已关注创作者的 Pins。',
+  'following.empty': '你还没有关注任何人。',
+  'following.suggest': '查看推荐',
 
   'profile.noBio': '暂无简介',
   'profile.followers': '粉丝',

@@ -33,6 +33,8 @@ const {
   fetchProvenance,
   fetchPrivateTags,
   savePrivateTags,
+  trackPinView,
+  getPinDownload,
 } = usePins()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
@@ -50,10 +52,14 @@ const likingPin = ref(false)
 const followingAuthor = ref(false)
 const translatingDescription = ref(false)
 const submittingComment = ref(false)
+const downloadingPin = ref(false)
 
 onMounted(async () => {
   if (pins.value.length === 0 || !pin.value) {
     await fetchPins()
+  }
+  if (pin.value?.slug) {
+    void trackPinView(pin.value.slug)
   }
   await loadPinMetadata()
 })
@@ -61,6 +67,9 @@ onMounted(async () => {
 watch(pinSlug, async () => {
   if (!pin.value) {
     await fetchPins(true)
+  }
+  if (pin.value?.slug) {
+    void trackPinView(pin.value.slug)
   }
   await loadPinMetadata()
 })
@@ -134,6 +143,7 @@ type UiComment = {
   text: string
   translatedText?: string
   gif?: string | null
+  media?: string | null
   createdAt: string
   liked?: boolean
   likes: number
@@ -188,6 +198,7 @@ const mapComment = (comment: any): UiComment => {
     text: comment.text || '',
     translatedText: comment.translated_text || '',
     gif: comment.gif_url || null,
+    media: comment.media || null,
     createdAt: new Date(comment.created_at).toLocaleString(),
     likes: comment.likes_count || 0,
     liked: !!comment.is_liked,
@@ -265,18 +276,27 @@ const loadPinMetadata = async () => {
   }
 }
 
-const handleRichSubmit = async (payload: { text: string; gif?: string | null; replyTo?: string | null; parentId?: number }) => {
+const handleRichSubmit = async (
+  payload: { text: string; gif?: string | null; mediaFile?: File | null; replyTo?: string | null; parentId?: number },
+) => {
   if (!pin.value || !isAuthenticated.value) {
     router.push('/login')
     return
   }
   submittingComment.value = true
   try {
-    await addComment(pin.value.slug, {
-      text: payload.text,
-      gif: payload.gif || null,
-      parentId: payload.parentId,
-    })
+    const formData = new FormData()
+    formData.append('text', payload.text || '')
+    if (payload.gif) {
+      formData.append('gif', payload.gif)
+    }
+    if (payload.parentId) {
+      formData.append('parentId', String(payload.parentId))
+    }
+    if (payload.mediaFile) {
+      formData.append('media', payload.mediaFile)
+    }
+    await addComment(pin.value.slug, formData)
     await loadComments(true)
   } finally {
     submittingComment.value = false
@@ -448,6 +468,32 @@ const handleShare = () => {
   alert(t('pin.share.copied'))
 }
 
+const handleDownload = async () => {
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  if (!pin.value) return
+  downloadingPin.value = true
+  try {
+    const plan = currentUser.value?.subscription?.plan || 'free'
+    const quality = plan === 'pro' ? 'hd' : 'standard'
+    const result = await getPinDownload(pin.value.slug, quality)
+    const link = document.createElement('a')
+    link.href = result.download_url
+    link.download = `${pin.value.slug}.jpg`
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (err) {
+    console.error('Erreur téléchargement pin', err)
+    window.alert(t('pin.download.error'))
+  } finally {
+    downloadingPin.value = false
+  }
+}
+
 const goBack = () => {
   router.back()
 }
@@ -511,6 +557,14 @@ const openRelatedPin = (slug: string) => {
                   @click="handleShare"
                 >
                   <span class="material-symbols-outlined">share</span>
+                </button>
+                <button
+                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition"
+                  :disabled="downloadingPin"
+                  @click="handleDownload"
+                >
+                  <span v-if="downloadingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                  <span v-else class="material-symbols-outlined">download</span>
                 </button>
                 <button class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition">
                   <span class="material-symbols-outlined">more_horiz</span>
@@ -620,6 +674,15 @@ const openRelatedPin = (slug: string) => {
                 <span v-if="followingAuthor" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
                 <span v-else>{{ pin.isFollowing ? t('pin.following') : t('pin.follow') }}</span>
               </button>
+              <a
+                v-if="pin.authorTipsEnabled && pin.authorTipsUrl && (!currentUser || currentUser.id !== pin.userId)"
+                :href="pin.authorTipsUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-4 py-3 rounded-full text-sm font-bold bg-amber-50 text-amber-800 hover:bg-amber-100 transition"
+              >
+                Tip
+              </a>
             </div>
 
             <!-- Stats -->

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -11,11 +11,12 @@ import PinSkeleton from '../components/PinSkeleton.vue'
 const { t } = useI18n()
 
 const router = useRouter()
-const { pins, topics, loading, fetchRecommendations, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
+const { pins, topics, loading, fetchHomeFeed, trackSearchInteraction, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
 const { currentUser, toggleSavePin } = useAuth()
 
 const searchQuery = ref('')
 const activeTopic = ref<string | null>(null)
+let searchTrackTimer: ReturnType<typeof setTimeout> | null = null
 
 const filteredPins = computed(() => {
   return pins.value.filter((pin) => {
@@ -37,14 +38,14 @@ const handleScroll = () => {
 
   if (scrollTop + clientHeight >= scrollHeight - 100) {
     if (hasNextPage.value && !isFetchingNextPage.value) {
-      fetchRecommendations()
+      fetchHomeFeed(false, activeTopic.value)
     }
   }
 }
 
 onMounted(() => {
   if (pins.value.length === 0) {
-    fetchRecommendations(true)
+    fetchHomeFeed(true, activeTopic.value)
   }
   window.addEventListener('scroll', handleScroll)
 })
@@ -55,7 +56,17 @@ onUnmounted(() => {
 
 const selectTopic = (topic: string | null) => {
   activeTopic.value = topic
+  void fetchHomeFeed(true, topic)
 }
+
+watch(searchQuery, (value) => {
+  if (searchTrackTimer) clearTimeout(searchTrackTimer)
+  const query = value.trim()
+  if (query.length < 2) return
+  searchTrackTimer = setTimeout(() => {
+    void trackSearchInteraction(query)
+  }, 500)
+})
 
 const handleToggleSave = async (slug: string) => {
   const pin = pins.value.find(p => p.slug === slug)
