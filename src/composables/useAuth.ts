@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import type { User } from '../types'
-import api from '../api'
+import api, { AUTH_INVALIDATED_EVENT } from '../api'
 import { API_BASE_URL } from '../env'
 
 const defaultUser: User = {
@@ -28,6 +28,7 @@ const isInitializing = ref(true)
 const inMemoryAccessToken = ref<string | null>(
   typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null,
 )
+let hasAuthInvalidationListener = false
 
 function getFullMediaUrl(url: string | null): string | undefined {
   if (!url) return undefined
@@ -63,6 +64,16 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
 }
 
 export function useAuth() {
+  function clearAuthState() {
+    inMemoryAccessToken.value = null
+    delete api.defaults.headers.common.Authorization
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('pinova_token')
+      window.localStorage.removeItem('pinova_refresh_token')
+    }
+    currentUser.value = null
+  }
+
   function applyAccessToken(token: string | null) {
     inMemoryAccessToken.value = token
     if (token) {
@@ -76,6 +87,11 @@ export function useAuth() {
         window.localStorage.removeItem('pinova_token')
       }
     }
+  }
+
+  if (typeof window !== 'undefined' && !hasAuthInvalidationListener) {
+    window.addEventListener(AUTH_INVALIDATED_EVENT, clearAuthState)
+    hasAuthInvalidationListener = true
   }
 
   if (inMemoryAccessToken.value) {
@@ -252,11 +268,7 @@ export function useAuth() {
 
   function logout() {
     api.post('auth/logout/').catch(() => undefined)
-    applyAccessToken(null)
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('pinova_refresh_token')
-    }
-    currentUser.value = null
+    clearAuthState()
     console.log('🚪 Logged out successfully.')
   }
 
