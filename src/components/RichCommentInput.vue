@@ -14,6 +14,7 @@ const inputEl = ref<HTMLInputElement | null>(null)
 
 defineProps<{
   placeholder?: string
+  submitting?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -219,10 +220,11 @@ defineExpose({ setReply })
       <!-- Submit -->
       <button
         class="w-9 h-9 rounded-full bg-pink-600 text-white flex items-center justify-center hover:bg-pink-700 transition disabled:opacity-40"
-        :disabled="!text.trim() && !selectedGif"
+        :disabled="(!text.trim() && !selectedGif) || submitting"
         @click="submit"
       >
-        <span class="material-symbols-outlined text-lg">send</span>
+        <span v-if="submitting" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+        <span v-else class="material-symbols-outlined text-lg">send</span>
       </button>
     </div>
 

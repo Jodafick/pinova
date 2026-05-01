@@ -11,7 +11,7 @@ const { t } = useI18n()
 
 const router = useRouter()
 const { addPin, topics } = usePins()
-const { currentUser } = useAuth()
+const { currentUser, fetchMyBoards } = useAuth()
 
 const title = ref('')
 const description = ref('')
@@ -28,10 +28,14 @@ const visibility = ref<'public' | 'followers' | 'private'>('public')
 
 // Tags privés
 const privateTags = ref<string[]>([])
+const publicTagsInput = ref('')
+const selectedBoardIds = ref<number[]>([])
+const myBoards = ref<{ id: number; name: string; is_private?: boolean }[]>([])
 
 // Crédit créateur certifié
 const certifyCredit = ref(true)
 const dynamicTopics = ref<string[]>([])
+const boardsLoading = ref(false)
 
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
 const resolvedTopics = computed(() => dynamicTopics.value.length > 0 ? dynamicTopics.value : topics.value)
@@ -43,6 +47,17 @@ onMounted(async () => {
     dynamicTopics.value = (response.data || []).map((item: any) => item.name)
   } catch (err) {
     console.warn('Impossible de charger les catégories dynamiques', err)
+  }
+  if (currentUser.value) {
+    boardsLoading.value = true
+    try {
+      myBoards.value = await fetchMyBoards()
+    } catch (err) {
+      console.warn('Impossible de charger les tableaux', err)
+      myBoards.value = []
+    } finally {
+      boardsLoading.value = false
+    }
   }
 })
 
@@ -86,7 +101,13 @@ const submitPin = async () => {
     formData.append('topic', topic.value || 'Général')
     formData.append('visibility', visibility.value)
     formData.append('certified_credit', certifyCredit.value ? 'true' : 'false')
+    publicTagsInput.value
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .forEach((tag) => formData.append('public_tags_input', tag))
     privateTags.value.forEach((tag) => formData.append('private_tags_input', tag))
+    selectedBoardIds.value.forEach((boardId) => formData.append('board_ids_input', String(boardId)))
     
     if (currentUser.value) {
       formData.append('author', currentUser.value.id.toString())
@@ -99,6 +120,14 @@ const submitPin = async () => {
     window.alert(t('create.publish.error'))
   } finally {
     saving.value = false
+  }
+}
+
+const toggleBoardSelection = (boardId: number) => {
+  if (selectedBoardIds.value.includes(boardId)) {
+    selectedBoardIds.value = selectedBoardIds.value.filter((id) => id !== boardId)
+  } else {
+    selectedBoardIds.value = [...selectedBoardIds.value, boardId]
   }
 }
 </script>
@@ -244,6 +273,40 @@ const submitPin = async () => {
                 <option value="Autre">{{ t('create.field.category.other') }}</option>
               </select>
               <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">expand_more</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.publicTags') }}</label>
+            <input
+              v-model="publicTagsInput"
+              type="text"
+              :placeholder="t('create.field.publicTags.placeholder')"
+              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
+            />
+          </div>
+
+          <div class="pt-4 border-t border-neutral-100">
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-sm font-medium text-neutral-700">{{ t('create.field.boards') }}</label>
+              <span v-if="boardsLoading" class="text-xs text-neutral-400">{{ t('common.loading') }}</span>
+            </div>
+            <div v-if="myBoards.length === 0" class="text-xs text-neutral-500">
+              {{ t('create.field.boards.empty') }}
+            </div>
+            <div v-else class="flex flex-wrap gap-2">
+              <button
+                v-for="board in myBoards"
+                :key="board.id"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs border transition"
+                :class="selectedBoardIds.includes(board.id)
+                  ? 'bg-pink-50 border-pink-300 text-pink-700'
+                  : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300'"
+                @click="toggleBoardSelection(board.id)"
+              >
+                {{ board.name }}
+              </button>
             </div>
           </div>
 

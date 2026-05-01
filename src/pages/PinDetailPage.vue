@@ -7,7 +7,6 @@ import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
-import ProvenanceChain from '../components/ProvenanceChain.vue'
 import PrivateTags from '../components/PrivateTags.vue'
 import { useI18n } from '../i18n'
 
@@ -46,6 +45,11 @@ const relatedPins = computed(() => {
   if (!pin.value) return []
   return pins.value.filter((p) => p.topic === pin.value?.topic && p.slug !== pin.value?.slug).slice(0, 8)
 })
+const savingPin = ref(false)
+const likingPin = ref(false)
+const followingAuthor = ref(false)
+const translatingDescription = ref(false)
+const submittingComment = ref(false)
 
 onMounted(async () => {
   if (pins.value.length === 0 || !pin.value) {
@@ -74,7 +78,12 @@ const handleLike = async () => {
     return
   }
   if (pin.value) {
-    await toggleLike(pin.value.slug)
+    likingPin.value = true
+    try {
+      await toggleLike(pin.value.slug)
+    } finally {
+      likingPin.value = false
+    }
   }
 }
 
@@ -83,9 +92,14 @@ const handleSave = () => {
     router.push('/login')
     return
   }
-  if (!pin.value) return
-  toggleSave(pin.value.slug)
-  toggleSavePin(pin.value.id)
+  const currentPin = pin.value
+  if (!currentPin) return
+  savingPin.value = true
+  Promise.resolve(toggleSave(currentPin.slug))
+    .then(() => toggleSavePin(currentPin.id))
+    .finally(() => {
+      savingPin.value = false
+    })
 }
 
 const handleFollow = async () => {
@@ -94,7 +108,12 @@ const handleFollow = async () => {
     return
   }
   if (pin.value && pin.value.username) {
-    await toggleFollow(pin.value.username)
+    followingAuthor.value = true
+    try {
+      await toggleFollow(pin.value.username)
+    } finally {
+      followingAuthor.value = false
+    }
   }
 }
 
@@ -242,12 +261,17 @@ const handleRichSubmit = async (payload: { text: string; gif?: string | null; re
     router.push('/login')
     return
   }
-  await addComment(pin.value.slug, {
-    text: payload.text,
-    gif: payload.gif || null,
-    parentId: payload.parentId,
-  })
-  await loadComments(true)
+  submittingComment.value = true
+  try {
+    await addComment(pin.value.slug, {
+      text: payload.text,
+      gif: payload.gif || null,
+      parentId: payload.parentId,
+    })
+    await loadComments(true)
+  } finally {
+    submittingComment.value = false
+  }
 }
 
 const handleLikeComment = (id: number) => {
@@ -346,8 +370,13 @@ const handleTranslateDescription = async () => {
     router.push('/login')
     return
   }
-  const result = await translatePinDescription(pin.value.slug, targetLang.value)
-  descriptionText.value = result?.translated || pin.value.description
+  translatingDescription.value = true
+  try {
+    const result = await translatePinDescription(pin.value.slug, targetLang.value)
+    descriptionText.value = result?.translated || pin.value.description
+  } finally {
+    translatingDescription.value = false
+  }
 }
 
 const handlePrivateTagsUpdate = async (tags: string[]) => {
@@ -445,9 +474,11 @@ const openRelatedPin = (slug: string) => {
                 <button
                   class="w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="pin.liked ? 'bg-pink-50 text-pink-600' : 'hover:bg-neutral-100 text-neutral-600'"
+                  :disabled="likingPin"
                   @click="handleLike"
                 >
-                  <span class="material-symbols-outlined fill-1" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
+                  <span v-if="likingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                  <span v-else class="material-symbols-outlined fill-1" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
                 </button>
                 <button
                   class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition"
@@ -464,9 +495,10 @@ const openRelatedPin = (slug: string) => {
                 :class="pin.saved
                   ? 'bg-neutral-900 text-white hover:bg-neutral-800'
                   : 'bg-pink-600 text-white hover:bg-pink-700'"
+                :disabled="savingPin"
                 @click="handleSave"
               >
-                {{ pin.saved ? t('pin.saved') : t('pin.save') }}
+                {{ savingPin ? t('common.loading') : (pin.saved ? t('pin.saved') : t('pin.save')) }}
               </button>
             </div>
 
@@ -501,9 +533,10 @@ const openRelatedPin = (slug: string) => {
                 <button
                   v-if="isAuthenticated"
                   class="text-xs font-semibold text-pink-600 hover:text-pink-700"
+                  :disabled="translatingDescription"
                   @click="handleTranslateDescription"
                 >
-                  {{ t('comment.translate') }}
+                  {{ translatingDescription ? t('common.loading') : t('comment.translate') }}
                 </button>
               </div>
             </div>
@@ -553,9 +586,10 @@ const openRelatedPin = (slug: string) => {
                 :class="pin.isFollowing
                   ? 'bg-neutral-900 text-white hover:bg-neutral-800'
                   : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200'"
+                :disabled="followingAuthor"
                 @click="handleFollow"
               >
-                {{ pin.isFollowing ? t('pin.following') : t('pin.follow') }}
+                {{ followingAuthor ? t('common.loading') : (pin.isFollowing ? t('pin.following') : t('pin.follow')) }}
               </button>
             </div>
 
@@ -582,6 +616,15 @@ const openRelatedPin = (slug: string) => {
                 class="px-2.5 py-1 rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600"
               >
                 {{ tag }}
+              </span>
+            </div>
+            <div v-if="pin.boards && pin.boards.length" class="mb-5 flex flex-wrap gap-2">
+              <span
+                v-for="board in pin.boards"
+                :key="board.id"
+                class="px-2.5 py-1 rounded-full bg-purple-50 text-xs font-semibold text-purple-700"
+              >
+                {{ board.name }}
               </span>
             </div>
 
@@ -642,7 +685,7 @@ const openRelatedPin = (slug: string) => {
                   {{ currentUser.displayName[0] }}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <RichCommentInput @submit="handleRichSubmit" />
+                  <RichCommentInput :submitting="submittingComment" @submit="handleRichSubmit" />
                 </div>
               </div>
             </div>

@@ -46,6 +46,11 @@ function mapDjangoPinToFrontend(djangoPin: any): Pin {
     visibility: djangoPin.visibility || 'public',
     hashtags: djangoPin.hashtags || [],
     privateTags: djangoPin.private_tags || [],
+    boards: (djangoPin.boards || []).map((board: any) => ({
+      id: board.id,
+      name: board.name,
+      isPrivate: !!board.is_private,
+    })),
     certifiedCredit: djangoPin.certified_credit || false,
     provenanceRootHash: djangoPin.provenance_root_hash || '',
     createdAt: djangoPin.created_at,

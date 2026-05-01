@@ -18,6 +18,11 @@ export type Pin = {
   visibility?: 'public' | 'followers' | 'private'
   hashtags?: string[]
   privateTags?: string[]
+  boards?: {
+    id: number
+    name: string
+    isPrivate?: boolean
+  }[]
   certifiedCredit?: boolean
   provenanceRootHash?: string
   tall?: boolean
