@@ -11,7 +11,50 @@ const api = axios.create({
   },
 });
 
+const PUBLIC_AUTH_PATH_PREFIXES = [
+  'auth/login/',
+  'auth/registration/',
+  'auth/registration/verify-email/',
+  'auth/social/',
+  'auth/password/reset/',
+  'auth/password/reset/confirm/',
+  'verify-otp/',
+  'resend-otp/',
+]
+
+const PRIVATE_GET_PATH_PREFIXES = [
+  'me/',
+  'boards/',
+  'notifications/',
+  'conversations/',
+  'pins/recommendations/',
+]
+
+function shouldSkipBearerForRequest(url?: string, method?: string) {
+  if (!url) return false
+  if (!PUBLIC_AUTH_PATH_PREFIXES.some((prefix) => url.includes(prefix))) {
+    return false
+  }
+  return method !== 'post' || !url.includes('auth/logout/')
+}
+
+function shouldAttachBearer(url?: string, method?: string) {
+  if (!url) return false
+  if (method && ['post', 'put', 'patch', 'delete'].includes(method)) return true
+  if (url.includes('/private-tags/')) return true
+  return PRIVATE_GET_PATH_PREFIXES.some((prefix) => url.includes(prefix))
+}
+
 api.interceptors.request.use((config) => {
+  const method = (config.method || 'get').toLowerCase()
+
+  if (shouldSkipBearerForRequest(config.url, method) || !shouldAttachBearer(config.url, method)) {
+    if (config.headers?.Authorization) {
+      delete config.headers.Authorization
+    }
+    return config
+  }
+
   const existingAuth = config.headers?.Authorization
   if (existingAuth) return config
 

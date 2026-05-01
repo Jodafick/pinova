@@ -183,8 +183,7 @@ export function useAuth() {
       }
     } catch (err: any) {
       console.error('Login error:', err)
-      // Si on a un token mais que fetchCurrentUser a échoué, on logout
-      logout()
+      clearAuthState()
       const errorMsg = err.response?.data?.non_field_errors?.[0] || 'Identifiants incorrects.'
       return { success: false, error: errorMsg }
     }
@@ -261,14 +260,17 @@ export function useAuth() {
       }
     } catch (err: any) {
       console.error(`${provider} login error:`, err)
-      logout()
+      clearAuthState()
       return { success: false, error: `Erreur lors de la connexion avec ${provider}.` }
     }
   }
 
   function logout() {
-    api.post('auth/logout/').catch(() => undefined)
+    const hadToken = !!inMemoryAccessToken.value
     clearAuthState()
+    if (hadToken) {
+      api.post('auth/logout/').catch(() => undefined)
+    }
     console.log('🚪 Logged out successfully.')
   }
 
