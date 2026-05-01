@@ -125,6 +125,11 @@ const descriptionText = ref('')
 const provenanceHash = ref('')
 const provenanceEvents = ref<any[]>([])
 const privateTags = ref<string[]>([])
+const commentSort = ref<'recent' | 'relevant'>(
+  typeof window !== 'undefined' && window.localStorage.getItem('pinova_comment_sort') === 'relevant'
+    ? 'relevant'
+    : 'recent',
+)
 const highlightedCommentId = computed<number | null>(() => {
   const raw = route.query.commentId
   if (typeof raw !== 'string') return null
@@ -174,7 +179,12 @@ const loadComments = async (reset = true) => {
     richComments.value = []
   }
   const pageToFetch = commentsPage.value
-  const response = await fetchComments(pinSlug.value, pageToFetch)
+  const response = await fetchComments(
+    pinSlug.value,
+    pageToFetch,
+    commentSort.value,
+    highlightedCommentId.value,
+  )
   const mapped = (response.results || []).map(mapComment)
   if (reset) {
     richComments.value = mapped
@@ -187,6 +197,15 @@ const loadComments = async (reset = true) => {
     commentsPage.value = pageToFetch + 1
   }
   await focusHighlightedComment()
+}
+
+const setCommentSort = async (sort: 'recent' | 'relevant') => {
+  if (commentSort.value === sort) return
+  commentSort.value = sort
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem('pinova_comment_sort', sort)
+  }
+  await loadComments(true)
 }
 
 const loadPinMetadata = async () => {
@@ -357,7 +376,12 @@ const handleLoadMoreComments = async () => {
 const handleLoadMoreReplies = async (commentId: number) => {
   const parent = richComments.value.find((comment) => comment.id === commentId)
   if (!parent?.repliesNextPage) return
-  const response = await fetchCommentReplies(commentId, parent.repliesNextPage)
+  const response = await fetchCommentReplies(
+    commentId,
+    parent.repliesNextPage,
+    commentSort.value,
+    highlightedCommentId.value,
+  )
   const mappedReplies = (response.results || []).map(mapComment)
   parent.replies = [...(parent.replies || []), ...mappedReplies]
   parent.repliesNextPage = response.next ? parent.repliesNextPage + 1 : null
@@ -568,10 +592,22 @@ const openRelatedPin = (slug: string) => {
                   {{ t('pin.comments') }}
                   <span class="text-neutral-400 font-normal text-sm">({{ commentsTotalCount }})</span>
                 </h3>
-                <button class="text-xs text-neutral-500 font-medium hover:text-neutral-700 flex items-center gap-1">
-                  <span class="material-symbols-outlined text-base">sort</span>
-                  {{ t('pin.comments.sortRecent') }}
-                </button>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    class="text-xs font-medium px-2 py-1 rounded-full border transition"
+                    :class="commentSort === 'recent' ? 'bg-pink-50 text-pink-600 border-pink-200' : 'text-neutral-500 border-neutral-200 hover:text-neutral-700'"
+                    @click="setCommentSort('recent')"
+                  >
+                    {{ t('pin.comments.sortRecent') }}
+                  </button>
+                  <button
+                    class="text-xs font-medium px-2 py-1 rounded-full border transition"
+                    :class="commentSort === 'relevant' ? 'bg-pink-50 text-pink-600 border-pink-200' : 'text-neutral-500 border-neutral-200 hover:text-neutral-700'"
+                    @click="setCommentSort('relevant')"
+                  >
+                    {{ t('pin.comments.sortRelevant') }}
+                  </button>
+                </div>
               </div>
 
               <!-- Rich threads -->

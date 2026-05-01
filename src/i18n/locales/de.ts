@@ -86,6 +86,7 @@ export const de: Record<string, string> = {
   'pin.visibility.followers': 'Follower',
   'pin.comments': 'Kommentare',
   'pin.comments.sortRecent': 'Neueste',
+  'pin.comments.sortRelevant': 'Relevanteste',
 
   'translate.translateTo': 'Übersetzen ins {lang}',
   'translate.viewOriginal': 'Original anzeigen ({lang})',

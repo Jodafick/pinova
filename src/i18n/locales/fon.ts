@@ -88,6 +88,7 @@ export const fon: Record<string, string> = {
   'pin.visibility.followers': 'Xwé-mɛ́ lɛ',
   'pin.comments': 'Xó-ɖíɖɔ lɛ',
   'pin.comments.sortRecent': 'É ɖè jí',
+  'pin.comments.sortRelevant': 'É jɔ̀ gudo wu',
 
   'translate.translateTo': 'Tinmɛ dó {lang} mɛ́',
   'translate.viewOriginal': 'Kpɔ́n original ({lang})',

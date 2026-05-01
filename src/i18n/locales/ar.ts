@@ -86,6 +86,7 @@ export const ar: Record<string, string> = {
   'pin.visibility.followers': 'المتابعون',
   'pin.comments': 'التعليقات',
   'pin.comments.sortRecent': 'الأحدث',
+  'pin.comments.sortRelevant': 'الأكثر صلة',
 
   'translate.translateTo': 'ترجمة إلى {lang}',
   'translate.viewOriginal': 'عرض الأصل ({lang})',

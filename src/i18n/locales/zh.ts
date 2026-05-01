@@ -86,6 +86,7 @@ export const zh: Record<string, string> = {
   'pin.visibility.followers': '粉丝',
   'pin.comments': '评论',
   'pin.comments.sortRecent': '最新',
+  'pin.comments.sortRelevant': '最相关',
 
   'translate.translateTo': '翻译为 {lang}',
   'translate.viewOriginal': '查看原文 ({lang})',

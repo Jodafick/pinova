@@ -157,9 +157,20 @@ export function usePins() {
     }
   }
 
-  async function fetchComments(pinSlug: string, page = 1) {
+  async function fetchComments(
+    pinSlug: string,
+    page = 1,
+    sort: 'recent' | 'relevant' = 'recent',
+    highlightCommentId?: number | null,
+  ) {
     try {
-      const response = await api.get(`pins/${pinSlug}/comments/`, { params: { page } })
+      const response = await api.get(`pins/${pinSlug}/comments/`, {
+        params: {
+          page,
+          sort,
+          ...(highlightCommentId ? { highlight_comment_id: highlightCommentId } : {}),
+        },
+      })
       const data = response.data
       if (Array.isArray(data)) {
         return {
@@ -176,9 +187,20 @@ export function usePins() {
     }
   }
 
-  async function fetchCommentReplies(commentId: number, page = 1) {
+  async function fetchCommentReplies(
+    commentId: number,
+    page = 1,
+    sort: 'recent' | 'relevant' = 'recent',
+    highlightCommentId?: number | null,
+  ) {
     try {
-      const response = await api.get(`pins/comments/${commentId}/replies/`, { params: { page } })
+      const response = await api.get(`pins/comments/${commentId}/replies/`, {
+        params: {
+          page,
+          sort,
+          ...(highlightCommentId ? { highlight_comment_id: highlightCommentId } : {}),
+        },
+      })
       const data = response.data
       if (Array.isArray(data)) {
         return {

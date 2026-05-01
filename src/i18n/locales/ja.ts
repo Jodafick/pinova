@@ -86,6 +86,7 @@ export const ja: Record<string, string> = {
   'pin.visibility.followers': 'フォロワー',
   'pin.comments': 'コメント',
   'pin.comments.sortRecent': '新着順',
+  'pin.comments.sortRelevant': '関連順',
 
   'translate.translateTo': '{lang} に翻訳',
   'translate.viewOriginal': '原文を表示 ({lang})',
