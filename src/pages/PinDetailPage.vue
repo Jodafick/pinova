@@ -509,7 +509,7 @@ const openRelatedPin = (slug: string) => {
             </div>
 
             <!-- Crédit créateur certifié (provenance) -->
-            <div class="mb-6">
+            <!-- <div class="mb-6">
               <ProvenanceChain
                 :creator="pin.user"
                 :creator-avatar="pin.userAvatarColor"
@@ -517,7 +517,7 @@ const openRelatedPin = (slug: string) => {
                 :hash="provenanceHash || pin.provenanceRootHash"
                 :events="provenanceEvents"
               />
-            </div>
+            </div> -->
 
             <!-- Tags privés -->
             <div v-if="isPinOwner" class="mb-6">

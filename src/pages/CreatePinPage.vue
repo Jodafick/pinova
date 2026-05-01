@@ -283,7 +283,7 @@ const submitPin = async () => {
           </div>
 
           <!-- Crédit créateur certifié -->
-          <div class="pt-4 border-t border-neutral-100">
+          <!-- <div class="pt-4 border-t border-neutral-100">
             <label class="flex items-start gap-3 cursor-pointer">
               <div class="relative mt-0.5">
                 <input v-model="certifyCredit" type="checkbox" class="sr-only peer" />
@@ -300,7 +300,7 @@ const submitPin = async () => {
                 </p>
               </div>
             </label>
-          </div>
+          </div> -->
 
           <!-- Tags privés -->
           <div class="pt-4 border-t border-neutral-100">
