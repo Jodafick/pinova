@@ -351,8 +351,8 @@ const closeDropdowns = () => {
           >
             <div
               class="w-8 h-8 flex items-center justify-center rounded-full  text-xs font-bold overflow-hidden avatar-shadow"
-              :class="currentUser?.avatarColor || 'bg-neutral-800'"
-            >
+              >
+              <!-- :class="currentUser?.avatarColor || 'bg-neutral-800'" -->
               <img v-if="currentUser?.avatarUrl" :src="currentUser.avatarUrl" class="w-full h-full object-cover rounded-full" />
               <span v-else class="avatar-text text-[#E92389]">{{ userInitials }}</span>
             </div>
