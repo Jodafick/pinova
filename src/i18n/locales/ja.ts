@@ -209,6 +209,7 @@ export const ja: Record<string, string> = {
   'explore.title': '探す',
   'explore.subtitle': '今のトレンドを発見し、カテゴリーから探そう',
   'explore.byCategory': 'カテゴリーで探す',
+  'explore.categorySearch.placeholder': 'カテゴリーを検索...',
   'explore.pinsCount': '{count} ピン',
   'explore.trending': '今のトレンド',
   'explore.popular': '人気',

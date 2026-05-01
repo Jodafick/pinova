@@ -209,6 +209,7 @@ export const ar: Record<string, string> = {
   'explore.title': 'استكشاف',
   'explore.subtitle': 'اكتشف الاتجاهات الحالية واستكشف حسب الفئات',
   'explore.byCategory': 'تصفح حسب الفئة',
+  'explore.categorySearch.placeholder': 'ابحث عن فئة...',
   'explore.pinsCount': '{count} بِن',
   'explore.trending': 'الاتجاهات الحالية',
   'explore.popular': 'شائع',

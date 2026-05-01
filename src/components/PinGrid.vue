@@ -5,7 +5,7 @@ import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 
-const { formatCount } = usePins()
+const { formatCount, isPinSavePending } = usePins()
 const { isAuthenticated } = useAuth()
 const { t } = useI18n()
 
@@ -55,6 +55,7 @@ const markImageLoaded = (pinId: number) => {
 }
 
 const isImageLoaded = (pinId: number) => !!loadedImages.value[pinId]
+const isSavePending = (slug: string) => isPinSavePending(slug)
 </script>
 
 <template>
@@ -93,9 +94,11 @@ const isImageLoaded = (pinId: number) => !!loadedImages.value[pinId]
             v-if="isAuthenticated"
             class="absolute top-3 right-3 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 shadow-lg z-10"
             :class="pin.saved ? 'bg-neutral-900 text-white' : 'bg-pink-600 text-white hover:bg-pink-700'"
+            :disabled="isSavePending(pin.slug)"
             @click.stop="emit('toggle-save', pin.slug)"
           >
-            {{ pin.saved ? t('pin.saved') : t('pin.save') }}
+            <span v-if="isSavePending(pin.slug)" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+            <span v-else>{{ pin.saved ? t('pin.saved') : t('pin.save') }}</span>
           </button>
 
           <!-- Bottom actions on hover -->

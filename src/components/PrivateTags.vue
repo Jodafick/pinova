@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from '../i18n'
 
 const { t } = useI18n()
@@ -15,6 +15,13 @@ const emit = defineEmits<{
 
 const tags = ref<string[]>(props.modelValue ?? [])
 const newTag = ref('')
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    tags.value = value ?? []
+  },
+)
 
 const addTag = () => {
   const value = newTag.value.trim()

@@ -209,6 +209,7 @@ export const es: Record<string, string> = {
   'explore.title': 'Explorar',
   'explore.subtitle': 'Descubre las tendencias del momento y explora por categorías',
   'explore.byCategory': 'Explorar por categoría',
+  'explore.categorySearch.placeholder': 'Buscar una categoría...',
   'explore.pinsCount': '{count} pins',
   'explore.trending': 'Tendencias del momento',
   'explore.popular': 'Popular',

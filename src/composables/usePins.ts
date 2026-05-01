@@ -9,6 +9,9 @@ const error = ref<string | null>(null)
 const currentPage = ref(1)
 const hasNextPage = ref(true)
 const isFetchingNextPage = ref(false)
+const savePendingBySlug = ref<Record<string, boolean>>({})
+const likePendingBySlug = ref<Record<string, boolean>>({})
+const followPendingByUsername = ref<Record<string, boolean>>({})
 
 type PaginatedResponse<T> = {
   count: number
@@ -61,10 +64,28 @@ function mapDjangoPinToFrontend(djangoPin: any): Pin {
 }
 
 export function usePins() {
+  const setPendingFlag = (store: Record<string, boolean>, key: string, value: boolean) => {
+    if (!key) return
+    if (value) {
+      store[key] = true
+      return
+    }
+    delete store[key]
+  }
+
+  const isPinSavePending = (slug: string) => !!savePendingBySlug.value[slug]
+  const isPinLikePending = (slug: string) => !!likePendingBySlug.value[slug]
+  const isAuthorFollowPending = (username: string) => !!followPendingByUsername.value[username]
+
   const topics = computed(() => {
-    const set = new Set<string>()
-    pins.value.forEach((pin) => set.add(pin.topic))
-    return Array.from(set).sort()
+    const counts = new Map<string, number>()
+    pins.value.forEach((pin) => {
+      counts.set(pin.topic, (counts.get(pin.topic) || 0) + 1)
+    })
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 10)
+      .map(([topic]) => topic)
   })
 
   async function fetchPins(reset = false, topic?: string | null) {
@@ -148,17 +169,30 @@ export function usePins() {
   }
 
   async function toggleLike(pinSlug: string) {
+    const pin = pins.value.find((p) => p.slug === pinSlug)
+    const previousLiked = pin?.liked ?? false
+    const previousReactions = pin?.stats.reactions ?? 0
+    if (pin) {
+      pin.liked = !previousLiked
+      pin.stats.reactions = Math.max(0, previousReactions + (pin.liked ? 1 : -1))
+    }
+    setPendingFlag(likePendingBySlug.value, pinSlug, true)
     try {
       const response = await api.post(`pins/${pinSlug}/like/`)
-      const pin = pins.value.find(p => p.slug === pinSlug)
       if (pin) {
         pin.liked = response.data.status === 'liked'
         pin.stats.reactions = response.data.likes_count
       }
       return response.data
     } catch (err) {
+      if (pin) {
+        pin.liked = previousLiked
+        pin.stats.reactions = previousReactions
+      }
       console.error('Error toggling like:', err)
       throw err
+    } finally {
+      setPendingFlag(likePendingBySlug.value, pinSlug, false)
     }
   }
 
@@ -298,21 +332,40 @@ export function usePins() {
   }
 
   async function toggleSave(slug: string) {
+    const pin = pins.value.find((p) => p.slug === slug)
+    const previousSaved = pin?.saved ?? false
+    const previousSaves = pin?.stats.saves ?? 0
+    if (pin) {
+      pin.saved = !previousSaved
+      pin.stats.saves = Math.max(0, previousSaves + (pin.saved ? 1 : -1))
+    }
+    setPendingFlag(savePendingBySlug.value, slug, true)
     try {
       const response = await api.post(`pins/${slug}/save/`)
-      const pin = pins.value.find((p) => p.slug === slug)
       if (pin) {
         pin.saved = response.data.status === 'saved'
         pin.stats.saves = response.data.saves_count
       }
       return response.data
     } catch (err) {
+      if (pin) {
+        pin.saved = previousSaved
+        pin.stats.saves = previousSaves
+      }
       console.error('Error toggling save:', err)
       throw err
+    } finally {
+      setPendingFlag(savePendingBySlug.value, slug, false)
     }
   }
 
   async function toggleFollow(username: string) {
+    const affectedPins = pins.value.filter((pin) => pin.username === username)
+    const previousFollowState = affectedPins.map((pin) => pin.isFollowing)
+    affectedPins.forEach((pin) => {
+      pin.isFollowing = !pin.isFollowing
+    })
+    setPendingFlag(followPendingByUsername.value, username, true)
     try {
       const response = await api.post(`profiles/${username}/follow/`)
       const isFollowed = response.data.status === 'followed'
@@ -326,8 +379,13 @@ export function usePins() {
       
       return response.data
     } catch (err) {
+      affectedPins.forEach((pin, index) => {
+        pin.isFollowing = previousFollowState[index]
+      })
       console.error('Error toggling follow:', err)
       throw err
+    } finally {
+      setPendingFlag(followPendingByUsername.value, username, false)
     }
   }
 
@@ -351,6 +409,9 @@ export function usePins() {
     toggleSave,
     toggleLike,
     toggleFollow,
+    isPinSavePending,
+    isPinLikePending,
+    isAuthorFollowPending,
     fetchComments,
     fetchCommentReplies,
     addComment,

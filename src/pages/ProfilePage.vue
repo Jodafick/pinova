@@ -18,6 +18,7 @@ const { pins, toggleSave, fetchPins, loading: pinsLoading } = usePins()
 const profileUser = ref<User | null>(null)
 const loading = ref(true)
 const isFollowing = ref(false)
+const followingProfilePending = ref(false)
 
 const isMyProfile = computed(() => {
   return !route.params.username || (currentUser.value && route.params.username === currentUser.value.username)
@@ -54,11 +55,19 @@ const handleFollow = async () => {
     return
   }
   if (profileUser.value) {
-    const res = await apiToggleFollow(profileUser.value.username)
-    isFollowing.value = res.status === 'followed'
-    // Refresh stats
-    if (profileUser.value) {
+    const previous = isFollowing.value
+    isFollowing.value = !previous
+    profileUser.value.followers += (isFollowing.value ? 1 : -1)
+    followingProfilePending.value = true
+    try {
+      const res = await apiToggleFollow(profileUser.value.username)
+      isFollowing.value = res.status === 'followed'
+    } catch (err) {
+      isFollowing.value = previous
       profileUser.value.followers += (isFollowing.value ? 1 : -1)
+      console.error('Erreur follow profil', err)
+    } finally {
+      followingProfilePending.value = false
     }
   }
 }
@@ -124,15 +133,22 @@ const handleCreateBoard = async () => {
   }
 }
 
-const handleToggleSave = (slug: string) => {
+const handleToggleSave = async (slug: string) => {
   if (!currentUser.value) {
     router.push('/login')
     return
   }
-  toggleSave(slug)
   const pin = pins.value.find(p => p.slug === slug)
   if (pin) {
     toggleSavePin(pin.id)
+  }
+  try {
+    await toggleSave(slug)
+  } catch (err) {
+    if (pin) {
+      toggleSavePin(pin.id)
+    }
+    console.error('Erreur sauvegarde pin', err)
   }
 }
 
@@ -190,9 +206,11 @@ const openPin = (slug: string) => {
           <button
             class="px-6 py-2.5 rounded-full text-sm font-semibold transition"
             :class="isFollowing ? 'bg-neutral-900 text-white hover:bg-neutral-800' : 'bg-pink-600 text-white hover:bg-pink-700'"
+            :disabled="followingProfilePending"
             @click="handleFollow"
           >
-            {{ isFollowing ? t('pin.following') : t('pin.follow') }}
+            <span v-if="followingProfilePending" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+            <span v-else>{{ isFollowing ? t('pin.following') : t('pin.follow') }}</span>
           </button>
         </template>
         <router-link

@@ -209,6 +209,7 @@ export const zh: Record<string, string> = {
   'explore.title': '探索',
   'explore.subtitle': '发现当前热门并按分类浏览',
   'explore.byCategory': '按分类浏览',
+  'explore.categorySearch.placeholder': '搜索分类...',
   'explore.pinsCount': '{count} 个 pins',
   'explore.trending': '当前热门',
   'explore.popular': '热门',

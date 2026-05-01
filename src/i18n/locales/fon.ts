@@ -211,6 +211,7 @@ export const fon: Record<string, string> = {
   'explore.title': 'Ba kpɔ́n',
   'explore.subtitle': 'Mɔ tendance e ɖè jí lɛ, bo kpɔ́n catégorie lɛ',
   'explore.byCategory': 'Kpɔ́n ɖó catégorie wú',
+  'explore.categorySearch.placeholder': 'Ba catégorie ɖokpó...',
   'explore.pinsCount': 'Pin {count}',
   'explore.trending': 'Tendance e ɖè jí lɛ',
   'explore.popular': 'Popular',

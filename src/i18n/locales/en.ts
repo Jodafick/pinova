@@ -211,6 +211,7 @@ export const en: Record<string, string> = {
   'explore.title': 'Explore',
   'explore.subtitle': 'Discover trending content and explore by category',
   'explore.byCategory': 'Browse by category',
+  'explore.categorySearch.placeholder': 'Search a category...',
   'explore.pinsCount': '{count} pins',
   'explore.trending': 'Trending now',
   'explore.popular': 'Popular',

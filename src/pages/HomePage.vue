@@ -57,11 +57,18 @@ const selectTopic = (topic: string | null) => {
   activeTopic.value = topic
 }
 
-const handleToggleSave = (slug: string) => {
-  toggleSave(slug)
+const handleToggleSave = async (slug: string) => {
   const pin = pins.value.find(p => p.slug === slug)
   if (pin) {
     toggleSavePin(pin.id)
+  }
+  try {
+    await toggleSave(slug)
+  } catch (err) {
+    if (pin) {
+      toggleSavePin(pin.id)
+    }
+    console.error('Erreur sauvegarde pin', err)
   }
 }
 

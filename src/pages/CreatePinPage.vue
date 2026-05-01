@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -34,31 +34,73 @@ const myBoards = ref<{ id: number; name: string; is_private?: boolean }[]>([])
 
 // Crédit créateur certifié
 const certifyCredit = ref(true)
-const dynamicTopics = ref<string[]>([])
+type TopicOption = { name: string; originalName: string }
+const dynamicTopics = ref<TopicOption[]>([])
 const boardsLoading = ref(false)
+const showCategoryDropdown = ref(false)
+const categorySearch = ref('')
+let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
-const resolvedTopics = computed(() => dynamicTopics.value.length > 0 ? dynamicTopics.value : topics.value)
+const resolvedTopics = computed<TopicOption[]>(() => {
+  if (dynamicTopics.value.length > 0) return dynamicTopics.value
+  return topics.value.map((topicName) => ({ name: topicName, originalName: topicName }))
+})
+const filteredTopics = computed(() => {
+  const q = categorySearch.value.trim().toLowerCase()
+  if (!q) return resolvedTopics.value.slice(0, 20)
+  return resolvedTopics.value
+    .filter((item) =>
+      item.name.toLowerCase().includes(q) ||
+      item.originalName.toLowerCase().includes(q),
+    )
+    .slice(0, 20)
+})
 
-onMounted(async () => {
+const loadTopics = async (query = '') => {
   try {
     const lang = navigator.language?.split('-')[0] || 'fr'
-    const response = await api.get('pins/topics/', { params: { lang } })
-    dynamicTopics.value = (response.data || []).map((item: any) => item.name)
+    const response = await api.get('pins/topics/', { params: { lang, q: query, limit: 20 } })
+    const payload = Array.isArray(response.data) ? response.data : []
+    dynamicTopics.value = payload.map((item: any) => ({
+      name: item?.name || '',
+      originalName: item?.originalName || item?.name || '',
+    })).filter((item: TopicOption) => item.name)
   } catch (err) {
     console.warn('Impossible de charger les catégories dynamiques', err)
   }
-  if (currentUser.value) {
-    boardsLoading.value = true
-    try {
-      myBoards.value = await fetchMyBoards()
-    } catch (err) {
-      console.warn('Impossible de charger les tableaux', err)
-      myBoards.value = []
-    } finally {
-      boardsLoading.value = false
-    }
+}
+
+const loadBoards = async () => {
+  if (!currentUser.value) {
+    myBoards.value = []
+    return
   }
+  boardsLoading.value = true
+  try {
+    myBoards.value = await fetchMyBoards()
+  } catch (err) {
+    console.warn('Impossible de charger les tableaux', err)
+    myBoards.value = []
+  } finally {
+    boardsLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  await loadTopics('')
+  await loadBoards()
+})
+
+watch(currentUser, async () => {
+  await loadBoards()
+})
+
+watch(categorySearch, (value) => {
+  if (categorySearchTimer) clearTimeout(categorySearchTimer)
+  categorySearchTimer = setTimeout(() => {
+    void loadTopics(value.trim())
+  }, 250)
 })
 
 const setImageFile = (file: File) => {
@@ -98,7 +140,8 @@ const submitPin = async () => {
     formData.append('title', title.value)
     formData.append('description', description.value || '')
     formData.append('image', imageFile.value)
-    formData.append('topic', topic.value || 'Général')
+    const resolvedTopic = topic.value || categorySearch.value.trim() || 'Général'
+    formData.append('topic', resolvedTopic)
     formData.append('visibility', visibility.value)
     formData.append('certified_credit', certifyCredit.value ? 'true' : 'false')
     publicTagsInput.value
@@ -129,6 +172,12 @@ const toggleBoardSelection = (boardId: number) => {
   } else {
     selectedBoardIds.value = [...selectedBoardIds.value, boardId]
   }
+}
+
+const selectCategory = (selected: TopicOption) => {
+  topic.value = selected.originalName
+  categorySearch.value = selected.name
+  showCategoryDropdown.value = false
 }
 </script>
 
@@ -264,15 +313,42 @@ const toggleBoardSelection = (boardId: number) => {
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.category') }}</label>
             <div class="relative">
-              <select
-                v-model="topic"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition appearance-none bg-white"
+              <input
+                v-model="categorySearch"
+                type="text"
+                :placeholder="t('create.field.category.placeholder')"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
+                @focus="showCategoryDropdown = true"
+              />
+              <button
+                type="button"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full hover:bg-neutral-100 flex items-center justify-center"
+                @click="showCategoryDropdown = !showCategoryDropdown"
               >
-                <option value="">{{ t('create.field.category.placeholder') }}</option>
-                <option v-for="topicName in resolvedTopics" :key="topicName" :value="topicName">{{ topicName }}</option>
-                <option value="Autre">{{ t('create.field.category.other') }}</option>
-              </select>
-              <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">expand_more</span>
+                <span class="material-symbols-outlined text-neutral-500">expand_more</span>
+              </button>
+              <div
+                v-if="showCategoryDropdown"
+                class="absolute z-20 mt-2 w-full bg-white border border-neutral-200 rounded-xl shadow-lg max-h-56 overflow-y-auto"
+              >
+                <button
+                  v-for="topicItem in filteredTopics"
+                  :key="topicItem.originalName"
+                  type="button"
+                  class="w-full text-left px-3 py-2 text-sm hover:bg-neutral-50"
+                  @click="selectCategory(topicItem)"
+                >
+                  {{ topicItem.name }}
+                </button>
+                <button
+                  v-if="categorySearch.trim() && !resolvedTopics.some((item) => item.name === categorySearch.trim() || item.originalName === categorySearch.trim())"
+                  type="button"
+                  class="w-full text-left px-3 py-2 text-sm font-medium text-pink-600 hover:bg-pink-50"
+                  @click="selectCategory({ name: categorySearch.trim(), originalName: categorySearch.trim() })"
+                >
+                  + {{ categorySearch.trim() }}
+                </button>
+              </div>
             </div>
           </div>
 

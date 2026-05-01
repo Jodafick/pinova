@@ -95,8 +95,12 @@ const handleSave = () => {
   const currentPin = pin.value
   if (!currentPin) return
   savingPin.value = true
+  toggleSavePin(currentPin.id)
   Promise.resolve(toggleSave(currentPin.slug))
-    .then(() => toggleSavePin(currentPin.id))
+    .catch((err) => {
+      toggleSavePin(currentPin.id)
+      console.error('Erreur sauvegarde pin', err)
+    })
     .finally(() => {
       savingPin.value = false
     })
@@ -108,9 +112,14 @@ const handleFollow = async () => {
     return
   }
   if (pin.value && pin.value.username) {
+    const previous = !!pin.value.isFollowing
+    pin.value.isFollowing = !previous
     followingAuthor.value = true
     try {
       await toggleFollow(pin.value.username)
+    } catch (err) {
+      pin.value.isFollowing = previous
+      console.error('Erreur follow auteur', err)
     } finally {
       followingAuthor.value = false
     }
@@ -282,13 +291,23 @@ const handleLikeComment = (id: number) => {
   const updateCommentById = (comments: UiComment[]): boolean => {
     for (const comment of comments) {
       if (comment.id === id) {
+        const previousLiked = !!comment.liked
+        const previousLikes = comment.likes
+        comment.liked = !previousLiked
+        comment.likes = Math.max(0, previousLikes + (comment.liked ? 1 : -1))
+        richComments.value = [...richComments.value]
         toggleCommentLike(id)
           .then((result) => {
             comment.liked = result.status === 'liked'
             comment.likes = result.likes_count
             richComments.value = [...richComments.value]
           })
-          .catch((err) => console.error('Erreur like commentaire', err))
+          .catch((err) => {
+            comment.liked = previousLiked
+            comment.likes = previousLikes
+            richComments.value = [...richComments.value]
+            console.error('Erreur like commentaire', err)
+          })
         return true
       }
       if (comment.replies && updateCommentById(comment.replies)) {
@@ -384,11 +403,18 @@ const handlePrivateTagsUpdate = async (tags: string[]) => {
   privateTags.value = await savePrivateTags(pin.value.slug, tags)
 }
 
-const handleToggleSaveRelated = (slug: string) => {
-  toggleSave(slug)
+const handleToggleSaveRelated = async (slug: string) => {
   const pin = pins.value.find(p => p.slug === slug)
   if (pin) {
     toggleSavePin(pin.id)
+  }
+  try {
+    await toggleSave(slug)
+  } catch (err) {
+    if (pin) {
+      toggleSavePin(pin.id)
+    }
+    console.error('Erreur sauvegarde pin relié', err)
   }
 }
 
@@ -498,7 +524,8 @@ const openRelatedPin = (slug: string) => {
                 :disabled="savingPin"
                 @click="handleSave"
               >
-                {{ savingPin ? t('common.loading') : (pin.saved ? t('pin.saved') : t('pin.save')) }}
+                <span v-if="savingPin" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                <span v-else>{{ pin.saved ? t('pin.saved') : t('pin.save') }}</span>
               </button>
             </div>
 
@@ -532,11 +559,12 @@ const openRelatedPin = (slug: string) => {
                 </p>
                 <button
                   v-if="isAuthenticated"
-                  class="text-xs font-semibold text-pink-600 hover:text-pink-700"
+                  class="text-xs font-semibold text-pink-600 hover:text-pink-700 inline-flex items-center gap-1.5"
                   :disabled="translatingDescription"
                   @click="handleTranslateDescription"
                 >
-                  {{ translatingDescription ? t('common.loading') : t('comment.translate') }}
+                  <span v-if="translatingDescription" class="w-3.5 h-3.5 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                  <span>{{ translatingDescription ? t('common.loading') : t('comment.translate') }}</span>
                 </button>
               </div>
             </div>
@@ -589,7 +617,8 @@ const openRelatedPin = (slug: string) => {
                 :disabled="followingAuthor"
                 @click="handleFollow"
               >
-                {{ followingAuthor ? t('common.loading') : (pin.isFollowing ? t('pin.following') : t('pin.follow')) }}
+                <span v-if="followingAuthor" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                <span v-else>{{ pin.isFollowing ? t('pin.following') : t('pin.follow') }}</span>
               </button>
             </div>
 
