@@ -32,8 +32,12 @@ const publicTagsInput = ref('')
 const selectedBoardIds = ref<number[]>([])
 const myBoards = ref<{ id: number; name: string; is_private?: boolean }[]>([])
 
-// Crédit créateur certifié
-const certifyCredit = ref(true)
+// Crédit créateur certifié (plan Pro uniquement, aligné backend)
+const canCertifyCredit = computed(() => currentPlan.value === 'pro')
+const certifyCredit = ref(false)
+watch(canCertifyCredit, (ok) => {
+  certifyCredit.value = ok
+}, { immediate: true })
 type TopicOption = { name: string; originalName: string; icon?: string; color?: string }
 const dynamicTopics = ref<TopicOption[]>([])
 const boardsLoading = ref(false)
@@ -148,7 +152,7 @@ const submitPin = async () => {
     const resolvedTopic = topic.value || categorySearch.value.trim() || 'Général'
     formData.append('topic', resolvedTopic)
     formData.append('visibility', visibility.value)
-    formData.append('certified_credit', certifyCredit.value ? 'true' : 'false')
+    formData.append('certified_credit', canCertifyCredit.value && certifyCredit.value ? 'true' : 'false')
     publicTagsInput.value
       .split(',')
       .map((tag) => tag.trim())
@@ -429,8 +433,8 @@ const selectCategory = (selected: TopicOption) => {
             </div>
           </div>
 
-          <!-- Crédit créateur certifié -->
-          <!-- <div class="pt-4 border-t border-neutral-100">
+          <!-- Crédit créateur certifié (Pro seulement) -->
+          <div v-if="canCertifyCredit" class="pt-4 border-t border-neutral-100">
             <label class="flex items-start gap-3 cursor-pointer">
               <div class="relative mt-0.5">
                 <input v-model="certifyCredit" type="checkbox" class="sr-only peer" />
@@ -447,7 +451,7 @@ const selectCategory = (selected: TopicOption) => {
                 </p>
               </div>
             </label>
-          </div> -->
+          </div>
 
           <div class="pt-4 border-t border-neutral-100">
             <PrivateTags v-if="canUsePrivateTags" v-model="privateTags" />

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuth } from '../composables/useAuth'
+import { devLog } from '../devLog'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -110,12 +111,12 @@ import { watch } from 'vue'
 
 // Navigation Guard
 router.beforeEach(async (to, from) => {
-  console.log(`🧭 Navigating from ${String(from.name)} to ${String(to.name)}`)
+  devLog(`🧭 Navigating from ${String(from.name)} to ${String(to.name)}`)
   const { isAuthenticated, isInitializing } = useAuth()
   
   // Attendre l'initialisation de l'auth si elle est en cours
   if (isInitializing.value) {
-    console.log('⏳ Auth is initializing, waiting...')
+    devLog('⏳ Auth is initializing, waiting...')
     // On attend que fetchCurrentUser soit terminé via une promesse sur watch
     await new Promise<void>((resolve) => {
       const unwatch = watch(isInitializing, (val) => {
@@ -135,13 +136,13 @@ router.beforeEach(async (to, from) => {
   
   // Si l'utilisateur est déjà connecté et essaie d'aller sur login/register
   if (to.meta.guest && isAuthenticated.value) {
-    console.log('🚪 Already logged in, redirecting to home...')
+    devLog('🚪 Already logged in, redirecting to home...')
     return { name: 'home' }
   }
 })
 
 router.afterEach((to) => {
-  console.log(`✅ Navigated to ${String(to.name)}`)
+  devLog(`✅ Navigated to ${String(to.name)}`)
 })
 
 router.onError((error) => {

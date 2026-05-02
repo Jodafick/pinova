@@ -31,6 +31,8 @@ export type Pin = {
   saved?: boolean
   liked?: boolean
   isFollowing?: boolean
+  /** Nombre d'abonnés de l'auteur (profil public). */
+  authorFollowersCount?: number
   createdAt: string
 }
 

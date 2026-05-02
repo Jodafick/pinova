@@ -5,6 +5,7 @@ import { useAuth } from './composables/useAuth'
 import { usePins } from './composables/usePins'
 import { useI18n } from './i18n'
 import GlobalHeader from './components/GlobalHeader.vue'
+import { devLog } from './devLog'
 
 const route = useRoute()
 const { fetchCurrentUser, isAuthenticated, isInitializing, currentUser } = useAuth()
@@ -46,7 +47,7 @@ useOneTap({
 */
 
 onMounted(async () => {
-  console.log('🚀 App mounted, initializing...')
+  devLog('🚀 App mounted, initializing...')
   try {
     await Promise.all([
       fetchCurrentUser(),
@@ -56,7 +57,7 @@ onMounted(async () => {
     if (preferred && languages.some((lang) => lang.code === preferred)) {
       setLang(preferred as typeof languages[number]['code'])
     }
-    console.log('✅ Initialization complete.')
+    devLog('✅ Initialization complete.')
   } catch (err) {
     console.error('❌ Initialization error:', err)
   }

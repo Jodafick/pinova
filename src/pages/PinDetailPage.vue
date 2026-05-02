@@ -660,7 +660,7 @@ const openRelatedPin = (slug: string) => {
                 </div>
                 <div>
                   <p class="text-sm font-bold text-neutral-900">{{ pin.user }}</p>
-                  <p class="text-xs text-neutral-500">{{ t('pin.followers', { count: '2,4k' }) }}</p>
+                  <p class="text-xs text-neutral-500">{{ t('pin.followers', { count: formatCount(pin.authorFollowersCount ?? 0) }) }}</p>
                 </div>
               </router-link>
               <button
@@ -682,7 +682,7 @@ const openRelatedPin = (slug: string) => {
                 rel="noopener noreferrer"
                 class="px-4 py-3 rounded-full text-sm font-bold bg-amber-50 text-amber-800 hover:bg-amber-100 transition"
               >
-                Tip
+                {{ t('pin.tip') }}
               </a>
             </div>
 

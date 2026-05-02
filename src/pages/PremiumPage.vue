@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
 import api from '../api'
+import { devLog } from '../devLog'
 
 const { t, currentLang } = useI18n()
 const router = useRouter()
@@ -274,7 +275,7 @@ const handlePaymentMessage = async (event: MessageEvent) => {
     payload.transaction_id || callbackQuery.id || callbackQuery.transaction_id || callbackQuery.transactionId || '',
   ).trim()
   if (!transactionId) return
-  console.info('Payment callback received in main window', {
+  devLog('Payment callback received in main window', {
     callbackUrl,
     callbackQuery,
     transactionId,

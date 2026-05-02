@@ -62,6 +62,7 @@ function mapDjangoPinToFrontend(djangoPin: any): Pin {
     liked: djangoPin.is_liked || false,
     saved: djangoPin.is_saved || false,
     isFollowing: author.is_following || false,
+    authorFollowersCount: typeof author.followers_count === 'number' ? author.followers_count : 0,
   }
 }
 

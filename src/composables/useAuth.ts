@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import type { User } from '../types'
 import api, { AUTH_INVALIDATED_EVENT } from '../api'
+import { devLog } from '../devLog'
 import { API_BASE_URL } from '../env'
 
 const defaultUser: User = {
@@ -50,7 +51,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     id: profile.id || djangoUser.id,
     username: djangoUser.username,
     displayName: profile.display_name || djangoUser.username,
-    email: djangoUser.email,
+    email: djangoUser.email ?? '',
     preferredLanguage: profile.preferred_language || 'fr',
     preferredCurrency: profile.preferred_currency || 'XOF',
     countryCode: profile.country_code || '',
@@ -119,11 +120,11 @@ export function useAuth() {
 
   async function fetchCurrentUser() {
     isInitializing.value = true
-    console.log('📡 Fetching user from API...')
+    devLog('📡 Fetching user from API...')
     try {
       const response = await api.get('me/')
       if (response.data) {
-        console.log('✅ User received:', response.data.username)
+        devLog('✅ User received:', response.data.username)
         currentUser.value = mapDjangoUserToFrontend(response.data)
       }
     } catch (err) {
@@ -301,7 +302,7 @@ export function useAuth() {
     if (hadToken) {
       api.post('auth/logout/', refreshToken ? { refresh: refreshToken } : undefined).catch(() => undefined)
     }
-    console.log('🚪 Logged out successfully.')
+    devLog('🚪 Logged out successfully.')
   }
 
   function toggleSavePin(pinId: number) {

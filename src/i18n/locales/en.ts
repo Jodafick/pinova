@@ -86,6 +86,7 @@ export const en: Record<string, string> = {
   'pin.saved': 'Saved',
   'pin.share.copied': 'Link copied to clipboard!',
   'pin.followers': '{count} followers',
+  'pin.tip': 'Tip',
   'pin.follow': 'Follow',
   'pin.following': 'Following',
   'pin.related': 'More like this',

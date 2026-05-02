@@ -92,6 +92,7 @@ export const fr: Record<string, string> = {
   'pin.saved': 'Enregistré',
   'pin.share.copied': 'Lien copié dans le presse-papier !',
   'pin.followers': '{count} abonnés',
+  'pin.tip': 'Pourboire',
   'pin.follow': 'S\'abonner',
   'pin.following': 'Abonné',
   'pin.related': 'Plus comme ça',
