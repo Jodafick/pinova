@@ -273,7 +273,7 @@ onMounted(() => {
 
         <div class="flex items-baseline gap-1 mb-1">
           <template v-if="pricingLoading || !plan.isPriceReady">
-            <span class="inline-block h-10 w-32 rounded bg-neutral-200 animate-pulse"></span>
+            <span class="inline-block h-10 w-full rounded-xl bg-neutral-200 animate-pulse"></span>
           </template>
           <template v-else>
             <span class="text-4xl font-bold text-neutral-900">
