@@ -4,10 +4,12 @@ import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
+import { useAppModal } from '../composables/useAppModal'
 import PrivateTags from '../components/PrivateTags.vue'
 import api from '../api'
 
 const { t } = useI18n()
+const { showAlert } = useAppModal()
 
 const router = useRouter()
 const { addPin, topics } = usePins()
@@ -50,12 +52,12 @@ const createStep = ref<1 | 2>(1)
 
 function goStep2() {
   if (!title.value.trim()) {
-    window.alert(t('create.step1.titleRequired'))
+    void showAlert(t('create.step1.titleRequired'), { variant: 'warning' })
     return
   }
   const resolvedTopic = topic.value || categorySearch.value.trim()
   if (!resolvedTopic) {
-    window.alert(t('create.step1.categoryRequired'))
+    void showAlert(t('create.step1.categoryRequired'), { variant: 'warning' })
     return
   }
   createStep.value = 2
@@ -134,7 +136,7 @@ watch(categorySearch, (value) => {
 
 const setImageFile = (file: File) => {
   if (!file.type.startsWith('image/')) {
-    window.alert(t('create.upload.invalid'))
+    void showAlert(t('create.upload.invalid'), { variant: 'warning' })
     return
   }
   if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
@@ -212,9 +214,12 @@ const submitPin = async () => {
         if (v && typeof v === 'object') return [`${k}: ${JSON.stringify(v)}`]
         return [`${k}: ${String(v)}`]
       })
-      window.alert(lines.slice(0, 8).join('\n') || t('create.publish.error'))
+      await showAlert(lines.slice(0, 8).join('\n') || t('create.publish.error'), {
+        variant: 'danger',
+        title: t('modal.errorTitle'),
+      })
     } else {
-      window.alert(t('create.publish.error'))
+      await showAlert(t('create.publish.error'), { variant: 'danger', title: t('modal.errorTitle') })
     }
   } finally {
     saving.value = false

@@ -8,9 +8,11 @@ import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 import StoryViewer from '../components/StoryViewer.vue'
 import { useI18n } from '../i18n'
+import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
 
 const { t } = useI18n()
+const { showAlert, showPrompt } = useAppModal()
 
 const router = useRouter()
 const route = useRoute()
@@ -169,7 +171,7 @@ const handleCreateBoard = async () => {
   if (!profileUser.value || !newBoardName.value.trim()) return
   if (!canCreateSelectedBoardType.value) {
     if (boardLimitHint.value) {
-      window.alert(boardLimitHint.value)
+      await showAlert(boardLimitHint.value, { variant: 'warning' })
     }
     return
   }

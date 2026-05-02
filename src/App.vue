@@ -5,6 +5,7 @@ import { useAuth } from './composables/useAuth'
 import { usePins } from './composables/usePins'
 import { useI18n } from './i18n'
 import GlobalHeader from './components/GlobalHeader.vue'
+import AppAlertModal from './components/AppAlertModal.vue'
 import { devLog } from './devLog'
 
 const route = useRoute()
@@ -81,6 +82,8 @@ const isAuthPage = computed(() => {
     <main class="flex-1" v-if="!isInitializing">
       <router-view />
     </main>
+
+    <AppAlertModal />
 
     <!-- Footer -->
     <footer v-if="isAuthenticated && !isAuthPage && !isInitializing" class="border-t border-neutral-100 bg-white py-6 px-6 sm:px-10">

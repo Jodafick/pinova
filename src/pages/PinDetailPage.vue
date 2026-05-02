@@ -8,8 +8,10 @@ import PinSkeleton from '../components/PinSkeleton.vue'
 import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
 import { useI18n } from '../i18n'
+import { useAppModal } from '../composables/useAppModal'
 
 const { t } = useI18n()
+const { showAlert, showPrompt } = useAppModal()
 
 const route = useRoute()
 const router = useRouter()
@@ -458,9 +460,14 @@ const handleShare = async () => {
   }
   try {
     await navigator.clipboard.writeText(url)
-    alert(t('pin.share.copied'))
+    await showAlert(t('pin.share.copied'), { variant: 'success' })
   } catch {
-    window.prompt('Copiez ce lien manuellement :', url)
+    await showPrompt({
+      title: t('pin.share.manualTitle'),
+      message: t('pin.share.manualBody'),
+      defaultValue: url,
+      variant: 'info',
+    })
   }
 }
 
@@ -484,7 +491,7 @@ const handleDownload = async () => {
     document.body.removeChild(link)
   } catch (err) {
     console.error('Erreur téléchargement pin', err)
-    window.alert(t('pin.download.error'))
+    await showAlert(t('pin.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
   } finally {
     downloadingPin.value = false
   }
