@@ -16,6 +16,10 @@ const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
 const pricingLoading = ref(true)
 const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
+const AUTO_CONFIRM_INTERVAL_MS = 4000
+const AUTO_CONFIRM_MAX_ATTEMPTS = 45
+let autoConfirmTimer: number | null = null
+let autoConfirmAttempts = 0
 type PricingCycle = {
   amount_minor: number
   amount_display: number
@@ -137,11 +141,75 @@ const faqs = computed(() => [
   { q: t('premium.faq.q4'), a: t('premium.faq.a4') },
 ])
 
+const clearAutoConfirmTimer = () => {
+  if (typeof window === 'undefined') return
+  if (autoConfirmTimer !== null) {
+    window.clearInterval(autoConfirmTimer)
+    autoConfirmTimer = null
+  }
+  autoConfirmAttempts = 0
+}
+
+const confirmPaymentTransaction = async (transactionId: string, silent = false): Promise<'approved' | 'pending' | 'error'> => {
+  if (!transactionId) return 'error'
+  if (!silent) {
+    confirmPending.value = true
+    paymentInfoMessage.value = ''
+  }
+  try {
+    const response = await api.post('subscription/confirm/', { transaction_id: transactionId })
+    if (response.data?.status === 'approved') {
+      await fetchCurrentUser()
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
+      }
+      paymentInfoMessage.value = t('premium.payment.success', { plan: String(response.data?.plan || '').toUpperCase() })
+      return 'approved'
+    }
+    if (!silent) {
+      paymentInfoMessage.value = t('premium.payment.pending')
+    }
+    return 'pending'
+  } catch (err: any) {
+    if (!silent) {
+      paymentInfoMessage.value = err?.response?.data?.error || t('premium.payment.confirmError')
+    }
+    return 'error'
+  } finally {
+    if (!silent) {
+      confirmPending.value = false
+    }
+  }
+}
+
+const startAutoConfirmWatcher = (transactionId: string, popup: Window | null) => {
+  if (typeof window === 'undefined') return
+  clearAutoConfirmTimer()
+  if (!transactionId) return
+  autoConfirmTimer = window.setInterval(async () => {
+    if (confirmPending.value) return
+    autoConfirmAttempts += 1
+    const status = await confirmPaymentTransaction(transactionId, true)
+    if (status === 'approved') {
+      clearAutoConfirmTimer()
+      return
+    }
+    if (autoConfirmAttempts >= AUTO_CONFIRM_MAX_ATTEMPTS) {
+      clearAutoConfirmTimer()
+      if (popup?.closed) {
+        paymentInfoMessage.value = t('premium.payment.pending')
+      }
+    }
+  }, AUTO_CONFIRM_INTERVAL_MS)
+}
+
 const handlePopupCallbackReturn = async () => {
   if (typeof window === 'undefined') return
   const params = new URLSearchParams(window.location.search)
   const statusValue = String(params.get('status') || '').toLowerCase()
-  const transactionId = String(params.get('id') || '').trim()
+  const transactionId = String(
+    params.get('id') || params.get('transaction_id') || params.get('transactionId') || '',
+  ).trim()
   if (!statusValue || !transactionId) return
 
   window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
@@ -177,6 +245,7 @@ const handleCheckout = async (planId: string) => {
       window.localStorage.setItem(PENDING_TX_STORAGE_KEY, String(transactionId))
     }
     if (checkoutUrl) {
+      startAutoConfirmWatcher(String(transactionId || ''), popup)
       if (popup && !popup.closed) {
         popup.location.href = checkoutUrl
         popup.focus()
@@ -202,21 +271,9 @@ const confirmPendingPayment = async (transactionIdOverride?: string) => {
     paymentInfoMessage.value = t('premium.payment.noPending')
     return
   }
-  confirmPending.value = true
-  paymentInfoMessage.value = ''
-  try {
-    const response = await api.post('subscription/confirm/', { transaction_id: transactionId })
-    if (response.data?.status === 'approved') {
-      await fetchCurrentUser()
-      window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
-      paymentInfoMessage.value = t('premium.payment.success', { plan: String(response.data?.plan || '').toUpperCase() })
-    } else {
-      paymentInfoMessage.value = t('premium.payment.pending')
-    }
-  } catch (err: any) {
-    paymentInfoMessage.value = err?.response?.data?.error || t('premium.payment.confirmError')
-  } finally {
-    confirmPending.value = false
+  const status = await confirmPaymentTransaction(transactionId, false)
+  if (status === 'approved') {
+    clearAutoConfirmTimer()
   }
 }
 
@@ -231,6 +288,7 @@ const handlePaymentMessage = async (event: MessageEvent) => {
   if (payload.type !== 'pinova_payment_callback') return
   const transactionId = String(payload.transaction_id || '').trim()
   if (!transactionId) return
+  clearAutoConfirmTimer()
   window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
   await confirmPendingPayment(transactionId)
 }
@@ -259,6 +317,7 @@ onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('message', handlePaymentMessage)
   }
+  clearAutoConfirmTimer()
 })
 </script>
 
