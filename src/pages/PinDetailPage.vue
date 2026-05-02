@@ -9,6 +9,7 @@ import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
+import { moderationScanText, moderationScanImageFile } from '../composables/useModeration'
 
 const { t } = useI18n()
 const { showAlert, showPrompt } = useAppModal()
@@ -21,6 +22,9 @@ const {
   toggleSave,
   pins,
   fetchPins,
+  fetchPinBySlug,
+  patchPinCommentsPolicy,
+  moderatePinComment,
   formatCount,
   toggleLike,
   toggleFollow,
@@ -33,12 +37,19 @@ const {
   translatePinDescription,
   trackPinView,
   getPinDownload,
+  reportPin,
+  reportComment,
 } = usePins()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
 const pinSlug = computed(() => route.params.slug as string)
 const pin = computed(() => getPin(pinSlug.value))
 const isPinOwner = computed(() => !!(currentUser.value && pin.value && currentUser.value.username === pin.value.username))
+const viewerCanComment = computed(() => {
+  const p = pin.value
+  if (!p) return false
+  return p.canComment !== false
+})
 const targetLang = computed(() => currentUser.value?.preferredLanguage || navigator.language?.split('-')[0] || 'fr')
 
 const relatedPins = computed(() => {
@@ -51,6 +62,7 @@ const followingAuthor = ref(false)
 const translatingDescription = ref(false)
 const submittingComment = ref(false)
 const downloadingPin = ref(false)
+const commentsPolicySaving = ref(false)
 
 /** `true` = paysage, `false` = portrait, `null` = pas encore chargé. */
 const detailImageLandscape = ref<boolean | null>(null)
@@ -166,6 +178,9 @@ type UiComment = {
   replies?: UiComment[]
   repliesNextPage?: number | null
   repliesCount?: number
+  contentMasked?: boolean
+  hiddenByOwner?: boolean
+  moderationHidden?: boolean
 }
 
 const richComments = ref<UiComment[]>([])
@@ -215,6 +230,9 @@ const mapComment = (comment: any): UiComment => {
     liked: !!comment.is_liked,
     translated: false,
     originalLang: comment.original_language || undefined,
+    contentMasked: !!comment.content_masked,
+    hiddenByOwner: !!comment.hidden_by_owner,
+    moderationHidden: !!comment.moderation_hidden,
     replies: repliesPayload.map(mapComment),
     repliesNextPage: comment.replies_next_page || comment.replies?.next_page || null,
     repliesCount: comment.replies_count || repliesPayload.length,
@@ -259,6 +277,13 @@ const setCommentSort = async (sort: 'recent' | 'relevant') => {
 }
 
 const loadPinMetadata = async () => {
+  if (pinSlug.value) {
+    try {
+      await fetchPinBySlug(pinSlug.value)
+    } catch {
+      // Pin peut être absent du fil chargé ; l’API détail peut refuser selon la visibilité.
+    }
+  }
   try {
     await loadComments(true)
   } catch (err) {
@@ -274,6 +299,35 @@ const handleRichSubmit = async (
   if (!pin.value || !isAuthenticated.value) {
     router.push('/login')
     return
+  }
+  if (pin.value.canComment === false) {
+    await showAlert(
+      pin.value.commentsPolicy === 'closed' ? t('pin.comments.closedBanner') : t('pin.comments.followersOnlyBanner'),
+      { variant: 'info' },
+    )
+    return
+  }
+  const profanityOk = moderationScanText([payload.text])
+  if (!profanityOk.ok) {
+    await showAlert(t('moderation.textInappropriate'), { variant: 'warning' })
+    return
+  }
+  if (payload.mediaFile?.type.startsWith('image/')) {
+    try {
+      const imgR = await moderationScanImageFile(payload.mediaFile)
+      if (imgR.level === 'block') {
+        await showAlert(t('moderation.imageSensitiveBlocked'), {
+          variant: 'danger',
+          title: t('modal.errorTitle'),
+        })
+        return
+      }
+      if (imgR.level === 'warn') {
+        await showAlert(t('moderation.imageSensitiveWarn'), { variant: 'warning' })
+      }
+    } catch (err) {
+      console.warn('Scan image commentaire', err)
+    }
   }
   submittingComment.value = true
   try {
@@ -450,6 +504,61 @@ const handleLoadMoreReplies = async (commentId: number) => {
   richComments.value = [...richComments.value]
 }
 
+const handleCommentsPolicyChange = async (ev: Event) => {
+  const sel = ev.target as HTMLSelectElement
+  const next = sel.value as 'open' | 'followers_only' | 'closed'
+  if (!pin.value || !isPinOwner.value) return
+  commentsPolicySaving.value = true
+  try {
+    await patchPinCommentsPolicy(pin.value.slug, next)
+  } catch {
+    await showAlert(t('pin.comments.policySaveError'), { variant: 'danger', title: t('modal.errorTitle') })
+    sel.value = pin.value.commentsPolicy || 'open'
+  } finally {
+    commentsPolicySaving.value = false
+  }
+}
+
+const handleModerateComment = async (commentId: number, hidden: boolean) => {
+  if (!pin.value) return
+  try {
+    await moderatePinComment(pin.value.slug, commentId, hidden)
+    await loadComments(true)
+  } catch {
+    await showAlert(t('comment.moderation.error'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
+
+const handleReportPin = async () => {
+  if (!pin.value || !isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  if (isPinOwner.value) {
+    await showAlert(t('moderation.reportOwnDisabled'), { variant: 'info' })
+    return
+  }
+  try {
+    await reportPin(pin.value.slug)
+    await showAlert(t('moderation.reportSent'), { variant: 'success' })
+  } catch {
+    await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
+
+const handleReportComment = async (commentId: number) => {
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  try {
+    await reportComment(commentId)
+    await showAlert(t('moderation.reportSent'), { variant: 'success' })
+  } catch {
+    await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
+
 const handleShare = async () => {
   if (!pin.value) return
   const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -605,6 +714,15 @@ const openRelatedPin = (slug: string) => {
                   <span v-if="downloadingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
                   <span v-else class="material-symbols-outlined">download</span>
                 </button>
+                <button
+                  v-if="isAuthenticated && !isPinOwner"
+                  type="button"
+                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition"
+                  :title="t('moderation.report')"
+                  @click="handleReportPin"
+                >
+                  <span class="material-symbols-outlined text-[22px]">flag</span>
+                </button>
               </div>
               <button
                 class="px-6 py-2.5 rounded-full font-semibold text-sm transition-all"
@@ -759,27 +877,50 @@ const openRelatedPin = (slug: string) => {
 
             <!-- Comments section (rich) -->
             <div class="flex-1">
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold text-neutral-900 flex items-center gap-2">
-                  {{ t('pin.comments') }}
-                  <span class="text-neutral-400 font-normal text-sm">({{ commentsTotalCount }})</span>
-                </h3>
-                <div class="flex items-center gap-1.5">
-                  <button
-                    class="text-xs font-medium px-2 py-1 rounded-full border transition"
-                    :class="commentSort === 'recent' ? 'bg-pink-50 text-pink-600 border-pink-200' : 'text-neutral-500 border-neutral-200 hover:text-neutral-700'"
-                    @click="setCommentSort('recent')"
-                  >
-                    {{ t('pin.comments.sortRecent') }}
-                  </button>
-                  <button
-                    class="text-xs font-medium px-2 py-1 rounded-full border transition"
-                    :class="commentSort === 'relevant' ? 'bg-pink-50 text-pink-600 border-pink-200' : 'text-neutral-500 border-neutral-200 hover:text-neutral-700'"
-                    @click="setCommentSort('relevant')"
-                  >
-                    {{ t('pin.comments.sortRelevant') }}
-                  </button>
+              <div class="flex flex-col gap-3 mb-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <h3 class="font-semibold text-neutral-900 flex items-center gap-2">
+                    {{ t('pin.comments') }}
+                    <span class="text-neutral-400 font-normal text-sm">({{ commentsTotalCount }})</span>
+                  </h3>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <label v-if="isPinOwner" class="flex items-center gap-2 text-xs text-neutral-600">
+                      <span class="whitespace-nowrap">{{ t('pin.comments.policyLabel') }}</span>
+                      <select
+                        class="rounded-lg border border-neutral-200 px-2 py-1 text-xs font-medium bg-white max-w-[11rem]"
+                        :value="pin.commentsPolicy || 'open'"
+                        :disabled="commentsPolicySaving"
+                        @change="handleCommentsPolicyChange"
+                      >
+                        <option value="open">{{ t('pin.comments.policyOpen') }}</option>
+                        <option value="followers_only">{{ t('pin.comments.policyFollowers') }}</option>
+                        <option value="closed">{{ t('pin.comments.policyClosed') }}</option>
+                      </select>
+                    </label>
+                    <div class="flex items-center gap-1.5">
+                      <button
+                        class="text-xs font-medium px-2 py-1 rounded-full border transition"
+                        :class="commentSort === 'recent' ? 'bg-pink-50 text-pink-600 border-pink-200' : 'text-neutral-500 border-neutral-200 hover:text-neutral-700'"
+                        @click="setCommentSort('recent')"
+                      >
+                        {{ t('pin.comments.sortRecent') }}
+                      </button>
+                      <button
+                        class="text-xs font-medium px-2 py-1 rounded-full border transition"
+                        :class="commentSort === 'relevant' ? 'bg-pink-50 text-pink-600 border-pink-200' : 'text-neutral-500 border-neutral-200 hover:text-neutral-700'"
+                        @click="setCommentSort('relevant')"
+                      >
+                        {{ t('pin.comments.sortRelevant') }}
+                      </button>
+                    </div>
+                  </div>
                 </div>
+                <p
+                  v-if="isAuthenticated && !viewerCanComment"
+                  class="text-xs text-amber-900 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2"
+                >
+                  {{ pin.commentsPolicy === 'closed' ? t('pin.comments.closedBanner') : t('pin.comments.followersOnlyBanner') }}
+                </p>
               </div>
 
               <!-- Rich threads -->
@@ -788,10 +929,15 @@ const openRelatedPin = (slug: string) => {
                   :comments="richComments"
                   :can-translate="isAuthenticated"
                   :highlighted-comment-id="highlightedCommentId"
+                  :is-pin-owner="isPinOwner"
+                  :viewer-can-comment="viewerCanComment"
+                  :viewer-username="currentUser?.username ?? null"
                   @add="handleRichSubmit"
                   @like="handleLikeComment"
                   @translate="handleTranslateComment"
                   @load-more-replies="handleLoadMoreReplies"
+                  @moderate-comment="handleModerateComment"
+                  @report-comment="handleReportComment"
                 />
                 <div v-if="commentsHasNext" class="mt-3 text-center">
                   <button
@@ -805,7 +951,7 @@ const openRelatedPin = (slug: string) => {
               </div>
 
               <!-- Add comment (rich) -->
-              <div class="flex items-start gap-3 pt-3 border-t border-neutral-100">
+              <div v-if="!isAuthenticated || viewerCanComment" class="flex items-start gap-3 pt-3 border-t border-neutral-100">
                 <div
                   v-if="currentUser"
                   class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-1"

@@ -5,6 +5,7 @@ import type { Pin } from '../types'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
+import { useAppModal } from '../composables/useAppModal'
 
 const props = defineProps<{
   modelValue: boolean
@@ -17,9 +18,10 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-const { toggleLike } = usePins()
+const { toggleLike, reportPin } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
 const { t } = useI18n()
+const { showAlert } = useAppModal()
 
 /** Durée image par défaut ; vidéo = métadonnées (bornée). */
 const DEFAULT_IMAGE_MS = 8000
@@ -127,6 +129,25 @@ const showLikeCountForStory = computed(() => {
   if (!pin || !u) return false
   return pin.username === u.username
 })
+
+async function handleReportStory() {
+  const pin = current.value
+  if (!pin) return
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  if (currentUser.value && pin.username === currentUser.value.username) {
+    await showAlert(t('moderation.reportOwnDisabled'), { variant: 'info' })
+    return
+  }
+  try {
+    await reportPin(pin.slug)
+    await showAlert(t('moderation.reportSent'), { variant: 'success' })
+  } catch {
+    await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
 
 function close() {
   clearAdvance()
@@ -273,6 +294,15 @@ onUnmounted(() => {
       </div>
 
       <div class="absolute top-safe right-3 z-50 flex flex-col items-end gap-2 pt-safe">
+        <button
+          v-if="isAuthenticated && current?.username !== currentUser?.username"
+          type="button"
+          class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"
+          :title="t('moderation.report')"
+          @click.stop="handleReportStory"
+        >
+          <span class="material-symbols-outlined text-[22px]">flag</span>
+        </button>
         <button
           type="button"
           class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"

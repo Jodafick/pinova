@@ -22,6 +22,10 @@ export type Pin = {
   /** Libellé topic traduit (API topic_meta.name) pour l’affichage ; `topic` reste le nom canonique. */
   topicDisplay?: string
   visibility?: 'public' | 'followers' | 'private'
+  /** Politique commentaires (créateur) */
+  commentsPolicy?: 'open' | 'followers_only' | 'closed'
+  /** Indique si l’utilisateur connecté peut poster un commentaire */
+  canComment?: boolean
   hashtags?: string[]
   privateTags?: string[]
   boards?: {

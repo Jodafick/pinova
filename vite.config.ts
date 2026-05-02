@@ -38,6 +38,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,vue}'],
+        globIgnores: ['**/assets/group*-shard*.js'],
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: new RegExp(`^${API_BASE_URL.replace(/\//g, '\\/')}/api/(pins|me|profiles)/.*`, 'i'),

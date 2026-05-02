@@ -21,19 +21,35 @@ type Comment = {
   replies?: Comment[]
   repliesNextPage?: number | null
   repliesCount?: number
+  contentMasked?: boolean
+  hiddenByOwner?: boolean
 }
 
-defineProps<{
-  comments: Comment[]
-  canTranslate?: boolean
-  highlightedCommentId?: number | null
-}>()
+withDefaults(
+  defineProps<{
+    comments: Comment[]
+    canTranslate?: boolean
+    highlightedCommentId?: number | null
+    isPinOwner?: boolean
+    viewerCanComment?: boolean
+    viewerUsername?: string | null
+  }>(),
+  {
+    canTranslate: false,
+    highlightedCommentId: null,
+    isPinOwner: false,
+    viewerCanComment: true,
+    viewerUsername: null,
+  },
+)
 
 const emit = defineEmits<{
   (e: 'add', payload: { text: string; gif?: string | null; mediaFile?: File | null; replyTo?: string | null; parentId?: number }): void
   (e: 'like', commentId: number): void
   (e: 'translate', commentId: number): void
   (e: 'load-more-replies', commentId: number): void
+  (e: 'moderate-comment', commentId: number, hidden: boolean): void
+  (e: 'report-comment', commentId: number): void
 }>()
 
 const replyingTo = ref<number | null>(null)
@@ -78,14 +94,20 @@ const handleSubmitReply = (
             <span class="text-xs text-neutral-400">@{{ comment.username }}</span>
           </div>
           <p
-            v-if="comment.text || comment.translatedText"
+            v-if="comment.contentMasked"
+            class="text-sm text-neutral-500 italic leading-snug"
+          >
+            {{ t('comment.hiddenPlaceholder') }}
+          </p>
+          <p
+            v-else-if="comment.text || comment.translatedText"
             class="text-sm text-neutral-700 leading-snug break-words"
             v-html="renderRichText(comment.translated && comment.translatedText ? comment.translatedText : comment.text)"
           ></p>
-          <img v-if="comment.gif" :src="comment.gif" class="mt-2 max-h-40 rounded-lg" />
-          <img v-if="comment.media" :src="comment.media" class="mt-2 max-h-40 rounded-lg" />
+          <img v-if="!comment.contentMasked && comment.gif" :src="comment.gif" class="mt-2 max-h-40 rounded-lg" />
+          <img v-if="!comment.contentMasked && comment.media" :src="comment.media" class="mt-2 max-h-40 rounded-lg" />
           <div
-            v-if="comment.translated"
+            v-if="!comment.contentMasked && comment.translated"
             class="mt-1 text-[11px] text-neutral-400 italic flex items-center gap-1"
           >
             <span class="material-symbols-outlined text-xs">translate</span>
@@ -97,31 +119,52 @@ const handleSubmitReply = (
         <div class="flex items-center gap-3 mt-1 px-2 text-xs text-neutral-500">
           <span>{{ comment.createdAt }}</span>
           <button
+            v-if="!comment.contentMasked"
             class="font-semibold hover:text-neutral-800 transition flex items-center gap-1"
             :class="{ 'text-pink-600': comment.liked }"
+            type="button"
             @click="emit('like', comment.id)"
           >
             <span class="material-symbols-outlined text-sm" :class="{ 'fill-1': comment.liked }">favorite</span>
             {{ comment.likes }}
           </button>
           <button
+            v-if="viewerCanComment && !comment.contentMasked"
+            type="button"
             class="font-semibold hover:text-neutral-800 transition"
             @click="toggleReply(comment.id)"
           >
             {{ t('comment.reply') }}
           </button>
           <button
-            v-if="canTranslate"
+            v-if="canTranslate && !comment.contentMasked"
+            type="button"
             class="font-semibold hover:text-pink-600 transition flex items-center gap-1"
             @click="emit('translate', comment.id)"
           >
             <span class="material-symbols-outlined text-sm">translate</span>
             {{ comment.translated ? t('comment.viewOriginal') : t('comment.translate') }}
           </button>
+          <button
+            v-if="isPinOwner"
+            type="button"
+            class="font-semibold hover:text-pink-600 transition"
+            @click="emit('moderate-comment', comment.id, !comment.hiddenByOwner)"
+          >
+            {{ comment.hiddenByOwner ? t('comment.moderation.show') : t('comment.moderation.hide') }}
+          </button>
+          <button
+            v-if="viewerUsername && comment.username !== viewerUsername"
+            type="button"
+            class="font-semibold hover:text-amber-700 transition"
+            @click="emit('report-comment', comment.id)"
+          >
+            {{ t('moderation.report') }}
+          </button>
         </div>
 
         <!-- Reply input -->
-        <div v-if="replyingTo === comment.id" class="mt-3">
+        <div v-if="replyingTo === comment.id && viewerCanComment && !comment.contentMasked" class="mt-3">
           <RichCommentInput
             :placeholder="t('comment.replyTo.placeholder', { user: comment.username })"
             @submit="handleSubmitReply(comment.id, $event)"
@@ -150,13 +193,20 @@ const handleSubmitReply = (
                   <span class="text-[10px] text-neutral-400">@{{ reply.username }}</span>
                 </div>
                 <p
+                  v-if="reply.contentMasked"
+                  class="text-sm text-neutral-500 italic leading-snug"
+                >
+                  {{ t('comment.hiddenPlaceholder') }}
+                </p>
+                <p
+                  v-else
                   class="text-sm text-neutral-700 leading-snug break-words"
                   v-html="renderRichText(reply.translated && reply.translatedText ? reply.translatedText : reply.text)"
                 ></p>
-                <img v-if="reply.gif" :src="reply.gif" class="mt-2 max-h-32 rounded-lg" />
-                <img v-if="reply.media" :src="reply.media" class="mt-2 max-h-32 rounded-lg" />
+                <img v-if="!reply.contentMasked && reply.gif" :src="reply.gif" class="mt-2 max-h-32 rounded-lg" />
+                <img v-if="!reply.contentMasked && reply.media" :src="reply.media" class="mt-2 max-h-32 rounded-lg" />
                 <div
-                  v-if="reply.translated"
+                  v-if="!reply.contentMasked && reply.translated"
                   class="mt-1 text-[11px] text-neutral-400 italic flex items-center gap-1"
                 >
                   <span class="material-symbols-outlined text-xs">translate</span>
@@ -166,6 +216,8 @@ const handleSubmitReply = (
               <div class="flex items-center gap-3 mt-1 px-2 text-xs text-neutral-500">
                 <span>{{ reply.createdAt }}</span>
                 <button
+                  v-if="!reply.contentMasked"
+                  type="button"
                   class="font-semibold hover:text-neutral-800 transition flex items-center gap-1"
                   :class="{ 'text-pink-600': reply.liked }"
                   @click="emit('like', reply.id)"
@@ -174,12 +226,29 @@ const handleSubmitReply = (
                   {{ reply.likes }}
                 </button>
                 <button
-                  v-if="canTranslate"
+                  v-if="canTranslate && !reply.contentMasked"
+                  type="button"
                   class="font-semibold hover:text-pink-600 transition flex items-center gap-1"
                   @click="emit('translate', reply.id)"
                 >
                   <span class="material-symbols-outlined text-sm">translate</span>
                   {{ reply.translated ? t('comment.viewOriginal') : t('comment.translate') }}
+                </button>
+                <button
+                  v-if="isPinOwner"
+                  type="button"
+                  class="font-semibold hover:text-pink-600 transition"
+                  @click="emit('moderate-comment', reply.id, !reply.hiddenByOwner)"
+                >
+                  {{ reply.hiddenByOwner ? t('comment.moderation.show') : t('comment.moderation.hide') }}
+                </button>
+                <button
+                  v-if="viewerUsername && reply.username !== viewerUsername"
+                  type="button"
+                  class="font-semibold hover:text-amber-700 transition"
+                  @click="emit('report-comment', reply.id)"
+                >
+                  {{ t('moderation.report') }}
                 </button>
               </div>
             </div>

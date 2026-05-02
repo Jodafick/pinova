@@ -52,6 +52,8 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     topic: (djangoPin.topic_meta?.originalName ?? djangoPin.topic) || 'Général',
     topicDisplay: (djangoPin.topic_meta?.name ?? djangoPin.topic) || 'Général',
     visibility: djangoPin.visibility || 'public',
+    commentsPolicy: djangoPin.comments_policy || 'open',
+    canComment: djangoPin.can_comment !== false,
     hashtags: djangoPin.hashtags || [],
     privateTags: djangoPin.private_tags || [],
     boards: (djangoPin.boards || []).map((board: any) => ({
@@ -150,6 +152,45 @@ export function usePins() {
     } catch (err) {
       console.warn('❌ Erreur lors de la récupération des pins.')
     }
+  }
+
+  async function fetchPinBySlug(slug: string) {
+    const response = await api.get(`pins/${slug}/`, {
+      params: { lang: currentLang.value },
+    })
+    const mapped = mapDjangoPinToFrontend(response.data)
+    const idx = pins.value.findIndex((p) => p.slug === slug)
+    if (idx >= 0) {
+      pins.value[idx] = { ...pins.value[idx], ...mapped }
+    } else {
+      pins.value.push(mapped)
+    }
+    return mapped
+  }
+
+  async function patchPinCommentsPolicy(slug: string, commentsPolicy: 'open' | 'followers_only' | 'closed') {
+    const response = await api.patch(`pins/${slug}/`, { comments_policy: commentsPolicy })
+    const mapped = mapDjangoPinToFrontend(response.data)
+    const idx = pins.value.findIndex((p) => p.slug === slug)
+    if (idx >= 0) {
+      pins.value[idx] = { ...pins.value[idx], ...mapped }
+    }
+    return mapped
+  }
+
+  async function moderatePinComment(pinSlug: string, commentId: number, hidden: boolean) {
+    const response = await api.post(`pins/${pinSlug}/comments/${commentId}/moderate/`, { hidden })
+    return response.data
+  }
+
+  async function reportPin(pinSlug: string, reason = '') {
+    const response = await api.post(`pins/${pinSlug}/report/`, { reason })
+    return response.data
+  }
+
+  async function reportComment(commentId: number, reason = '') {
+    const response = await api.post(`pins/comments/${commentId}/report/`, { reason })
+    return response.data
   }
 
   async function fetchRecommendations(reset = false) {
@@ -457,6 +498,11 @@ export function usePins() {
     hasNextPage,
     isFetchingNextPage,
     fetchPins,
+    fetchPinBySlug,
+    patchPinCommentsPolicy,
+    moderatePinComment,
+    reportPin,
+    reportComment,
     fetchRecommendations,
     fetchHomeFeed,
     fetchDiscoverPins,

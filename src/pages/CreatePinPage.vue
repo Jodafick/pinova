@@ -7,6 +7,7 @@ import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PrivateTags from '../components/PrivateTags.vue'
 import api from '../api'
+import { moderationScanText, moderationScanImageFile, moderationScanVideoFile } from '../composables/useModeration'
 
 const { t, currentLang } = useI18n()
 const { showAlert } = useAppModal()
@@ -156,18 +157,60 @@ function clearStoryVideo() {
   storyVideoPreviewUrl.value = null
 }
 
+async function runVideoModeration(file: File) {
+  if (!file.type.startsWith('video/')) return
+  try {
+    const r = await moderationScanVideoFile(file, 5)
+    if (r.level === 'block') {
+      clearStoryVideo()
+      await showAlert(t('moderation.imageSensitiveBlocked'), {
+        variant: 'danger',
+        title: t('modal.errorTitle'),
+      })
+      return
+    }
+    if (r.level === 'warn') {
+      await showAlert(t('moderation.imageSensitiveWarn'), { variant: 'warning' })
+    }
+  } catch (err) {
+    console.warn('Scan NSFW vidéo indisponible ou erreur', err)
+  }
+}
+
+async function runImageModeration(file: File) {
+  if (!file.type.startsWith('image/')) return
+  try {
+    const r = await moderationScanImageFile(file)
+    if (r.level === 'block') {
+      clearImage()
+      await showAlert(t('moderation.imageSensitiveBlocked'), {
+        variant: 'danger',
+        title: t('modal.errorTitle'),
+      })
+      return
+    }
+    if (r.level === 'warn') {
+      await showAlert(t('moderation.imageSensitiveWarn'), { variant: 'warning' })
+    }
+  } catch (err) {
+    console.warn('Scan NSFW indisponible ou erreur', err)
+  }
+}
+
 function setMediaFile(file: File) {
   if (file.type.startsWith('video/')) {
     isStory.value = true
     if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
     storyVideoFile.value = file
     storyVideoPreviewUrl.value = URL.createObjectURL(file)
+    void runVideoModeration(file)
     return
   }
   if (file.type.startsWith('image/')) {
     if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
     imageFile.value = file
     imagePreviewUrl.value = URL.createObjectURL(file)
+    void runImageModeration(file)
     return
   }
   void showAlert(t('create.upload.invalid'), { variant: 'warning' })
@@ -198,6 +241,17 @@ const clearStep2Media = () => {
 
 const submitPin = async () => {
   if (!title.value || (!imageFile.value && !storyVideoFile.value)) return
+  const textOk = moderationScanText([
+    title.value,
+    description.value,
+    publicTagsInput.value,
+    link.value,
+  ])
+  if (!textOk.ok) {
+    await showAlert(t('moderation.textInappropriate'), { variant: 'warning' })
+    createStep.value = 1
+    return
+  }
   saving.value = true
 
   try {
