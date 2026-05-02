@@ -62,10 +62,18 @@ export function predsToScores(preds: { className: string; probability: number }[
   }
 }
 
-/** score global recommandé : porn + hentai + sexy×0.6 */
+/** score global : porn + hentai + sexy×0.55 (pondération sexy légèrement réduite pour limiter les faux positifs). */
 export function globalNsfwScore(s: NsfwScores): number {
-  return s.porn + s.hentai + s.sexy * 0.6
+  return s.porn + s.hentai + s.sexy * 0.55
 }
+
+/** Seuils assouplis (moins de faux positifs NSFWJS, analyse uniquement côté client). */
+const T_SOFT = 0.62
+const T_SEXY_BLUR = 0.78
+const T_HARD = 0.82
+const T_SCORE_BLOCK = 0.88
+const T_SCORE_BLUR_LO = 0.68
+const T_DRAWING_ART = 0.82
 
 /**
  * Règles Pinova : ALLOW / BLUR (adultes uniquement) / BLOCK.
@@ -75,29 +83,28 @@ export function classifyNsfwScores(isVerifiedAdult: boolean, scores: NsfwScores)
   const gs = globalNsfwScore(scores)
   const { porn, hentai, sexy, drawing } = scores
 
-  const othersElevated = porn >= 0.55 || hentai >= 0.55 || sexy >= 0.7
+  const othersElevated = porn >= T_SOFT || hentai >= T_SOFT || sexy >= T_SEXY_BLUR
 
-  // Dessin / art : ALLOW si dominant et pas d’autres scores élevés
-  if (drawing >= 0.85 && !othersElevated) {
+  // Dessin / art : ALLOW si dominant et pas d'autres scores élevés
+  if (drawing >= T_DRAWING_ART && !othersElevated) {
     return { level: 'ok', scores }
   }
 
-  // BLOCK explicite + score global fort
-  const hardBlock = porn >= 0.75 || hentai >= 0.75 || gs >= 0.8
+  const hardBlock = porn >= T_HARD || hentai >= T_HARD || gs >= T_SCORE_BLOCK
   if (hardBlock) {
     return { level: 'block', maxScore: Math.max(porn, hentai, gs), scores }
   }
 
   const blurExplicit =
-    sexy >= 0.7 ||
-    (porn >= 0.55 && porn < 0.75) ||
-    (hentai >= 0.55 && hentai < 0.75)
-  const blurByScore = gs >= 0.6 && gs < 0.8
+    sexy >= T_SEXY_BLUR ||
+    (porn >= T_SOFT && porn < T_HARD) ||
+    (hentai >= T_SOFT && hentai < T_HARD)
+  const blurByScore = gs >= T_SCORE_BLUR_LO && gs < T_SCORE_BLOCK
   const wantsBlur = blurExplicit || blurByScore
 
   if (!isVerifiedAdult) {
     const totallySafe =
-      porn < 0.55 && hentai < 0.55 && sexy < 0.7 && gs < 0.6 && !wantsBlur
+      porn < T_SOFT && hentai < T_SOFT && sexy < T_SEXY_BLUR && gs < T_SCORE_BLUR_LO && !wantsBlur
     if (!totallySafe) {
       return { level: 'block', maxScore: Math.max(porn, hentai, sexy, gs), scores }
     }

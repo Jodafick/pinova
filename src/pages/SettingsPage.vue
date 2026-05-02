@@ -496,24 +496,25 @@ const handleLogout = () => {
             <p class="text-xs text-neutral-400 mt-1">{{ t('settings.profile.bioCount', { count: bio.length }) }}</p>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.email') }}</label>
-            <input
-              v-model="email"
-              type="email"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.birthDate') }}</label>
-            <input
-              v-model="birthDate"
-              type="date"
-              autocomplete="bday"
-              class="w-full max-w-xs px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
-            />
-            <p class="text-xs text-neutral-400 mt-1">{{ t('settings.profile.birthDateHint') }}</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.email') }}</label>
+              <input
+                v-model="email"
+                type="email"
+                autocomplete="email"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.birthDate') }}</label>
+              <input
+                v-model="birthDate"
+                type="date"
+                autocomplete="bday"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+              />
+            </div>
           </div>
 
           <div>
