@@ -202,9 +202,6 @@ const handlePopupCallbackReturn = async () => {
       },
       window.location.origin,
     )
-    setTimeout(() => {
-      window.close()
-    }, 350)
   } else {
     await confirmPendingPayment(transactionId)
   }
