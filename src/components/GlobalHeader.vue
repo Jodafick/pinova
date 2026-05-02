@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuth } from '../composables/useAuth'
+import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
 import { useI18n } from '../i18n'
 import api from '../api'
@@ -325,7 +325,7 @@ onUnmounted(() => {
           >
             <div
               class="w-full h-full flex items-center justify-center rounded-full text-xs sm:text-sm font-bold overflow-hidden"
-              :class="currentUser?.avatarUrl ? 'bg-neutral-100' : (currentUser?.avatarColor || 'bg-neutral-800')"
+              :class="currentUser?.avatarUrl ? 'bg-neutral-100' : (currentUser?.avatarColor || DEFAULT_AVATAR_COLOR_CLASS)"
             >
               <img
                 v-if="currentUser?.avatarUrl"
@@ -346,7 +346,7 @@ onUnmounted(() => {
             <div class="px-4 py-4 border-b border-neutral-100 flex gap-3">
               <div
                 class="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-pink-100 flex items-center justify-center text-sm font-bold"
-                :class="currentUser?.avatarUrl ? 'bg-neutral-100' : (currentUser?.avatarColor || 'bg-neutral-800')"
+                :class="currentUser?.avatarUrl ? 'bg-neutral-100' : (currentUser?.avatarColor || DEFAULT_AVATAR_COLOR_CLASS)"
               >
                 <img
                   v-if="currentUser?.avatarUrl"

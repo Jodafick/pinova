@@ -3,6 +3,7 @@ import type { Pin } from '../types'
 import api from '../api'
 import { API_BASE_URL } from '../env'
 import { useI18n } from '../i18n'
+import { DEFAULT_AVATAR_COLOR_CLASS } from './useAuth'
 
 const pins = ref<Pin[]>([])
 const loading = ref(false)
@@ -21,7 +22,7 @@ type PaginatedResponse<T> = {
   results: T[]
 }
 
-function getFullMediaUrl(url: string | null): string {
+export function getFullMediaUrl(url: string | null): string {
   if (!url) return ''
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
@@ -41,7 +42,7 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     username: author.username || 'inconnu',
     userId: author.id,
     userAvatarUrl: getFullMediaUrl(author.avatar),
-    userAvatarColor: author.avatar_color || 'bg-gray-400',
+    userAvatarColor: author.avatar_color || DEFAULT_AVATAR_COLOR_CLASS,
     authorTipsEnabled: !!author.tips_enabled,
     authorTipsUrl: author.tips_url || '',
     link: djangoPin.link || '',

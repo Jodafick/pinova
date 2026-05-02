@@ -9,7 +9,8 @@ type Comment = {
   id: number
   user: string
   username: string
-  avatar: string
+  avatarColor: string
+  avatarUrl: string
   text: string
   translatedText?: string
   gif?: string | null
@@ -81,10 +82,16 @@ const handleSubmitReply = (
       :class="comment.id === highlightedCommentId ? 'bg-pink-50 ring-2 ring-pink-200 p-2' : ''"
     >
       <div
-        class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-        :class="comment.avatar"
+        class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden"
+        :class="comment.avatarUrl ? 'bg-neutral-100' : comment.avatarColor"
       >
-        {{ comment.user[0] }}
+        <img
+          v-if="comment.avatarUrl"
+          :src="comment.avatarUrl"
+          alt=""
+          class="w-full h-full object-cover"
+        />
+        <span v-else>{{ comment.user[0] }}</span>
       </div>
 
       <div class="flex-1 min-w-0">
@@ -181,10 +188,16 @@ const handleSubmitReply = (
             :class="reply.id === highlightedCommentId ? 'bg-pink-50 ring-2 ring-pink-200 p-2' : ''"
           >
             <div
-              class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-              :class="reply.avatar"
+              class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden"
+              :class="reply.avatarUrl ? 'bg-neutral-100' : reply.avatarColor"
             >
-              {{ reply.user[0] }}
+              <img
+                v-if="reply.avatarUrl"
+                :src="reply.avatarUrl"
+                alt=""
+                class="w-full h-full object-cover"
+              />
+              <span v-else>{{ reply.user[0] }}</span>
             </div>
             <div class="flex-1 min-w-0">
               <div class="bg-neutral-100 rounded-2xl px-3 py-2">

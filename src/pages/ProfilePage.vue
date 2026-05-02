@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuth } from '../composables/useAuth'
+import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins, mapDjangoPinToFrontend } from '../composables/usePins'
 import type { User, Pin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
@@ -1157,7 +1157,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             class="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-50 text-left"
             @click="showFollowersModal = false; showFollowingModal = false; router.push(`/profile/${item.username}`)"
           >
-            <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center" :class="item.avatar_color">
+            <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center" :class="item.avatar_color || DEFAULT_AVATAR_COLOR_CLASS">
               <img v-if="item.avatar" :src="item.avatar" class="w-full h-full object-cover" />
               <span v-else class="text-white text-xs font-bold">{{ item.display_name?.slice(0,1) }}</span>
             </div>

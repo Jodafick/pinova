@@ -3,7 +3,7 @@ import { checkProfanity } from 'glin-profanity'
 /** Date minimale obligatoire côté API pour poster image / vidéo (profil réglages). */
 export function hasRequiredBirthDateForMediaPublish(value: unknown): boolean {
   if (value == null || value === '') return false
-  const head = String(value).trim().split('T')[0].slice(0, 10)
+  const head = (String(value).trim().split('T')[0] ?? '').slice(0, 10)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(head)) return false
   return !Number.isNaN(new Date(`${head}T12:00:00`).getTime())
 }

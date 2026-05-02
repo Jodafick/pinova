@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePins } from '../composables/usePins'
-import { useAuth } from '../composables/useAuth'
+import { usePins, getFullMediaUrl } from '../composables/usePins'
+import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 import RichCommentInput from '../components/RichCommentInput.vue'
@@ -180,7 +180,8 @@ type UiComment = {
   id: number
   user: string
   username: string
-  avatar: string
+  avatarColor: string
+  avatarUrl: string
   text: string
   translatedText?: string
   gif?: string | null
@@ -235,7 +236,8 @@ const mapComment = (comment: any): UiComment => {
     id: comment.id,
     user: comment.display_name || comment.username,
     username: comment.username,
-    avatar: comment.avatar_color || 'bg-pink-500',
+    avatarColor: comment.avatar_color || DEFAULT_AVATAR_COLOR_CLASS,
+    avatarUrl: getFullMediaUrl(comment.avatar_url ?? ''),
     text: comment.text || '',
     translatedText: comment.translated_text || '',
     gif: comment.gif_url || null,
@@ -1006,10 +1008,16 @@ const openRelatedPin = (slug: string) => {
               <div v-if="!isAuthenticated || viewerCanComment" class="flex items-start gap-3 pt-3 border-t border-neutral-100">
                 <div
                   v-if="currentUser"
-                  class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-1"
-                  :class="currentUser.avatarColor"
+                  class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-1 overflow-hidden"
+                  :class="currentUser.avatarUrl ? 'bg-neutral-100' : currentUser.avatarColor"
                 >
-                  {{ currentUser.displayName[0] }}
+                  <img
+                    v-if="currentUser.avatarUrl"
+                    :src="currentUser.avatarUrl"
+                    alt=""
+                    class="w-full h-full object-cover"
+                  />
+                  <span v-else>{{ currentUser.displayName[0] }}</span>
                 </div>
                 <div class="flex-1 min-w-0">
                   <RichCommentInput :submitting="submittingComment" @submit="handleRichSubmit" />

@@ -2,7 +2,7 @@
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
-import { useAuth } from '../composables/useAuth'
+import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 import { useI18n } from '../i18n'
@@ -89,7 +89,7 @@ const followSuggestedUser = async (username: string) => {
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div v-for="suggestion in suggestions" :key="suggestion.username" class="border border-neutral-200 rounded-xl p-3 flex items-center justify-between gap-3">
             <button class="flex items-center gap-3 min-w-0" @click="router.push(`/profile/${suggestion.username}`)">
-              <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center" :class="suggestion.avatar_color">
+              <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center" :class="suggestion.avatar_color || DEFAULT_AVATAR_COLOR_CLASS">
                 <img v-if="suggestion.avatar" :src="suggestion.avatar" class="w-full h-full object-cover" />
                 <span v-else class="text-white text-xs font-bold">{{ suggestion.display_name?.slice(0, 1) }}</span>
               </div>

@@ -4,6 +4,9 @@ import api, { AUTH_INVALIDATED_EVENT } from '../api'
 import { devLog } from '../devLog'
 import { API_BASE_URL } from '../env'
 
+/** Tailwind par défaut si l’API ne fournit pas `avatar_color` (aligné avec le backend). */
+export const DEFAULT_AVATAR_COLOR_CLASS = 'bg-neutral-400'
+
 const defaultUser: User = {
   id: 1,
   username: 'admin',
@@ -16,7 +19,7 @@ const defaultUser: User = {
   notificationsFollowers: true,
   notificationsSaves: true,
   notificationsRecommendations: false,
-  avatarColor: 'bg-pink-500',
+  avatarColor: DEFAULT_AVATAR_COLOR_CLASS,
   bio: 'Développeur et passionné de design.',
   followers: 120,
   following: 85,
@@ -75,7 +78,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     notificationsSaves: profile.notifications_saves ?? true,
     notificationsRecommendations: profile.notifications_recommendations ?? false,
     avatarUrl: getFullMediaUrl(profile.avatar),
-    avatarColor: profile.avatar_color || 'bg-pink-500',
+    avatarColor: profile.avatar_color || DEFAULT_AVATAR_COLOR_CLASS,
     bio: profile.bio || '',
     followers: profile.followers_count || 0,
     following: profile.following_count || 0,

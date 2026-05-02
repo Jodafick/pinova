@@ -2,7 +2,8 @@
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import 'emoji-picker-element'
 import { useI18n } from '../i18n'
-import { useAuth } from '../composables/useAuth'
+import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
+import { getFullMediaUrl } from '../composables/usePins'
 import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
 
@@ -39,7 +40,7 @@ const trendingGifs = [
   { id: 6, label: 'Thumbs', preview: 'https://media.tenor.com/HtdAulSCQDoAAAAi/like-thumbs-up.gif' },
 ]
 
-const suggestedUsers = ref<{ username: string; name: string; avatar: string }[]>([])
+const suggestedUsers = ref<{ username: string; name: string; avatarColor: string; avatarUrl: string }[]>([])
 let mentionTimer: ReturnType<typeof setTimeout> | null = null
 
 const mentionFilter = ref('')
@@ -83,7 +84,8 @@ const fetchMentionUsers = async (query: string, reset = true) => {
     const mapped = users.map((user: any) => ({
       username: user.username,
       name: user.display_name || user.username,
-      avatar: user.avatar_color || 'bg-pink-500',
+      avatarColor: user.avatar_color || DEFAULT_AVATAR_COLOR_CLASS,
+      avatarUrl: getFullMediaUrl(user.avatar ?? ''),
     }))
     suggestedUsers.value = reset
       ? mapped
@@ -473,8 +475,12 @@ defineExpose({ setReply })
           class="w-full flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 transition text-left"
           @click="insertMention(user.username)"
         >
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" :class="user.avatar">
-            {{ user.name[0] }}
+          <div
+            class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden shrink-0"
+            :class="user.avatarUrl ? 'bg-neutral-100' : user.avatarColor"
+          >
+            <img v-if="user.avatarUrl" :src="user.avatarUrl" alt="" class="w-full h-full object-cover" />
+            <span v-else>{{ user.name[0] }}</span>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-neutral-800 truncate">{{ user.name }}</p>

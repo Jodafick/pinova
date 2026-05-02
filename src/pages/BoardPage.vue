@@ -149,7 +149,7 @@ async function shareThisBoard() {
       if (!token) throw new Error('no token')
       url += `?share=${encodeURIComponent(token)}`
     } else if (boardIsPrivate.value) {
-      url = window.location.href.split('#')[0]
+      url = window.location.href.split('#')[0] ?? window.location.href
     }
     await shareUrlWithFallback(
       { showAlert, showPrompt },

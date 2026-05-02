@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Pin } from '../types'
 import { usePins } from '../composables/usePins'
-import { useAuth } from '../composables/useAuth'
+import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
@@ -280,7 +280,7 @@ onUnmounted(() => {
               :class="
                 current?.userAvatarUrl
                   ? 'bg-neutral-900'
-                  : current?.userAvatarColor || 'bg-neutral-700'
+                  : current?.userAvatarColor || DEFAULT_AVATAR_COLOR_CLASS
               "
             >
               <img

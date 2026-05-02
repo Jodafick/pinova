@@ -18,7 +18,7 @@ function saveOverride(v: DataSaverOverride) {
 
 function detectHeuristicLowData(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false
-  const conn = navigator.connection as NetworkInformation | undefined
+  const conn = (navigator as Navigator & { connection?: NetworkInformation }).connection
   if (conn?.saveData === true) return true
   const et = conn?.effectiveType
   if (et === 'slow-2g' || et === '2g') return true
