@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
@@ -55,6 +55,21 @@ const supportSubmitting = ref(false)
 const supportTickets = ref<any[]>([])
 
 const currentPlan = ref<'free' | 'plus' | 'pro'>('free')
+
+const subscriptionRenewalLabel = computed(() => {
+  const raw = currentUser.value?.subscription?.renewalAt
+  if (!raw) return 'N/A'
+  const d = new Date(String(raw))
+  if (Number.isNaN(d.getTime())) return String(raw)
+  try {
+    return new Intl.DateTimeFormat(currentLang.value || 'fr', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    }).format(d)
+  } catch {
+    return d.toLocaleString()
+  }
+})
 
 const currencyOptionLabel = (currency: string) => {
   try {
@@ -744,7 +759,7 @@ const handleLogout = () => {
         </div>
         <div class="p-6 space-y-3">
           <p class="text-xs text-neutral-500">
-            {{ t('settings.subscription.renewal', { date: currentUser?.subscription?.renewalAt || 'N/A' }) }}
+            {{ t('settings.subscription.renewal', { date: subscriptionRenewalLabel }) }}
           </p>
           <div class="flex flex-wrap gap-2">
             <button
