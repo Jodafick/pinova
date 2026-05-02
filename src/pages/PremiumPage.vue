@@ -5,7 +5,7 @@ import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
 import api from '../api'
 
-const { t } = useI18n()
+const { t, currentLang } = useI18n()
 const router = useRouter()
 const { currentUser, isAuthenticated, fetchCurrentUser } = useAuth()
 
@@ -15,7 +15,30 @@ const checkoutPendingPlan = ref<string | null>(null)
 const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
 const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
-const pricingCatalog = ref<Record<string, Record<string, { amount_display: number; currency_iso: string; duration_days: number }>>>({})
+type PricingCycle = {
+  amount_minor: number
+  amount_display: number
+  currency_iso: string
+  duration_days: number
+}
+const pricingCatalog = ref<Record<string, Record<string, PricingCycle>>>({})
+
+const defaultCurrency = ref('EUR')
+
+const formatCurrency = (amount: number, currencyIso: string) => {
+  try {
+    return new Intl.NumberFormat(currentLang.value || 'fr', {
+      style: 'currency',
+      currency: currencyIso,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } catch (_) {
+    return `${amount} ${currencyIso}`
+  }
+}
+
+const monthlyDisplayFromYearly = (yearlyAmount: number, currencyIso: string) =>
+  formatCurrency(yearlyAmount / 12, currencyIso)
 
 const openCheckoutPopup = () => {
   if (typeof window === 'undefined') return null
@@ -37,6 +60,7 @@ const plans = computed(() => [
     tagline: t('premium.plan.free.tagline'),
     monthly: 0,
     yearly: 0,
+    currencyIso: defaultCurrency.value,
     badge: null,
     color: 'border-neutral-200',
     cta: t('premium.plan.free.cta'),
@@ -59,6 +83,7 @@ const plans = computed(() => [
     tagline: t('premium.plan.plus.tagline'),
     monthly: pricingCatalog.value.plus?.monthly?.amount_display ?? 4.99,
     yearly: pricingCatalog.value.plus?.yearly?.amount_display ?? 49,
+    currencyIso: pricingCatalog.value.plus?.monthly?.currency_iso || defaultCurrency.value,
     badge: t('premium.plan.plus.badge'),
     color: 'border-pink-500 ring-4 ring-pink-100',
     cta: t('premium.plan.plus.cta'),
@@ -81,6 +106,7 @@ const plans = computed(() => [
     tagline: t('premium.plan.pro.tagline'),
     monthly: pricingCatalog.value.pro?.monthly?.amount_display ?? 12.99,
     yearly: pricingCatalog.value.pro?.yearly?.amount_display ?? 129,
+    currencyIso: pricingCatalog.value.pro?.monthly?.currency_iso || defaultCurrency.value,
     badge: t('premium.plan.pro.badge'),
     color: 'border-amber-400',
     cta: t('premium.plan.pro.cta'),
@@ -172,6 +198,7 @@ onMounted(() => {
   api.get('subscription/pricing/')
     .then((response) => {
       pricingCatalog.value = response.data?.plans || {}
+      defaultCurrency.value = response.data?.currency?.selected || defaultCurrency.value
     })
     .catch(() => undefined)
   if (currentUser.value?.subscription?.plan) {
@@ -237,13 +264,13 @@ onMounted(() => {
 
         <div class="flex items-baseline gap-1 mb-1">
           <span class="text-4xl font-bold text-neutral-900">
-            {{ billingCycle === 'monthly' ? plan.monthly : (plan.yearly / 12).toFixed(2) }}
+            {{ billingCycle === 'monthly' ? formatCurrency(plan.monthly, plan.currencyIso) : monthlyDisplayFromYearly(plan.yearly, plan.currencyIso) }}
           </span>
           <span class="text-sm text-neutral-500">{{ t('premium.priceUnit') }}</span>
         </div>
         <p class="text-xs text-neutral-400 mb-5 h-4">
           <template v-if="plan.yearly > 0 && billingCycle === 'yearly'">
-            {{ t('premium.yearlyBilled', { amount: plan.yearly }) }}
+            {{ t('premium.yearlyBilled', { amount: formatCurrency(plan.yearly, plan.currencyIso) }) }}
           </template>
         </p>
 

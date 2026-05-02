@@ -9,6 +9,7 @@ const defaultUser: User = {
   displayName: 'Admin Pinova',
   email: 'admin@pinova.local',
   preferredLanguage: 'fr',
+  preferredCurrency: 'XOF',
   avatarColor: 'bg-pink-500',
   bio: 'Développeur et passionné de design.',
   followers: 120,
@@ -46,6 +47,8 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     displayName: profile.display_name || djangoUser.username,
     email: djangoUser.email,
     preferredLanguage: profile.preferred_language || 'fr',
+    preferredCurrency: profile.preferred_currency || 'XOF',
+    countryCode: profile.country_code || '',
     avatarUrl: getFullMediaUrl(profile.avatar),
     avatarColor: profile.avatar_color || 'bg-pink-500',
     bio: profile.bio || '',
@@ -141,7 +144,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string }) {
     try {
       const formData = new FormData()
       if (data.displayName) formData.append('display_name', data.displayName)
@@ -149,6 +152,7 @@ export function useAuth() {
       if (data.email) formData.append('email', data.email)
       if (data.avatar) formData.append('avatar', data.avatar)
       if (data.preferredLanguage) formData.append('preferred_language', data.preferredLanguage)
+      if (data.preferredCurrency) formData.append('preferred_currency', data.preferredCurrency)
       if (data.adAdsEnabled !== undefined) formData.append('ad_ads_enabled', data.adAdsEnabled ? 'true' : 'false')
       if (data.partnerAdsEnabled !== undefined) formData.append('partner_ads_enabled', data.partnerAdsEnabled ? 'true' : 'false')
       if (data.tipsEnabled !== undefined) formData.append('tips_enabled', data.tipsEnabled ? 'true' : 'false')

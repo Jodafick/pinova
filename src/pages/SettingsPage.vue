@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
+import api from '../api'
 
 const router = useRouter()
 const { currentUser, updateProfile, logout } = useAuth()
@@ -31,8 +32,24 @@ const tipsEnabled = ref(false)
 const tipsUrl = ref('')
 const tipsSaving = ref(false)
 const tipsSaved = ref(false)
+const preferredCurrency = ref('XOF')
+const detectedCountryCode = ref('')
+const supportedCurrencies = ref<string[]>([])
 
 const currentPlan = ref<'free' | 'plus' | 'pro'>('free')
+
+const currencyOptionLabel = (currency: string) => {
+  try {
+    const parts = new Intl.NumberFormat(currentLang.value || 'fr', {
+      style: 'currency',
+      currency,
+    }).formatToParts(1)
+    const symbol = parts.find((p) => p.type === 'currency')?.value
+    return symbol ? `${currency} (${symbol})` : currency
+  } catch (_) {
+    return currency
+  }
+}
 
 onMounted(() => {
   if (currentUser.value) {
@@ -46,7 +63,20 @@ onMounted(() => {
     partnerAdsEnabled.value = currentUser.value.subscription?.partnerAdsEnabled ?? true
     tipsEnabled.value = currentUser.value.subscription?.tipsEnabled ?? false
     tipsUrl.value = currentUser.value.subscription?.tipsUrl || ''
+    preferredCurrency.value = currentUser.value.preferredCurrency || 'XOF'
+    detectedCountryCode.value = currentUser.value.countryCode || ''
   }
+  api.get('subscription/currencies/')
+    .then((response) => {
+      supportedCurrencies.value = response.data?.supported || []
+      if (!currentUser.value?.preferredCurrency && response.data?.selected) {
+        preferredCurrency.value = String(response.data.selected)
+      }
+      if (!detectedCountryCode.value && response.data?.country_code) {
+        detectedCountryCode.value = String(response.data.country_code)
+      }
+    })
+    .catch(() => undefined)
   enforceAdPreferencesByPlan()
 })
 
@@ -105,6 +135,7 @@ const handleSave = async () => {
       email: email.value,
       avatar: avatarFile.value || undefined,
       preferredLanguage: currentLang.value,
+      preferredCurrency: preferredCurrency.value,
     })
     saved.value = true
     setTimeout(() => (saved.value = false), 3000)
@@ -269,6 +300,25 @@ const handleLogout = () => {
               type="email"
               class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
             />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.currency') }}</label>
+            <select
+              v-model="preferredCurrency"
+              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+            >
+              <option
+                v-for="currency in supportedCurrencies"
+                :key="currency"
+                :value="currency"
+              >
+                {{ currencyOptionLabel(currency) }}
+              </option>
+            </select>
+            <p class="text-xs text-neutral-400 mt-1">
+              {{ t('settings.profile.detectedCountry', { country: detectedCountryCode || 'N/A' }) }}
+            </p>
           </div>
 
           <div class="flex justify-end">

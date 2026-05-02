@@ -40,6 +40,8 @@ export type User = {
   displayName: string
   email: string
   preferredLanguage?: string
+  preferredCurrency?: string
+  countryCode?: string
   avatarUrl?: string
   avatarColor: string
   bio: string
