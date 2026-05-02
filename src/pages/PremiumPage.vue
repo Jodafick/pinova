@@ -137,14 +137,22 @@ const faqs = computed(() => [
   { q: t('premium.faq.q4'), a: t('premium.faq.a4') },
 ])
 
-const confirmPaymentTransaction = async (transactionId: string, silent = false): Promise<'approved' | 'pending' | 'error'> => {
+const confirmPaymentTransaction = async (
+  transactionId: string,
+  silent = false,
+  callbackStatus?: string,
+): Promise<'approved' | 'pending' | 'error'> => {
   if (!transactionId) return 'error'
   if (!silent) {
     confirmPending.value = true
     paymentInfoMessage.value = ''
   }
   try {
-    const response = await api.post('subscription/confirm/', { transaction_id: transactionId })
+    const payload: Record<string, string> = { transaction_id: transactionId }
+    if (callbackStatus) {
+      payload.callback_status = String(callbackStatus).toLowerCase()
+    }
+    const response = await api.post('subscription/confirm/', payload)
     if (response.data?.status === 'approved') {
       await fetchCurrentUser()
       if (typeof window !== 'undefined') {
@@ -179,7 +187,7 @@ const handlePopupCallbackReturn = async () => {
   if (!statusValue || !transactionId) return
 
   window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
-  const confirmStatus = await confirmPaymentTransaction(transactionId, true)
+  const confirmStatus = await confirmPaymentTransaction(transactionId, true, statusValue)
   const confirmed = confirmStatus === 'approved'
   if (window.opener && !window.opener.closed) {
     window.opener.postMessage(
@@ -194,7 +202,9 @@ const handlePopupCallbackReturn = async () => {
       },
       window.location.origin,
     )
-    // Fermeture volontaire par l'utilisateur pour faciliter le debug.
+    setTimeout(() => {
+      window.close()
+    }, 350)
   } else {
     await confirmPendingPayment(transactionId)
   }
