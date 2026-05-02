@@ -32,6 +32,8 @@ const publicTagsInput = ref('')
 const selectedBoardIds = ref<number[]>([])
 const myBoards = ref<{ id: number; name: string; is_private?: boolean }[]>([])
 
+const currentPlan = computed<'free' | 'plus' | 'pro'>(() => currentUser.value?.subscription?.plan || 'free')
+
 // Crédit créateur certifié (plan Pro uniquement, aligné backend)
 const canCertifyCredit = computed(() => currentPlan.value === 'pro')
 const certifyCredit = ref(false)
@@ -57,7 +59,6 @@ const variantSquareFile = ref<File | null>(null)
 const variantLandscapeFile = ref<File | null>(null)
 
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
-const currentPlan = computed<'free' | 'plus' | 'pro'>(() => currentUser.value?.subscription?.plan || 'free')
 const canUsePrivateTags = computed(() => currentPlan.value !== 'free')
 const resolvedTopics = computed<TopicOption[]>(() => {
   if (dynamicTopics.value.length > 0) return dynamicTopics.value
