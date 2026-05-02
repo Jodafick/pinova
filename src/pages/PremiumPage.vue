@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
@@ -137,6 +137,27 @@ const faqs = computed(() => [
   { q: t('premium.faq.q4'), a: t('premium.faq.a4') },
 ])
 
+const handlePopupCallbackReturn = async () => {
+  if (typeof window === 'undefined') return
+  const params = new URLSearchParams(window.location.search)
+  const statusValue = String(params.get('status') || '').toLowerCase()
+  const transactionId = String(params.get('id') || '').trim()
+  if (!statusValue || !transactionId) return
+
+  window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
+  if (window.opener && !window.opener.closed) {
+    window.opener.postMessage(
+      { type: 'pinova_payment_callback', status: statusValue, transaction_id: transactionId },
+      window.location.origin,
+    )
+    setTimeout(() => {
+      window.close()
+    }, 250)
+  } else {
+    await confirmPendingPayment(transactionId)
+  }
+}
+
 const handleCheckout = async (planId: string) => {
   if (!isAuthenticated.value) {
     router.push('/login')
@@ -174,9 +195,9 @@ const handleCheckout = async (planId: string) => {
   }
 }
 
-const confirmPendingPayment = async () => {
+const confirmPendingPayment = async (transactionIdOverride?: string) => {
   if (typeof window === 'undefined') return
-  const transactionId = window.localStorage.getItem(PENDING_TX_STORAGE_KEY)
+  const transactionId = transactionIdOverride || window.localStorage.getItem(PENDING_TX_STORAGE_KEY)
   if (!transactionId) {
     paymentInfoMessage.value = t('premium.payment.noPending')
     return
@@ -199,7 +220,25 @@ const confirmPendingPayment = async () => {
   }
 }
 
+const confirmPendingPaymentFromButton = () => {
+  confirmPendingPayment().catch(() => undefined)
+}
+
+const handlePaymentMessage = async (event: MessageEvent) => {
+  if (typeof window === 'undefined') return
+  if (event.origin !== window.location.origin) return
+  const payload = event.data || {}
+  if (payload.type !== 'pinova_payment_callback') return
+  const transactionId = String(payload.transaction_id || '').trim()
+  if (!transactionId) return
+  window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
+  await confirmPendingPayment(transactionId)
+}
+
 onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('message', handlePaymentMessage)
+  }
   api.get('subscription/pricing/')
     .then((response) => {
       pricingCatalog.value = response.data?.plans || {}
@@ -212,6 +251,13 @@ onMounted(() => {
     })
   if (currentUser.value?.subscription?.plan) {
     selectedPlan.value = currentUser.value.subscription.plan
+  }
+  handlePopupCallbackReturn().catch(() => undefined)
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('message', handlePaymentMessage)
   }
 })
 </script>
@@ -358,7 +404,7 @@ onMounted(() => {
         <button
           class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
           :disabled="confirmPending"
-          @click="confirmPendingPayment"
+          @click="confirmPendingPaymentFromButton"
         >
           {{ confirmPending ? t('premium.payment.checking') : t('premium.payment.confirmCta') }}
         </button>
