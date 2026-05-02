@@ -85,6 +85,7 @@ let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 const editSlug = computed(() => (route.name === 'edit-pin' ? String(route.params.slug || '').trim() : ''))
 const isEditMode = computed(() => editSlug.value.length > 0)
 const loadingEdit = ref(false)
+const createStep = ref<1 | 2>(1)
 
 const existingImageUrl = ref<string | null>(null)
 const existingStoryVideoUrl = ref<string | null>(null)
@@ -226,6 +227,7 @@ onMounted(async () => {
           scheduledPublishLocal.value = ''
         }
       }
+      createStep.value = 2
     } catch {
       await showAlert(t('pin.edit.loadError'), { variant: 'danger', title: t('modal.errorTitle') })
       router.replace('/')

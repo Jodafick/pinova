@@ -724,7 +724,10 @@ const openBillingReceipt = async (inv: { id: number; invoice_url?: string }) => 
     const url = data?.invoice_url
     if (url) {
       const ix = billingInvoices.value.findIndex((x) => x.id === inv.id)
-      if (ix >= 0) billingInvoices.value[ix] = { ...billingInvoices.value[ix], invoice_url: url }
+      const prev = ix >= 0 ? billingInvoices.value[ix] : undefined
+      if (prev) {
+        billingInvoices.value[ix] = { ...prev, invoice_url: url }
+      }
       window.open(url, '_blank', 'noopener,noreferrer')
     }
   } catch {

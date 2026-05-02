@@ -89,7 +89,8 @@ const columns = computed(() => {
   }
   const cols = Array.from({ length: n }, () => [] as GridCell[])
   cells.forEach((cell, index) => {
-    cols[index % n].push(cell)
+    const col = cols[index % n]
+    if (col) col.push(cell)
   })
   return cols
 })

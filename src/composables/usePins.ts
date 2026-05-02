@@ -424,7 +424,6 @@ export function usePins() {
       })
       const mapped = mapDjangoPinToFrontend(response.data)
       const idx = pins.value.findIndex((p) => p.slug === slug)
-      const nextSlug = mapped.slug || slug
       if (idx >= 0) {
         pins.value[idx] = mapped
       } else {
