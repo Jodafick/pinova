@@ -108,6 +108,11 @@ export const fr: Record<string, string> = {
   'moderation.textInappropriate': 'Ce contenu semble inapproprié. Merci de modifier votre texte.',
   'moderation.imageSensitiveBlocked': 'Cette image semble contenir du contenu sensible ou interdit.',
   'moderation.imageSensitiveWarn': 'Cette image peut être sensible. Vérifiez qu’elle respecte les règles de la communauté avant de continuer.',
+  'moderation.sensitiveOverlay': 'Contenu sensible',
+  'moderation.revealContent': 'Voir le contenu',
+  'moderation.blurTierPublish': 'Ce média sera publié en mode « contenu sensible » : affichage flouté par défaut pour les spectateurs majeurs.',
+  'moderation.publishRequiresBirthDate': 'Renseignez votre date de naissance dans les paramètres pour publier une image ou une vidéo.',
+  'moderation.imageSensitiveBlurTier': 'Cette image peut être suggestive. Elle sera examinée selon les règles communautaires.',
   'moderation.report': 'Signaler',
   'moderation.reportSent': 'Merci, votre signalement a été enregistré.',
   'moderation.reportError': 'Impossible d’envoyer le signalement.',
@@ -166,6 +171,7 @@ export const fr: Record<string, string> = {
   'translate.auto': 'Traduit automatiquement',
 
   // Rich comment input
+  'comment.submitError': 'Impossible d’envoyer le commentaire.',
   'comment.placeholder': 'Écrivez un commentaire — utilisez @ pour mentionner',
   'comment.replyTo': 'Réponse à',
   'comment.gif': 'GIF',
@@ -482,6 +488,8 @@ export const fr: Record<string, string> = {
   'settings.profile.bioPlaceholder': 'Parlez un peu de vous...',
   'settings.profile.bioCount': '{count}/200 caractères',
   'settings.profile.email': 'Email',
+  'settings.profile.birthDate': 'Date de naissance',
+  'settings.profile.birthDateHint': 'Obligatoire pour publier des pins avec média. Utilisée uniquement pour distinguer mineurs et adultes (≥18 ans).',
   'settings.profile.currency': 'Devise préférée',
   'settings.profile.detectedCountry': 'Pays détecté : {country}',
   'settings.profile.save': 'Enregistrer les modifications',

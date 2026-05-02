@@ -7,7 +7,17 @@ import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PrivateTags from '../components/PrivateTags.vue'
 import api from '../api'
-import { moderationScanText, moderationScanImageFile, moderationScanVideoFile } from '../composables/useModeration'
+import { moderationScanText, moderationScanImageFile, moderationScanVideoFile, isVerifiedAdultFromBirthDate } from '../composables/useModeration'
+import { formatDrfErrorMessages, drfErrorTouchesFields } from '../utils/apiValidationErrors'
+
+/** Champs affichés uniquement à l’étape 1 (texte / catégorie / tags publics). Pas les tags privés (étape 2). */
+const CREATE_PIN_STEP_1_FIELD_KEYS = new Set([
+  'title',
+  'description',
+  'link',
+  'topic',
+  'public_tags_input',
+])
 
 const { t, currentLang } = useI18n()
 const { showAlert } = useAppModal()
@@ -27,6 +37,10 @@ const storyVideoPreviewUrl = ref<string | null>(null)
 const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const saving = ref(false)
+/** Scan NSFW : publication avec flou par défaut (adultes vérifiés uniquement). */
+const pendingSensitiveBlur = ref(false)
+
+const moderationBirthOpts = computed(() => ({ birthDate: currentUser.value?.birthDate }))
 
 // Privacy mode (qui peut voir ce pin)
 const visibility = ref<'public' | 'followers' | 'private'>('public')
@@ -155,13 +169,15 @@ function clearStoryVideo() {
   if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
   storyVideoFile.value = null
   storyVideoPreviewUrl.value = null
+  pendingSensitiveBlur.value = false
 }
 
 async function runVideoModeration(file: File) {
   if (!file.type.startsWith('video/')) return
   try {
-    const r = await moderationScanVideoFile(file, 5)
+    const r = await moderationScanVideoFile(file, 5, moderationBirthOpts.value)
     if (r.level === 'block') {
+      pendingSensitiveBlur.value = false
       clearStoryVideo()
       await showAlert(t('moderation.imageSensitiveBlocked'), {
         variant: 'danger',
@@ -169,9 +185,12 @@ async function runVideoModeration(file: File) {
       })
       return
     }
-    if (r.level === 'warn') {
-      await showAlert(t('moderation.imageSensitiveWarn'), { variant: 'warning' })
+    if (r.level === 'blur') {
+      pendingSensitiveBlur.value = true
+      await showAlert(t('moderation.blurTierPublish'), { variant: 'info' })
+      return
     }
+    pendingSensitiveBlur.value = false
   } catch (err) {
     console.warn('Scan NSFW vidéo indisponible ou erreur', err)
   }
@@ -180,8 +199,9 @@ async function runVideoModeration(file: File) {
 async function runImageModeration(file: File) {
   if (!file.type.startsWith('image/')) return
   try {
-    const r = await moderationScanImageFile(file)
+    const r = await moderationScanImageFile(file, moderationBirthOpts.value)
     if (r.level === 'block') {
+      pendingSensitiveBlur.value = false
       clearImage()
       await showAlert(t('moderation.imageSensitiveBlocked'), {
         variant: 'danger',
@@ -189,9 +209,12 @@ async function runImageModeration(file: File) {
       })
       return
     }
-    if (r.level === 'warn') {
-      await showAlert(t('moderation.imageSensitiveWarn'), { variant: 'warning' })
+    if (r.level === 'blur') {
+      pendingSensitiveBlur.value = true
+      await showAlert(t('moderation.blurTierPublish'), { variant: 'info' })
+      return
     }
+    pendingSensitiveBlur.value = false
   } catch (err) {
     console.warn('Scan NSFW indisponible ou erreur', err)
   }
@@ -232,6 +255,7 @@ const clearImage = () => {
   if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
   imageFile.value = null
   imagePreviewUrl.value = null
+  pendingSensitiveBlur.value = false
 }
 
 const clearStep2Media = () => {
@@ -249,6 +273,15 @@ const submitPin = async () => {
   ])
   if (!textOk.ok) {
     await showAlert(t('moderation.textInappropriate'), { variant: 'warning' })
+    createStep.value = 1
+    return
+  }
+  const hasMedia = !!(imageFile.value || storyVideoFile.value)
+  if (hasMedia && !currentUser.value?.birthDate) {
+    await showAlert(t('moderation.publishRequiresBirthDate'), {
+      variant: 'warning',
+      title: t('modal.errorTitle'),
+    })
     createStep.value = 1
     return
   }
@@ -281,6 +314,11 @@ const submitPin = async () => {
     }
     selectedBoardIds.value.forEach((boardId) => formData.append('board_ids_input', String(boardId)))
 
+    const blurPublish =
+      pendingSensitiveBlur.value &&
+      isVerifiedAdultFromBirthDate(currentUser.value?.birthDate)
+    formData.append('media_sensitive_blur', blurPublish ? 'true' : 'false')
+
     if (currentUser.value) {
       formData.append('author', currentUser.value.id.toString())
     }
@@ -291,18 +329,11 @@ const submitPin = async () => {
     console.error('Erreur lors de la publication:', err)
     const ax = err as { response?: { data?: Record<string, unknown> } }
     const data = ax.response?.data
-    const step1Fields = ['title', 'topic', 'description', 'link', 'public_tags_input']
     if (data && typeof data === 'object' && !Array.isArray(data)) {
-      const keys = Object.keys(data)
-      if (keys.some((k) => step1Fields.includes(k))) {
+      if (drfErrorTouchesFields(data, CREATE_PIN_STEP_1_FIELD_KEYS)) {
         createStep.value = 1
       }
-      const lines = keys.flatMap((k) => {
-        const v = data[k]
-        if (Array.isArray(v)) return v.map((x) => `${k}: ${String(x)}`)
-        if (v && typeof v === 'object') return [`${k}: ${JSON.stringify(v)}`]
-        return [`${k}: ${String(v)}`]
-      })
+      const lines = formatDrfErrorMessages(data)
       await showAlert(lines.slice(0, 8).join('\n') || t('create.publish.error'), {
         variant: 'danger',
         title: t('modal.errorTitle'),

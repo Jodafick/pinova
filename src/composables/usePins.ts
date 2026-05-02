@@ -70,6 +70,7 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     authorFollowersCount: typeof author.followers_count === 'number' ? author.followers_count : 0,
     isStory: !!djangoPin.is_story,
     storyExpiresAt: djangoPin.story_expires_at ?? undefined,
+    mediaSensitiveBlur: !!djangoPin.media_sensitive_blur,
   }
 }
 

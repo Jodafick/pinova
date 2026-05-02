@@ -1,9 +1,30 @@
 import { checkProfanity } from 'glin-profanity'
 
+/** Âge ≥18 avec date de naissance renseignée ; sinon mineur / inconnu → pas de BLUR côté publication. */
+export function isVerifiedAdultFromBirthDate(birthDate: string | null | undefined): boolean {
+  if (!birthDate || typeof birthDate !== 'string') return false
+  const normalized = birthDate.trim().slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return false
+  const d = new Date(`${normalized}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return false
+  const today = new Date()
+  let age = today.getFullYear() - d.getFullYear()
+  const m = today.getMonth() - d.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age -= 1
+  return age >= 18
+}
+
+export interface NsfwScores {
+  porn: number
+  hentai: number
+  sexy: number
+  drawing: number
+}
+
 export type ModerationImageResult =
-  | { level: 'ok' }
-  | { level: 'warn'; maxScore: number }
-  | { level: 'block'; maxScore: number }
+  | { level: 'ok'; scores?: NsfwScores }
+  | { level: 'blur'; maxScore: number; scores?: NsfwScores }
+  | { level: 'block'; maxScore: number; scores?: NsfwScores }
 
 let nsfwModelPromise: Promise<Awaited<ReturnType<Awaited<typeof import('nsfwjs')>['load']>>> | null = null
 
@@ -31,33 +52,89 @@ function fileToHtmlImage(file: File): Promise<HTMLImageElement> {
   })
 }
 
-/** Seuils alignés avec l’ancienne logique image (NSFWJS côté navigateur uniquement). */
-function predsToLevel(preds: { className: string; probability: number }[]): ModerationImageResult {
+export function predsToScores(preds: { className: string; probability: number }[]): NsfwScores {
   const map = Object.fromEntries(preds.map((p) => [p.className, p.probability])) as Record<string, number>
-  const porn = map.Porn ?? 0
-  const hentai = map.Hentai ?? 0
-  const sexy = map.Sexy ?? 0
-  const drawing = map.Drawing ?? 0
-  if (porn >= 0.65 || hentai >= 0.65) {
-    return { level: 'block', maxScore: Math.max(porn, hentai) }
+  return {
+    porn: map.Porn ?? 0,
+    hentai: map.Hentai ?? 0,
+    sexy: map.Sexy ?? 0,
+    drawing: map.Drawing ?? 0,
   }
-  if (sexy >= 0.55 || drawing >= 0.78) {
-    return { level: 'warn', maxScore: Math.max(sexy, drawing) }
+}
+
+/** score global recommandé : porn + hentai + sexy×0.6 */
+export function globalNsfwScore(s: NsfwScores): number {
+  return s.porn + s.hentai + s.sexy * 0.6
+}
+
+/**
+ * Règles Pinova : ALLOW / BLUR (adultes uniquement) / BLOCK.
+ * Mineur ou âge inconnu → jamais BLUR ; tout hors zone « safe » → BLOCK.
+ */
+export function classifyNsfwScores(isVerifiedAdult: boolean, scores: NsfwScores): ModerationImageResult {
+  const gs = globalNsfwScore(scores)
+  const { porn, hentai, sexy, drawing } = scores
+
+  const othersElevated = porn >= 0.55 || hentai >= 0.55 || sexy >= 0.7
+
+  // Dessin / art : ALLOW si dominant et pas d’autres scores élevés
+  if (drawing >= 0.85 && !othersElevated) {
+    return { level: 'ok', scores }
   }
-  return { level: 'ok' }
+
+  // BLOCK explicite + score global fort
+  const hardBlock = porn >= 0.75 || hentai >= 0.75 || gs >= 0.8
+  if (hardBlock) {
+    return { level: 'block', maxScore: Math.max(porn, hentai, gs), scores }
+  }
+
+  const blurExplicit =
+    sexy >= 0.7 ||
+    (porn >= 0.55 && porn < 0.75) ||
+    (hentai >= 0.55 && hentai < 0.75)
+  const blurByScore = gs >= 0.6 && gs < 0.8
+  const wantsBlur = blurExplicit || blurByScore
+
+  if (!isVerifiedAdult) {
+    const totallySafe =
+      porn < 0.55 && hentai < 0.55 && sexy < 0.7 && gs < 0.6 && !wantsBlur
+    if (!totallySafe) {
+      return { level: 'block', maxScore: Math.max(porn, hentai, sexy, gs), scores }
+    }
+    return { level: 'ok', scores }
+  }
+
+  if (wantsBlur) {
+    return { level: 'blur', maxScore: Math.max(sexy, porn, hentai, gs), scores }
+  }
+
+  return { level: 'ok', scores }
+}
+
+function predsToLevel(
+  preds: { className: string; probability: number }[],
+  isVerifiedAdult: boolean,
+): ModerationImageResult {
+  const scores = predsToScores(preds)
+  return classifyNsfwScores(isVerifiedAdult, scores)
 }
 
 function mergeWorst(a: ModerationImageResult, b: ModerationImageResult): ModerationImageResult {
-  if (a.level === 'block' || b.level === 'block') {
-    return a.level === 'block' ? a : b
+  const rank = { block: 3, blur: 2, ok: 1 }
+  const ra = rank[a.level]
+  const rb = rank[b.level]
+  if (ra > rb) return a
+  if (rb > ra) return b
+  if (a.level === 'block' && b.level === 'block') {
+    return a.maxScore >= b.maxScore ? a : b
   }
-  if (a.level === 'warn' || b.level === 'warn') {
-    return a.level === 'warn' ? a : b
+  if (a.level === 'blur' && b.level === 'blur') {
+    return a.maxScore >= b.maxScore ? a : b
   }
   return { level: 'ok' }
 }
 
-/** Texte pin / story / commentaire — UX uniquement ; le backend renégocie tout. */
+/** Texte — UX uniquement ; le backend renégocie tout. */
 export function moderationScanText(parts: string[]): { ok: true } | { ok: false } {
   const joined = parts.filter(Boolean).join('\n')
   if (!joined.trim()) return { ok: true }
@@ -70,27 +147,36 @@ export function moderationScanText(parts: string[]): { ok: true } | { ok: false 
   return { ok: true }
 }
 
+export type ModerationScanMediaOptions = {
+  /** ISO date YYYY-MM-DD ; absent / incomplet → mineur pour la modération média */
+  birthDate?: string | null
+}
+
+function optsToAdult(opts?: ModerationScanMediaOptions): boolean {
+  return isVerifiedAdultFromBirthDate(opts?.birthDate)
+}
+
 /**
- * NSFWJS — chargé uniquement lors du premier scan d’image.
- * Tout le calcul reste dans le navigateur (aucune image n’est envoyée à un backend ML).
+ * NSFWJS dans le navigateur uniquement (aucune image envoyée au backend ML).
  */
-export async function moderationScanImageFile(file: File): Promise<ModerationImageResult> {
+export async function moderationScanImageFile(
+  file: File,
+  opts?: ModerationScanMediaOptions,
+): Promise<ModerationImageResult> {
   if (!file.type.startsWith('image/')) return { level: 'ok' }
   const model = await loadNsfwModel()
   const img = await fileToHtmlImage(file)
   const preds = await model.classify(img)
-  return predsToLevel(preds)
+  return predsToLevel(preds, optsToAdult(opts))
 }
 
-/**
- * Vidéo : extrait `frameCount` images (3–5) réparties sur la durée, chacune classifiée par NSFWJS.
- * Même modèle que pour les images ; pas d’upload ni d’analyse serveur.
- */
 export async function moderationScanVideoFile(
   file: File,
   frameCount: number = 5,
+  opts?: ModerationScanMediaOptions,
 ): Promise<ModerationImageResult> {
   if (!file.type.startsWith('video/')) return { level: 'ok' }
+  const isVerifiedAdult = optsToAdult(opts)
   const n = Math.min(5, Math.max(3, Math.round(frameCount)))
   const model = await loadNsfwModel()
   const url = URL.createObjectURL(file)
@@ -152,7 +238,7 @@ export async function moderationScanVideoFile(
       })
       ctx.drawImage(video, 0, 0, w, h)
       const preds = await model.classify(canvas)
-      const level = predsToLevel(preds)
+      const level = predsToLevel(preds, isVerifiedAdult)
       worst = mergeWorst(worst, level)
       if (worst.level === 'block') break
     }

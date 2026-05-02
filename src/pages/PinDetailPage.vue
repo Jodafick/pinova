@@ -9,7 +9,9 @@ import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
-import { moderationScanText, moderationScanImageFile } from '../composables/useModeration'
+import { moderationScanText, moderationScanImageFile, isVerifiedAdultFromBirthDate } from '../composables/useModeration'
+import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
+import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
 
 const { t } = useI18n()
 const { showAlert, showPrompt } = useAppModal()
@@ -41,6 +43,10 @@ const {
   reportComment,
 } = usePins()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
+
+const viewerCanRevealSensitive = computed(
+  () => isAuthenticated.value && isVerifiedAdultFromBirthDate(currentUser.value?.birthDate),
+)
 
 const pinSlug = computed(() => route.params.slug as string)
 const pin = computed(() => getPin(pinSlug.value))
@@ -314,7 +320,9 @@ const handleRichSubmit = async (
   }
   if (payload.mediaFile?.type.startsWith('image/')) {
     try {
-      const imgR = await moderationScanImageFile(payload.mediaFile)
+      const imgR = await moderationScanImageFile(payload.mediaFile, {
+        birthDate: currentUser.value?.birthDate,
+      })
       if (imgR.level === 'block') {
         await showAlert(t('moderation.imageSensitiveBlocked'), {
           variant: 'danger',
@@ -322,8 +330,8 @@ const handleRichSubmit = async (
         })
         return
       }
-      if (imgR.level === 'warn') {
-        await showAlert(t('moderation.imageSensitiveWarn'), { variant: 'warning' })
+      if (imgR.level === 'blur') {
+        await showAlert(t('moderation.imageSensitiveBlurTier'), { variant: 'warning' })
       }
     } catch (err) {
       console.warn('Scan image commentaire', err)
@@ -344,6 +352,14 @@ const handleRichSubmit = async (
     }
     await addComment(pin.value.slug, formData)
     await loadComments(true)
+  } catch (err: unknown) {
+    console.error('Erreur envoi commentaire', err)
+    const ax = err as { response?: { data?: unknown } }
+    const msgs = formatDrfErrorMessages(ax.response?.data)
+    await showAlert(msgs.slice(0, 6).join('\n') || t('comment.submitError'), {
+      variant: 'danger',
+      title: t('modal.errorTitle'),
+    })
   } finally {
     submittingComment.value = false
   }
@@ -661,28 +677,40 @@ const openRelatedPin = (slug: string) => {
               class="w-full flex min-h-0"
               :class="detailImageLandscape === true ? 'flex-1 items-center justify-center' : ''"
             >
-              <img
+              <PinSensitiveMedia
                 v-if="pin.imageUrl"
-                :src="pin.imageUrl"
-                :alt="pin.title"
-                class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
-                draggable="false"
-                @load="onDetailImageLoad"
-                @dblclick.prevent="handleLike"
-                @contextmenu.prevent
-                @dragstart.prevent
-              />
-              <video
+                :sensitive="!!pin.mediaSensitiveBlur"
+                :viewer-can-reveal="viewerCanRevealSensitive"
+                wrapper-class="w-full flex justify-center"
+              >
+                <img
+                  :src="pin.imageUrl"
+                  :alt="pin.title"
+                  class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
+                  draggable="false"
+                  @load="onDetailImageLoad"
+                  @dblclick.prevent="handleLike"
+                  @contextmenu.prevent
+                  @dragstart.prevent
+                />
+              </PinSensitiveMedia>
+              <PinSensitiveMedia
                 v-else-if="pin.storyVideoUrl"
-                :src="pin.storyVideoUrl"
-                controls
-                playsinline
-                preload="metadata"
-                class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
-                @loadedmetadata="onDetailVideoLoadedMetadata"
-                @dblclick.prevent="handleLike"
-                @contextmenu.prevent
-              />
+                :sensitive="!!pin.mediaSensitiveBlur"
+                :viewer-can-reveal="viewerCanRevealSensitive"
+                wrapper-class="w-full flex justify-center"
+              >
+                <video
+                  :src="pin.storyVideoUrl"
+                  controls
+                  playsinline
+                  preload="metadata"
+                  class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
+                  @loadedmetadata="onDetailVideoLoadedMetadata"
+                  @dblclick.prevent="handleLike"
+                  @contextmenu.prevent
+                />
+              </PinSensitiveMedia>
             </div>
           </div>
 

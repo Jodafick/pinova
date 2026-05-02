@@ -5,11 +5,17 @@ import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
+import PinSensitiveMedia from './PinSensitiveMedia.vue'
+import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
 
 const { formatCount, isPinSavePending, toggleLike } = usePins()
-const { isAuthenticated } = useAuth()
+const { isAuthenticated, currentUser } = useAuth()
 const router = useRouter()
 const { t } = useI18n()
+
+const viewerCanRevealSensitive = computed(
+  () => isAuthenticated.value && isVerifiedAdultFromBirthDate(currentUser.value?.birthDate),
+)
 
 const props = defineProps<{
   pins: Pin[]
@@ -125,51 +131,63 @@ onUnmounted(() => {
             v-if="!isMediaLoaded(pin.id)"
             class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200"
           ></div>
-          <img
+          <PinSensitiveMedia
             v-if="pin.imageUrl"
-            :src="pin.imageUrl"
-            :alt="pin.title"
-            class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none"
-            draggable="false"
-            :class="isMediaLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
-            loading="lazy"
-            @load="markMediaLoaded(pin.id)"
-            @contextmenu.prevent
-            @dragstart.prevent
-          />
-          <video
+            :sensitive="!!pin.mediaSensitiveBlur"
+            :viewer-can-reveal="viewerCanRevealSensitive"
+            wrapper-class="w-full"
+          >
+            <img
+              :src="pin.imageUrl"
+              :alt="pin.title"
+              class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none"
+              draggable="false"
+              :class="isMediaLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
+              loading="lazy"
+              @load="markMediaLoaded(pin.id)"
+              @contextmenu.prevent
+              @dragstart.prevent
+            />
+          </PinSensitiveMedia>
+          <PinSensitiveMedia
             v-else-if="pin.storyVideoUrl"
-            :src="pin.storyVideoUrl"
-            muted
-            playsinline
-            preload="metadata"
-            class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none max-h-[480px]"
-            :class="isMediaLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
-            @loadedmetadata="markMediaLoaded(pin.id)"
-            @error="markMediaLoaded(pin.id)"
-          />
+            :sensitive="!!pin.mediaSensitiveBlur"
+            :viewer-can-reveal="viewerCanRevealSensitive"
+            wrapper-class="w-full"
+          >
+            <video
+              :src="pin.storyVideoUrl"
+              muted
+              playsinline
+              preload="metadata"
+              class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none max-h-[480px]"
+              :class="isMediaLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
+              @loadedmetadata="markMediaLoaded(pin.id)"
+              @error="markMediaLoaded(pin.id)"
+            />
+          </PinSensitiveMedia>
 
           <div
             v-if="pin.scheduledPublishAt"
-            class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow"
+            class="absolute top-2 left-2 z-[45] px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow"
           >
             {{ t('pin.scheduledBadge') }}
           </div>
           <div
             v-if="pin.isStory"
-            class="absolute z-10 px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-bold shadow"
+            class="absolute z-[45] px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-bold shadow"
             :class="pin.scheduledPublishAt ? 'top-2 right-2' : 'top-2 left-2'"
           >
             {{ t('pin.storyBadge') }}
           </div>
 
           <!-- Dark overlay on hover -->
-          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
+          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 z-[40] pointer-events-none"></div>
 
           <!-- Save button -->
           <button
             v-if="isAuthenticated"
-            class="absolute top-3 right-3 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 shadow-lg z-10"
+            class="absolute top-3 right-3 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 shadow-lg z-[45]"
             :class="pin.saved ? 'bg-neutral-900 text-white' : 'bg-pink-600 text-white hover:bg-pink-700'"
             :disabled="isSavePending(pin.slug)"
             @click.stop="emit('toggle-save', pin.slug)"
@@ -179,7 +197,7 @@ onUnmounted(() => {
           </button>
 
           <!-- Bottom actions on hover -->
-          <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+          <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-[45]">
             <!-- Link badge -->
             <a
               v-if="pin.link"

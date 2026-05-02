@@ -27,6 +27,7 @@ const defaultUser: User = {
     translationQuotaMonthly: 5,
     translationUsedMonthly: 0,
   },
+  birthDate: null,
 }
 
 const currentUser = ref<User | null>(null)
@@ -81,6 +82,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       scheduledPlan: djangoUser.subscription?.scheduled_plan ?? profile.subscription_scheduled_plan ?? null,
     },
     boards: djangoUser.boards || [],
+    birthDate: profile.birth_date ?? null,
   }
 }
 
@@ -159,7 +161,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean }) {
     try {
       const formData = new FormData()
       if (data.displayName) formData.append('display_name', data.displayName)
@@ -168,6 +170,9 @@ export function useAuth() {
       if (data.avatar) formData.append('avatar', data.avatar)
       if (data.preferredLanguage) formData.append('preferred_language', data.preferredLanguage)
       if (data.preferredCurrency) formData.append('preferred_currency', data.preferredCurrency)
+      if (data.birthDate !== undefined && data.birthDate !== null && String(data.birthDate).trim() !== '') {
+        formData.append('birth_date', String(data.birthDate).trim().slice(0, 10))
+      }
       if (data.adAdsEnabled !== undefined) formData.append('ad_ads_enabled', data.adAdsEnabled ? 'true' : 'false')
       if (data.partnerAdsEnabled !== undefined) formData.append('partner_ads_enabled', data.partnerAdsEnabled ? 'true' : 'false')
       if (data.tipsEnabled !== undefined) formData.append('tips_enabled', data.tipsEnabled ? 'true' : 'false')

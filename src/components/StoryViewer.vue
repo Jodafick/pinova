@@ -6,6 +6,8 @@ import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
+import PinSensitiveMedia from './PinSensitiveMedia.vue'
+import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
 
 const props = defineProps<{
   modelValue: boolean
@@ -22,6 +24,10 @@ const { toggleLike, reportPin } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
 const { t } = useI18n()
 const { showAlert } = useAppModal()
+
+const viewerCanRevealSensitive = computed(
+  () => isAuthenticated.value && isVerifiedAdultFromBirthDate(currentUser.value?.birthDate),
+)
 
 /** Durée image par défaut ; vidéo = métadonnées (bornée). */
 const DEFAULT_IMAGE_MS = 8000
@@ -338,27 +344,39 @@ onUnmounted(() => {
             v-if="current"
             class="relative max-w-[min(100%,520px)] w-full rounded-2xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-white/10"
           >
-            <video
+            <PinSensitiveMedia
               v-if="current.storyVideoUrl"
-              :key="`${current.slug}-video`"
-              :src="current.storyVideoUrl"
-              class="w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block"
-              playsinline
-              muted
-              autoplay
-              @loadedmetadata="onStoryVideoLoadedMetadata"
-              @ended="goNext"
-              @contextmenu.prevent
-            />
-            <img
+              :sensitive="!!current.mediaSensitiveBlur"
+              :viewer-can-reveal="viewerCanRevealSensitive"
+              wrapper-class="w-full"
+            >
+              <video
+                :key="`${current.slug}-video`"
+                :src="current.storyVideoUrl"
+                class="w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block"
+                playsinline
+                muted
+                autoplay
+                @loadedmetadata="onStoryVideoLoadedMetadata"
+                @ended="goNext"
+                @contextmenu.prevent
+              />
+            </PinSensitiveMedia>
+            <PinSensitiveMedia
               v-else-if="current.imageUrl"
-              :src="current.imageUrl"
-              :alt="current.title"
-              class="w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block"
-              draggable="false"
-              @contextmenu.prevent
-              @dragstart.prevent
-            />
+              :sensitive="!!current.mediaSensitiveBlur"
+              :viewer-can-reveal="viewerCanRevealSensitive"
+              wrapper-class="w-full"
+            >
+              <img
+                :src="current.imageUrl"
+                :alt="current.title"
+                class="w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block"
+                draggable="false"
+                @contextmenu.prevent
+                @dragstart.prevent
+              />
+            </PinSensitiveMedia>
 
             <!-- Description bas du média -->
             <div

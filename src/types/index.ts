@@ -46,6 +46,8 @@ export type Pin = {
   isStory?: boolean
   storyExpiresAt?: string
   createdAt: string
+  /** Pin publié avec politique « contenu sensible » (flou par défaut pour les adultes). */
+  mediaSensitiveBlur?: boolean
 }
 
 export type User = {
@@ -91,6 +93,8 @@ export type User = {
     previewImages?: string[]
     shareToken?: string | null
   }[]
+  /** ISO YYYY-MM-DD — réservé au propriétaire ; obligatoire pour publier du média */
+  birthDate?: string | null
 }
 
 export type Notification = {

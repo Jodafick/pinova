@@ -14,6 +14,7 @@ const displayName = ref('')
 const username = ref('')
 const bio = ref('')
 const email = ref('')
+const birthDate = ref('')
 const oldPassword = ref('')
 const newPassword = ref('')
 const confirmNewPassword = ref('')
@@ -173,6 +174,7 @@ onMounted(() => {
     username.value = currentUser.value.username
     bio.value = currentUser.value.bio
     email.value = currentUser.value.email
+    birthDate.value = currentUser.value.birthDate ? String(currentUser.value.birthDate).slice(0, 10) : ''
     avatarPreview.value = currentUser.value.avatarUrl || null
     currentPlan.value = currentUser.value.subscription?.plan || 'free'
     adAdsEnabled.value = currentUser.value.subscription?.adAdsEnabled ?? true
@@ -259,6 +261,7 @@ const handleSave = async () => {
       avatar: avatarFile.value || undefined,
       preferredLanguage: currentLang.value,
       preferredCurrency: preferredCurrency.value,
+      birthDate: birthDate.value.trim() || undefined,
     })
     saved.value = true
     setTimeout(() => (saved.value = false), 3000)
@@ -500,6 +503,17 @@ const handleLogout = () => {
               type="email"
               class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
             />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.birthDate') }}</label>
+            <input
+              v-model="birthDate"
+              type="date"
+              autocomplete="bday"
+              class="w-full max-w-xs px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+            />
+            <p class="text-xs text-neutral-400 mt-1">{{ t('settings.profile.birthDateHint') }}</p>
           </div>
 
           <div>
