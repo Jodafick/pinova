@@ -6,15 +6,15 @@ import { useAuth } from '../composables/useAuth'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
-import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
+import { viewerCanRevealSensitiveMedia } from '../composables/useModeration'
 
 const { formatCount, isPinSavePending, toggleLike } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
 const router = useRouter()
 const { t } = useI18n()
 
-const viewerCanRevealSensitive = computed(
-  () => isAuthenticated.value && isVerifiedAdultFromBirthDate(currentUser.value?.birthDate),
+const viewerCanRevealSensitive = computed(() =>
+  viewerCanRevealSensitiveMedia(isAuthenticated.value, currentUser.value?.birthDate),
 )
 
 const props = defineProps<{

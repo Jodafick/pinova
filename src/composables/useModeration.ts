@@ -70,14 +70,17 @@ export function globalNsfwScore(s: NsfwScores): number {
 /* --- Seuils spec Pinova (strict quand âge inconnu : comportement mineur) --- */
 const T_SOFT = 0.55
 const T_SEXY_BLUR = 0.7
-const T_HARD_PH = 0.75
-const T_SCORE_BLOCK = 0.8
+/** Photo nue / suggestive souvent étiquetée « Porn » par le modèle sans être du porno dur → seuil blocage plus haut que hentai. */
+const T_HARD_PORN = 0.88
+const T_HARD_HENTAI = 0.75
+/** Blocage sur agrégat : évite BLOCK dès que porn≈0.76 + sexy modéré (cas nu artistique / seins nus). */
+const T_SCORE_BLOCK = 1.18
 const T_SCORE_BLUR_LO = 0.6
 const T_DRAWING_ART = 0.85
 
 /**
- * ALLOW / BLUR (adultes vérifiés uniquement) / BLOCK.
- * Sans date de naissance : traité comme mineur → pas de blur, hors zone safe → block.
+ * ALLOW / BLUR (adultes vérifiés + connectés uniquement) / BLOCK.
+ * Utilisateur non connecté ou sans date valide ≥18 : traité comme mineur → pas de blur, hors zone safe → block.
  */
 export function classifyNsfwScores(isVerifiedAdult: boolean, scores: NsfwScores): ModerationImageResult {
   const gs = globalNsfwScore(scores)
@@ -90,16 +93,16 @@ export function classifyNsfwScores(isVerifiedAdult: boolean, scores: NsfwScores)
     return { level: 'ok', scores }
   }
 
-  // BLOCK explicite + score global fort
-  const hardBlock = porn >= T_HARD_PH || hentai >= T_HARD_PH || gs >= T_SCORE_BLOCK
+  // BLOCK : porno très probable, hentai explicite, ou combinaison scores forte
+  const hardBlock = porn >= T_HARD_PORN || hentai >= T_HARD_HENTAI || gs >= T_SCORE_BLOCK
   if (hardBlock) {
     return { level: 'block', maxScore: Math.max(porn, hentai, gs), scores }
   }
 
   const blurExplicit =
     sexy >= T_SEXY_BLUR ||
-    (porn >= T_SOFT && porn < T_HARD_PH) ||
-    (hentai >= T_SOFT && hentai < T_HARD_PH)
+    (porn >= T_SOFT && porn < T_HARD_PORN) ||
+    (hentai >= T_SOFT && hentai < T_HARD_HENTAI)
   const blurByScore = gs >= T_SCORE_BLUR_LO && gs < T_SCORE_BLOCK
   const wantsBlur = blurExplicit || blurByScore
 
@@ -158,10 +161,18 @@ export function moderationScanText(parts: string[]): { ok: true } | { ok: false 
 export type ModerationScanMediaOptions = {
   /** ISO date YYYY-MM-DD ; absent / incomplet → mineur pour la modération média */
   birthDate?: string | null
+  /** Si absent ou false → mineur (ex. invité). Obligatoire à true avec une date valide pour le palier blur adulte. */
+  isAuthenticated?: boolean
 }
 
 function optsToAdult(opts?: ModerationScanMediaOptions): boolean {
-  return isVerifiedAdultFromBirthDate(opts?.birthDate)
+  if (opts?.isAuthenticated !== true) return false
+  return isVerifiedAdultFromBirthDate(opts.birthDate)
+}
+
+/** Révélation du média sensible (bouton « Voir le contenu ») : connecté ET majeur vérifié par date. */
+export function viewerCanRevealSensitiveMedia(isAuthenticated: boolean, birthDate?: string | null): boolean {
+  return isAuthenticated === true && isVerifiedAdultFromBirthDate(birthDate)
 }
 
 /**

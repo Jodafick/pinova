@@ -9,7 +9,11 @@ import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
-import { moderationScanText, moderationScanImageFile, isVerifiedAdultFromBirthDate } from '../composables/useModeration'
+import {
+  moderationScanText,
+  moderationScanImageFile,
+  viewerCanRevealSensitiveMedia,
+} from '../composables/useModeration'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
 
@@ -44,8 +48,8 @@ const {
 } = usePins()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
-const viewerCanRevealSensitive = computed(
-  () => isAuthenticated.value && isVerifiedAdultFromBirthDate(currentUser.value?.birthDate),
+const viewerCanRevealSensitive = computed(() =>
+  viewerCanRevealSensitiveMedia(isAuthenticated.value, currentUser.value?.birthDate),
 )
 
 const pinSlug = computed(() => route.params.slug as string)
@@ -322,6 +326,7 @@ const handleRichSubmit = async (
     try {
       const imgR = await moderationScanImageFile(payload.mediaFile, {
         birthDate: currentUser.value?.birthDate,
+        isAuthenticated: isAuthenticated.value,
       })
       if (imgR.level === 'block') {
         await showAlert(t('moderation.imageSensitiveBlocked'), {

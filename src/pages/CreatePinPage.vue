@@ -24,7 +24,7 @@ const { showAlert } = useAppModal()
 
 const router = useRouter()
 const { addPin, topics } = usePins()
-const { currentUser, fetchMyBoards } = useAuth()
+const { currentUser, fetchMyBoards, isAuthenticated } = useAuth()
 
 const title = ref('')
 const description = ref('')
@@ -40,7 +40,10 @@ const saving = ref(false)
 /** Scan NSFW : publication avec flou par défaut (adultes vérifiés uniquement). */
 const pendingSensitiveBlur = ref(false)
 
-const moderationBirthOpts = computed(() => ({ birthDate: currentUser.value?.birthDate }))
+const moderationBirthOpts = computed(() => ({
+  birthDate: currentUser.value?.birthDate,
+  isAuthenticated: isAuthenticated.value,
+}))
 
 // Privacy mode (qui peut voir ce pin)
 const visibility = ref<'public' | 'followers' | 'private'>('public')

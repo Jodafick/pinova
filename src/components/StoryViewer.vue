@@ -7,7 +7,7 @@ import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
-import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
+import { viewerCanRevealSensitiveMedia } from '../composables/useModeration'
 
 const props = defineProps<{
   modelValue: boolean
@@ -25,8 +25,8 @@ const { isAuthenticated, currentUser } = useAuth()
 const { t } = useI18n()
 const { showAlert } = useAppModal()
 
-const viewerCanRevealSensitive = computed(
-  () => isAuthenticated.value && isVerifiedAdultFromBirthDate(currentUser.value?.birthDate),
+const viewerCanRevealSensitive = computed(() =>
+  viewerCanRevealSensitiveMedia(isAuthenticated.value, currentUser.value?.birthDate),
 )
 
 /** Durée image par défaut ; vidéo = métadonnées (bornée). */
