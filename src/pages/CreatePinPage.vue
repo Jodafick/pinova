@@ -39,6 +39,9 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const saving = ref(false)
 /** Scan NSFW : publication avec flou par défaut (adultes vérifiés uniquement). */
 const pendingSensitiveBlur = ref(false)
+/** Chargement modèle NSFWJS + analyse — désactive publier et affiche un overlay sur le média. */
+const mediaModerationPending = ref(false)
+let mediaScanGeneration = 0
 
 const moderationBirthOpts = computed(() => ({
   birthDate: currentUser.value?.birthDate,
@@ -169,6 +172,8 @@ watch(currentLang, () => {
 })
 
 function clearStoryVideo() {
+  mediaScanGeneration++
+  mediaModerationPending.value = false
   if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
   storyVideoFile.value = null
   storyVideoPreviewUrl.value = null
@@ -177,8 +182,11 @@ function clearStoryVideo() {
 
 async function runVideoModeration(file: File) {
   if (!file.type.startsWith('video/')) return
+  const gen = ++mediaScanGeneration
+  mediaModerationPending.value = true
   try {
     const r = await moderationScanVideoFile(file, 5, moderationBirthOpts.value)
+    if (gen !== mediaScanGeneration) return
     if (r.level === 'block') {
       pendingSensitiveBlur.value = false
       clearStoryVideo()
@@ -196,13 +204,18 @@ async function runVideoModeration(file: File) {
     pendingSensitiveBlur.value = false
   } catch (err) {
     console.warn('Scan NSFW vidéo indisponible ou erreur', err)
+  } finally {
+    if (gen === mediaScanGeneration) mediaModerationPending.value = false
   }
 }
 
 async function runImageModeration(file: File) {
   if (!file.type.startsWith('image/')) return
+  const gen = ++mediaScanGeneration
+  mediaModerationPending.value = true
   try {
     const r = await moderationScanImageFile(file, moderationBirthOpts.value)
+    if (gen !== mediaScanGeneration) return
     if (r.level === 'block') {
       pendingSensitiveBlur.value = false
       clearImage()
@@ -220,6 +233,8 @@ async function runImageModeration(file: File) {
     pendingSensitiveBlur.value = false
   } catch (err) {
     console.warn('Scan NSFW indisponible ou erreur', err)
+  } finally {
+    if (gen === mediaScanGeneration) mediaModerationPending.value = false
   }
 }
 
@@ -255,6 +270,8 @@ const onDrop = (e: DragEvent) => {
 }
 
 const clearImage = () => {
+  mediaScanGeneration++
+  mediaModerationPending.value = false
   if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
   imageFile.value = null
   imagePreviewUrl.value = null
@@ -268,6 +285,7 @@ const clearStep2Media = () => {
 
 const submitPin = async () => {
   if (!title.value || (!imageFile.value && !storyVideoFile.value)) return
+  if (mediaModerationPending.value) return
   const textOk = moderationScanText([
     title.value,
     description.value,
@@ -384,14 +402,20 @@ const selectCategory = (selected: TopicOption) => {
           v-if="createStep === 2"
           type="button"
           class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition flex items-center gap-2"
-          :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl) || saving"
+          :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl) || saving || mediaModerationPending"
           @click="submitPin"
         >
-          <svg v-if="saving" class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+          <svg v-if="saving || mediaModerationPending" class="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          {{ saving ? t('create.publishing') : t('create.publish') }}
+          {{
+            saving
+              ? t('create.publishing')
+              : mediaModerationPending
+                ? t('moderation.scanningMediaShort')
+                : t('create.publish')
+          }}
         </button>
         <button
           v-else
@@ -478,9 +502,21 @@ const selectCategory = (selected: TopicOption) => {
                 {{ t('create.gif.label') }}
               </span>
             </template>
+            <div
+              v-if="mediaModerationPending"
+              class="absolute inset-0 rounded-2xl bg-white/55 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 z-10 pointer-events-none"
+            >
+              <svg class="animate-spin h-10 w-10 text-pink-600" viewBox="0 0 24 24" aria-hidden="true">
+                <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <p class="text-xs font-medium text-neutral-700 text-center px-4 max-w-[14rem]">
+                {{ t('moderation.scanningMedia') }}
+              </p>
+            </div>
             <button
               type="button"
-              class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition"
+              class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition z-20"
               @click="clearStep2Media"
             >
               <span class="material-symbols-outlined text-neutral-600">close</span>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from '../i18n'
+import { GOOGLE_SIGN_IN_SCOPES } from '../env'
 
 const { t } = useI18n()
 const loading = ref(false)
@@ -52,7 +53,7 @@ const handleGoogleClick = () => {
   // Google OAuth URL for Implicit Flow (Redirect)
   const clientId = '274683910451-u52eib3lr7t5qehu23bhnafn85ovaub3.apps.googleusercontent.com'
   const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
-  const scope = encodeURIComponent('openid email profile https://www.googleapis.com/auth/userinfo.profile')
+  const scope = encodeURIComponent(GOOGLE_SIGN_IN_SCOPES)
   const responseType = 'token'
   
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}`

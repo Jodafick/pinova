@@ -100,6 +100,8 @@ export const en: Record<string, string> = {
   'create.noTracking': 'Pinova strictly limits **ad tracking** and minimizes data sharing to what is necessary.',
   'create.noTracking.learnMore': 'Learn more',
 
+  'moderation.scanningMedia': 'Analyzing media… (first model load may take a few seconds)',
+  'moderation.scanningMediaShort': 'Analyzing…',
   'moderation.textInappropriate': 'This content seems inappropriate. Please edit your text.',
   'moderation.imageSensitiveBlocked': 'This image appears to contain sensitive or disallowed content.',
   'moderation.imageSensitiveWarn': 'This image may be sensitive. Make sure it follows community guidelines before continuing.',

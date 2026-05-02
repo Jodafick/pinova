@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useTokenClient } from 'vue3-google-signin'
+import { GOOGLE_SIGN_IN_SCOPES } from '../env'
 import { useI18n } from '../i18n'
 
 const router = useRouter()
@@ -37,7 +38,7 @@ const handleLogin = async () => {
 }
 
 const { login: googleLogin } = useTokenClient({
-  scope: 'https://www.googleapis.com/auth/userinfo.profile',
+  scope: GOOGLE_SIGN_IN_SCOPES,
   onSuccess: async (response) => {
     loading.value = true
     const result = await socialLogin('google', response.access_token)
