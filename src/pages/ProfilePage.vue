@@ -19,7 +19,7 @@ const { showAlert, showPrompt } = useAppModal()
 
 const router = useRouter()
 const route = useRoute()
-const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow, createBoard, fetchMyBoards, addBoardCollaborator } = useAuth()
+const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow, createBoard, fetchMyBoards, addBoardCollaborator, fetchPendingBoardInvitations, acceptBoardInvitation, declineBoardInvitation } = useAuth()
 const { pins, toggleSave, fetchPins, fetchCreatorStats } = usePins()
 
 const profileUser = ref<User | null>(null)
@@ -151,6 +151,58 @@ const profileShareQueryParams = computed(() => {
   return typeof s === 'string' && s ? { share: s } : {}
 })
 
+type BoardInviteRow = {
+  id: number
+  board_id: number
+  board_name: string
+  owner_username: string
+  invited_by_username: string
+}
+
+const pendingBoardInvites = ref<BoardInviteRow[]>([])
+const pendingInvitesLoading = ref(false)
+
+async function loadPendingBoardInvites() {
+  if (!currentUser.value || route.params.username) {
+    pendingBoardInvites.value = []
+    return
+  }
+  pendingInvitesLoading.value = true
+  try {
+    const rows = await fetchPendingBoardInvitations()
+    pendingBoardInvites.value = Array.isArray(rows) ? rows : []
+  } catch {
+    pendingBoardInvites.value = []
+  } finally {
+    pendingInvitesLoading.value = false
+  }
+}
+
+async function handleAcceptBoardInvite(inv: BoardInviteRow) {
+  try {
+    await acceptBoardInvitation(inv.id)
+    pendingBoardInvites.value = pendingBoardInvites.value.filter((x) => x.id !== inv.id)
+    await loadProfile()
+  } catch (err: any) {
+    await showAlert(err?.response?.data?.error || t('profile.boards.inviteError'), {
+      variant: 'danger',
+      title: t('modal.errorTitle'),
+    })
+  }
+}
+
+async function handleDeclineBoardInvite(inv: BoardInviteRow) {
+  try {
+    await declineBoardInvitation(inv.id)
+    pendingBoardInvites.value = pendingBoardInvites.value.filter((x) => x.id !== inv.id)
+  } catch (err: any) {
+    await showAlert(err?.response?.data?.error || t('profile.boards.inviteError'), {
+      variant: 'danger',
+      title: t('modal.errorTitle'),
+    })
+  }
+}
+
 const loadProfile = async () => {
   loading.value = true
   resetSavedPinsState()
@@ -167,6 +219,8 @@ const loadProfile = async () => {
           name: board.name,
           pinCount: board.pin_count ?? board.pinCount ?? 0,
           isPrivate: board.is_private ?? board.isPrivate ?? false,
+          isOwner: board.is_owner !== false,
+          ownerUsername: board.ownerUsername || profileUser.value?.username,
           collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
           previewImages: board.preview_images ?? board.previewImages ?? [],
           shareToken: board.share_token ?? board.shareToken ?? undefined,
@@ -196,6 +250,7 @@ const loadProfile = async () => {
   loading.value = false
   if (!route.params.username && profileUser.value) {
     void loadBoardSuggestions()
+    void loadPendingBoardInvites()
   }
   if (currentUser.value) {
     void loadActiveStories()
@@ -332,8 +387,8 @@ const boardLimits = computed(() => {
   if (currentPlan.value === 'plus') return { private: 10, public: Number.POSITIVE_INFINITY }
   return { private: 3, public: 10 }
 })
-const privateBoardsCount = computed(() => boards.value.filter((board) => board.isPrivate).length)
-const publicBoardsCount = computed(() => boards.value.filter((board) => !board.isPrivate).length)
+const privateBoardsCount = computed(() => boards.value.filter((board) => board.isPrivate && board.isOwner !== false).length)
+const publicBoardsCount = computed(() => boards.value.filter((board) => !board.isPrivate && board.isOwner !== false).length)
 const isPrivateLimitReached = computed(() => privateBoardsCount.value >= boardLimits.value.private)
 const isPublicLimitReached = computed(() => publicBoardsCount.value >= boardLimits.value.public)
 const canCreateSelectedBoardType = computed(() => {
@@ -368,6 +423,8 @@ const handleCreateBoard = async () => {
       name: board.name,
       pinCount: board.pin_count ?? board.pinCount ?? 0,
       isPrivate: board.is_private ?? board.isPrivate ?? false,
+      isOwner: true,
+      ownerUsername: profileUser.value.username,
       collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
       previewImages: [],
       shareToken: board.share_token ?? board.shareToken ?? undefined,
@@ -468,11 +525,15 @@ const handleInviteCollaborator = async (boardId: number) => {
   })
   if (!username) return
   try {
-    await addBoardCollaborator(boardId, username)
-    const targetBoard = profileUser.value?.boards?.find((board) => board.id === boardId)
-    if (targetBoard && profileUser.value?.boards) {
-      targetBoard.collaboratorCount = (targetBoard.collaboratorCount || 0) + 1
-      profileUser.value.boards = [...profileUser.value.boards]
+    const result = await addBoardCollaborator(boardId, username)
+    if ((result as { status?: string })?.status === 'invited') {
+      await showAlert(t('profile.boards.inviteSent'), { variant: 'success' })
+    } else {
+      const targetBoard = profileUser.value?.boards?.find((board) => board.id === boardId)
+      if (targetBoard && profileUser.value?.boards) {
+        targetBoard.collaboratorCount = (targetBoard.collaboratorCount || 0) + 1
+        profileUser.value.boards = [...profileUser.value.boards]
+      }
     }
   } catch (err: any) {
     console.error('Erreur invitation collaborateur:', err)
@@ -593,10 +654,10 @@ function applyBoardSuggestionName(name: string) {
   showCreateBoard.value = true
 }
 
-function goToBoard(boardId: number) {
-  const uname = profileUser.value?.username
+function goToBoard(board: NonNullable<User['boards']>[number]) {
+  const uname = board.ownerUsername || profileUser.value?.username
   if (!uname) return
-  router.push(`/profile/${uname}/board/${boardId}`)
+  router.push(`/profile/${uname}/board/${board.id}`)
 }
 
 async function handleShareProfile() {
@@ -620,10 +681,11 @@ async function handleShareProfile() {
   }
 }
 
-async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
+async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
   if (!isMyProfile.value || !profileUser.value) return
+  const ownerU = board.ownerUsername || profileUser.value.username
   try {
-    let url = `${window.location.origin}/profile/${profileUser.value.username}/board/${board.id}`
+    let url = `${window.location.origin}/profile/${ownerU}/board/${board.id}`
     if (board.isPrivate) {
       const res = await api.post(`boards/${board.id}/share-token/`, {})
       const token = res.data?.share_token
@@ -787,6 +849,42 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
         </div>
       </div>
 
+      <div
+        v-if="isMyProfile && (pendingInvitesLoading || pendingBoardInvites.length > 0)"
+        class="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4"
+      >
+        <p class="text-sm font-semibold text-neutral-900 mb-3">{{ t('profile.boards.pendingInvitesTitle') }}</p>
+        <p v-if="pendingInvitesLoading" class="text-xs text-neutral-500">{{ t('common.loading') }}</p>
+        <ul v-else class="space-y-2">
+          <li
+            v-for="inv in pendingBoardInvites"
+            :key="inv.id"
+            class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white border border-neutral-100 px-3 py-2"
+          >
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-neutral-900 truncate">{{ inv.board_name }}</p>
+              <p class="text-[11px] text-neutral-500">@{{ inv.owner_username }}</p>
+            </div>
+            <div class="flex gap-2 shrink-0">
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-800"
+                @click="handleDeclineBoardInvite(inv)"
+              >
+                {{ t('profile.boards.declineInvite') }}
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white"
+                @click="handleAcceptBoardInvite(inv)"
+              >
+                {{ t('profile.boards.acceptInvite') }}
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <div
           v-for="board in boards"
@@ -794,8 +892,8 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
           class="group relative bg-neutral-200 rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer hover:shadow-md transition ring-1 ring-black/5"
           role="button"
           tabindex="0"
-          @click="goToBoard(board.id)"
-          @keydown.enter.prevent="goToBoard(board.id)"
+          @click="goToBoard(board)"
+          @keydown.enter.prevent="goToBoard(board)"
         >
           <div class="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-neutral-300">
             <template v-if="board.previewImages && board.previewImages.length">
@@ -824,11 +922,14 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
               {{ board.collaboratorCount }} collab.
             </p>
           </div>
+          <div v-if="board.isOwner === false" class="absolute top-3 left-3 z-10 px-2 py-1 rounded-full bg-emerald-600/95 text-[10px] font-bold text-white pointer-events-none">
+            {{ t('profile.boards.sharedBadge') }}
+          </div>
           <div v-if="board.isPrivate" class="absolute top-3 right-3 z-10">
             <span class="material-symbols-outlined text-white text-sm drop-shadow">lock</span>
           </div>
           <button
-            v-if="isMyProfile"
+            v-if="isMyProfile && board.isOwner !== false"
             type="button"
             class="absolute top-3 right-14 z-10 w-9 h-9 rounded-full bg-white/95 shadow-md flex items-center justify-center text-neutral-700 hover:bg-white"
             :title="t('profile.share.boardTitle')"
@@ -837,7 +938,7 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
             <span class="material-symbols-outlined text-lg">ios_share</span>
           </button>
           <button
-            v-if="isMyProfile"
+            v-if="isMyProfile && board.isOwner !== false"
             type="button"
             class="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-white/95 shadow-md flex items-center justify-center text-neutral-700 hover:bg-white"
             :title="t('profile.boards.reorganize')"
@@ -846,7 +947,7 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
             <span class="material-symbols-outlined text-lg">drag_indicator</span>
           </button>
           <button
-            v-if="isMyProfile && currentPlan !== 'free'"
+            v-if="isMyProfile && currentPlan !== 'free' && board.isOwner !== false"
             class="absolute top-3 left-3 px-2 py-1 rounded-full bg-white/90 text-[10px] font-bold text-neutral-700 hover:bg-white z-10"
             @click.stop="handleInviteCollaborator(board.id)"
           >

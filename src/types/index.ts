@@ -92,6 +92,10 @@ export type User = {
     name: string
     pinCount: number
     isPrivate: boolean
+    /** Propriétaire du tableau (pour ouvrir la bonne URL quand tableau partagé). */
+    ownerUsername?: string
+    /** true si vous êtes le créateur (compte aux limites de plan ; false pour boards partagées). */
+    isOwner?: boolean
     collaboratorCount?: number
     previewImages?: string[]
     shareToken?: string | null

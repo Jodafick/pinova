@@ -68,6 +68,12 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
+      path: '/legal/:slug',
+      name: 'legal',
+      component: () => import('../pages/LegalPage.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/creator',
       name: 'creator',
       component: () => import('../pages/CreatorDashboardPage.vue'),

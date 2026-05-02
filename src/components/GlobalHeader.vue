@@ -296,6 +296,7 @@ onUnmounted(() => {
                       notification.notification_type === 'follow' ? 'person_add' :
                       notification.notification_type === 'comment' ? 'chat' :
                       notification.notification_type === 'welcome' ? 'celebration' :
+                      notification.notification_type === 'board_invite' ? 'group_add' :
                       'bookmark'
                     }}
                   </span>

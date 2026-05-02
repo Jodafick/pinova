@@ -348,9 +348,27 @@ export function useAuth() {
       id: Number(b.id),
       name: String(b.name ?? ''),
       is_private: !!(b.is_private ?? b.isPrivate),
+      /** Absent avant backend : défaut réservé (true). */
+      is_owner: b.is_owner === undefined ? true : !!b.is_owner,
       pin_count: Number(b.pin_count ?? b.pinCount ?? 0),
+      collaborator_count: Number(b.collaborator_count ?? b.collaboratorCount ?? 0),
       preview_images: (b.preview_images as string[] | undefined) ?? (b.previewImages as string[] | undefined) ?? [],
+      share_token: b.share_token as string | undefined,
+      ownerUsername: String((b.owner_username as string | undefined) || '').trim() || undefined,
     }))
+  }
+
+  async function fetchPendingBoardInvitations() {
+    const response = await api.get('board-invitations/')
+    return response.data?.results ?? []
+  }
+
+  async function acceptBoardInvitation(inviteId: number) {
+    await api.post(`board-invitations/${inviteId}/accept/`)
+  }
+
+  async function declineBoardInvitation(inviteId: number) {
+    await api.post(`board-invitations/${inviteId}/decline/`)
   }
 
   async function fetchBoardCollaborators(boardId: number) {
@@ -418,6 +436,9 @@ export function useAuth() {
     fetchBoardCollaborators,
     addBoardCollaborator,
     removeBoardCollaborator,
+    fetchPendingBoardInvitations,
+    acceptBoardInvitation,
+    declineBoardInvitation,
     manageSubscription,
     startPlusTrial,
     fetchSubscriptionInvoices,

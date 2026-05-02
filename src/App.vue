@@ -86,7 +86,7 @@ const isAuthPage = computed(() => {
     <AppAlertModal />
 
     <!-- Footer -->
-    <footer v-if="isAuthenticated && !isAuthPage && !isInitializing" class="border-t border-neutral-100 bg-white py-6 px-6 sm:px-10">
+    <footer v-if="!isInitializing && !(route.meta as any).guest" class="border-t border-neutral-100 bg-white py-6 px-6 sm:px-10">
       <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-2">
           <div class="w-6 h-6 rounded-full bg-pink-600 flex items-center justify-center overflow-hidden">
@@ -95,14 +95,16 @@ const isAuthPage = computed(() => {
           <span class="text-sm font-semibold text-neutral-700">Pinova</span>
         </div>
 
-        <nav class="flex items-center gap-5 text-xs text-neutral-500">
-          <router-link to="/" class="hover:text-neutral-700 transition">{{ t('nav.home') }}</router-link>
+        <nav class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-neutral-500">
+          <router-link v-if="isAuthenticated" to="/" class="hover:text-neutral-700 transition">{{ t('nav.home') }}</router-link>
           <router-link to="/explore" class="hover:text-neutral-700 transition">{{ t('nav.explore') }}</router-link>
-          <router-link to="/profile" class="hover:text-neutral-700 transition">{{ t('nav.profile') }}</router-link>
-          <router-link to="/settings" class="hover:text-neutral-700 transition">{{ t('nav.settings') }}</router-link>
+          <router-link v-if="isAuthenticated" to="/profile" class="hover:text-neutral-700 transition">{{ t('nav.profile') }}</router-link>
+          <router-link v-if="isAuthenticated" to="/settings" class="hover:text-neutral-700 transition">{{ t('nav.settings') }}</router-link>
+          <router-link to="/legal/privacy" class="hover:text-neutral-700 transition">{{ t('app.footer.privacy') }}</router-link>
+          <router-link to="/legal/terms" class="hover:text-neutral-700 transition">{{ t('app.footer.terms') }}</router-link>
         </nav>
 
-        <p class="text-xs text-neutral-400">
+        <p class="text-xs text-neutral-400 text-center sm:text-right">
           {{ t('app.copyright') }}
         </p>
       </div>
