@@ -6,7 +6,11 @@ import { usePins, mapDjangoPinToFrontend } from '../composables/usePins'
 import type { User, Pin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
+import ProfileHeaderSkeleton from '../components/ProfileHeaderSkeleton.vue'
+import UserListSkeleton from '../components/UserListSkeleton.vue'
+import CreatorStatsSkeleton from '../components/CreatorStatsSkeleton.vue'
 import StoryViewer from '../components/StoryViewer.vue'
+import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
@@ -25,6 +29,8 @@ const { pins, toggleSave, fetchPins, fetchCreatorStats } = usePins()
 
 const profileUser = ref<User | null>(null)
 const loading = ref(true)
+/** Dernier code HTTP si le chargement `profiles/:user/` a échoué (ex. 403, 404). */
+const profileHttpStatus = ref<number | undefined>(undefined)
 const isFollowing = ref(false)
 const followingProfilePending = ref(false)
 const creatorStatsLoading = ref(false)
@@ -38,6 +44,20 @@ const relationItems = ref<Array<{ username: string; display_name: string; avatar
 
 const isMyProfile = computed(() => {
   return !route.params.username || (currentUser.value && route.params.username === currentUser.value.username)
+})
+
+const profileUnavailableTitle = computed(() => {
+  const s = profileHttpStatus.value
+  if (s === 404) return t('profile.unavailable.notFoundTitle')
+  if (s === 403) return t('profile.unavailable.privateTitle')
+  return t('profile.unavailable.genericTitle')
+})
+
+const profileUnavailableDesc = computed(() => {
+  const s = profileHttpStatus.value
+  if (s === 404) return t('profile.unavailable.notFoundDesc')
+  if (s === 403) return t('profile.unavailable.privateDesc')
+  return t('profile.unavailable.genericDesc')
 })
 
 type Tab = 'created' | 'saved'
@@ -162,6 +182,9 @@ type BoardInviteRow = {
 
 const pendingBoardInvites = ref<BoardInviteRow[]>([])
 const pendingInvitesLoading = ref(false)
+const profileBoardsLoading = ref(false)
+const collaboratorInviteOpen = ref(false)
+const collaboratorInviteBoardId = ref<number | null>(null)
 
 async function loadPendingBoardInvites() {
   if (!currentUser.value || route.params.username) {
@@ -207,32 +230,45 @@ async function handleDeclineBoardInvite(inv: BoardInviteRow) {
 const loadProfile = async () => {
   loading.value = true
   resetSavedPinsState()
+  profileBoardsLoading.value = false
   const shareQuery = typeof route.query.share === 'string' ? route.query.share : ''
   const profileShareOpts = shareQuery ? { share: shareQuery } : undefined
 
+  profileHttpStatus.value = undefined
+
   if (!route.params.username) {
+    if (!currentUser.value) {
+      profileUser.value = null
+      loading.value = false
+      void router.replace({ name: 'login', query: { redirect: '/profile' } })
+      return
+    }
     profileUser.value = currentUser.value
-    if (profileUser.value) {
-      try {
-        const myBoards = await fetchMyBoards()
-        profileUser.value.boards = myBoards.map((board: any) => ({
-          id: board.id,
-          name: board.name,
-          pinCount: board.pin_count ?? board.pinCount ?? 0,
-          isPrivate: board.is_private ?? board.isPrivate ?? false,
-          isOwner: board.is_owner !== false,
-          ownerUsername: board.ownerUsername || profileUser.value?.username,
-          collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
-          previewImages: board.preview_images ?? board.previewImages ?? [],
-          shareToken: board.share_token ?? board.shareToken ?? undefined,
-        }))
-      } catch (err) {
-        console.error('Erreur chargement tableaux:', err)
-      }
+    profileBoardsLoading.value = true
+    try {
+      const myBoards = await fetchMyBoards()
+      profileUser.value.boards = myBoards.map((board: any) => ({
+        id: board.id,
+        name: board.name,
+        pinCount: board.pin_count ?? board.pinCount ?? 0,
+        isPrivate: board.is_private ?? board.isPrivate ?? false,
+        isOwner: board.is_owner !== false,
+        ownerUsername:
+          board.owner_username ?? board.ownerUsername ?? profileUser.value?.username,
+        collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
+        previewImages: board.preview_images ?? board.previewImages ?? [],
+        shareToken: board.share_token ?? board.shareToken ?? undefined,
+      }))
+    } catch (err) {
+      console.error('Erreur chargement tableaux:', err)
+    } finally {
+      profileBoardsLoading.value = false
     }
     isFollowing.value = false
   } else {
-    profileUser.value = await fetchUserProfile(route.params.username as string, profileShareOpts)
+    const result = await fetchUserProfile(route.params.username as string, profileShareOpts)
+    profileUser.value = result.user
+    profileHttpStatus.value = result.httpStatus
     isFollowing.value = profileUser.value?.isFollowing || false
   }
   if (isMyProfile.value && currentPlan.value === 'pro') {
@@ -323,6 +359,15 @@ const newBoardName = ref('')
 const newBoardPrivate = ref(false)
 
 const createdPins = computed(() => profilePins.value)
+
+/** Total créations visibles pour le visiteur (API `pins_count`), avec repli prudent. */
+const profilePinsTotalDisplay = computed(() => {
+  const n = profileUser.value?.pinsCount
+  if (typeof n === 'number') return { n, pending: false }
+  if (loading.value || !profileUser.value) return { n: null, pending: true }
+  if (profilePinsLoading.value) return { n: null, pending: true }
+  return { n: profilePins.value.length, pending: false }
+})
 
 const displayPins = computed(() => {
   return activeTab.value === 'created' ? createdPins.value : savedPinsList.value
@@ -519,14 +564,17 @@ const handleInviteCollaborator = async (boardId: number) => {
     await showAlert(t('profile.boards.collabRequiresPlan'), { variant: 'warning' })
     return
   }
-  const username = await showPrompt({
-    title: t('profile.boards.invitePromptTitle'),
-    message: t('profile.boards.invitePromptMessage'),
-    placeholder: t('profile.boards.invitePlaceholder'),
-  })
-  if (!username) return
+  collaboratorInviteBoardId.value = boardId
+  collaboratorInviteOpen.value = true
+}
+
+async function submitBoardCollaboratorInvite(usernameRaw: string) {
+  const boardId = collaboratorInviteBoardId.value
+  const username = usernameRaw.trim()
+  if (!boardId || !username) return
   try {
     const result = await addBoardCollaborator(boardId, username)
+    collaboratorInviteBoardId.value = null
     if ((result as { status?: string })?.status === 'invited') {
       await showAlert(t('profile.boards.inviteSent'), { variant: 'success' })
     } else {
@@ -536,13 +584,18 @@ const handleInviteCollaborator = async (boardId: number) => {
         profileUser.value.boards = [...profileUser.value.boards]
       }
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Erreur invitation collaborateur:', err)
-    await showAlert(err?.response?.data?.error || t('profile.boards.inviteError'), {
+    const ax = err as { response?: { data?: { error?: string } } }
+    await showAlert(ax.response?.data?.error || t('profile.boards.inviteError'), {
       variant: 'danger',
       title: t('modal.errorTitle'),
     })
   }
+}
+
+function onCollaboratorInvitePick(username: string) {
+  void submitBoardCollaboratorInvite(username)
 }
 
 type BoardSuggestions = {
@@ -620,7 +673,6 @@ async function saveBoardOrder() {
       pin_ids: organizePins.value.map((p) => p.id),
     })
     closeOrganizeBoard()
-    await loadProfile()
   } catch (err: any) {
     await showAlert(err?.response?.data?.error || t('profile.boards.reorderError'), {
       variant: 'danger',
@@ -726,8 +778,9 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 </script>
 
 <template>
-  <div v-if="loading" class="flex flex-col items-center justify-center py-20">
-    <div class="w-10 h-10 border-4 border-neutral-100 border-t-pink-600 rounded-full animate-spin"></div>
+  <div v-if="loading" class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <ProfileHeaderSkeleton />
+    <PinSkeleton class="mt-4" />
   </div>
 
   <div v-else-if="profileUser" class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -796,7 +849,15 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           <strong class="text-neutral-900">{{ profileUser.following }}</strong> {{ t('profile.following') }}
         </button>
         <span class="w-1 h-1 rounded-full bg-neutral-300"></span>
-        <span><strong class="text-neutral-900">{{ createdPins.length }}</strong> {{ t('profile.pinsCount') }}</span>
+        <span class="inline-flex items-center gap-1">
+          <strong v-if="!profilePinsTotalDisplay.pending" class="text-neutral-900">{{ profilePinsTotalDisplay.n }}</strong>
+          <span
+            v-else
+            class="inline-block h-5 w-8 rounded-md bg-neutral-200 animate-pulse"
+            aria-hidden="true"
+          />
+          {{ t('profile.pinsCount') }}
+        </span>
       </div>
 
       <div class="flex items-center gap-3">
@@ -879,7 +940,9 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         class="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4"
       >
         <p class="text-sm font-semibold text-neutral-900 mb-3">{{ t('profile.boards.pendingInvitesTitle') }}</p>
-        <p v-if="pendingInvitesLoading" class="text-xs text-neutral-500">{{ t('common.loading') }}</p>
+        <div v-if="pendingInvitesLoading" class="pt-1">
+          <UserListSkeleton :rows="4" :divided="false" />
+        </div>
         <ul v-else class="space-y-2">
           <li
             v-for="inv in pendingBoardInvites"
@@ -910,7 +973,16 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         </ul>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" v-if="profileBoardsLoading && isMyProfile">
+        <div
+          v-for="i in 4"
+          :key="'bsk-' + i"
+          class="rounded-2xl aspect-[4/3] bg-neutral-200 animate-pulse"
+          aria-hidden="true"
+        />
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" v-else>
         <div
           v-for="board in boards"
           :key="board.id"
@@ -1011,7 +1083,9 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         </div>
         <p class="text-xs text-neutral-500 px-5 pt-3">{{ t('profile.boards.organizeHint') }}</p>
         <div class="flex-1 overflow-y-auto px-5 py-4 min-h-[120px]">
-          <div v-if="organizeLoading" class="text-sm text-neutral-500">{{ t('common.loading') }}</div>
+          <div v-if="organizeLoading">
+            <UserListSkeleton :rows="6" thumb="rounded" :divided="false" />
+          </div>
           <ul v-else class="space-y-2">
             <li
               v-for="(p, idx) in organizePins"
@@ -1063,7 +1137,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           <span class="text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-1 rounded-full">PRO</span>
         </div>
       </div>
-      <div v-if="creatorStatsLoading" class="text-sm text-neutral-500">{{ t('common.loading') }}</div>
+      <CreatorStatsSkeleton v-if="creatorStatsLoading" />
       <div v-else class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
         <div class="rounded-xl bg-neutral-50 py-3">
           <p class="text-xs text-neutral-500">{{ t('creator.kpiPins') }}</p>
@@ -1147,28 +1221,32 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           </button>
         </div>
         <div class="max-h-96 overflow-y-auto">
-          <div v-if="relationsLoading" class="p-6 text-center text-sm text-neutral-500">{{ t('common.loading') }}</div>
-          <div v-else-if="relationItems.length === 0" class="p-6 text-center text-sm text-neutral-500">
-            {{ t('following.empty') }}
-          </div>
-          <button
-            v-for="item in relationItems"
-            :key="item.username"
-            class="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-50 text-left"
-            @click="showFollowersModal = false; showFollowingModal = false; router.push(`/profile/${item.username}`)"
-          >
-            <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center" :class="item.avatar_color || DEFAULT_AVATAR_COLOR_CLASS">
-              <img v-if="item.avatar" :src="item.avatar" class="w-full h-full object-cover" />
-              <span v-else class="text-white text-xs font-bold">{{ item.display_name?.slice(0,1) }}</span>
+          <template v-if="relationsLoading">
+            <UserListSkeleton :rows="10" />
+          </template>
+          <template v-else>
+            <div v-if="relationItems.length === 0" class="p-6 text-center text-sm text-neutral-500">
+              {{ t('following.empty') }}
             </div>
-            <div class="min-w-0">
-              <p class="text-sm text-neutral-900 truncate flex items-center gap-1">
-                <span v-if="item.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>
-                {{ item.display_name }}
-              </p>
-              <p class="text-xs text-neutral-500">@{{ item.username }}</p>
-            </div>
-          </button>
+            <button
+              v-for="item in relationItems"
+              :key="item.username"
+              class="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-50 text-left"
+              @click="showFollowersModal = false; showFollowingModal = false; router.push(`/profile/${item.username}`)"
+            >
+              <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center" :class="item.avatar_color || DEFAULT_AVATAR_COLOR_CLASS">
+                <img v-if="item.avatar" :src="item.avatar" class="w-full h-full object-cover" />
+                <span v-else class="text-white text-xs font-bold avatar-text">{{ displayInitials(item.display_name) }}</span>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm text-neutral-900 truncate flex items-center gap-1">
+                  <span v-if="item.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>
+                  {{ item.display_name }}
+                </p>
+                <p class="text-xs text-neutral-500">@{{ item.username }}</p>
+              </div>
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -1235,13 +1313,10 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     <div
       v-if="showProfileInfiniteSentinel"
       ref="infiniteScrollSentinel"
-      class="flex justify-center items-center py-10 min-h-[64px]"
+      class="w-full py-6 min-h-[72px]"
       aria-hidden="true"
     >
-      <span
-        v-if="profilePinsLoadingMore || savedPinsLoadingMore"
-        class="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"
-      />
+      <PinSkeleton v-if="profilePinsLoadingMore || savedPinsLoadingMore" />
     </div>
 
     <StoryViewer
@@ -1250,5 +1325,34 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       :pins="activeStories"
       :initial-index="storyViewerInitialIndex"
     />
+
+    <UserSearchPickModal
+      v-model="collaboratorInviteOpen"
+      :title="t('profile.boards.invitePromptTitle')"
+      :message="t('profile.boards.inviteSearchMessage')"
+      :input-placeholder="t('profile.boards.invitePlaceholder')"
+      @pick="onCollaboratorInvitePick"
+    />
+  </div>
+
+  <div v-else class="max-w-md mx-auto px-6 py-20 text-center space-y-4">
+    <span class="material-symbols-outlined text-6xl text-neutral-300">person_off</span>
+    <h1 class="text-xl font-bold text-neutral-900">{{ profileUnavailableTitle }}</h1>
+    <p class="text-sm text-neutral-600 leading-relaxed">{{ profileUnavailableDesc }}</p>
+    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+      <router-link
+        to="/"
+        class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition"
+      >
+        {{ t('profile.unavailable.goHome') }}
+      </router-link>
+      <router-link
+        v-if="route.params.username"
+        :to="{ name: 'login', query: { redirect: route.fullPath } }"
+        class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-neutral-100 text-neutral-800 text-sm font-semibold hover:bg-neutral-200 transition"
+      >
+        {{ t('profile.unavailable.goLogin') }}
+      </router-link>
+    </div>
   </div>
 </template>

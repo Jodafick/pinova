@@ -121,19 +121,10 @@ const plans = computed(() => [
       { label: t('premium.feature.adsEnabled'), included: true },
       { label: t('premium.feature.partnerAdsEnabled'), included: true },
       { label: t('premium.feature.noTracking'), included: true },
-      { label: t('premium.feature.unlimitedPins'), included: true },
-      { label: t('premium.feature.stories'), included: true },
-      { label: t('premium.feature.visibilityControls'), included: true },
-      { label: t('premium.feature.feedPersonalization'), included: true },
-      { label: t('premium.feature.topicMultilingual'), included: true },
-      { label: t('premium.feature.hashtags'), included: true },
-      { label: t('premium.feature.mentionsComments'), included: true },
-      { label: t('premium.feature.commentsPolicyFeat'), included: true },
       { label: t('premium.feature.moderationReport'), included: true },
       { label: t('premium.feature.nsfwClientBlur'), included: true },
-      { label: t('premium.feature.notificationsPush'), included: true },
-      { label: t('premium.feature.privateTagsFree'), included: false },
       { label: t('premium.feature.boardsFreeLimits'), included: true },
+      { label: t('premium.feature.privateTagsFree'), included: false },
       { label: t('premium.feature.gifs'), included: false },
       { label: t('premium.feature.collabBoards'), included: false },
       { label: t('premium.feature.download'), included: false },
@@ -220,7 +211,7 @@ const confirmPaymentTransaction = async (
     }
     const response = await api.post('subscription/confirm/', payload)
     if (response.data?.status === 'approved') {
-      await fetchCurrentUser()
+      await fetchCurrentUser({ silent: true })
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
       }

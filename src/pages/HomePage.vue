@@ -33,22 +33,21 @@ const filteredPins = computed(() => {
 })
 
 const handleScroll = () => {
-  const scrollHeight = document.documentElement.scrollHeight
-  const scrollTop = document.documentElement.scrollTop
-  const clientHeight = document.documentElement.clientHeight
+  const root = document.scrollingElement ?? document.documentElement
+  const scrollTop = root.scrollTop
+  const scrollHeight = root.scrollHeight
+  const clientHeight = root.clientHeight
 
-  if (scrollTop + clientHeight >= scrollHeight - 100) {
-    if (hasNextPage.value && !isFetchingNextPage.value) {
-      fetchHomeFeed(false, activeTopic.value)
+  if (scrollTop + clientHeight >= scrollHeight - 160) {
+    if (hasNextPage.value && !isFetchingNextPage.value && !loading.value) {
+      void fetchHomeFeed(false, activeTopic.value)
     }
   }
 }
 
 onMounted(() => {
-  if (pins.value.length === 0) {
-    fetchHomeFeed(true, activeTopic.value)
-  }
-  window.addEventListener('scroll', handleScroll)
+  void fetchHomeFeed(true, activeTopic.value)
+  window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
 onUnmounted(() => {

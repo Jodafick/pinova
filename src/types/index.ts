@@ -33,6 +33,8 @@ export type Pin = {
     name: string
     isPrivate?: boolean
     position?: number
+    /** Propriétaire du tableau (URL `/profile/:user/board/:id`). */
+    ownerUsername?: string
   }[]
   tall?: boolean
   saved?: boolean
@@ -104,6 +106,8 @@ export type User = {
   }[]
   /** ISO YYYY-MM-DD — réservé au propriétaire ; obligatoire pour publier du média */
   birthDate?: string | null
+  /** Nombre de pins créés visibles pour le visiteur (API `pins_count`). */
+  pinsCount?: number
 }
 
 export type Notification = {

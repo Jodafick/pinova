@@ -11,7 +11,7 @@ import api from '../api'
 const { t } = useI18n()
 const router = useRouter()
 const { toggleSavePin, toggleFollow } = useAuth()
-const { pins, loading, isFetchingNextPage, hasNextPage, fetchFollowingPins, toggleSave } = usePins()
+const { pins, loading, isFetchingNextPage, fetchFollowingPins, toggleSave } = usePins()
 const followingPins = ref<any[]>([])
 const suggestionsLoading = ref(false)
 const suggestions = ref<Array<{ username: string; display_name: string; avatar_color: string; avatar?: string | null; is_pro?: boolean; reason?: string }>>([])
@@ -84,7 +84,22 @@ const followSuggestedUser = async (username: string) => {
 
       <div class="mt-6 text-left max-w-2xl mx-auto">
         <p class="text-sm font-semibold text-neutral-800 mb-3">{{ t('following.suggest') }}</p>
-        <div v-if="suggestionsLoading" class="text-sm text-neutral-500">{{ t('common.loading') }}</div>
+        <div v-if="suggestionsLoading" class="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-pulse" aria-hidden="true">
+          <div
+            v-for="s in 4"
+            :key="s"
+            class="border border-neutral-200 rounded-xl p-3 flex items-center justify-between gap-3"
+          >
+            <div class="flex gap-3 min-w-0 flex-1">
+              <div class="w-9 h-9 rounded-full bg-neutral-200 shrink-0" />
+              <div class="space-y-2 flex-1 pt-1 min-w-0">
+                <div class="h-3 bg-neutral-200 rounded w-[70%]" />
+                <div class="h-2.5 bg-neutral-100 rounded w-[40%]" />
+              </div>
+            </div>
+            <div class="h-7 w-[4.25rem] rounded-full bg-neutral-200 shrink-0" />
+          </div>
+        </div>
         <div v-else-if="suggestions.length === 0" class="text-sm text-neutral-500">{{ t('header.notifications.empty') }}</div>
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div v-for="suggestion in suggestions" :key="suggestion.username" class="border border-neutral-200 rounded-xl p-3 flex items-center justify-between gap-3">
@@ -116,6 +131,6 @@ const followSuggestedUser = async (username: string) => {
       @open-pin="openPin"
     />
 
-    <PinSkeleton v-if="isFetchingNextPage || hasNextPage" class="mt-6 hidden" />
+    <PinSkeleton v-if="isFetchingNextPage" class="mt-6" />
   </div>
 </template>

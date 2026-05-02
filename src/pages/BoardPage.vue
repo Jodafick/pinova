@@ -2,6 +2,9 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PinGrid from '../components/PinGrid.vue'
+import PinSkeleton from '../components/PinSkeleton.vue'
+import BoardHeaderSkeleton from '../components/BoardHeaderSkeleton.vue'
+import UserListSkeleton from '../components/UserListSkeleton.vue'
 import api from '../api'
 import { mapDjangoPinToFrontend, usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -100,6 +103,22 @@ function closeOrganize() {
   organizePins.value = []
 }
 
+/** Aligne boardPins sur l’ordre du modal après succès POST (sans refetch). */
+function reorderBoardPinsFromOrganizeModal() {
+  const orderIds = organizePins.value.map((p) => p.id)
+  if (orderIds.length === 0) return
+  const byId = new Map(boardPins.value.map((p) => [p.id, p]))
+  const ordered: Pin[] = []
+  for (const id of orderIds) {
+    const pin = byId.get(id)
+    if (pin) ordered.push(pin)
+  }
+  for (const pin of boardPins.value) {
+    if (!orderIds.includes(pin.id)) ordered.push(pin)
+  }
+  boardPins.value = ordered
+}
+
 async function saveBoardOrder() {
   if (!boardId.value) return
   organizeSaving.value = true
@@ -107,8 +126,8 @@ async function saveBoardOrder() {
     await api.post(`boards/${boardId.value}/reorder-pins/`, {
       pin_ids: organizePins.value.map((p) => p.id),
     })
+    reorderBoardPinsFromOrganizeModal()
     closeOrganize()
-    await loadBoard()
   } catch (err: any) {
     await showAlert(err?.response?.data?.error || t('board.organizeError'), {
       variant: 'danger',
@@ -184,8 +203,9 @@ watch([boardId, () => route.query.share], loadBoard)
       {{ t('common.back') }}
     </button>
 
-    <div v-if="loading" class="flex justify-center py-20">
-      <div class="w-10 h-10 border-4 border-neutral-100 border-t-pink-600 rounded-full animate-spin"></div>
+    <div v-if="loading" class="animate-pulse">
+      <BoardHeaderSkeleton />
+      <PinSkeleton class="mt-8" />
     </div>
 
     <div v-else-if="loadError === 'not_found'" class="text-center py-16 text-neutral-600">
@@ -248,7 +268,9 @@ watch([boardId, () => route.query.share], loadBoard)
         </div>
         <p class="text-xs text-neutral-500 px-5 pt-3">{{ t('profile.boards.organizeHint') }}</p>
         <div class="flex-1 overflow-y-auto px-5 py-4 min-h-[120px]">
-          <div v-if="organizeLoading" class="text-sm text-neutral-500">{{ t('common.loading') }}</div>
+          <div v-if="organizeLoading" class="min-h-[140px]">
+            <UserListSkeleton :rows="7" thumb="rounded" :divided="false" />
+          </div>
           <ul v-else class="space-y-2">
             <li
               v-for="(p, idx) in organizePins"

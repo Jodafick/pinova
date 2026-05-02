@@ -45,13 +45,14 @@ const loadCategories = async (query = '') => {
 }
 
 const handleScroll = () => {
-  const scrollHeight = document.documentElement.scrollHeight
-  const scrollTop = document.documentElement.scrollTop
-  const clientHeight = document.documentElement.clientHeight
+  const root = document.scrollingElement ?? document.documentElement
+  const scrollTop = root.scrollTop
+  const scrollHeight = root.scrollHeight
+  const clientHeight = root.clientHeight
 
-  if (scrollTop + clientHeight >= scrollHeight - 100) {
-    if (hasNextPage.value && !isFetchingNextPage.value) {
-      fetchDiscoverPins(false, selectedCategory.value)
+  if (scrollTop + clientHeight >= scrollHeight - 160) {
+    if (hasNextPage.value && !isFetchingNextPage.value && !loading.value) {
+      void fetchDiscoverPins(false, selectedCategory.value)
     }
   }
 }
@@ -59,7 +60,7 @@ const handleScroll = () => {
 onMounted(async () => {
   await loadCategories('')
   await fetchDiscoverPins(true)
-  window.addEventListener('scroll', handleScroll)
+  window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
 onUnmounted(() => {

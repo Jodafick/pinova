@@ -55,7 +55,8 @@ const load = async () => {
 }
 
 onMounted(async () => {
-  await fetchCurrentUser().catch(() => undefined)
+  // silent: évite isInitializing → App masque <main> et démonte cette page (boucle de spinner).
+  await fetchCurrentUser({ silent: true }).catch(() => undefined)
   if (!isAuthenticated.value) {
     router.replace('/login')
     return

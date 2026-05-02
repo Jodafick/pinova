@@ -3,8 +3,10 @@ import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePins, getFullMediaUrl } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
+import { displayInitials } from '../utils/displayInitials'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
+import PinDetailSkeleton from '../components/PinDetailSkeleton.vue'
 import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
 import { useI18n } from '../i18n'
@@ -78,6 +80,10 @@ const translatingDescription = ref(false)
 const submittingComment = ref(false)
 const downloadingPin = ref(false)
 const commentsPolicySaving = ref(false)
+const pinDetailLoading = ref(true)
+const pinDetailNotFound = ref(false)
+
+let resolvePinGeneration = 0
 
 /** `true` = paysage, `false` = portrait, `null` = pas encore chargé. */
 const detailImageLandscape = ref<boolean | null>(null)
@@ -94,25 +100,48 @@ function onDetailVideoLoadedMetadata(e: Event) {
   detailImageLandscape.value = v.videoWidth >= v.videoHeight
 }
 
-onMounted(async () => {
-  if (pins.value.length === 0 || !pin.value) {
-    await fetchPins()
+async function resolvePinDetail() {
+  const slug = pinSlug.value
+  const generation = ++resolvePinGeneration
+  pinDetailLoading.value = true
+  pinDetailNotFound.value = false
+  detailImageLandscape.value = null
+  richComments.value = []
+  commentsTotalCount.value = 0
+  try {
+    await fetchPinBySlug(slug)
+  } catch {
+    if (generation !== resolvePinGeneration) return
+    pinDetailNotFound.value = true
+  } finally {
+    if (generation === resolvePinGeneration) {
+      pinDetailLoading.value = false
+    }
   }
-  if (pin.value?.slug) {
+  if (generation !== resolvePinGeneration || pinSlug.value !== slug) return
+  if (pin.value && pin.value.slug === slug) {
+    pinDetailNotFound.value = false
+    descriptionText.value = pin.value.description
     void trackPinView(pin.value.slug)
+    try {
+      await loadComments(true)
+    } catch (err) {
+      console.error('Erreur lors du chargement des commentaires', err)
+    }
+  } else if (generation === resolvePinGeneration && pinSlug.value === slug) {
+    pinDetailNotFound.value = true
   }
-  await loadPinMetadata()
+}
+
+onMounted(async () => {
+  if (pins.value.length === 0) {
+    void fetchPins()
+  }
+  await resolvePinDetail()
 })
 
 watch(pinSlug, async () => {
-  detailImageLandscape.value = null
-  if (!pin.value) {
-    await fetchPins(true)
-  }
-  if (pin.value?.slug) {
-    void trackPinView(pin.value.slug)
-  }
-  await loadPinMetadata()
+  await resolvePinDetail()
 })
 
 watch(
@@ -291,23 +320,6 @@ const setCommentSort = async (sort: 'recent' | 'relevant') => {
     window.localStorage.setItem('pinova_comment_sort', sort)
   }
   await loadComments(true)
-}
-
-const loadPinMetadata = async () => {
-  if (pinSlug.value) {
-    try {
-      await fetchPinBySlug(pinSlug.value)
-    } catch {
-      // Pin peut être absent du fil chargé ; l’API détail peut refuser selon la visibilité.
-    }
-  }
-  try {
-    await loadComments(true)
-  } catch (err) {
-    console.error('Erreur lors du chargement des commentaires', err)
-  }
-  if (!pin.value) return
-  descriptionText.value = pin.value.description
 }
 
 const handleRichSubmit = async (
@@ -644,8 +656,13 @@ const openRelatedPin = (slug: string) => {
 
 <template>
   <div class="min-h-screen">
+    <PinDetailSkeleton v-if="pinDetailLoading" />
+
     <!-- Not found -->
-    <div v-if="!pin" class="flex flex-col items-center justify-center py-32 text-center px-6">
+    <div
+      v-else-if="pinDetailNotFound || !pin"
+      class="flex flex-col items-center justify-center py-32 text-center px-6"
+    >
       <span class="material-symbols-outlined text-7xl text-neutral-300 mb-4">broken_image</span>
       <h1 class="text-2xl font-bold text-neutral-800 mb-2">{{ t('pin.notFound.title') }}</h1>
       <p class="text-neutral-500 mb-6">{{ t('pin.notFound.desc') }}</p>
@@ -864,7 +881,7 @@ const openRelatedPin = (slug: string) => {
                   :class="pin.userAvatarColor"
                 >
                   <img v-if="pin.userAvatarUrl" :src="pin.userAvatarUrl" class="w-full h-full object-cover" />
-                  <span v-else class="avatar-text">{{ pin.user[0] }}</span>
+                  <span v-else class="avatar-text">{{ displayInitials(pin.user) }}</span>
                 </div>
                 <div>
                   <p class="text-sm font-bold text-neutral-900">{{ pin.user }}</p>
@@ -920,13 +937,15 @@ const openRelatedPin = (slug: string) => {
               </span>
             </div>
             <div v-if="pin.boards && pin.boards.length" class="mb-5 flex flex-wrap gap-2">
-              <span
+              <router-link
                 v-for="board in pin.boards"
                 :key="board.id"
-                class="px-2.5 py-1 rounded-full bg-purple-50 text-xs font-semibold text-purple-700"
+                :to="`/profile/${board.ownerUsername || pin.username}/board/${board.id}`"
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-xs font-semibold text-purple-700 hover:bg-purple-100 transition"
               >
+                <span class="material-symbols-outlined text-sm" aria-hidden="true">dashboard</span>
                 {{ board.name }}
-              </span>
+              </router-link>
             </div>
 
             <!-- Comments section (rich) -->

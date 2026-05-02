@@ -7,6 +7,7 @@ import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
+import StorySegmentedProgressBar from './StorySegmentedProgressBar.vue'
 import { viewerCanRevealSensitiveMedia } from '../composables/useModeration'
 
 const props = defineProps<{
@@ -43,6 +44,8 @@ const progressAnimKey = ref(0)
 const slideDurationMs = ref(DEFAULT_IMAGE_MS)
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
+/** Incrémenté à chaque segment pour ignorer timeouts / événements obsolètes */
+const segmentPlaybackId = ref(0)
 
 function bumpProgressAnimation() {
   progressAnimKey.value++
@@ -58,19 +61,35 @@ function clearAdvance() {
 function scheduleAdvance() {
   clearAdvance()
   if (!props.modelValue || props.pins.length === 0) return
-  advanceTimer = setTimeout(goNext, slideDurationMs.value)
+  const playbackId = segmentPlaybackId.value
+  const delay = slideDurationMs.value
+  advanceTimer = setTimeout(() => {
+    advanceTimer = null
+    if (playbackId !== segmentPlaybackId.value) return
+    goNext()
+  }, delay)
 }
 
 function restartCurrentSegment() {
   expandedDesc.value = false
+  segmentPlaybackId.value++
   clearAdvance()
   bumpProgressAnimation()
   const pin = props.pins[index.value]
   if (!pin || !props.modelValue) return
   slideDurationMs.value = DEFAULT_IMAGE_MS
+
   if (pin.storyVideoUrl?.trim()) {
+    const playbackId = segmentPlaybackId.value
+    slideDurationMs.value = DEFAULT_IMAGE_MS
+    advanceTimer = setTimeout(() => {
+      advanceTimer = null
+      if (playbackId !== segmentPlaybackId.value) return
+      goNext()
+    }, MAX_VIDEO_MS)
     return
   }
+
   scheduleAdvance()
 }
 
@@ -181,9 +200,24 @@ function onStoryVideoLoadedMetadata(e: Event) {
   let ms = Math.round(v.duration * 1000)
   if (!Number.isFinite(ms) || ms <= 0) ms = DEFAULT_IMAGE_MS
   ms = Math.min(Math.max(ms, MIN_VIDEO_MS), MAX_VIDEO_MS)
+  clearAdvance()
   slideDurationMs.value = ms
   bumpProgressAnimation()
-  scheduleAdvance()
+  const slackMs = Math.min(800, Math.max(220, Math.round(ms * 0.06)))
+  const playbackId = segmentPlaybackId.value
+  advanceTimer = setTimeout(() => {
+    advanceTimer = null
+    if (playbackId !== segmentPlaybackId.value) return
+    goNext()
+  }, ms + slackMs)
+}
+
+/** Fin lecture vidéo : prioritaire sur le timer avec marge. */
+function onStoryVideoEnded() {
+  const pin = props.pins[index.value]
+  if (!pin?.storyVideoUrl?.trim()) return
+  clearAdvance()
+  goNext()
 }
 
 async function doLike() {
@@ -254,21 +288,12 @@ onUnmounted(() => {
     >
       <!-- Progress + auteur -->
       <div class="shrink-0 z-50 px-2 pt-safe pt-3 space-y-2">
-        <div class="flex gap-1">
-          <div
-            v-for="(_, si) in pins"
-            :key="si"
-            class="h-0.5 flex-1 rounded-full bg-white/15 overflow-hidden"
-          >
-            <div v-if="si < index" class="h-full w-full bg-white rounded-full" />
-            <div
-              v-else-if="si === index"
-              :key="`bar-${si}-${progressAnimKey}`"
-              class="story-progress-segment h-full bg-white rounded-full"
-              :style="{ animationDuration: `${slideDurationMs}ms` }"
-            />
-          </div>
-        </div>
+        <StorySegmentedProgressBar
+          :segment-count="pins.length"
+          :current-index="index"
+          :active-duration-ms="slideDurationMs"
+          :animation-key="progressAnimKey"
+        />
         <div class="flex justify-center px-2 pb-1">
           <button
             type="button"
@@ -358,7 +383,7 @@ onUnmounted(() => {
                 muted
                 autoplay
                 @loadedmetadata="onStoryVideoLoadedMetadata"
-                @ended="goNext"
+                @ended="onStoryVideoEnded"
                 @contextmenu.prevent
               />
             </PinSensitiveMedia>
@@ -454,20 +479,6 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-.story-progress-segment {
-  width: 0%;
-  animation-name: story-progress-grow;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
-}
-@keyframes story-progress-grow {
-  from {
-    width: 0%;
-  }
-  to {
-    width: 100%;
-  }
 }
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);

@@ -104,7 +104,14 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     },
     boards: djangoUser.boards || [],
     birthDate: birthNormalized,
+    pinsCount: typeof djangoUser.pins_count === 'number' ? djangoUser.pins_count : undefined,
   }
+}
+
+export type FetchUserProfileResult = {
+  user: User | null
+  /** Statut HTTP en cas d’échec (404, 403, etc.) — absent si succès réseau. */
+  httpStatus?: number
 }
 
 export function useAuth() {
@@ -166,14 +173,19 @@ export function useAuth() {
     }
   }
 
-  async function fetchUserProfile(username: string, opts?: { share?: string | null }): Promise<User | null> {
+  async function fetchUserProfile(
+    username: string,
+    opts?: { share?: string | null },
+  ): Promise<FetchUserProfileResult> {
     try {
       const params = opts?.share ? { share: opts.share } : {}
       const response = await api.get(`profiles/${username}/`, { params })
-      return mapDjangoUserToFrontend(response.data)
-    } catch (err) {
+      return { user: mapDjangoUserToFrontend(response.data) }
+    } catch (err: unknown) {
+      const ax = err as { response?: { status?: number } }
+      const status = ax.response?.status
       console.error(`❌ Erreur lors du chargement du profil ${username}:`, err)
-      return null
+      return { user: null, httpStatus: status }
     }
   }
 

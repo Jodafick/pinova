@@ -2,7 +2,6 @@
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from './composables/useAuth'
-import { usePins } from './composables/usePins'
 import { useI18n } from './i18n'
 import GlobalHeader from './components/GlobalHeader.vue'
 import AppAlertModal from './components/AppAlertModal.vue'
@@ -10,7 +9,6 @@ import { devLog } from './devLog'
 
 const route = useRoute()
 const { fetchCurrentUser, isAuthenticated, isInitializing, currentUser } = useAuth()
-const { fetchPins } = usePins()
 const { t, setLang, currentLang, languages } = useI18n()
 // Apply current language on app start (sets html lang/dir attributes).
 setLang(currentLang.value)
@@ -50,10 +48,7 @@ useOneTap({
 onMounted(async () => {
   devLog('🚀 App mounted, initializing...')
   try {
-    await Promise.all([
-      fetchCurrentUser(),
-      fetchPins()
-    ])
+    await fetchCurrentUser()
     const preferred = currentUser.value?.preferredLanguage
     if (preferred && languages.some((lang) => lang.code === preferred)) {
       setLang(preferred as typeof languages[number]['code'])

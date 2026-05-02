@@ -5,6 +5,7 @@ import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
+import { displayInitials } from '../utils/displayInitials'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
 import { viewerCanRevealSensitiveMedia } from '../composables/useModeration'
 import { useDataSaver } from '../composables/useDataSaver'
@@ -259,7 +260,7 @@ onUnmounted(() => {
               :class="pin.userAvatarColor"
             >
               <img v-if="pin.userAvatarUrl" :src="pin.userAvatarUrl" class="w-full h-full object-cover" />
-              <span v-else class="avatar-text">{{ pin.user[0] }}</span>
+              <span v-else class="avatar-text">{{ displayInitials(pin.user) }}</span>
             </div>
             <span class="text-xs text-neutral-600 truncate font-medium">{{ pin.user }}</span>
           </router-link>
@@ -273,6 +274,19 @@ onUnmounted(() => {
               {{ formatCount(pin.stats.reactions) }}
               <span class="material-symbols-outlined text-xs fill-1" :class="pin.liked ? 'text-pink-600' : 'text-neutral-600'">favorite</span>
             </span>
+          </div>
+          <div v-if="pin.boards?.length" class="mt-2 flex flex-wrap gap-1.5">
+            <router-link
+              v-for="board in pin.boards.slice(0, 2)"
+              :key="board.id"
+              :to="`/profile/${board.ownerUsername || pin.username}/board/${board.id}`"
+              class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-purple-50 text-[10px] font-semibold text-purple-700 hover:bg-purple-100 max-w-full"
+              :title="board.name"
+              @click.stop
+            >
+              <span class="material-symbols-outlined text-xs shrink-0" aria-hidden="true">dashboard</span>
+              <span class="truncate">{{ board.name }}</span>
+            </router-link>
           </div>
         </div>
       </article>

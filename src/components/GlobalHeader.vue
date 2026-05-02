@@ -290,17 +290,17 @@ onUnmounted(() => {
                 :class="{ 'bg-blue-50/30': !notification.is_read }"
                 @click="handleNotificationClick(notification)"
               >
-                <div class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-neutral-600">
-                    {{
-                      notification.notification_type === 'follow' ? 'person_add' :
-                      notification.notification_type === 'comment' ? 'chat' :
-                      notification.notification_type === 'welcome' ? 'celebration' :
-                      notification.notification_type === 'board_invite' ? 'group_add' :
-                      notification.notification_type === 'scheduled_publish' ? 'schedule_send' :
-                      'bookmark'
-                    }}
-                  </span>
+                <div
+                  class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold overflow-hidden avatar-shadow ring-1 ring-neutral-100"
+                  :class="notification.sender_avatar_url ? 'bg-neutral-100' : (notification.sender_avatar_color || DEFAULT_AVATAR_COLOR_CLASS)"
+                >
+                  <img
+                    v-if="notification.sender_avatar_url"
+                    :src="notification.sender_avatar_url"
+                    alt=""
+                    class="w-full h-full object-cover"
+                  />
+                  <span v-else class="text-white leading-none">{{ displayInitials(notification.sender_username) }}</span>
                 </div>
                 <div class="flex-1">
                   <p v-if="notification.title" class="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 mb-0.5">

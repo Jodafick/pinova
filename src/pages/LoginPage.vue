@@ -1,14 +1,24 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useTokenClient } from 'vue3-google-signin'
 import { GOOGLE_SIGN_IN_SCOPES } from '../env'
 import { useI18n } from '../i18n'
 
 const router = useRouter()
+const route = useRoute()
 const { login, socialLogin } = useAuth()
 const { t } = useI18n()
+
+function goAfterLogin() {
+  const raw = route.query.redirect
+  if (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) {
+    void router.push(raw)
+    return
+  }
+  void router.push('/')
+}
 
 const email = ref('')
 const password = ref('')
@@ -34,7 +44,7 @@ const handleLogin = async () => {
   // login() appelle déjà fetchCurrentUser() mais on peut forcer une petite pause
   // ou vérifier si currentUser est rempli
   loading.value = false
-  router.push('/')
+  void goAfterLogin()
 }
 
 const { login: googleLogin } = useTokenClient({
@@ -44,7 +54,7 @@ const { login: googleLogin } = useTokenClient({
     const result = await socialLogin('google', response.access_token)
     if (result.success) {
       loading.value = false
-      router.push('/')
+      void goAfterLogin()
     } else {
       loading.value = false
       error.value = result.error || t('login.error.google')

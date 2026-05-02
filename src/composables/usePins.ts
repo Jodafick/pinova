@@ -62,6 +62,7 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
       name: board.name,
       isPrivate: !!board.is_private,
       position: typeof board.position === 'number' ? board.position : undefined,
+      ownerUsername: board.owner_username || djangoPin.author_profile?.username || undefined,
     })),
     scheduledPublishAt: djangoPin.scheduled_publish_at || null,
     createdAt: djangoPin.created_at,

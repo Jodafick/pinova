@@ -2,10 +2,10 @@
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import 'emoji-picker-element'
 import { useI18n } from '../i18n'
-import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
-import { getFullMediaUrl } from '../composables/usePins'
+import { useAuth } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
-import api from '../api'
+import { fetchMentionUsersPage } from '../composables/useUserSuggestSearch'
+import { displayInitials } from '../utils/displayInitials'
 
 const { t } = useI18n()
 const { currentUser } = useAuth()
@@ -40,7 +40,9 @@ const trendingGifs = [
   { id: 6, label: 'Thumbs', preview: 'https://media.tenor.com/HtdAulSCQDoAAAAi/like-thumbs-up.gif' },
 ]
 
-const suggestedUsers = ref<{ username: string; name: string; avatarColor: string; avatarUrl: string }[]>([])
+const suggestedUsers = ref<
+  { username: string; name: string; avatarColor: string; avatarUrl: string; relation: string }[]
+>([])
 let mentionTimer: ReturnType<typeof setTimeout> | null = null
 
 const mentionFilter = ref('')
@@ -48,11 +50,14 @@ const mentionPage = ref(1)
 const mentionHasNext = ref(false)
 const mentionLoading = ref(false)
 
-const filteredUsers = computed(() => {
-  if (!mentionFilter.value) return suggestedUsers.value
-  const q = mentionFilter.value.toLowerCase()
-  return suggestedUsers.value.filter(u => u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q))
-})
+function relationMentionLabel(rel: string) {
+  if (!rel) return ''
+  if (rel === 'mutual') return t('userSuggest.relation.mutual')
+  if (rel === 'following') return t('userSuggest.relation.following')
+  if (rel === 'follower') return t('userSuggest.relation.follower')
+  if (rel === 'often_viewed') return t('userSuggest.relation.oftenViewed')
+  return ''
+}
 const canUseGifComments = computed(() => {
   const plan = currentUser.value?.subscription?.plan || 'free'
   return plan === 'plus' || plan === 'pro'
@@ -78,23 +83,22 @@ const fetchMentionUsers = async (query: string, reset = true) => {
     suggestedUsers.value = []
   }
   try {
-    const response = await api.get('users/mentions/', { params: { q: query, page: mentionPage.value, page_size: 10 } })
-    const payload = response.data || {}
-    const users = Array.isArray(payload) ? payload : payload.results || []
-    const mapped = users.map((user: any) => ({
-      username: user.username,
-      name: user.display_name || user.username,
-      avatarColor: user.avatar_color || DEFAULT_AVATAR_COLOR_CLASS,
-      avatarUrl: getFullMediaUrl(user.avatar ?? ''),
+    const { users, nextUrl } = await fetchMentionUsersPage(query, mentionPage.value, 10)
+    const mapped = users.map((u) => ({
+      username: u.username,
+      name: u.name,
+      avatarColor: u.avatarColor,
+      avatarUrl: u.avatarUrl,
+      relation: u.relation,
     }))
     suggestedUsers.value = reset
       ? mapped
       : [
           ...suggestedUsers.value,
-          ...mapped.filter((u: { username: string }) => !suggestedUsers.value.some((e) => e.username === u.username)),
+          ...mapped.filter((u) => !suggestedUsers.value.some((e) => e.username === u.username)),
         ]
-    mentionHasNext.value = !!payload.next
-    if (payload.next) {
+    mentionHasNext.value = !!nextUrl
+    if (nextUrl) {
       mentionPage.value += 1
     }
   } catch (err) {
@@ -462,29 +466,36 @@ defineExpose({ setReply })
 
     <!-- Mention list dropdown -->
     <div
-      v-if="showMentionList && filteredUsers.length"
-      class="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden z-30"
+      v-if="showMentionList && (suggestedUsers.length || mentionLoading)"
+      class="absolute bottom-full left-0 mb-2 w-[min(100vw-2rem,20rem)] max-w-[20rem] bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden z-30"
     >
       <div class="px-4 py-2 text-[11px] uppercase tracking-wider text-neutral-400 font-semibold border-b border-neutral-100">
         {{ t('comment.mention.list') }}
       </div>
       <div class="max-h-60 overflow-y-auto py-1" @scroll="handleMentionListScroll">
+        <div v-if="mentionLoading && suggestedUsers.length === 0" class="flex justify-center py-6">
+          <span class="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+        </div>
         <button
-          v-for="user in filteredUsers"
+          v-for="user in suggestedUsers"
           :key="user.username"
+          type="button"
           class="w-full flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 transition text-left"
           @click="insertMention(user.username)"
         >
           <div
-            class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden shrink-0"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden shrink-0 avatar-shadow"
             :class="user.avatarUrl ? 'bg-neutral-100' : user.avatarColor"
           >
             <img v-if="user.avatarUrl" :src="user.avatarUrl" alt="" class="w-full h-full object-cover" />
-            <span v-else>{{ user.name[0] }}</span>
+            <span v-else class="avatar-text leading-none">{{ displayInitials(user.name) }}</span>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-neutral-800 truncate">{{ user.name }}</p>
             <p class="text-xs text-neutral-500 truncate">@{{ user.username }}</p>
+            <p v-if="relationMentionLabel(user.relation)" class="text-[10px] font-semibold text-pink-600 truncate">
+              {{ relationMentionLabel(user.relation) }}
+            </p>
           </div>
         </button>
       </div>
