@@ -10,7 +10,6 @@ const router = useRouter()
 const { currentUser, isAuthenticated, fetchCurrentUser } = useAuth()
 
 const billingCycle = ref<'monthly' | 'yearly'>('monthly')
-const selectedPlan = ref<string | null>('plus')
 const checkoutPendingPlan = ref<string | null>(null)
 const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
@@ -308,9 +307,6 @@ onMounted(() => {
     .finally(() => {
       pricingLoading.value = false
     })
-  if (currentUser.value?.subscription?.plan) {
-    selectedPlan.value = currentUser.value.subscription.plan
-  }
   handlePopupCallbackReturn().catch(() => undefined)
 })
 

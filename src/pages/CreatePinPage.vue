@@ -143,6 +143,7 @@ const submitPin = async () => {
     const formData = new FormData()
     formData.append('title', title.value)
     formData.append('description', description.value || '')
+    formData.append('link', link.value || '')
     formData.append('image', imageFile.value)
     const resolvedTopic = topic.value || categorySearch.value.trim() || 'Général'
     formData.append('topic', resolvedTopic)

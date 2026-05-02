@@ -42,6 +42,11 @@ export type User = {
   preferredLanguage?: string
   preferredCurrency?: string
   countryCode?: string
+  privateProfile?: boolean
+  discoverableProfile?: boolean
+  notificationsFollowers?: boolean
+  notificationsSaves?: boolean
+  notificationsRecommendations?: boolean
   avatarUrl?: string
   avatarColor: string
   bio: string
@@ -58,6 +63,8 @@ export type User = {
     partnerAdsEnabled?: boolean
     tipsEnabled?: boolean
     tipsUrl?: string
+    cancelAtPeriodEnd?: boolean
+    scheduledPlan?: 'free' | 'plus' | 'pro' | null
   }
   boards?: {
     id: number

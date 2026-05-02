@@ -42,7 +42,7 @@ function mapDjangoPinToFrontend(djangoPin: any): Pin {
     userAvatarColor: author.avatar_color || 'bg-gray-400',
     authorTipsEnabled: !!author.tips_enabled,
     authorTipsUrl: author.tips_url || '',
-    link: '',
+    link: djangoPin.link || '',
     stats: { 
       saves: djangoPin.saves_count || 0, 
       reactions: djangoPin.likes_count || 0 

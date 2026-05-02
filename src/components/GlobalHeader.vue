@@ -20,6 +20,7 @@ const showNotifications = ref(false)
 const showSearchResults = ref(false)
 const showMessages = ref(false)
 const conversations = ref<any[]>([])
+const messagesEnabled = ref(true)
 const isOffline = ref(!navigator.onLine)
 let searchTrackTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -82,12 +83,15 @@ const fetchConversations = async () => {
   try {
     const response = await api.get('conversations/')
     conversations.value = response.data.results || response.data
+    messagesEnabled.value = true
   } catch (err) {
-    console.error('Error fetching conversations:', err)
+    messagesEnabled.value = false
+    conversations.value = []
   }
 }
 
 const handleConversationClick = (conversation: any) => {
+  if (!messagesEnabled.value) return
   router.push(`/messages/${conversation.id}`)
   closeDropdowns()
 }
@@ -271,7 +275,7 @@ onUnmounted(() => {
 
       <template v-if="isAuthenticated">
         <!-- Notifications -->
-        <div class="relative z-30">
+        <div v-if="messagesEnabled" class="relative z-30">
           <button
             class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 text-neutral-600 transition relative"
             @click.stop="showNotifications = !showNotifications; showUserMenu = false; showMessages = false"

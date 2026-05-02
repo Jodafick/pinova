@@ -10,6 +10,11 @@ const defaultUser: User = {
   email: 'admin@pinova.local',
   preferredLanguage: 'fr',
   preferredCurrency: 'XOF',
+  privateProfile: false,
+  discoverableProfile: true,
+  notificationsFollowers: true,
+  notificationsSaves: true,
+  notificationsRecommendations: false,
   avatarColor: 'bg-pink-500',
   bio: 'Développeur et passionné de design.',
   followers: 120,
@@ -49,6 +54,11 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     preferredLanguage: profile.preferred_language || 'fr',
     preferredCurrency: profile.preferred_currency || 'XOF',
     countryCode: profile.country_code || '',
+    privateProfile: !!profile.private_profile,
+    discoverableProfile: profile.discoverable_profile ?? true,
+    notificationsFollowers: profile.notifications_followers ?? true,
+    notificationsSaves: profile.notifications_saves ?? true,
+    notificationsRecommendations: profile.notifications_recommendations ?? false,
     avatarUrl: getFullMediaUrl(profile.avatar),
     avatarColor: profile.avatar_color || 'bg-pink-500',
     bio: profile.bio || '',
@@ -65,6 +75,8 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       partnerAdsEnabled: djangoUser.subscription?.partner_ads_enabled ?? profile.partner_ads_enabled ?? true,
       tipsEnabled: djangoUser.subscription?.tips_enabled ?? profile.tips_enabled ?? false,
       tipsUrl: djangoUser.subscription?.tips_url ?? profile.tips_url ?? '',
+      cancelAtPeriodEnd: djangoUser.subscription?.cancel_at_period_end ?? profile.subscription_cancel_at_period_end ?? false,
+      scheduledPlan: djangoUser.subscription?.scheduled_plan ?? profile.subscription_scheduled_plan ?? null,
     },
     boards: djangoUser.boards || [],
   }
@@ -144,7 +156,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean }) {
     try {
       const formData = new FormData()
       if (data.displayName) formData.append('display_name', data.displayName)
@@ -157,6 +169,11 @@ export function useAuth() {
       if (data.partnerAdsEnabled !== undefined) formData.append('partner_ads_enabled', data.partnerAdsEnabled ? 'true' : 'false')
       if (data.tipsEnabled !== undefined) formData.append('tips_enabled', data.tipsEnabled ? 'true' : 'false')
       if (data.tipsUrl !== undefined) formData.append('tips_url', data.tipsUrl)
+      if (data.privateProfile !== undefined) formData.append('private_profile', data.privateProfile ? 'true' : 'false')
+      if (data.discoverableProfile !== undefined) formData.append('discoverable_profile', data.discoverableProfile ? 'true' : 'false')
+      if (data.notificationsFollowers !== undefined) formData.append('notifications_followers', data.notificationsFollowers ? 'true' : 'false')
+      if (data.notificationsSaves !== undefined) formData.append('notifications_saves', data.notificationsSaves ? 'true' : 'false')
+      if (data.notificationsRecommendations !== undefined) formData.append('notifications_recommendations', data.notificationsRecommendations ? 'true' : 'false')
       
       const response = await api.patch('me/', formData, {
         headers: {
@@ -326,6 +343,22 @@ export function useAuth() {
     return response.data
   }
 
+  async function manageSubscription(action: 'cancel' | 'reactivate' | 'downgrade_to_free') {
+    const response = await api.post('subscription/manage/', { action })
+    await fetchCurrentUser()
+    return response.data
+  }
+
+  async function fetchSupportTickets() {
+    const response = await api.get('support/tickets/')
+    return response.data?.results || []
+  }
+
+  async function createSupportTicket(subject: string, message: string) {
+    const response = await api.post('support/tickets/', { subject, message })
+    return response.data
+  }
+
   return {
     currentUser,
     isAuthenticated,
@@ -346,5 +379,8 @@ export function useAuth() {
     fetchBoardCollaborators,
     addBoardCollaborator,
     removeBoardCollaborator,
+    manageSubscription,
+    fetchSupportTickets,
+    createSupportTicket,
   }
 }

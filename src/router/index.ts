@@ -93,6 +93,12 @@ const router = createRouter({
       meta: { guest: true },
     },
     {
+      path: '/verify-email/:key',
+      name: 'verify-email',
+      component: () => import('../pages/VerifyEmailPage.vue'),
+      meta: { guest: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../pages/NotFoundPage.vue'),

@@ -6,7 +6,7 @@ import { useI18n } from '../i18n'
 import api from '../api'
 
 const router = useRouter()
-const { currentUser, updateProfile, logout } = useAuth()
+const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket } = useAuth()
 const { t, currentLang } = useI18n()
 
 const displayName = ref('')
@@ -38,6 +38,21 @@ const supportedCurrencies = ref<string[]>([])
 const webNotificationsLoading = ref(false)
 const webNotificationsEnabled = ref(false)
 const webNotificationsError = ref('')
+const notificationsFollowers = ref(true)
+const notificationsSaves = ref(true)
+const notificationsRecommendations = ref(false)
+const notificationsSaving = ref(false)
+const notificationsSaved = ref(false)
+const privateProfile = ref(false)
+const discoverableProfile = ref(true)
+const privacySaving = ref(false)
+const privacySaved = ref(false)
+const subscriptionActionPending = ref(false)
+const subscriptionActionMessage = ref('')
+const supportSubject = ref('')
+const supportMessage = ref('')
+const supportSubmitting = ref(false)
+const supportTickets = ref<any[]>([])
 
 const currentPlan = ref<'free' | 'plus' | 'pro'>('free')
 
@@ -150,6 +165,11 @@ onMounted(() => {
     tipsUrl.value = currentUser.value.subscription?.tipsUrl || ''
     preferredCurrency.value = currentUser.value.preferredCurrency || 'XOF'
     detectedCountryCode.value = currentUser.value.countryCode || ''
+    notificationsFollowers.value = currentUser.value.notificationsFollowers ?? true
+    notificationsSaves.value = currentUser.value.notificationsSaves ?? true
+    notificationsRecommendations.value = currentUser.value.notificationsRecommendations ?? false
+    privateProfile.value = currentUser.value.privateProfile ?? false
+    discoverableProfile.value = currentUser.value.discoverableProfile ?? true
   }
   api.get('subscription/currencies/')
     .then((response) => {
@@ -164,6 +184,7 @@ onMounted(() => {
     .catch(() => undefined)
   syncWebNotificationState().catch(() => undefined)
   enforceAdPreferencesByPlan()
+  void loadSupportTickets()
 })
 
 const canToggleAdAds = () => currentPlan.value === 'plus' || currentPlan.value === 'pro'
@@ -286,6 +307,83 @@ const persistTipsSettings = async () => {
     console.error('Failed to save tips settings:', err)
   } finally {
     tipsSaving.value = false
+  }
+}
+
+const persistNotificationSettings = async () => {
+  notificationsSaving.value = true
+  try {
+    await updateProfile({
+      notificationsFollowers: notificationsFollowers.value,
+      notificationsSaves: notificationsSaves.value,
+      notificationsRecommendations: notificationsRecommendations.value,
+    })
+    notificationsSaved.value = true
+    setTimeout(() => (notificationsSaved.value = false), 2500)
+  } finally {
+    notificationsSaving.value = false
+  }
+}
+
+const persistPrivacySettings = async () => {
+  privacySaving.value = true
+  try {
+    await updateProfile({
+      privateProfile: privateProfile.value,
+      discoverableProfile: discoverableProfile.value,
+    })
+    privacySaved.value = true
+    setTimeout(() => (privacySaved.value = false), 2500)
+  } finally {
+    privacySaving.value = false
+  }
+}
+
+const handleCancelAtPeriodEnd = async () => {
+  subscriptionActionPending.value = true
+  subscriptionActionMessage.value = ''
+  try {
+    await manageSubscription('cancel')
+    subscriptionActionMessage.value = t('settings.subscription.cancelScheduled')
+  } catch {
+    subscriptionActionMessage.value = t('settings.subscription.error')
+  } finally {
+    subscriptionActionPending.value = false
+  }
+}
+
+const handleReactivateSubscription = async () => {
+  subscriptionActionPending.value = true
+  subscriptionActionMessage.value = ''
+  try {
+    await manageSubscription('reactivate')
+    subscriptionActionMessage.value = t('settings.subscription.reactivated')
+  } catch {
+    subscriptionActionMessage.value = t('settings.subscription.error')
+  } finally {
+    subscriptionActionPending.value = false
+  }
+}
+
+const loadSupportTickets = async () => {
+  if (!currentUser.value) return
+  try {
+    supportTickets.value = await fetchSupportTickets()
+  } catch {
+    supportTickets.value = []
+  }
+}
+
+const submitSupportTicket = async () => {
+  if (!supportSubject.value.trim() || !supportMessage.value.trim()) return
+  supportSubmitting.value = true
+  try {
+    await createSupportTicket(supportSubject.value.trim(), supportMessage.value.trim())
+    supportSubject.value = ''
+    supportMessage.value = ''
+    await loadSupportTickets()
+  } finally {
+    supportSubmitting.value = false
   }
 }
 
@@ -436,7 +534,7 @@ const handleLogout = () => {
               <p class="text-xs text-neutral-500">{{ t('settings.notifications.followers.desc') }}</p>
             </div>
             <div class="relative">
-              <input type="checkbox" checked class="sr-only peer" />
+              <input v-model="notificationsFollowers" type="checkbox" class="sr-only peer" />
               <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
@@ -447,7 +545,7 @@ const handleLogout = () => {
               <p class="text-xs text-neutral-500">{{ t('settings.notifications.saves.desc') }}</p>
             </div>
             <div class="relative">
-              <input type="checkbox" checked class="sr-only peer" />
+              <input v-model="notificationsSaves" type="checkbox" class="sr-only peer" />
               <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
@@ -458,7 +556,7 @@ const handleLogout = () => {
               <p class="text-xs text-neutral-500">{{ t('settings.notifications.recommendations.desc') }}</p>
             </div>
             <div class="relative">
-              <input type="checkbox" class="sr-only peer" />
+              <input v-model="notificationsRecommendations" type="checkbox" class="sr-only peer" />
               <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
@@ -482,6 +580,16 @@ const handleLogout = () => {
             </button>
           </div>
           <p v-if="webNotificationsError" class="text-xs text-pink-600">{{ webNotificationsError }}</p>
+          <div class="flex items-center justify-end">
+            <button
+              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
+              :disabled="notificationsSaving"
+              @click="persistNotificationSettings"
+            >
+              {{ notificationsSaving ? t('settings.notifications.saving') : t('settings.notifications.save') }}
+            </button>
+          </div>
+          <p v-if="notificationsSaved" class="text-xs text-emerald-700">{{ t('settings.notifications.saved') }}</p>
         </div>
       </section>
 
@@ -497,7 +605,7 @@ const handleLogout = () => {
               <p class="text-xs text-neutral-500">{{ t('settings.privacy.private.desc') }}</p>
             </div>
             <div class="relative">
-              <input type="checkbox" class="sr-only peer" />
+              <input v-model="privateProfile" type="checkbox" class="sr-only peer" />
               <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
@@ -508,11 +616,21 @@ const handleLogout = () => {
               <p class="text-xs text-neutral-500">{{ t('settings.privacy.search.desc') }}</p>
             </div>
             <div class="relative">
-              <input type="checkbox" checked class="sr-only peer" />
+              <input v-model="discoverableProfile" type="checkbox" class="sr-only peer" />
               <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
+        </div>
+        <div class="px-6 pb-6 flex items-center justify-end gap-2">
+          <button
+            class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
+            :disabled="privacySaving"
+            @click="persistPrivacySettings"
+          >
+            {{ privacySaving ? t('settings.privacy.saving') : t('settings.privacy.save') }}
+          </button>
+          <p v-if="privacySaved" class="text-xs text-emerald-700">{{ t('settings.privacy.saved') }}</p>
         </div>
       </section>
 
@@ -611,6 +729,81 @@ const handleLogout = () => {
             </button>
           </div>
           <p v-if="tipsSaved" class="text-xs text-emerald-700">{{ t('settings.tips.saved') }}</p>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.subscription.title') }}</h2>
+            <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
+          </div>
+          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
+            {{ currentPlan.toUpperCase() }}
+          </span>
+        </div>
+        <div class="p-6 space-y-3">
+          <p class="text-xs text-neutral-500">
+            {{ t('settings.subscription.renewal', { date: currentUser?.subscription?.renewalAt || 'N/A' }) }}
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              class="px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 disabled:opacity-50 transition"
+              :disabled="subscriptionActionPending || currentPlan === 'free'"
+              @click="handleCancelAtPeriodEnd"
+            >
+              {{ t('settings.subscription.cancelAtEnd') }}
+            </button>
+            <button
+              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
+              :disabled="subscriptionActionPending"
+              @click="handleReactivateSubscription"
+            >
+              {{ t('settings.subscription.reactivate') }}
+            </button>
+          </div>
+          <p v-if="subscriptionActionMessage" class="text-xs text-neutral-600">{{ subscriptionActionMessage }}</p>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.support.title') }}</h2>
+          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.support.subtitle') }}</p>
+        </div>
+        <div class="p-6 space-y-3">
+          <input
+            v-model="supportSubject"
+            type="text"
+            :placeholder="t('settings.support.subject')"
+            class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm"
+          />
+          <textarea
+            v-model="supportMessage"
+            rows="3"
+            :placeholder="t('settings.support.message')"
+            class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm resize-none"
+          />
+          <div class="flex items-center justify-end">
+            <button
+              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
+              :disabled="supportSubmitting || !supportSubject.trim() || !supportMessage.trim()"
+              @click="submitSupportTicket"
+            >
+              {{ supportSubmitting ? t('settings.support.submitting') : t('settings.support.submit') }}
+            </button>
+          </div>
+          <div v-if="supportTickets.length" class="space-y-2 pt-2 border-t border-neutral-100">
+            <p class="text-xs font-semibold text-neutral-700">{{ t('settings.support.history') }}</p>
+            <div
+              v-for="ticket in supportTickets.slice(0, 5)"
+              :key="ticket.id"
+              class="rounded-xl border border-neutral-200 px-3 py-2"
+            >
+              <p class="text-xs font-semibold text-neutral-800">{{ ticket.subject }}</p>
+              <p class="text-[11px] text-neutral-500">{{ ticket.status }} · {{ ticket.priority }}</p>
+            </div>
+          </div>
         </div>
       </section>
 

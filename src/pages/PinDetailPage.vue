@@ -8,6 +8,7 @@ import PinSkeleton from '../components/PinSkeleton.vue'
 import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
 import PrivateTags from '../components/PrivateTags.vue'
+import ProvenanceChain from '../components/ProvenanceChain.vue'
 import { useI18n } from '../i18n'
 
 const { t } = useI18n()
@@ -624,7 +625,7 @@ const openRelatedPin = (slug: string) => {
             </div>
 
             <!-- Crédit créateur certifié (provenance) -->
-            <!-- <div class="mb-6">
+            <div class="mb-6">
               <ProvenanceChain
                 :creator="pin.user"
                 :creator-avatar="pin.userAvatarColor"
@@ -632,7 +633,7 @@ const openRelatedPin = (slug: string) => {
                 :hash="provenanceHash || pin.provenanceRootHash"
                 :events="provenanceEvents"
               />
-            </div> -->
+            </div>
 
             <!-- Tags privés -->
             <div v-if="isPinOwner" class="mb-6">
