@@ -297,6 +297,7 @@ onUnmounted(() => {
                       notification.notification_type === 'comment' ? 'chat' :
                       notification.notification_type === 'welcome' ? 'celebration' :
                       notification.notification_type === 'board_invite' ? 'group_add' :
+                      notification.notification_type === 'scheduled_publish' ? 'schedule_send' :
                       'bookmark'
                     }}
                   </span>
@@ -407,8 +408,21 @@ onUnmounted(() => {
                 <span class="material-symbols-outlined text-lg">insights</span>
                 {{ t('nav.creator') }}
               </router-link>
+              <router-link
+                to="/settings"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700"
+                @click="closeDropdowns"
+              >
                 <span class="material-symbols-outlined text-lg">settings</span>
                 {{ t('nav.settings') }}
+              </router-link>
+              <router-link
+                to="/billing"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700"
+                @click="closeDropdowns"
+              >
+                <span class="material-symbols-outlined text-lg">receipt_long</span>
+                {{ t('nav.billing') }}
               </router-link>
               <router-link
                 to="/premium"

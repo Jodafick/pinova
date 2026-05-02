@@ -17,6 +17,7 @@ import {
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
 import { useDataSaver } from '../composables/useDataSaver'
+import { shareUrlWithFallback } from '../utils/shareFallback'
 
 const { t } = useI18n()
 const { showAlert, showPrompt } = useAppModal()
@@ -589,26 +590,19 @@ const handleShare = async () => {
   const url = typeof window !== 'undefined' ? window.location.href : ''
   const title = pin.value.title || 'Pinova'
   const text = (pin.value.description || '').slice(0, 280)
-  try {
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      await navigator.share({ title, text, url })
-      return
-    }
-  } catch (err: unknown) {
-    const name = err && typeof err === 'object' && 'name' in err ? String((err as { name?: string }).name) : ''
-    if (name === 'AbortError') return
-  }
-  try {
-    await navigator.clipboard.writeText(url)
-    await showAlert(t('pin.share.copied'), { variant: 'success' })
-  } catch {
-    await showPrompt({
-      title: t('pin.share.manualTitle'),
-      message: t('pin.share.manualBody'),
-      defaultValue: url,
-      variant: 'info',
-    })
-  }
+  await shareUrlWithFallback(
+    { showAlert, showPrompt },
+    {
+      url,
+      title,
+      text,
+      copiedMessage: t('pin.share.copied'),
+      copyErrorMessage: t('profile.share.copyError'),
+      copyErrorTitle: t('modal.errorTitle'),
+      manualTitle: t('pin.share.manualTitle'),
+      manualBody: t('pin.share.manualBody'),
+    },
+  )
 }
 
 const handleDownload = async () => {

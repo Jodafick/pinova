@@ -193,7 +193,14 @@ const { login: googleLogin } = useTokenClient({
               <span class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none material-symbols-outlined text-sm font-bold">check</span>
             </div>
             <span class="text-sm text-neutral-500 font-medium select-none">
-              {{ t('register.acceptTerms.before') }} <a href="#" class="text-pink-600 font-bold hover:underline">{{ t('register.acceptTerms.terms') }}</a> {{ t('register.acceptTerms.middle') }} <a href="#" class="text-pink-600 font-bold hover:underline">{{ t('register.acceptTerms.privacy') }}</a>.
+              {{ t('register.acceptTerms.before') }}
+              <router-link to="/legal/terms" class="text-pink-600 font-bold hover:underline" tabindex="0" @click.stop>
+                {{ t('register.acceptTerms.terms') }}
+              </router-link>
+              {{ t('register.acceptTerms.middle') }}
+              <router-link to="/legal/privacy" class="text-pink-600 font-bold hover:underline" tabindex="0" @click.stop>
+                {{ t('register.acceptTerms.privacy') }}
+              </router-link>.
             </span>
           </label>
 

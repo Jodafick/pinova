@@ -8,9 +8,10 @@ import { useAuth } from '../composables/useAuth'
 import type { Pin } from '../types'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
+import { shareUrlWithFallback } from '../utils/shareFallback'
 
 const { t } = useI18n()
-const { showAlert } = useAppModal()
+const { showAlert, showPrompt } = useAppModal()
 const route = useRoute()
 const router = useRouter()
 const { toggleSave } = usePins()
@@ -23,6 +24,7 @@ const boardName = ref('')
 const ownerUsername = ref('')
 const boardPins = ref<Pin[]>([])
 const viewerCanManage = ref(false)
+const boardIsPrivate = ref(false)
 
 const organizeModalOpen = ref(false)
 const organizePins = ref<
@@ -48,12 +50,14 @@ async function loadBoard() {
     boardName.value = res.data.name || ''
     ownerUsername.value = res.data.owner_username || ''
     viewerCanManage.value = !!(res.data.viewer_can_manage ?? res.data.viewerCanManage)
+    boardIsPrivate.value = !!(res.data.is_private ?? res.data.isPrivate)
     boardPins.value = (res.data.pins || []).map(mapDjangoPinToFrontend)
   } catch (e: unknown) {
     const status = (e as { response?: { status?: number } })?.response?.status
     loadError.value = status === 404 ? 'not_found' : 'generic'
     boardPins.value = []
     viewerCanManage.value = false
+    boardIsPrivate.value = false
   } finally {
     loading.value = false
   }
@@ -134,6 +138,37 @@ function onOrganizeDrop(index: number) {
   organizePins.value = arr
 }
 
+async function shareThisBoard() {
+  const owner = ownerUsername.value
+  if (!owner || !boardId.value) return
+  try {
+    let url = `${window.location.origin}/profile/${owner}/board/${boardId.value}`
+    if (boardIsPrivate.value && viewerCanManage.value) {
+      const res = await api.post(`boards/${boardId.value}/share-token/`, {})
+      const token = res.data?.share_token
+      if (!token) throw new Error('no token')
+      url += `?share=${encodeURIComponent(token)}`
+    } else if (boardIsPrivate.value) {
+      url = window.location.href.split('#')[0]
+    }
+    await shareUrlWithFallback(
+      { showAlert, showPrompt },
+      {
+        url,
+        title: `${boardName.value.trim() || 'Pinova'} — Pinova`,
+        text: `@${owner}`,
+        copiedMessage: t('profile.share.boardCopied'),
+        copyErrorMessage: t('profile.share.copyError'),
+        copyErrorTitle: t('modal.errorTitle'),
+        manualTitle: t('pin.share.manualTitle'),
+        manualBody: t('pin.share.manualBody'),
+      },
+    )
+  } catch {
+    await showAlert(t('profile.share.copyError'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
+
 onMounted(loadBoard)
 watch([boardId, () => route.query.share], loadBoard)
 </script>
@@ -163,7 +198,7 @@ watch([boardId, () => route.query.share], loadBoard)
 
     <template v-else>
       <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div class="min-w-0 flex-1">
           <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">{{ boardName }}</h1>
           <router-link
             v-if="ownerUsername"
@@ -174,15 +209,26 @@ watch([boardId, () => route.query.share], loadBoard)
           </router-link>
           <p class="text-sm text-neutral-500 mt-2">{{ t('board.pinCount', { count: boardPins.length }) }}</p>
         </div>
-        <button
-          v-if="showOrganizeButton"
-          type="button"
-          class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 transition"
-          @click="openOrganize"
-        >
-          <span class="material-symbols-outlined text-lg">drag_indicator</span>
-          {{ t('board.organizePins') }}
-        </button>
+        <div class="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-end ml-auto">
+          <button
+            v-if="showOrganizeButton"
+            type="button"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 transition"
+            @click="openOrganize"
+          >
+            <span class="material-symbols-outlined text-lg">drag_indicator</span>
+            {{ t('board.organizePins') }}
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 bg-white text-neutral-800 text-sm font-semibold hover:bg-neutral-50 transition"
+            :aria-label="t('board.share')"
+            @click="shareThisBoard"
+          >
+            <span class="material-symbols-outlined text-lg">share</span>
+            {{ t('board.share') }}
+          </button>
+        </div>
       </div>
 
       <PinGrid v-if="boardPins.length" :pins="boardPins" @open-pin="openPin" @toggle-save="onToggleSave" />

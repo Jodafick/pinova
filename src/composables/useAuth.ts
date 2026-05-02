@@ -47,12 +47,22 @@ function getFullMediaUrl(url: string | null): string | undefined {
   return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
 }
 
+/** Date ISO YYYY-MM-DD pour affichage / formulaires ; alignée sur Django DateField. */
+export function normalizeBirthDateFromApi(raw: unknown): string | null {
+  if (raw == null || raw === '') return null
+  const iso = String(raw).trim().split('T')[0]
+  const head = (iso ?? '').slice(0, 10)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(head)) return head
+  return null
+}
+
 function mapDjangoUserToFrontend(djangoUser: any): User {
   if (!djangoUser) return defaultUser
   const profile = djangoUser.profile || djangoUser || {}
-  // On utilise l'ID du profile pour être cohérent avec l'API follow
+  const birthNormalized = normalizeBirthDateFromApi(profile.birth_date)
+  // id = clé utilisateur Django (User.pk), indispensable pour payloads cohérents.
   return {
-    id: profile.id || djangoUser.id,
+    id: djangoUser.id,
     username: djangoUser.username,
     displayName: profile.display_name || djangoUser.username,
     email: djangoUser.email ?? '',
@@ -86,9 +96,11 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       trialEligible: djangoUser.subscription?.trial_eligible ?? false,
       trialConsumedAt: djangoUser.subscription?.trial_consumed_at ?? profile.subscription_trial_consumed_at ?? null,
       digestCreatorWeekly: djangoUser.subscription?.digest_creator_weekly ?? true,
+      accountScheduledDeletionAt:
+        djangoUser.subscription?.account_scheduled_deletion_at ?? null,
     },
     boards: djangoUser.boards || [],
-    birthDate: profile.birth_date ?? null,
+    birthDate: birthNormalized,
   }
 }
 
@@ -127,8 +139,11 @@ export function useAuth() {
     api.defaults.headers.common.Authorization = `Bearer ${inMemoryAccessToken.value}`
   }
 
-  async function fetchCurrentUser() {
-    isInitializing.value = true
+  async function fetchCurrentUser(opts?: { silent?: boolean }) {
+    const silent = !!opts?.silent
+    if (!silent) {
+      isInitializing.value = true
+    }
     devLog('📡 Fetching user from API...')
     try {
       const response = await api.get('me/')
@@ -142,7 +157,9 @@ export function useAuth() {
       }
       console.warn('❌ Session absente ou expirée.')
     } finally {
-      isInitializing.value = false
+      if (!silent) {
+        isInitializing.value = false
+      }
     }
   }
 

@@ -11,6 +11,7 @@ import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
 import { displayInitials } from '../utils/displayInitials'
+import { shareUrlWithFallback } from '../utils/shareFallback'
 
 const PROFILE_PINS_PAGE_SIZE = 24
 
@@ -663,19 +664,32 @@ function goToBoard(board: NonNullable<User['boards']>[number]) {
 async function handleShareProfile() {
   if (!profileUser.value) return
   try {
+    let url: string
     if (isMyProfile.value && profileUser.value.privateProfile) {
       const res = await api.post('me/profile-share-token/', {})
       const token = res.data?.share_token
       if (!token) throw new Error('no token')
-      const url = `${window.location.origin}/profile/${profileUser.value.username}?share=${encodeURIComponent(token)}`
-      await navigator.clipboard.writeText(url)
+      url = `${window.location.origin}/profile/${profileUser.value.username}?share=${encodeURIComponent(token)}`
     } else if (isMyProfile.value) {
-      const url = `${window.location.origin}/profile/${profileUser.value.username}`
-      await navigator.clipboard.writeText(url)
+      url = `${window.location.origin}/profile/${profileUser.value.username}`
     } else {
-      await navigator.clipboard.writeText(window.location.href)
+      url = window.location.href
     }
-    await showAlert(t('profile.share.copied'), { variant: 'success' })
+    const title = `${profileUser.value.displayName} — Pinova`
+    const text = (profileUser.value.bio || '').slice(0, 220)
+    await shareUrlWithFallback(
+      { showAlert, showPrompt },
+      {
+        url,
+        title,
+        text,
+        copiedMessage: t('profile.share.copied'),
+        copyErrorMessage: t('profile.share.copyError'),
+        copyErrorTitle: t('modal.errorTitle'),
+        manualTitle: t('pin.share.manualTitle'),
+        manualBody: t('pin.share.manualBody'),
+      },
+    )
   } catch {
     await showAlert(t('profile.share.copyError'), { variant: 'danger', title: t('modal.errorTitle') })
   }
@@ -692,8 +706,19 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       if (!token) throw new Error('no token')
       url += `?share=${encodeURIComponent(token)}`
     }
-    await navigator.clipboard.writeText(url)
-    await showAlert(t('profile.share.boardCopied'), { variant: 'success' })
+    await shareUrlWithFallback(
+      { showAlert, showPrompt },
+      {
+        url,
+        title: `${board.name} — Pinova`,
+        text: `@${ownerU}`,
+        copiedMessage: t('profile.share.boardCopied'),
+        copyErrorMessage: t('profile.share.copyError'),
+        copyErrorTitle: t('modal.errorTitle'),
+        manualTitle: t('pin.share.manualTitle'),
+        manualBody: t('pin.share.manualBody'),
+      },
+    )
   } catch {
     await showAlert(t('profile.share.copyError'), { variant: 'danger', title: t('modal.errorTitle') })
   }
@@ -925,18 +950,26 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           <div v-if="board.isOwner === false" class="absolute top-3 left-3 z-10 px-2 py-1 rounded-full bg-emerald-600/95 text-[10px] font-bold text-white pointer-events-none">
             {{ t('profile.boards.sharedBadge') }}
           </div>
-          <div v-if="board.isPrivate" class="absolute top-3 right-3 z-10">
-            <span class="material-symbols-outlined text-white text-sm drop-shadow">lock</span>
-          </div>
-          <button
+          <div
             v-if="isMyProfile && board.isOwner !== false"
-            type="button"
-            class="absolute top-3 right-14 z-10 w-9 h-9 rounded-full bg-white/95 shadow-md flex items-center justify-center text-neutral-700 hover:bg-white"
-            :title="t('profile.share.boardTitle')"
-            @click.stop="shareBoardLink(board)"
+            class="absolute top-3 right-3 z-10 flex items-center gap-1 pointer-events-auto"
           >
-            <span class="material-symbols-outlined text-lg">ios_share</span>
-          </button>
+            <span
+              v-if="board.isPrivate"
+              class="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white shadow-md"
+              :title="t('board.private')"
+            >
+              <span class="material-symbols-outlined text-base">lock</span>
+            </span>
+            <button
+              type="button"
+              class="w-9 h-9 rounded-full bg-white/95 shadow-md flex items-center justify-center text-neutral-700 hover:bg-white"
+              :title="t('profile.share.boardTitle')"
+              @click.stop="shareBoardLink(board)"
+            >
+              <span class="material-symbols-outlined text-lg">ios_share</span>
+            </button>
+          </div>
           <button
             v-if="isMyProfile && board.isOwner !== false"
             type="button"

@@ -62,6 +62,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/billing',
+      name: 'billing',
+      component: () => import('../pages/BillingHistoryPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/premium',
       name: 'premium',
       component: () => import('../pages/PremiumPage.vue'),
@@ -154,6 +160,12 @@ router.beforeEach(async (to, from) => {
   if (to.meta.requiresAuth && !isAuthenticated.value) {
     console.warn('🔒 Route requires auth, redirecting to login...')
     return { name: 'login' }
+  }
+
+  /* Profil serveur à jour (ex. date de naissance) avant la création — sans écran de chargement global. */
+  if (to.name === 'create' && isAuthenticated.value) {
+    const { fetchCurrentUser } = useAuth()
+    await fetchCurrentUser({ silent: true })
   }
   
   // Si l'utilisateur est déjà connecté et essaie d'aller sur login/register

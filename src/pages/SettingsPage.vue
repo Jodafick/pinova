@@ -7,10 +7,12 @@ import api from '../api'
 import { displayInitials } from '../utils/displayInitials'
 import { useDataSaver } from '../composables/useDataSaver'
 import type { DataSaverOverride } from '../composables/useDataSaver'
+import { useAppModal } from '../composables/useAppModal'
 
 const router = useRouter()
-const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket, fetchSubscriptionInvoices } = useAuth()
+const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket, fetchSubscriptionInvoices, fetchCurrentUser } = useAuth()
 const { t, currentLang } = useI18n()
+const { showAlert, showPrompt } = useAppModal()
 const {
   override: dataSaverOverride,
   isLowDataMode,
@@ -81,6 +83,22 @@ const supportSubject = ref('')
 const supportMessage = ref('')
 const supportSubmitting = ref(false)
 const supportTickets = ref<any[]>([])
+
+const accountDeletionBusy = ref(false)
+
+const scheduledAccountDeletion = computed(() => currentUser.value?.subscription?.accountScheduledDeletionAt || null)
+
+const scheduledAccountDeletionLabel = computed(() => {
+  const raw = scheduledAccountDeletion.value
+  if (!raw) return ''
+  const d = new Date(String(raw))
+  if (Number.isNaN(d.getTime())) return String(raw)
+  try {
+    return new Intl.DateTimeFormat(currentLang.value || 'fr', { dateStyle: 'long', timeStyle: 'short' }).format(d)
+  } catch {
+    return d.toLocaleString()
+  }
+})
 
 const currentPlan = ref<'free' | 'plus' | 'pro'>('free')
 
@@ -299,6 +317,7 @@ const handleSave = async () => {
       preferredCurrency: preferredCurrency.value,
       birthDate: birthDate.value.trim() || undefined,
     })
+    await fetchCurrentUser({ silent: true })
     saved.value = true
     setTimeout(() => (saved.value = false), 3000)
     currentPlan.value = currentUser.value?.subscription?.plan || 'free'
@@ -529,12 +548,69 @@ const handleLogout = () => {
   logout()
   router.push('/login')
 }
+
+async function requestAccountDeletion() {
+  await showAlert(t('settings.danger.delete.warningBody'), {
+    variant: 'danger',
+    title: t('settings.danger.delete.title'),
+  })
+  const typed = await showPrompt({
+    title: t('settings.danger.delete.promptTitle'),
+    message: t('settings.danger.delete.promptMessage'),
+    placeholder: 'SUPPRIMER',
+    variant: 'danger',
+  })
+  const normalized = typed?.trim().toUpperCase() || ''
+  if (normalized !== 'SUPPRIMER' && normalized !== 'DELETE') return
+  accountDeletionBusy.value = true
+  try {
+    const confirm = normalized === 'DELETE' ? 'DELETE' : 'SUPPRIMER'
+    await api.post('me/account-deletion/request/', { confirm })
+    await fetchCurrentUser({ silent: true })
+    await showAlert(t('settings.danger.delete.scheduledOk'), { variant: 'success' })
+  } catch {
+    await showAlert(t('settings.danger.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
+  } finally {
+    accountDeletionBusy.value = false
+  }
+}
+
+async function cancelAccountDeletion() {
+  accountDeletionBusy.value = true
+  try {
+    await api.post('me/account-deletion/cancel/')
+    await fetchCurrentUser({ silent: true })
+    await showAlert(t('settings.danger.delete.cancelledOk'), { variant: 'success' })
+  } catch {
+    await showAlert(t('settings.danger.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
+  } finally {
+    accountDeletionBusy.value = false
+  }
+}
 </script>
 
 <template>
   <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">{{ t('settings.title') }}</h1>
     <p class="text-sm text-neutral-500 mb-8">{{ t('settings.subtitle') }}</p>
+
+    <div
+      v-if="scheduledAccountDeletion"
+      class="mb-6 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-4 text-sm text-rose-950"
+    >
+      <p class="font-semibold">{{ t('settings.danger.delete.bannerTitle') }}</p>
+      <p class="mt-1 text-xs leading-relaxed">
+        {{ t('settings.danger.delete.bannerBody', { date: scheduledAccountDeletionLabel }) }}
+      </p>
+      <button
+        type="button"
+        class="mt-3 px-4 py-2 rounded-full bg-white border border-rose-200 text-xs font-semibold text-rose-900 hover:bg-rose-100 disabled:opacity-50"
+        :disabled="accountDeletionBusy"
+        @click="cancelAccountDeletion()"
+      >
+        {{ t('settings.danger.delete.cancelSchedule') }}
+      </button>
+    </div>
 
     <!-- Success message -->
     <div
@@ -949,12 +1025,15 @@ const handleLogout = () => {
       </section>
 
       <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
-          <div>
+        <div class="px-6 py-5 border-b border-neutral-100 flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.subscription.title') }}</h2>
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
+            <router-link to="/billing" class="inline-flex mt-2 text-xs font-semibold text-pink-600 hover:underline">
+              {{ t('settings.subscription.viewBillingPage') }} →
+            </router-link>
           </div>
-          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
+          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600 shrink-0">
             {{ currentPlan.toUpperCase() }}
           </span>
         </div>
@@ -1006,7 +1085,12 @@ const handleLogout = () => {
           <p v-if="subscriptionActionMessage" class="text-xs text-neutral-600">{{ subscriptionActionMessage }}</p>
 
           <div class="pt-4 mt-4 border-t border-neutral-100">
-            <p class="text-xs font-semibold text-neutral-800 mb-2">{{ t('settings.subscription.billingHistory') }}</p>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <p class="text-xs font-semibold text-neutral-800">{{ t('settings.subscription.billingHistory') }}</p>
+              <router-link to="/billing" class="text-[11px] font-semibold text-pink-600 hover:underline">
+                {{ t('settings.subscription.viewBillingPage') }}
+              </router-link>
+            </div>
             <p v-if="billingInvoicesLoading" class="text-xs text-neutral-400">{{ t('settings.subscription.billingLoading') }}</p>
             <div v-else-if="!billingInvoices.length" class="text-xs text-neutral-400">{{ t('settings.subscription.billingEmpty') }}</div>
             <ul v-else class="space-y-2 max-h-64 overflow-y-auto pr-1">
@@ -1160,17 +1244,37 @@ const handleLogout = () => {
         <div class="px-6 py-5 border-b border-pink-100">
           <h2 class="text-lg font-semibold text-pink-600">{{ t('settings.danger.title') }}</h2>
         </div>
-        <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-50">
           <div>
             <p class="text-sm font-medium text-neutral-700">{{ t('settings.danger.logout') }}</p>
             <p class="text-xs text-neutral-500">{{ t('settings.danger.logout.desc') }}</p>
           </div>
           <button
+            type="button"
             class="px-5 py-2.5 rounded-full border border-pink-200 text-pink-600 text-sm font-semibold hover:bg-pink-50 transition"
             @click="handleLogout"
           >
             {{ t('settings.danger.logout.cta') }}
           </button>
+        </div>
+        <div class="p-6 flex flex-col sm:flex-row items-start gap-4 bg-rose-50/40">
+          <div class="max-w-xl flex-1 space-y-2">
+            <p class="text-sm font-bold text-rose-900">{{ t('settings.danger.delete.title') }}</p>
+            <p class="text-xs text-neutral-700 leading-relaxed">{{ t('settings.danger.delete.warningBody') }}</p>
+          </div>
+          <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
+            <button
+              type="button"
+              class="px-5 py-2.5 rounded-full bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 disabled:opacity-50 transition text-center"
+              :disabled="accountDeletionBusy || !!scheduledAccountDeletion"
+              @click="requestAccountDeletion()"
+            >
+              {{ t('settings.danger.delete.scheduleCta') }}
+            </button>
+            <p v-if="scheduledAccountDeletion" class="text-[11px] text-rose-800 text-center sm:text-right max-w-[14rem] sm:max-w-none">
+              {{ t('settings.danger.delete.useBannerCancel') }}
+            </p>
+          </div>
         </div>
       </section>
     </div>

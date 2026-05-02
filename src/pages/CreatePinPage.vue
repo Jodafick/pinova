@@ -7,7 +7,13 @@ import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PrivateTags from '../components/PrivateTags.vue'
 import api from '../api'
-import { moderationScanText, moderationScanImageFile, moderationScanVideoFile, isVerifiedAdultFromBirthDate } from '../composables/useModeration'
+import {
+  moderationScanText,
+  moderationScanImageFile,
+  moderationScanVideoFile,
+  isVerifiedAdultFromBirthDate,
+  hasRequiredBirthDateForMediaPublish,
+} from '../composables/useModeration'
 import { formatDrfErrorMessages, drfErrorTouchesFields } from '../utils/apiValidationErrors'
 
 /** Champs affichés uniquement à l’étape 1 (texte / catégorie / tags publics). Pas les tags privés (étape 2). */
@@ -24,7 +30,11 @@ const { showAlert } = useAppModal()
 
 const router = useRouter()
 const { addPin, topics } = usePins()
-const { currentUser, fetchMyBoards, isAuthenticated } = useAuth()
+const { currentUser, fetchMyBoards, isAuthenticated, fetchCurrentUser } = useAuth()
+
+const needsBirthDateForMedia = computed(
+  () => isAuthenticated.value && !hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate),
+)
 
 const title = ref('')
 const description = ref('')
@@ -73,7 +83,7 @@ let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 
 const createStep = ref<1 | 2>(1)
 
-function goStep2() {
+async function goStep2() {
   if (!title.value.trim()) {
     void showAlert(t('create.step1.titleRequired'), { variant: 'warning' })
     return
@@ -81,6 +91,14 @@ function goStep2() {
   const resolvedTopic = topic.value || categorySearch.value.trim()
   if (!resolvedTopic) {
     void showAlert(t('create.step1.categoryRequired'), { variant: 'warning' })
+    return
+  }
+  await fetchCurrentUser({ silent: true })
+  if (!hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
+    await showAlert(t('moderation.publishRequiresBirthDate'), {
+      variant: 'warning',
+      title: t('moderation.publishBirthDateTitle'),
+    })
     return
   }
   createStep.value = 2
@@ -152,6 +170,9 @@ const loadBoards = async () => {
 }
 
 onMounted(async () => {
+  if (isAuthenticated.value) {
+    await fetchCurrentUser({ silent: true })
+  }
   await loadTopics('')
   await loadBoards()
 })
@@ -238,7 +259,19 @@ async function runImageModeration(file: File) {
   }
 }
 
-function setMediaFile(file: File) {
+async function ensureBirthDateBeforeMedia(): Promise<boolean> {
+  await fetchCurrentUser({ silent: true })
+  if (hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) return true
+  await showAlert(t('moderation.publishRequiresBirthDate'), {
+    variant: 'warning',
+    title: t('moderation.publishBirthDateTitle'),
+  })
+  createStep.value = 1
+  return false
+}
+
+async function setMediaFile(file: File) {
+  if (!(await ensureBirthDateBeforeMedia())) return
   if (file.type.startsWith('video/')) {
     isStory.value = true
     if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
@@ -259,14 +292,14 @@ function setMediaFile(file: File) {
 
 const onFileChange = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
-  if (file) setMediaFile(file)
+  if (file) void setMediaFile(file)
 }
 
 const onDrop = (e: DragEvent) => {
   e.preventDefault()
   isDragging.value = false
   const file = e.dataTransfer?.files?.[0]
-  if (file) setMediaFile(file)
+  if (file) void setMediaFile(file)
 }
 
 const clearImage = () => {
@@ -297,11 +330,12 @@ const submitPin = async () => {
     createStep.value = 1
     return
   }
+  await fetchCurrentUser({ silent: true })
   const hasMedia = !!(imageFile.value || storyVideoFile.value)
-  if (hasMedia && !currentUser.value?.birthDate) {
+  if (hasMedia && !hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
     await showAlert(t('moderation.publishRequiresBirthDate'), {
       variant: 'warning',
-      title: t('modal.errorTitle'),
+      title: t('moderation.publishBirthDateTitle'),
     })
     createStep.value = 1
     return
@@ -384,6 +418,18 @@ const selectCategory = (selected: TopicOption) => {
 
 <template>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <div
+      v-if="needsBirthDateForMedia"
+      class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+    >
+      <p class="leading-snug">{{ t('create.banner.birthDate') }}</p>
+      <router-link
+        to="/settings"
+        class="shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-full bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 text-center"
+      >
+        {{ t('create.banner.birthDateCta') }}
+      </router-link>
+    </div>
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div>

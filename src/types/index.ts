@@ -86,6 +86,8 @@ export type User = {
     trialEligible?: boolean
     trialConsumedAt?: string | null
     digestCreatorWeekly?: boolean
+    /** ISO — réservé au propriétaire ; suppression de compte programmée */
+    accountScheduledDeletionAt?: string | null
   }
   boards?: {
     id: number
