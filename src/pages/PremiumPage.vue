@@ -16,10 +16,6 @@ const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
 const pricingLoading = ref(true)
 const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
-const AUTO_CONFIRM_INTERVAL_MS = 4000
-const AUTO_CONFIRM_MAX_ATTEMPTS = 45
-let autoConfirmTimer: number | null = null
-let autoConfirmAttempts = 0
 type PricingCycle = {
   amount_minor: number
   amount_display: number
@@ -141,15 +137,6 @@ const faqs = computed(() => [
   { q: t('premium.faq.q4'), a: t('premium.faq.a4') },
 ])
 
-const clearAutoConfirmTimer = () => {
-  if (typeof window === 'undefined') return
-  if (autoConfirmTimer !== null) {
-    window.clearInterval(autoConfirmTimer)
-    autoConfirmTimer = null
-  }
-  autoConfirmAttempts = 0
-}
-
 const confirmPaymentTransaction = async (transactionId: string, silent = false): Promise<'approved' | 'pending' | 'error'> => {
   if (!transactionId) return 'error'
   if (!silent) {
@@ -182,27 +169,6 @@ const confirmPaymentTransaction = async (transactionId: string, silent = false):
   }
 }
 
-const startAutoConfirmWatcher = (transactionId: string, popup: Window | null) => {
-  if (typeof window === 'undefined') return
-  clearAutoConfirmTimer()
-  if (!transactionId) return
-  autoConfirmTimer = window.setInterval(async () => {
-    if (confirmPending.value) return
-    autoConfirmAttempts += 1
-    const status = await confirmPaymentTransaction(transactionId, true)
-    if (status === 'approved') {
-      clearAutoConfirmTimer()
-      return
-    }
-    if (autoConfirmAttempts >= AUTO_CONFIRM_MAX_ATTEMPTS) {
-      clearAutoConfirmTimer()
-      if (popup?.closed) {
-        paymentInfoMessage.value = t('premium.payment.pending')
-      }
-    }
-  }, AUTO_CONFIRM_INTERVAL_MS)
-}
-
 const handlePopupCallbackReturn = async () => {
   if (typeof window === 'undefined') return
   const params = new URLSearchParams(window.location.search)
@@ -213,22 +179,20 @@ const handlePopupCallbackReturn = async () => {
   if (!statusValue || !transactionId) return
 
   window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
-  const confirmStatus = await confirmPaymentTransaction(transactionId, true)
-  const isConfirmed = confirmStatus === 'approved'
   if (window.opener && !window.opener.closed) {
     window.opener.postMessage(
       {
-        type: 'pinova_payment_callback',
+        type: 'pinova_payment_callback_url',
+        callback_url: window.location.href,
+        callback_query: Object.fromEntries(params.entries()),
         status: statusValue,
-        confirm_status: confirmStatus,
-        confirmed: isConfirmed,
         transaction_id: transactionId,
       },
       window.location.origin,
     )
     setTimeout(() => {
       window.close()
-    }, 400)
+    }, 350)
   } else {
     await confirmPendingPayment(transactionId)
   }
@@ -253,7 +217,6 @@ const handleCheckout = async (planId: string) => {
       window.localStorage.setItem(PENDING_TX_STORAGE_KEY, String(transactionId))
     }
     if (checkoutUrl) {
-      startAutoConfirmWatcher(String(transactionId || ''), popup)
       if (popup && !popup.closed) {
         popup.location.href = checkoutUrl
         popup.focus()
@@ -280,9 +243,7 @@ const confirmPendingPayment = async (transactionIdOverride?: string) => {
     return
   }
   const status = await confirmPaymentTransaction(transactionId, false)
-  if (status === 'approved') {
-    clearAutoConfirmTimer()
-  }
+  if (status === 'approved') return
 }
 
 const confirmPendingPaymentFromButton = () => {
@@ -293,18 +254,24 @@ const handlePaymentMessage = async (event: MessageEvent) => {
   if (typeof window === 'undefined') return
   if (event.origin !== window.location.origin) return
   const payload = event.data || {}
-  if (payload.type !== 'pinova_payment_callback') return
-  const transactionId = String(payload.transaction_id || '').trim()
+  if (payload.type !== 'pinova_payment_callback_url') return
+  const callbackUrl = String(payload.callback_url || '')
+  const callbackQuery = payload.callback_query || {}
+  const transactionId = String(
+    payload.transaction_id || callbackQuery.id || callbackQuery.transaction_id || callbackQuery.transactionId || '',
+  ).trim()
   if (!transactionId) return
-  clearAutoConfirmTimer()
+  console.info('Payment callback received in main window', {
+    callbackUrl,
+    callbackQuery,
+    transactionId,
+  })
   window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
-  if (payload.confirmed) {
-    window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
-    paymentInfoMessage.value = t('premium.payment.success', { plan: String(currentUser.value?.subscription?.plan || '').toUpperCase() })
-    window.location.reload()
-    return
-  }
   await confirmPendingPayment(transactionId)
+  const remainingTx = window.localStorage.getItem(PENDING_TX_STORAGE_KEY)
+  if (!remainingTx) {
+    window.location.reload()
+  }
 }
 
 onMounted(() => {
@@ -331,7 +298,6 @@ onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('message', handlePaymentMessage)
   }
-  clearAutoConfirmTimer()
 })
 </script>
 
