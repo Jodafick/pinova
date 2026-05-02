@@ -367,6 +367,11 @@ export function usePins() {
     return response.data
   }
 
+  async function fetchCreatorWeeklyStats(days = 7) {
+    const response = await api.get('pins/creator-weekly-stats/', { params: { days } })
+    return response.data
+  }
+
   async function fetchCreatorStats() {
     const response = await api.get('pins/creator-stats/')
     return response.data
@@ -524,6 +529,7 @@ export function usePins() {
     toggleCommentLike,
     getPinDownload,
     fetchCreatorStats,
+    fetchCreatorWeeklyStats,
     fetchProvenance,
     fetchPrivateTags,
     savePrivateTags,

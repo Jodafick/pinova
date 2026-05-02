@@ -5,10 +5,17 @@ import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import api from '../api'
 import { displayInitials } from '../utils/displayInitials'
+import { useDataSaver } from '../composables/useDataSaver'
+import type { DataSaverOverride } from '../composables/useDataSaver'
 
 const router = useRouter()
-const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket } = useAuth()
+const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket, fetchSubscriptionInvoices } = useAuth()
 const { t, currentLang } = useI18n()
+const {
+  override: dataSaverOverride,
+  isLowDataMode,
+  setOverride: setDataSaverOverride,
+} = useDataSaver()
 
 const displayName = ref('')
 const username = ref('')
@@ -49,8 +56,27 @@ const privateProfile = ref(false)
 const discoverableProfile = ref(true)
 const privacySaving = ref(false)
 const privacySaved = ref(false)
+const digestWeekly = ref(true)
+const digestSaving = ref(false)
+const digestSaved = ref(false)
 const subscriptionActionPending = ref(false)
 const subscriptionActionMessage = ref('')
+const billingInvoices = ref<
+  {
+    id: number
+    fedapay_transaction_id: string
+    created_at: string
+    plan: string
+    billing_cycle: string
+    amount_display: number
+    currency_iso: string
+    promo_bundle?: string
+    status: string
+    checkout_url?: string
+    invoice_url?: string
+  }[]
+>([])
+const billingInvoicesLoading = ref(false)
 const supportSubject = ref('')
 const supportMessage = ref('')
 const supportSubmitting = ref(false)
@@ -60,7 +86,7 @@ const currentPlan = ref<'free' | 'plus' | 'pro'>('free')
 
 const subscriptionRenewalLabel = computed(() => {
   const raw = currentUser.value?.subscription?.renewalAt
-  if (!raw) return 'N/A'
+  if (!raw) return '—'
   const d = new Date(String(raw))
   if (Number.isNaN(d.getTime())) return String(raw)
   try {
@@ -71,6 +97,14 @@ const subscriptionRenewalLabel = computed(() => {
   } catch {
     return d.toLocaleString()
   }
+})
+
+const subscriptionScheduleHint = computed(() => {
+  const sp = currentUser.value?.subscription?.scheduledPlan
+  if (!sp) return ''
+  if (sp === 'plus') return t('settings.subscription.scheduledPlus')
+  if (sp === 'free') return t('settings.subscription.scheduledFree')
+  return ''
 })
 
 const currencyOptionLabel = (currency: string) => {
@@ -188,6 +222,7 @@ onMounted(() => {
     notificationsRecommendations.value = currentUser.value.notificationsRecommendations ?? false
     privateProfile.value = currentUser.value.privateProfile ?? false
     discoverableProfile.value = currentUser.value.discoverableProfile ?? true
+    digestWeekly.value = currentUser.value.subscription?.digestCreatorWeekly ?? true
   }
   api.get('subscription/currencies/')
     .then((response) => {
@@ -203,6 +238,7 @@ onMounted(() => {
   syncWebNotificationState().catch(() => undefined)
   enforceAdPreferencesByPlan()
   void loadSupportTickets()
+  void loadBillingInvoices()
 })
 
 const canToggleAdAds = () => currentPlan.value === 'plus' || currentPlan.value === 'pro'
@@ -358,11 +394,31 @@ const persistPrivacySettings = async () => {
   }
 }
 
+const persistDigestWeekly = async () => {
+  if (currentPlan.value !== 'pro') return
+  digestSaving.value = true
+  try {
+    await updateProfile({ notificationsDigestCreatorWeekly: digestWeekly.value })
+    digestWeekly.value = currentUser.value?.subscription?.digestCreatorWeekly ?? digestWeekly.value
+    digestSaved.value = true
+    setTimeout(() => (digestSaved.value = false), 2500)
+  } catch {
+    void 0
+  } finally {
+    digestSaving.value = false
+  }
+}
+
+const handleDataSaverMode = (mode: DataSaverOverride) => {
+  setDataSaverOverride(mode)
+}
+
 const handleCancelAtPeriodEnd = async () => {
   subscriptionActionPending.value = true
   subscriptionActionMessage.value = ''
   try {
     await manageSubscription('cancel')
+    currentPlan.value = currentUser.value?.subscription?.plan || currentPlan.value
     subscriptionActionMessage.value = t('settings.subscription.cancelScheduled')
   } catch {
     subscriptionActionMessage.value = t('settings.subscription.error')
@@ -376,11 +432,74 @@ const handleReactivateSubscription = async () => {
   subscriptionActionMessage.value = ''
   try {
     await manageSubscription('reactivate')
+    currentPlan.value = currentUser.value?.subscription?.plan || currentPlan.value
     subscriptionActionMessage.value = t('settings.subscription.reactivated')
   } catch {
     subscriptionActionMessage.value = t('settings.subscription.error')
   } finally {
     subscriptionActionPending.value = false
+  }
+}
+
+const loadBillingInvoices = async () => {
+  if (!currentUser.value) return
+  billingInvoicesLoading.value = true
+  try {
+    billingInvoices.value = await fetchSubscriptionInvoices()
+  } catch {
+    billingInvoices.value = []
+  } finally {
+    billingInvoicesLoading.value = false
+  }
+}
+
+const handleSchedulePlusAtRenewal = async () => {
+  subscriptionActionPending.value = true
+  subscriptionActionMessage.value = ''
+  try {
+    await manageSubscription('schedule_plan_change', { target_plan: 'plus' })
+    currentPlan.value = currentUser.value?.subscription?.plan || currentPlan.value
+    subscriptionActionMessage.value = t('settings.subscription.schedulePlusOk')
+  } catch {
+    subscriptionActionMessage.value = t('settings.subscription.error')
+  } finally {
+    subscriptionActionPending.value = false
+  }
+}
+
+const handleClearPlannedChange = async () => {
+  subscriptionActionPending.value = true
+  subscriptionActionMessage.value = ''
+  try {
+    await manageSubscription('cancel_schedule')
+    currentPlan.value = currentUser.value?.subscription?.plan || currentPlan.value
+    subscriptionActionMessage.value = t('settings.subscription.scheduleCleared')
+  } catch {
+    subscriptionActionMessage.value = t('settings.subscription.error')
+  } finally {
+    subscriptionActionPending.value = false
+  }
+}
+
+const formatInvoiceWhen = (iso: string) => {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  try {
+    return new Intl.DateTimeFormat(currentLang.value || 'fr', { dateStyle: 'medium', timeStyle: 'short' }).format(d)
+  } catch {
+    return d.toLocaleString()
+  }
+}
+
+const invoiceAmountLabel = (row: { amount_display: number; currency_iso: string }) => {
+  try {
+    return new Intl.NumberFormat(currentLang.value || 'fr', {
+      style: 'currency',
+      currency: row.currency_iso,
+      maximumFractionDigits: 2,
+    }).format(Number(row.amount_display))
+  } catch {
+    return `${row.amount_display} ${row.currency_iso}`
   }
 }
 
@@ -665,6 +784,72 @@ const handleLogout = () => {
         </div>
       </section>
 
+      <!-- Accessibilité & données -->
+      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.access.title') }}</h2>
+          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.access.subtitle') }}</p>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <p class="text-sm font-medium text-neutral-800 mb-2">{{ t('settings.access.dataSaver') }}</p>
+            <p class="text-xs text-neutral-600 mb-3">{{ t('settings.access.dataSaver.desc') }}</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold border transition"
+                :class="dataSaverOverride === 'auto' ? 'border-pink-500 bg-pink-50 text-pink-900' : 'border-neutral-200 text-neutral-600'"
+                @click="handleDataSaverMode('auto')"
+              >
+                {{ t('settings.access.dataSaver.auto') }}
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold border transition"
+                :class="dataSaverOverride === 'on' ? 'border-pink-500 bg-pink-50 text-pink-900' : 'border-neutral-200 text-neutral-600'"
+                @click="handleDataSaverMode('on')"
+              >
+                {{ t('settings.access.dataSaver.on') }}
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold border transition"
+                :class="dataSaverOverride === 'off' ? 'border-pink-500 bg-pink-50 text-pink-900' : 'border-neutral-200 text-neutral-600'"
+                @click="handleDataSaverMode('off')"
+              >
+                {{ t('settings.access.dataSaver.off') }}
+              </button>
+            </div>
+            <p class="text-[11px] text-neutral-600 mt-2">{{ t('settings.access.dataSaver.hint', { active: isLowDataMode ? t('settings.access.dataSaver.yes') : t('settings.access.dataSaver.no') }) }}</p>
+          </div>
+
+          <div v-if="currentPlan === 'pro'" class="pt-2 border-t border-neutral-100">
+            <label class="flex items-center justify-between py-2 cursor-pointer">
+              <div>
+                <p class="text-sm font-medium text-neutral-800">{{ t('settings.access.digestWeekly') }}</p>
+                <p class="text-xs text-neutral-600">{{ t('settings.access.digestWeekly.desc') }}</p>
+              </div>
+              <div class="relative">
+                <input v-model="digestWeekly" type="checkbox" class="sr-only peer" />
+                <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-amber-500 rounded-full transition-colors"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+              </div>
+            </label>
+            <div class="flex justify-end mt-2">
+              <button
+                type="button"
+                class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
+                :disabled="digestSaving"
+                @click="persistDigestWeekly"
+              >
+                {{ digestSaving ? t('settings.access.digestSaving') : t('settings.access.digestSave') }}
+              </button>
+            </div>
+            <p v-if="digestSaved" class="text-xs text-emerald-700 mt-2">{{ t('settings.access.digestSaved') }}</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Ads preferences -->
       <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
@@ -777,13 +962,38 @@ const handleLogout = () => {
           <p class="text-xs text-neutral-500">
             {{ t('settings.subscription.renewal', { date: subscriptionRenewalLabel }) }}
           </p>
+          <p v-if="subscriptionScheduleHint" class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-2">
+            {{ subscriptionScheduleHint }}
+          </p>
           <div class="flex flex-wrap gap-2">
+            <router-link
+              to="/premium"
+              class="px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 transition inline-flex items-center"
+            >
+              {{ t('settings.subscription.managePlans') }}
+            </router-link>
             <button
               class="px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 disabled:opacity-50 transition"
               :disabled="subscriptionActionPending || currentPlan === 'free'"
               @click="handleCancelAtPeriodEnd"
             >
               {{ t('settings.subscription.cancelAtEnd') }}
+            </button>
+            <button
+              v-if="currentPlan === 'pro'"
+              class="px-4 py-2 rounded-full bg-white border border-neutral-300 text-neutral-900 text-xs font-semibold hover:bg-neutral-50 disabled:opacity-50 transition"
+              :disabled="subscriptionActionPending"
+              @click="handleSchedulePlusAtRenewal"
+            >
+              {{ t('settings.subscription.scheduleToPlus') }}
+            </button>
+            <button
+              v-if="currentUser?.subscription?.scheduledPlan"
+              class="px-4 py-2 rounded-full bg-neutral-200 text-neutral-900 text-xs font-semibold hover:bg-neutral-300 disabled:opacity-50 transition"
+              :disabled="subscriptionActionPending"
+              @click="handleClearPlannedChange"
+            >
+              {{ t('settings.subscription.clearSchedule') }}
             </button>
             <button
               class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
@@ -794,6 +1004,49 @@ const handleLogout = () => {
             </button>
           </div>
           <p v-if="subscriptionActionMessage" class="text-xs text-neutral-600">{{ subscriptionActionMessage }}</p>
+
+          <div class="pt-4 mt-4 border-t border-neutral-100">
+            <p class="text-xs font-semibold text-neutral-800 mb-2">{{ t('settings.subscription.billingHistory') }}</p>
+            <p v-if="billingInvoicesLoading" class="text-xs text-neutral-400">{{ t('settings.subscription.billingLoading') }}</p>
+            <div v-else-if="!billingInvoices.length" class="text-xs text-neutral-400">{{ t('settings.subscription.billingEmpty') }}</div>
+            <ul v-else class="space-y-2 max-h-64 overflow-y-auto pr-1">
+              <li
+                v-for="inv in billingInvoices"
+                :key="inv.id"
+                class="rounded-xl border border-neutral-200 px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+              >
+                <div>
+                  <p class="text-xs font-semibold text-neutral-800">
+                    {{ inv.plan.toUpperCase() }} · {{ inv.billing_cycle }} · {{ invoiceAmountLabel(inv) }}
+                  </p>
+                  <p class="text-[11px] text-neutral-500">
+                    {{ formatInvoiceWhen(inv.created_at) }} · {{ inv.status }}
+                    <span v-if="inv.promo_bundle && inv.promo_bundle !== 'solo'"> · {{ inv.promo_bundle }}</span>
+                  </p>
+                </div>
+                <div class="flex flex-wrap gap-2 shrink-0">
+                  <a
+                    v-if="inv.invoice_url"
+                    :href="inv.invoice_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-[11px] font-semibold text-pink-600 hover:underline"
+                  >
+                    {{ t('settings.subscription.openReceipt') }}
+                  </a>
+                  <a
+                    v-else-if="inv.checkout_url && inv.status === 'pending'"
+                    :href="inv.checkout_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-[11px] font-semibold text-neutral-700 hover:underline"
+                  >
+                    {{ t('settings.subscription.openCheckout') }}
+                  </a>
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 

@@ -917,30 +917,38 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
       v-if="isMyProfile && currentPlan === 'pro'"
       class="mb-10 bg-white rounded-2xl border border-amber-200 p-5 sm:p-6"
     >
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-neutral-900">Statistiques avancées</h2>
-        <span class="text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-1 rounded-full">PRO</span>
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h2 class="text-lg font-semibold text-neutral-900">{{ t('creator.profileStatsTitle') }}</h2>
+        <div class="flex items-center gap-2 flex-wrap justify-end">
+          <router-link
+            to="/creator"
+            class="text-xs font-semibold text-pink-700 hover:text-pink-800 whitespace-nowrap"
+          >
+            {{ t('creator.openDashboard') }} →
+          </router-link>
+          <span class="text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-1 rounded-full">PRO</span>
+        </div>
       </div>
       <div v-if="creatorStatsLoading" class="text-sm text-neutral-500">{{ t('common.loading') }}</div>
       <div v-else class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
         <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">Pins</p>
+          <p class="text-xs text-neutral-500">{{ t('creator.kpiPins') }}</p>
           <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.pins ?? 0 }}</p>
         </div>
         <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">Vues</p>
+          <p class="text-xs text-neutral-500">{{ t('creator.kpiViews') }}</p>
           <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.views ?? 0 }}</p>
         </div>
         <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">Saves</p>
+          <p class="text-xs text-neutral-500">{{ t('creator.kpiSaves') }}</p>
           <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.saves ?? 0 }}</p>
         </div>
         <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">Likes</p>
+          <p class="text-xs text-neutral-500">{{ t('creator.kpiLikes') }}</p>
           <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.likes ?? 0 }}</p>
         </div>
         <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">Commentaires</p>
+          <p class="text-xs text-neutral-500">{{ t('creator.kpiComments') }}</p>
           <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.comments ?? 0 }}</p>
         </div>
       </div>

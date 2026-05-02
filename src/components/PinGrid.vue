@@ -7,11 +7,17 @@ import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
 import { viewerCanRevealSensitiveMedia } from '../composables/useModeration'
+import { useDataSaver } from '../composables/useDataSaver'
 
 const { formatCount, isPinSavePending, toggleLike } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
 const router = useRouter()
 const { t } = useI18n()
+const {
+  gridImageFetchPriority,
+  gridImageSizes,
+  storyVideoPreload,
+} = useDataSaver()
 
 const viewerCanRevealSensitive = computed(() =>
   viewerCanRevealSensitiveMedia(isAuthenticated.value, currentUser.value?.birthDate),
@@ -95,6 +101,17 @@ function onArticleClick(pin: Pin, e: MouseEvent) {
   emit('open-pin', pin.slug)
 }
 
+function pinCardLabel(pin: Pin) {
+  return t('pin.cardAriaLabel', { title: pin.title || pin.slug, user: pin.user })
+}
+
+function onCardKeydown(pin: Pin, ev: KeyboardEvent) {
+  if (ev.key === 'Enter' || ev.key === ' ') {
+    ev.preventDefault()
+    emit('open-pin', pin.slug)
+  }
+}
+
 onMounted(() => {
   updateColumnCount()
   window.addEventListener('resize', updateColumnCount)
@@ -108,17 +125,24 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex gap-3 sm:gap-4 items-start" :aria-label="t('pin.related')">
+  <section class="pin-grid-scope" aria-labelledby="pin-feed-grid-heading">
+    <h2 id="pin-feed-grid-heading" class="sr-only">{{ t('feed.pinsGridHeading') }}</h2>
+    <div class="flex gap-3 sm:gap-4 items-start">
     <div
       v-for="(column, colIndex) in columns"
       :key="colIndex"
+      role="presentation"
       class="flex-1 flex flex-col gap-3 sm:gap-4"
     >
       <article
         v-for="pin in column"
         :key="pin.id"
-        class="group relative rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all cursor-pointer"
+        tabindex="0"
+        role="article"
+        :aria-label="pinCardLabel(pin)"
+        class="group relative rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
         @click="onArticleClick(pin, $event)"
+        @keydown="onCardKeydown(pin, $event)"
       >
         <!-- Image container : hauteur naturelle après chargement -->
         <div
@@ -139,7 +163,10 @@ onUnmounted(() => {
           >
             <img
               :src="pin.imageUrl"
-              :alt="pin.title"
+              :alt="pin.title ? `${pin.title} — ${pin.user}` : t('feed.pinImageFallback', { user: pin.user })"
+              :sizes="gridImageSizes"
+              :fetchpriority="gridImageFetchPriority"
+              decoding="async"
               class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none"
               draggable="false"
               :class="isMediaLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
@@ -159,7 +186,7 @@ onUnmounted(() => {
               :src="pin.storyVideoUrl"
               muted
               playsinline
-              preload="metadata"
+              :preload="storyVideoPreload"
               class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none max-h-[480px]"
               :class="isMediaLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
               @loadedmetadata="markMediaLoaded(pin.id)"
@@ -187,8 +214,10 @@ onUnmounted(() => {
           <!-- Save button -->
           <button
             v-if="isAuthenticated"
+            type="button"
+            :aria-pressed="pin.saved"
             class="absolute top-3 right-3 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 shadow-lg z-[45]"
-            :class="pin.saved ? 'bg-neutral-900 text-white' : 'bg-pink-600 text-white hover:bg-pink-700'"
+            :class="pin.saved ? 'bg-neutral-950 text-white' : 'bg-pink-700 text-white hover:bg-pink-800'"
             :disabled="isSavePending(pin.slug)"
             @click.stop="emit('toggle-save', pin.slug)"
           >
@@ -215,14 +244,15 @@ onUnmounted(() => {
 
         <!-- Pin info below image -->
         <div class="px-2 pt-2 pb-3">
-          <h2 v-if="pin.title" class="text-sm font-semibold leading-snug line-clamp-2 text-neutral-900">
+          <p v-if="pin.title" class="text-sm font-semibold leading-snug line-clamp-2 text-neutral-950">
             {{ pin.title }}
-          </h2>
+          </p>
 
           <router-link
             :to="`/profile/${pin.username}`"
             class="mt-1.5 flex items-center gap-2 hover:bg-neutral-100 p-1 rounded-lg transition-colors"
             @click.stop
+            :aria-label="t('pin.openAuthorProfile', { name: pin.user })"
           >
             <div
               class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 overflow-hidden avatar-shadow"
@@ -234,18 +264,19 @@ onUnmounted(() => {
             <span class="text-xs text-neutral-600 truncate font-medium">{{ pin.user }}</span>
           </router-link>
 
-          <div class="mt-1 flex items-center gap-3 text-[11px] text-neutral-400">
+          <div class="mt-1 flex items-center gap-3 text-[11px] text-neutral-700">
             <span v-if="pin.stats.saves > 0" class="flex items-center gap-0.5">
               {{ formatCount(pin.stats.saves) }}
               <span class="material-symbols-outlined text-xs" :class="{ 'fill-1 text-neutral-600': pin.saved }">bookmark</span>
             </span>
             <span v-if="pin.stats.reactions > 0" class="flex items-center gap-0.5">
               {{ formatCount(pin.stats.reactions) }}
-              <span class="material-symbols-outlined text-xs fill-1" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
+              <span class="material-symbols-outlined text-xs fill-1" :class="pin.liked ? 'text-pink-600' : 'text-neutral-600'">favorite</span>
             </span>
           </div>
         </div>
       </article>
     </div>
-  </div>
+    </div>
+  </section>
 </template>

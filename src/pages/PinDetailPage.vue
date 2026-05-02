@@ -16,6 +16,7 @@ import {
 } from '../composables/useModeration'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
+import { useDataSaver } from '../composables/useDataSaver'
 
 const { t } = useI18n()
 const { showAlert, showPrompt } = useAppModal()
@@ -51,6 +52,9 @@ const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 const viewerCanRevealSensitive = computed(() =>
   viewerCanRevealSensitiveMedia(isAuthenticated.value, currentUser.value?.birthDate),
 )
+
+const { detailVideoPreload, isLowDataMode } = useDataSaver()
+const detailImageFetchPriority = computed(() => (isLowDataMode.value ? 'low' : 'high'))
 
 const pinSlug = computed(() => route.params.slug as string)
 const pin = computed(() => getPin(pinSlug.value))
@@ -655,11 +659,19 @@ const openRelatedPin = (slug: string) => {
     </div>
 
     <!-- Pin detail -->
-    <div v-else>
+    <main
+      v-else
+      id="main-pin-detail"
+      tabindex="-1"
+      :aria-labelledby="pin.title ? 'pin-detail-title' : undefined"
+      class="min-h-screen outline-none"
+    >
       <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <!-- Back button -->
         <button
-          class="mb-6 flex items-center gap-1.5 text-sm text-neutral-600 hover:text-neutral-900 transition"
+          type="button"
+          class="mb-6 flex items-center gap-1.5 text-sm text-neutral-800 hover:text-neutral-950 transition"
+          :aria-label="t('pin.a11y.back')"
           @click="goBack"
         >
           <span class="material-symbols-outlined text-lg">arrow_back</span>
@@ -690,7 +702,9 @@ const openRelatedPin = (slug: string) => {
               >
                 <img
                   :src="pin.imageUrl"
-                  :alt="pin.title"
+                  :alt="pin.title ? `${pin.title} — ${pin.user}` : t('feed.pinImageFallback', { user: pin.user })"
+                  :fetchpriority="detailImageFetchPriority"
+                  decoding="async"
                   class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
                   draggable="false"
                   @load="onDetailImageLoad"
@@ -709,7 +723,7 @@ const openRelatedPin = (slug: string) => {
                   :src="pin.storyVideoUrl"
                   controls
                   playsinline
-                  preload="metadata"
+                  :preload="detailVideoPreload"
                   class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
                   @loadedmetadata="onDetailVideoLoadedMetadata"
                   @dblclick.prevent="handleLike"
@@ -725,44 +739,54 @@ const openRelatedPin = (slug: string) => {
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center gap-2">
                 <button
+                  type="button"
                   class="w-10 h-10 rounded-full flex items-center justify-center transition"
-                  :class="pin.liked ? 'bg-pink-50 text-pink-600' : 'hover:bg-neutral-100 text-neutral-600'"
+                  :class="pin.liked ? 'bg-pink-50 text-pink-700' : 'hover:bg-neutral-100 text-neutral-700'"
                   :disabled="likingPin"
+                  :aria-pressed="pin.liked"
+                  :aria-label="pin.liked ? t('pin.a11y.unlike') : t('pin.a11y.like')"
                   @click="handleLike"
                 >
-                  <span v-if="likingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                  <span v-else class="material-symbols-outlined fill-1" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
+                  <span v-if="likingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                  <span v-else class="material-symbols-outlined fill-1" :class="pin.liked ? 'text-pink-600' : 'text-neutral-700'" aria-hidden="true">favorite</span>
                 </button>
                 <button
-                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition"
+                  type="button"
+                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-700 transition"
+                  :aria-label="t('pin.a11y.share')"
                   @click="handleShare"
                 >
-                  <span class="material-symbols-outlined">share</span>
+                  <span class="material-symbols-outlined" aria-hidden="true">share</span>
                 </button>
                 <button
-                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition"
+                  type="button"
+                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-700 transition"
                   :disabled="downloadingPin || !pin.imageUrl"
+                  :aria-label="t('pin.a11y.download')"
                   @click="handleDownload"
                 >
-                  <span v-if="downloadingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                  <span v-else class="material-symbols-outlined">download</span>
+                  <span v-if="downloadingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                  <span v-else class="material-symbols-outlined" aria-hidden="true">download</span>
                 </button>
                 <button
                   v-if="isAuthenticated && !isPinOwner"
                   type="button"
-                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition"
-                  :title="t('moderation.report')"
+                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-700 transition"
+                  :aria-label="t('moderation.report')"
                   @click="handleReportPin"
                 >
-                  <span class="material-symbols-outlined text-[22px]">flag</span>
+                  <span class="material-symbols-outlined text-[22px]" aria-hidden="true">flag</span>
                 </button>
               </div>
               <button
-                class="px-6 py-2.5 rounded-full font-semibold text-sm transition-all"
+                type="button"
+                class="px-6 py-2.5 rounded-full font-semibold text-sm transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
                 :class="pin.saved
-                  ? 'bg-neutral-900 text-white hover:bg-neutral-800'
-                  : 'bg-pink-600 text-white hover:bg-pink-700'"
+                  ? 'bg-neutral-950 text-white hover:bg-neutral-900'
+                  : 'bg-pink-700 text-white hover:bg-pink-800'"
                 :disabled="savingPin"
+                :aria-pressed="pin.saved"
+                :aria-label="pin.saved ? t('pin.a11y.saved') : t('pin.a11y.save')"
                 @click="handleSave"
               >
                 <span v-if="savingPin" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
@@ -775,7 +799,8 @@ const openRelatedPin = (slug: string) => {
               v-if="pin.link"
               :href="pin.link.startsWith('http') ? pin.link : 'https://' + pin.link"
               target="_blank"
-              class="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700 hover:underline mb-4"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 text-sm text-neutral-800 hover:text-neutral-950 underline underline-offset-2 mb-4"
             >
               <span class="material-symbols-outlined text-base">open_in_new</span>
               {{ pin.link }}
@@ -783,7 +808,7 @@ const openRelatedPin = (slug: string) => {
 
             <!-- Title & Description -->
             <div class="flex items-start gap-2 mb-3 flex-wrap">
-              <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 flex-1 min-w-[12rem]">{{ pin.title }}</h1>
+              <h1 id="pin-detail-title" class="text-2xl sm:text-3xl font-bold text-neutral-950 flex-1 min-w-[12rem]">{{ pin.title }}</h1>
               <span
                 v-if="pin.isStory"
                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0 bg-violet-100 text-violet-800"
@@ -802,7 +827,7 @@ const openRelatedPin = (slug: string) => {
             </div>
             <div class="mb-6">
               <div class="space-y-2">
-                <p class="text-sm text-neutral-700 leading-relaxed">
+                <p class="text-sm text-neutral-800 leading-relaxed">
                   {{ descriptionText || pin.description }}
                 </p>
                 <button
@@ -1012,6 +1037,6 @@ const openRelatedPin = (slug: string) => {
           @open-pin="openRelatedPin"
         />
       </section>
-    </div>
+    </main>
   </div>
 </template>

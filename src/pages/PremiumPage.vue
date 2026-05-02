@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
@@ -8,13 +8,15 @@ import { devLog } from '../devLog'
 
 const { t, currentLang } = useI18n()
 const router = useRouter()
-const { currentUser, isAuthenticated, fetchCurrentUser } = useAuth()
+const { currentUser, isAuthenticated, fetchCurrentUser, startPlusTrial } = useAuth()
 
 const billingCycle = ref<'monthly' | 'yearly'>('monthly')
+const seatBundle = ref<'solo' | 'family' | 'team'>('solo')
 const checkoutPendingPlan = ref<string | null>(null)
 const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
 const pricingLoading = ref(true)
+const trialPending = ref(false)
 const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
 type PricingCycle = {
   amount_minor: number
@@ -43,6 +45,51 @@ const readCycle = (planId: string, cycle: 'monthly' | 'yearly') =>
   pricingCatalog.value[planId]?.[cycle]
 
 const currentPlanId = computed(() => currentUser.value?.subscription?.plan || 'free')
+
+const showTrialCta = computed(
+  () => isAuthenticated.value && (currentUser.value?.subscription?.trialEligible ?? false),
+)
+
+const loadPricingCatalog = () => {
+  pricingLoading.value = true
+  const params: Record<string, string> = {}
+  if (seatBundle.value !== 'solo') {
+    params.seat_bundle = seatBundle.value
+  }
+  api
+    .get('subscription/pricing/', { params })
+    .then((response) => {
+      pricingCatalog.value = response.data?.plans || {}
+    })
+    .catch(() => {
+      paymentInfoMessage.value = t('premium.payment.checkoutError')
+    })
+    .finally(() => {
+      pricingLoading.value = false
+    })
+}
+
+watch(seatBundle, () => {
+  loadPricingCatalog()
+})
+
+const handleStartTrial = async () => {
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  if (trialPending.value) return
+  trialPending.value = true
+  paymentInfoMessage.value = ''
+  try {
+    await startPlusTrial()
+    paymentInfoMessage.value = t('premium.trial.started')
+  } catch (err: any) {
+    paymentInfoMessage.value = err?.response?.data?.error || t('premium.trial.error')
+  } finally {
+    trialPending.value = false
+  }
+}
 
 const openCheckoutPopup = () => {
   if (typeof window === 'undefined') return null
@@ -224,6 +271,7 @@ const handleCheckout = async (planId: string) => {
     const response = await api.post('subscription/checkout/', {
       plan: planId,
       billing_cycle: billingCycle.value,
+      seat_bundle: seatBundle.value,
     })
     const checkoutUrl = response.data?.checkout_url
     const transactionId = response.data?.transaction_id
@@ -298,16 +346,7 @@ onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('message', handlePaymentMessage)
   }
-  api.get('subscription/pricing/')
-    .then((response) => {
-      pricingCatalog.value = response.data?.plans || {}
-    })
-    .catch(() => {
-      paymentInfoMessage.value = t('premium.payment.checkoutError')
-    })
-    .finally(() => {
-      pricingLoading.value = false
-    })
+  loadPricingCatalog()
   handlePopupCallbackReturn().catch(() => undefined)
 })
 
@@ -332,6 +371,9 @@ onUnmounted(() => {
       <p class="text-base sm:text-lg text-neutral-500 max-w-2xl mx-auto">
         {{ t('premium.tagline') }}
       </p>
+      <p class="text-xs text-neutral-500 max-w-2xl mx-auto mt-3">
+        {{ t('premium.b2bLine') }}
+      </p>
 
       <!-- Billing toggle -->
       <div class="inline-flex items-center bg-neutral-100 rounded-full p-1 mt-8">
@@ -349,6 +391,61 @@ onUnmounted(() => {
         >
           {{ t('premium.cycle.yearly') }}
           <span class="text-[10px] uppercase tracking-wide bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{{ t('premium.cycle.discount') }}</span>
+        </button>
+      </div>
+
+      <div class="mt-6 space-y-2">
+        <p class="text-xs font-semibold text-neutral-600">{{ t('premium.bundle.title') }}</p>
+        <div class="inline-flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-full text-xs font-semibold border transition"
+            :class="seatBundle === 'solo' ? 'border-pink-500 bg-pink-50 text-pink-800' : 'border-neutral-200 text-neutral-600'"
+            @click="seatBundle = 'solo'"
+          >
+            {{ t('premium.bundle.solo') }}
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-full text-xs font-semibold border transition"
+            :class="seatBundle === 'family' ? 'border-pink-500 bg-pink-50 text-pink-800' : 'border-neutral-200 text-neutral-600'"
+            @click="seatBundle = 'family'"
+          >
+            {{ t('premium.bundle.family') }}
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-full text-xs font-semibold border transition"
+            :class="seatBundle === 'team' ? 'border-pink-500 bg-pink-50 text-pink-800' : 'border-neutral-200 text-neutral-600'"
+            @click="seatBundle = 'team'"
+          >
+            {{ t('premium.bundle.team') }}
+          </button>
+        </div>
+        <p class="text-[11px] text-neutral-400 max-w-lg mx-auto leading-relaxed">
+          {{
+            seatBundle === 'family'
+              ? t('premium.bundle.familyDesc')
+              : seatBundle === 'team'
+                ? t('premium.bundle.teamDesc')
+                : t('premium.bundle.soloDesc')
+          }}
+        </p>
+      </div>
+
+      <div
+        v-if="showTrialCta"
+        class="mt-10 max-w-lg mx-auto rounded-2xl border border-pink-200 bg-gradient-to-br from-pink-50 to-white p-5 text-left shadow-sm"
+      >
+        <p class="text-sm font-bold text-neutral-900">{{ t('premium.trial.title') }}</p>
+        <p class="text-xs text-neutral-600 mt-1">{{ t('premium.trial.sub') }}</p>
+        <button
+          type="button"
+          class="mt-4 w-full sm:w-auto px-5 py-2.5 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 disabled:opacity-50"
+          :disabled="trialPending"
+          @click="handleStartTrial"
+        >
+          {{ trialPending ? t('premium.trial.busy') : t('premium.trial.cta') }}
         </button>
       </div>
     </div>

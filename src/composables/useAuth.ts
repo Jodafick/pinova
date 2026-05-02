@@ -26,6 +26,9 @@ const defaultUser: User = {
     renewalAt: null,
     translationQuotaMonthly: 5,
     translationUsedMonthly: 0,
+    trialEligible: false,
+    trialConsumedAt: null,
+    digestCreatorWeekly: true,
   },
   birthDate: null,
 }
@@ -80,6 +83,9 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       tipsUrl: djangoUser.subscription?.tips_url ?? profile.tips_url ?? '',
       cancelAtPeriodEnd: djangoUser.subscription?.cancel_at_period_end ?? profile.subscription_cancel_at_period_end ?? false,
       scheduledPlan: djangoUser.subscription?.scheduled_plan ?? profile.subscription_scheduled_plan ?? null,
+      trialEligible: djangoUser.subscription?.trial_eligible ?? false,
+      trialConsumedAt: djangoUser.subscription?.trial_consumed_at ?? profile.subscription_trial_consumed_at ?? null,
+      digestCreatorWeekly: djangoUser.subscription?.digest_creator_weekly ?? true,
     },
     boards: djangoUser.boards || [],
     birthDate: profile.birth_date ?? null,
@@ -161,7 +167,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsDigestCreatorWeekly?: boolean }) {
     try {
       const formData = new FormData()
       if (data.displayName) formData.append('display_name', data.displayName)
@@ -182,7 +188,10 @@ export function useAuth() {
       if (data.notificationsFollowers !== undefined) formData.append('notifications_followers', data.notificationsFollowers ? 'true' : 'false')
       if (data.notificationsSaves !== undefined) formData.append('notifications_saves', data.notificationsSaves ? 'true' : 'false')
       if (data.notificationsRecommendations !== undefined) formData.append('notifications_recommendations', data.notificationsRecommendations ? 'true' : 'false')
-      
+      if (data.notificationsDigestCreatorWeekly !== undefined) {
+        formData.append('notifications_digest_creator_weekly', data.notificationsDigestCreatorWeekly ? 'true' : 'false')
+      }
+
       const response = await api.patch('me/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -359,10 +368,24 @@ export function useAuth() {
     return response.data
   }
 
-  async function manageSubscription(action: 'cancel' | 'reactivate' | 'downgrade_to_free') {
-    const response = await api.post('subscription/manage/', { action })
+  async function manageSubscription(
+    action: 'cancel' | 'reactivate' | 'downgrade_to_free' | 'schedule_plan_change' | 'cancel_schedule',
+    extra?: { target_plan?: 'plus' | 'free' },
+  ) {
+    const response = await api.post('subscription/manage/', { action, ...extra })
     await fetchCurrentUser()
     return response.data
+  }
+
+  async function startPlusTrial() {
+    const response = await api.post('subscription/trial/start/')
+    await fetchCurrentUser()
+    return response.data
+  }
+
+  async function fetchSubscriptionInvoices() {
+    const response = await api.get('subscription/invoices/')
+    return response.data?.results || []
   }
 
   async function fetchSupportTickets() {
@@ -396,6 +419,8 @@ export function useAuth() {
     addBoardCollaborator,
     removeBoardCollaborator,
     manageSubscription,
+    startPlusTrial,
+    fetchSubscriptionInvoices,
     fetchSupportTickets,
     createSupportTicket,
   }

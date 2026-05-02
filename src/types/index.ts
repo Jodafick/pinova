@@ -82,7 +82,10 @@ export type User = {
     tipsEnabled?: boolean
     tipsUrl?: string
     cancelAtPeriodEnd?: boolean
-    scheduledPlan?: 'free' | 'plus' | 'pro' | null
+    scheduledPlan?: 'free' | 'plus' | 'pro' | '' | null
+    trialEligible?: boolean
+    trialConsumedAt?: string | null
+    digestCreatorWeekly?: boolean
   }
   boards?: {
     id: number
