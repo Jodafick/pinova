@@ -13,6 +13,7 @@ const {
   inputPlaceholder,
   dismissAlert,
   finishPrompt,
+  finishConfirm,
 } = useAppModal()
 
 const { t } = useI18n()
@@ -34,6 +35,7 @@ watch(open, (isOpen) => {
 
 function onBackdropClick() {
   if (mode.value === 'alert') dismissAlert()
+  else if (mode.value === 'confirm') finishConfirm(false)
   else finishPrompt(false)
 }
 
@@ -42,6 +44,7 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     e.preventDefault()
     if (mode.value === 'alert') dismissAlert()
+    else if (mode.value === 'confirm') finishConfirm(false)
     else finishPrompt(false)
   }
 }
@@ -147,10 +150,10 @@ function variantStyles(): string {
               class="mt-6 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end sm:gap-3"
             >
               <button
-                v-if="mode === 'prompt'"
+                v-if="mode === 'prompt' || mode === 'confirm'"
                 type="button"
                 class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition"
-                @click="finishPrompt(false)"
+                @click="mode === 'confirm' ? finishConfirm(false) : finishPrompt(false)"
               >
                 {{ t('common.cancel') }}
               </button>
@@ -158,9 +161,15 @@ function variantStyles(): string {
                 ref="okButtonRef"
                 type="button"
                 class="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-pink-600 hover:bg-pink-700 shadow-sm shadow-pink-600/25 transition"
-                @click="mode === 'alert' ? dismissAlert() : finishPrompt(true)"
+                @click="
+                  mode === 'alert'
+                    ? dismissAlert()
+                    : mode === 'confirm'
+                      ? finishConfirm(true)
+                      : finishPrompt(true)
+                "
               >
-                {{ t('common.ok') }}
+                {{ mode === 'confirm' ? t('modal.confirm.ok') : t('common.ok') }}
               </button>
             </div>
           </div>

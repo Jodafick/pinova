@@ -96,6 +96,10 @@ export type User = {
     sponsorUsername?: string | null
     /** Plafond d’invités (famille ou équipe) — propriétaire hub uniquement */
     seatMaxInvitees?: number
+    /** Dernier cycle facturé (paiement approuvé) — pour activer le changement mensuel/annuel */
+    activeBillingCycle?: 'monthly' | 'yearly' | null
+    /** Plus/Pro — flouter les médias marqués sensibles par défaut (client) */
+    sensitiveMediaBlurByDefault?: boolean
   }
   boards?: {
     id: number

@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import api from '../api'
 import { displayInitials } from '../utils/displayInitials'
 import { useDataSaver } from '../composables/useDataSaver'
+import BillingInvoicesSkeleton from '../components/BillingInvoicesSkeleton.vue'
 import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
 
 const router = useRouter()
-const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket, fetchSubscriptionInvoices, fetchCurrentUser } = useAuth()
+const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket, fetchSubscriptionInvoices, fetchSubscriptionInvoiceReceipt, fetchCurrentUser } =
+  useAuth()
 const { t, currentLang } = useI18n()
 const { showAlert, showPrompt } = useAppModal()
 const {
@@ -61,6 +63,9 @@ const privacySaved = ref(false)
 const digestWeekly = ref(true)
 const digestSaving = ref(false)
 const digestSaved = ref(false)
+const sensitiveBlurByDefault = ref(true)
+const sensitiveBlurSaving = ref(false)
+const sensitiveBlurSaved = ref(false)
 const subscriptionActionPending = ref(false)
 const subscriptionActionMessage = ref('')
 const billingInvoices = ref<
@@ -79,6 +84,7 @@ const billingInvoices = ref<
   }[]
 >([])
 const billingInvoicesLoading = ref(false)
+const billingReceiptLoadingId = ref<number | null>(null)
 const supportSubject = ref('')
 const supportMessage = ref('')
 const supportSubmitting = ref(false)
@@ -273,6 +279,7 @@ onMounted(() => {
     privateProfile.value = currentUser.value.privateProfile ?? false
     discoverableProfile.value = currentUser.value.discoverableProfile ?? true
     digestWeekly.value = currentUser.value.subscription?.digestCreatorWeekly ?? true
+    sensitiveBlurByDefault.value = currentUser.value.subscription?.sensitiveMediaBlurByDefault ?? true
   }
   api.get('subscription/currencies/')
     .then((response) => {
@@ -291,6 +298,22 @@ onMounted(() => {
   void loadBillingInvoices()
   void loadSeatHub()
 })
+
+watch(
+  () =>
+    [
+      currentUser.value?.subscription?.plan,
+      currentUser.value?.subscription?.sensitiveMediaBlurByDefault,
+    ] as const,
+  ([plan, pref]) => {
+    if (plan !== 'plus' && plan !== 'pro') {
+      sensitiveBlurByDefault.value = true
+      return
+    }
+    sensitiveBlurByDefault.value = pref ?? true
+  },
+  { immediate: true },
+)
 
 const loadSeatHub = async () => {
   if (!currentUser.value) return
@@ -586,6 +609,20 @@ const persistDigestWeekly = async () => {
   }
 }
 
+const persistSensitiveBlurDefault = async () => {
+  if (currentPlan.value !== 'plus' && currentPlan.value !== 'pro') return
+  sensitiveBlurSaving.value = true
+  try {
+    await updateProfile({ sensitiveMediaBlurByDefault: sensitiveBlurByDefault.value })
+    sensitiveBlurSaved.value = true
+    setTimeout(() => (sensitiveBlurSaved.value = false), 2500)
+  } catch {
+    void 0
+  } finally {
+    sensitiveBlurSaving.value = false
+  }
+}
+
 const handleDataSaverMode = (mode: DataSaverOverride) => {
   setDataSaverOverride(mode)
 }
@@ -677,6 +714,23 @@ const invoiceAmountLabel = (row: { amount_display: number; currency_iso: string 
     }).format(Number(row.amount_display))
   } catch {
     return `${row.amount_display} ${row.currency_iso}`
+  }
+}
+
+const openBillingReceipt = async (inv: { id: number; invoice_url?: string }) => {
+  billingReceiptLoadingId.value = inv.id
+  try {
+    const data = await fetchSubscriptionInvoiceReceipt(inv.id)
+    const url = data?.invoice_url
+    if (url) {
+      const ix = billingInvoices.value.findIndex((x) => x.id === inv.id)
+      if (ix >= 0) billingInvoices.value[ix] = { ...billingInvoices.value[ix], invoice_url: url }
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  } catch {
+    /* silencieux : lien optionnel depuis les réglages */
+  } finally {
+    billingReceiptLoadingId.value = null
   }
 }
 
@@ -1057,6 +1111,31 @@ async function cancelAccountDeletion() {
             <p class="text-[11px] text-neutral-600 mt-2">{{ t('settings.access.dataSaver.hint', { active: isLowDataMode ? t('settings.access.dataSaver.yes') : t('settings.access.dataSaver.no') }) }}</p>
           </div>
 
+          <div v-if="currentPlan === 'plus' || currentPlan === 'pro'" class="pt-2 border-t border-neutral-100">
+            <label class="flex items-center justify-between py-2 cursor-pointer">
+              <div>
+                <p class="text-sm font-medium text-neutral-800">{{ t('settings.access.sensitiveBlur.title') }}</p>
+                <p class="text-xs text-neutral-600">{{ t('settings.access.sensitiveBlur.desc') }}</p>
+              </div>
+              <div class="relative">
+                <input v-model="sensitiveBlurByDefault" type="checkbox" class="sr-only peer" />
+                <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+              </div>
+            </label>
+            <div class="flex justify-end mt-2">
+              <button
+                type="button"
+                class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
+                :disabled="sensitiveBlurSaving"
+                @click="persistSensitiveBlurDefault"
+              >
+                {{ sensitiveBlurSaving ? t('settings.access.sensitiveBlur.saving') : t('settings.access.sensitiveBlur.save') }}
+              </button>
+            </div>
+            <p v-if="sensitiveBlurSaved" class="text-xs text-emerald-700 mt-2">{{ t('settings.access.sensitiveBlur.saved') }}</p>
+          </div>
+
           <div v-if="currentPlan === 'pro'" class="pt-2 border-t border-neutral-100">
             <label class="flex items-center justify-between py-2 cursor-pointer">
               <div>
@@ -1394,7 +1473,10 @@ async function cancelAccountDeletion() {
                 {{ t('settings.subscription.viewBillingPage') }}
               </router-link>
             </div>
-            <p v-if="billingInvoicesLoading" class="text-xs text-neutral-400">{{ t('settings.subscription.billingLoading') }}</p>
+            <div v-if="billingInvoicesLoading" aria-busy="true">
+              <span class="sr-only">{{ t('settings.subscription.billingLoading') }}</span>
+              <BillingInvoicesSkeleton />
+            </div>
             <div v-else-if="!billingInvoices.length" class="text-xs text-neutral-400">{{ t('settings.subscription.billingEmpty') }}</div>
             <ul v-else class="space-y-2 max-h-64 overflow-y-auto pr-1">
               <li
@@ -1412,15 +1494,30 @@ async function cancelAccountDeletion() {
                   </p>
                 </div>
                 <div class="flex flex-wrap gap-2 shrink-0">
-                  <a
-                    v-if="inv.invoice_url"
-                    :href="inv.invoice_url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-[11px] font-semibold text-pink-600 hover:underline"
-                  >
-                    {{ t('settings.subscription.openReceipt') }}
-                  </a>
+                  <template v-if="inv.status === 'approved'">
+                    <a
+                      v-if="inv.invoice_url"
+                      :href="inv.invoice_url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-[11px] font-semibold text-pink-600 hover:underline"
+                    >
+                      {{ t('settings.subscription.openReceipt') }}
+                    </a>
+                    <button
+                      v-else
+                      type="button"
+                      class="text-[11px] font-semibold text-pink-600 hover:underline disabled:opacity-50"
+                      :disabled="billingReceiptLoadingId === inv.id"
+                      @click="openBillingReceipt(inv)"
+                    >
+                      {{
+                        billingReceiptLoadingId === inv.id
+                          ? t('billing.fetchReceiptBusy')
+                          : t('billing.fetchReceipt')
+                      }}
+                    </button>
+                  </template>
                   <a
                     v-else-if="inv.checkout_url && inv.status === 'pending'"
                     :href="inv.checkout_url"

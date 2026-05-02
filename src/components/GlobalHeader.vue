@@ -5,6 +5,7 @@ import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
 import { useI18n } from '../i18n'
 import api from '../api'
+import { subscribeNotificationRefreshFromApiActivity } from '../notificationRefresh'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 import { displayInitials } from '../utils/displayInitials'
 
@@ -138,14 +139,21 @@ const closeDropdowns = () => {
   showSearchResults.value = false
 }
 
+let unsubscribeNotifications: (() => void) | null = null
+
 onMounted(() => {
   fetchNotifications()
+  unsubscribeNotifications = subscribeNotificationRefreshFromApiActivity(() => {
+    void fetchNotifications()
+  })
   if (typeof window !== 'undefined') {
     window.addEventListener('message', handleWorkerMessage)
   }
 })
 
 onUnmounted(() => {
+  unsubscribeNotifications?.()
+  unsubscribeNotifications = null
   if (typeof window !== 'undefined') {
     window.removeEventListener('message', handleWorkerMessage)
   }

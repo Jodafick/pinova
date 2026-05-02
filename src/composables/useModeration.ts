@@ -184,6 +184,22 @@ export function viewerCanRevealSensitiveMedia(isAuthenticated: boolean, birthDat
 }
 
 /**
+ * Flou par défaut sur les médias marqués sensibles (côté client).
+ * Plus/Pro peuvent désactiver via le profil ; mineurs / non connectés : toujours flouté.
+ */
+export function sensitiveMediaBlurredByDefault(
+  isAuthenticated: boolean,
+  birthDate: string | null | undefined,
+  plan: string | null | undefined,
+  blurByDefaultPreference: boolean | undefined,
+): boolean {
+  if (!viewerCanRevealSensitiveMedia(isAuthenticated, birthDate)) return true
+  const paid = plan === 'plus' || plan === 'pro'
+  if (paid && blurByDefaultPreference === false) return false
+  return true
+}
+
+/**
  * NSFWJS dans le navigateur uniquement (aucune image envoyée au backend ML).
  */
 export async function moderationScanImageFile(

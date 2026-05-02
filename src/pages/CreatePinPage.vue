@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
@@ -29,7 +29,8 @@ const { t, currentLang } = useI18n()
 const { showAlert } = useAppModal()
 
 const router = useRouter()
-const { addPin, topics } = usePins()
+const route = useRoute()
+const { addPin, updatePin, topics, getPin, fetchPinBySlug, fetchPrivateTags } = usePins()
 const { currentUser, fetchMyBoards, isAuthenticated, fetchCurrentUser } = useAuth()
 
 const needsBirthDateForMedia = computed(
@@ -81,7 +82,12 @@ const showCategoryDropdown = ref(false)
 const categorySearch = ref('')
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 
-const createStep = ref<1 | 2>(1)
+const editSlug = computed(() => (route.name === 'edit-pin' ? String(route.params.slug || '').trim() : ''))
+const isEditMode = computed(() => editSlug.value.length > 0)
+const loadingEdit = ref(false)
+
+const existingImageUrl = ref<string | null>(null)
+const existingStoryVideoUrl = ref<string | null>(null)
 
 async function goStep2() {
   if (!title.value.trim()) {
@@ -174,9 +180,62 @@ onMounted(async () => {
     await fetchCurrentUser({ silent: true })
   }
   await loadTopics('')
+
+  if (isEditMode.value) {
+    loadingEdit.value = true
+    try {
+      await fetchPinBySlug(editSlug.value)
+      const p = getPin(editSlug.value)
+      if (!p || currentUser.value?.username !== p.username) {
+        await showAlert(t('pin.edit.denied'), { variant: 'warning', title: t('modal.errorTitle') })
+        router.replace('/')
+        return
+      }
+      title.value = p.title
+      description.value = p.description || ''
+      link.value = p.link || ''
+      topic.value = p.topic
+      categorySearch.value = p.topicDisplay || p.topic
+      visibility.value = (p.visibility as typeof visibility.value) || 'public'
+      isStory.value = !!p.isStory
+      existingImageUrl.value = p.imageUrl || null
+      existingStoryVideoUrl.value = !p.imageUrl && p.storyVideoUrl ? p.storyVideoUrl : null
+      pendingSensitiveBlur.value = !!p.mediaSensitiveBlur
+      publicTagsInput.value = (p.hashtags || []).map((h) => String(h).replace(/^#/, '').trim()).filter(Boolean).join(', ')
+      selectedBoardIds.value = (p.boards || []).filter((b) => {
+        const o = String(b.ownerUsername || '').trim().toLowerCase()
+        const me = String(currentUser.value?.username || '').trim().toLowerCase()
+        return !!o && o === me
+      }).map((b) => b.id)
+      if (canUsePrivateTags.value) {
+        try {
+          privateTags.value = [...(await fetchPrivateTags(editSlug.value))]
+        } catch {
+          privateTags.value = []
+        }
+      }
+      await fetchCurrentUser({ silent: true })
+      if (canSchedulePublish.value && p.scheduledPublishAt) {
+        try {
+          const d = new Date(p.scheduledPublishAt)
+          if (!Number.isNaN(d.getTime())) {
+            const pad = (n: number) => String(n).padStart(2, '0')
+            scheduledPublishLocal.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+          }
+        } catch {
+          scheduledPublishLocal.value = ''
+        }
+      }
+    } catch {
+      await showAlert(t('pin.edit.loadError'), { variant: 'danger', title: t('modal.errorTitle') })
+      router.replace('/')
+    } finally {
+      loadingEdit.value = false
+    }
+  }
+
   await loadBoards()
 })
-
 watch(currentUser, async () => {
   await loadBoards()
 }, { immediate: true })
@@ -314,10 +373,19 @@ const clearImage = () => {
 const clearStep2Media = () => {
   clearImage()
   clearStoryVideo()
+  existingImageUrl.value = null
+  existingStoryVideoUrl.value = null
 }
 
 const submitPin = async () => {
-  if (!title.value || (!imageFile.value && !storyVideoFile.value)) return
+  if (!title.value) return
+  const hasRemoteMedia =
+    !!existingImageUrl.value || !!(existingStoryVideoUrl.value || '').trim()
+  if (
+    !hasRemoteMedia && !imageFile.value && !storyVideoFile.value
+  ) {
+    return
+  }
   if (mediaModerationPending.value) return
   const textOk = moderationScanText([
     title.value,
@@ -330,8 +398,13 @@ const submitPin = async () => {
     createStep.value = 1
     return
   }
-  await fetchCurrentUser({ silent: true })
-  const hasMedia = !!(imageFile.value || storyVideoFile.value)
+    await fetchCurrentUser({ silent: true })
+    const hasMedia = !!(
+      imageFile.value ||
+      storyVideoFile.value ||
+      existingImageUrl.value ||
+      (existingStoryVideoUrl.value || '').trim()
+    )
   if (hasMedia && !hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
     await showAlert(t('moderation.publishRequiresBirthDate'), {
       variant: 'warning',
@@ -352,7 +425,7 @@ const submitPin = async () => {
     const resolvedTopic = topic.value || categorySearch.value.trim() || 'Général'
     formData.append('topic', resolvedTopic)
     formData.append('visibility', visibility.value)
-    formData.append('is_story', (isStory.value || !!storyVideoFile.value) ? 'true' : 'false')
+    formData.append('is_story', (isStory.value || !!storyVideoFile.value || !!existingStoryVideoUrl.value) ? 'true' : 'false')
     if (canSchedulePublish.value && scheduledPublishLocal.value) {
       const d = new Date(scheduledPublishLocal.value)
       if (!Number.isNaN(d.getTime())) {
@@ -374,12 +447,18 @@ const submitPin = async () => {
       isVerifiedAdultFromBirthDate(currentUser.value?.birthDate)
     formData.append('media_sensitive_blur', blurPublish ? 'true' : 'false')
 
-    if (currentUser.value) {
+    if (!isEditMode.value && currentUser.value) {
       formData.append('author', currentUser.value.id.toString())
     }
 
-    await addPin(formData)
-    router.push('/')
+    let resultPin
+    if (isEditMode.value) {
+      resultPin = await updatePin(editSlug.value, formData)
+    } else {
+      resultPin = await addPin(formData)
+    }
+    const destSlug = resultPin?.slug || editSlug.value
+    router.push(destSlug ? `/pin/${destSlug}` : '/')
   } catch (err: unknown) {
     console.error('Erreur lors de la publication:', err)
     const ax = err as { response?: { data?: Record<string, unknown> } }
@@ -419,6 +498,17 @@ const selectCategory = (selected: TopicOption) => {
 <template>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <div
+      v-if="loadingEdit"
+      class="flex flex-col items-center justify-center py-24 gap-4 text-neutral-600"
+    >
+      <svg class="animate-spin h-10 w-10 text-pink-600 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+        <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+        <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      </svg>
+      <span class="text-sm font-medium">{{ t('common.loading') }}</span>
+    </div>
+    <template v-else>
+    <div
       v-if="needsBirthDateForMedia"
       class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
     >
@@ -433,8 +523,8 @@ const selectCategory = (selected: TopicOption) => {
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">{{ t('create.title') }}</h1>
-        <p class="text-sm text-neutral-500 mt-1">{{ t('create.subtitle') }}</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">{{ isEditMode ? t('pin.edit.title') : t('create.title') }}</h1>
+        <p class="text-sm text-neutral-500 mt-1">{{ isEditMode ? t('pin.edit.subtitle') : t('create.subtitle') }}</p>
         <p v-if="createStep === 1" class="text-xs text-pink-600 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
       </div>
       <div class="flex items-center gap-3">
@@ -448,7 +538,7 @@ const selectCategory = (selected: TopicOption) => {
           v-if="createStep === 2"
           type="button"
           class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition flex items-center gap-2"
-          :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl) || saving || mediaModerationPending"
+          :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending"
           @click="submitPin"
         >
           <svg v-if="saving || mediaModerationPending" class="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24">
@@ -457,10 +547,12 @@ const selectCategory = (selected: TopicOption) => {
           </svg>
           {{
             saving
-              ? t('create.publishing')
+              ? (isEditMode ? t('pin.edit.saving') : t('create.publishing'))
               : mediaModerationPending
                 ? t('moderation.scanningMediaShort')
-                : t('create.publish')
+                : isEditMode
+                  ? t('pin.edit.save')
+                  : t('create.publish')
           }}
         </button>
         <button
@@ -482,7 +574,7 @@ const selectCategory = (selected: TopicOption) => {
         <!-- Image (étape 2) -->
         <div v-if="createStep === 2" class="lg:w-2/5 p-6 sm:p-8 bg-neutral-50 border-b lg:border-b-0 lg:border-r border-neutral-100">
           <div
-            v-if="!imagePreviewUrl && !storyVideoPreviewUrl"
+            v-if="!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()"
             class="h-80 lg:h-full min-h-[320px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 text-center cursor-pointer transition-colors"
             :class="isDragging
               ? 'border-pink-400 bg-pink-50/60'
@@ -527,8 +619,8 @@ const selectCategory = (selected: TopicOption) => {
 
           <div v-else class="relative">
             <video
-              v-if="storyVideoPreviewUrl"
-              :src="storyVideoPreviewUrl"
+              v-if="storyVideoPreviewUrl || (!imagePreviewUrl && (existingStoryVideoUrl || '').trim())"
+              :src="storyVideoPreviewUrl || existingStoryVideoUrl || ''"
               controls
               muted
               playsinline
@@ -536,7 +628,7 @@ const selectCategory = (selected: TopicOption) => {
             />
             <template v-else>
               <img
-                :src="imagePreviewUrl || ''"
+                :src="(imagePreviewUrl || existingImageUrl || '').trim()"
                 alt="Aperçu"
                 class="w-full rounded-2xl object-cover max-h-[500px]"
               />
@@ -803,5 +895,6 @@ const selectCategory = (selected: TopicOption) => {
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>

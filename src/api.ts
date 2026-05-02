@@ -1,7 +1,17 @@
 import axios from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
 import { API_URL } from './env';
+import { scheduleNotificationRefreshFromApi } from './notificationRefresh';
 
 export const AUTH_INVALIDATED_EVENT = 'pinova-auth-invalidated'
+
+/** Ne pas boucler ni surcharger au chargement liste / marquage notifications. */
+function shouldRefreshNotificationsAfterResponse(config: InternalAxiosRequestConfig) {
+  const url = String(config.url || '')
+  if (!url || url.includes('notifications/')) return false
+  if (typeof window === 'undefined' || !window.localStorage.getItem('pinova_token')) return false
+  return true
+}
 
 const api = axios.create({
   baseURL: API_URL,
@@ -31,7 +41,12 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.config && shouldRefreshNotificationsAfterResponse(response.config)) {
+      scheduleNotificationRefreshFromApi()
+    }
+    return response
+  },
   async (error) => {
     const status = error?.response?.status
     const code = error?.response?.data?.code

@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
-import PinSkeleton from '../components/PinSkeleton.vue'
 import { useI18n } from '../i18n'
 import api from '../api'
 
@@ -71,7 +70,14 @@ const followSuggestedUser = async (username: string) => {
       <p class="text-base text-neutral-500 max-w-lg">{{ t('following.subtitle') }}</p>
     </section>
 
-    <PinSkeleton v-if="loading && displayPins.length === 0" />
+    <PinGrid
+      v-if="displayPins.length > 0 || (loading && displayPins.length === 0) || (isFetchingNextPage && displayPins.length > 0)"
+      :pins="displayPins"
+      :loading-initial="loading && displayPins.length === 0"
+      :loading-more="isFetchingNextPage && displayPins.length > 0"
+      @toggle-save="handleToggleSave"
+      @open-pin="openPin"
+    />
 
     <div v-else-if="displayPins.length === 0" class="rounded-2xl border border-neutral-200 bg-white p-8 text-center">
       <p class="text-neutral-700 mb-3">{{ t('following.empty') }}</p>
@@ -124,13 +130,5 @@ const followSuggestedUser = async (username: string) => {
       </div>
     </div>
 
-    <PinGrid
-      v-else
-      :pins="displayPins"
-      @toggle-save="handleToggleSave"
-      @open-pin="openPin"
-    />
-
-    <PinSkeleton v-if="isFetchingNextPage" class="mt-6" />
   </div>
 </template>

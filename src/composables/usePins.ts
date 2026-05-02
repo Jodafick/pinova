@@ -414,6 +414,36 @@ export function usePins() {
     }
   }
 
+  async function updatePin(slug: string, pinData: FormData) {
+    loading.value = true
+    try {
+      const response = await api.patch(`pins/${slug}/`, pinData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      const mapped = mapDjangoPinToFrontend(response.data)
+      const idx = pins.value.findIndex((p) => p.slug === slug)
+      const nextSlug = mapped.slug || slug
+      if (idx >= 0) {
+        pins.value[idx] = mapped
+      } else {
+        pins.value.push(mapped)
+      }
+      return mapped
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour du pin:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function deletePin(slug: string) {
+    await api.delete(`pins/${slug}/`)
+    pins.value = pins.value.filter((p) => p.slug !== slug)
+  }
+
   function getPin(slug: string): Pin | undefined {
     return pins.value.find((p) => p.slug === slug)
   }
@@ -516,6 +546,8 @@ export function usePins() {
     fetchDiscoverPins,
     fetchFollowingPins,
     addPin,
+    updatePin,
+    deletePin,
     getPin,
     toggleSave,
     toggleLike,

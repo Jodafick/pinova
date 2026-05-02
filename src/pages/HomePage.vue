@@ -7,7 +7,6 @@ import { useI18n } from '../i18n'
 import TopicScroller from '../components/TopicScroller.vue'
 import HomeStoriesStrip from '../components/HomeStoriesStrip.vue'
 import PinGrid from '../components/PinGrid.vue'
-import PinSkeleton from '../components/PinSkeleton.vue'
 
 const { t, currentLang } = useI18n()
 
@@ -133,8 +132,15 @@ const openPin = (slug: string) => {
 
     <TopicScroller :topics="topics" :active-topic="activeTopic" @select="selectTopic" />
 
-    <!-- Loading skeleton -->
-    <PinSkeleton v-if="loading && filteredPins.length === 0" class="mt-4" />
+    <PinGrid
+      v-if="filteredPins.length > 0 || (loading && filteredPins.length === 0) || (isFetchingNextPage && filteredPins.length > 0)"
+      class="mt-4"
+      :pins="filteredPins"
+      :loading-initial="loading && filteredPins.length === 0"
+      :loading-more="isFetchingNextPage && filteredPins.length > 0"
+      @toggle-save="handleToggleSave"
+      @open-pin="openPin"
+    />
 
     <!-- Empty state -->
     <div v-else-if="filteredPins.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
@@ -144,16 +150,6 @@ const openPin = (slug: string) => {
         {{ t('home.empty.desc') }}
       </p>
     </div>
-
-    <PinGrid
-      v-else
-      :pins="filteredPins"
-      @toggle-save="handleToggleSave"
-      @open-pin="openPin"
-    />
-
-    <!-- Pinterest-like skeleton while fetching next page -->
-    <PinSkeleton v-if="isFetchingNextPage" class="mt-6" />
 
     <!-- Floating create button mobile -->
     <router-link

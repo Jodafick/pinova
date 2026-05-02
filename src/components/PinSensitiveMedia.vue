@@ -4,16 +4,26 @@ import { useI18n } from '../i18n'
 
 defineOptions({ inheritAttrs: false })
 
-const props = defineProps<{
-  sensitive: boolean
-  viewerCanReveal: boolean
-  wrapperClass?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    sensitive: boolean
+    viewerCanReveal: boolean
+    /** Si false (Plus/Pro + préférence), pas de flou par défaut pour un spectateur majeur. */
+    blurByDefault?: boolean
+    wrapperClass?: string
+  }>(),
+  { blurByDefault: true },
+)
 
 const { t } = useI18n()
 const revealed = ref(false)
 
-const showOverlay = computed(() => props.sensitive && (!props.viewerCanReveal || !revealed.value))
+const showOverlay = computed(() => {
+  if (!props.sensitive) return false
+  if (!props.viewerCanReveal) return true
+  if (!props.blurByDefault) return false
+  return !revealed.value
+})
 </script>
 
 <template>
@@ -33,7 +43,7 @@ const showOverlay = computed(() => props.sensitive && (!props.viewerCanReveal ||
         {{ t('moderation.sensitiveOverlay') }}
       </p>
       <button
-        v-if="viewerCanReveal"
+        v-if="viewerCanReveal && blurByDefault"
         type="button"
         class="pointer-events-auto px-4 py-2 rounded-full bg-white text-neutral-900 text-sm font-bold shadow-lg hover:bg-neutral-100 transition-colors"
         @click.stop.prevent="revealed = true"

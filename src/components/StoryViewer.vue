@@ -8,7 +8,7 @@ import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
 import StorySegmentedProgressBar from './StorySegmentedProgressBar.vue'
-import { viewerCanRevealSensitiveMedia } from '../composables/useModeration'
+import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/useModeration'
 
 const props = defineProps<{
   modelValue: boolean
@@ -28,6 +28,15 @@ const { showAlert } = useAppModal()
 
 const viewerCanRevealSensitive = computed(() =>
   viewerCanRevealSensitiveMedia(isAuthenticated.value, currentUser.value?.birthDate),
+)
+
+const blurSensitiveByDefault = computed(() =>
+  sensitiveMediaBlurredByDefault(
+    isAuthenticated.value,
+    currentUser.value?.birthDate,
+    currentUser.value?.subscription?.plan,
+    currentUser.value?.subscription?.sensitiveMediaBlurByDefault,
+  ),
 )
 
 /** Durée image par défaut ; vidéo = métadonnées (bornée). */
@@ -373,6 +382,7 @@ onUnmounted(() => {
               v-if="current.storyVideoUrl"
               :sensitive="!!current.mediaSensitiveBlur"
               :viewer-can-reveal="viewerCanRevealSensitive"
+              :blur-by-default="blurSensitiveByDefault"
               wrapper-class="w-full"
             >
               <video
@@ -391,6 +401,7 @@ onUnmounted(() => {
               v-else-if="current.imageUrl"
               :sensitive="!!current.mediaSensitiveBlur"
               :viewer-can-reveal="viewerCanRevealSensitive"
+              :blur-by-default="blurSensitiveByDefault"
               wrapper-class="w-full"
             >
               <img

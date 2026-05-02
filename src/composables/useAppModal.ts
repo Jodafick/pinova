@@ -3,7 +3,7 @@ import { ref } from 'vue'
 export type AlertVariant = 'info' | 'success' | 'warning' | 'danger'
 
 const open = ref(false)
-const mode = ref<'alert' | 'prompt'>('alert')
+const mode = ref<'alert' | 'prompt' | 'confirm'>('alert')
 const title = ref('')
 const message = ref('')
 const variant = ref<AlertVariant>('info')
@@ -12,6 +12,7 @@ const inputPlaceholder = ref('')
 
 let resolveAlert: (() => void) | null = null
 let resolvePrompt: ((value: string | null) => void) | null = null
+let resolveConfirm: ((value: boolean) => void) | null = null
 
 export function useAppModal() {
   function showAlert(
@@ -47,6 +48,21 @@ export function useAppModal() {
     })
   }
 
+  function showConfirm(options: {
+    message: string
+    title?: string
+    variant?: AlertVariant
+  }): Promise<boolean> {
+    return new Promise((resolve) => {
+      mode.value = 'confirm'
+      title.value = options.title?.trim() ?? ''
+      message.value = options.message
+      variant.value = options.variant ?? 'warning'
+      resolveConfirm = resolve
+      open.value = true
+    })
+  }
+
   function dismissAlert() {
     open.value = false
     const r = resolveAlert
@@ -62,6 +78,13 @@ export function useAppModal() {
     r(ok ? inputValue.value.trim() : null)
   }
 
+  function finishConfirm(ok: boolean) {
+    open.value = false
+    const r = resolveConfirm
+    resolveConfirm = null
+    if (r) r(ok)
+  }
+
   return {
     open,
     mode,
@@ -72,7 +95,9 @@ export function useAppModal() {
     inputPlaceholder,
     showAlert,
     showPrompt,
+    showConfirm,
     dismissAlert,
     finishPrompt,
+    finishConfirm,
   }
 }

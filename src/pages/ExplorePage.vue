@@ -5,7 +5,6 @@ import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import api from '../api'
 import PinGrid from '../components/PinGrid.vue'
-import PinSkeleton from '../components/PinSkeleton.vue'
 import { useI18n } from '../i18n'
 
 const { t, currentLang } = useI18n()
@@ -172,11 +171,11 @@ const openPin = (slug: string) => {
         </button>
       </div>
       
-      <PinSkeleton v-if="loading && displayPins.length === 0" />
-      
       <PinGrid
-        v-else
+        v-if="displayPins.length > 0 || (loading && displayPins.length === 0) || (isFetchingNextPage && displayPins.length > 0)"
         :pins="displayPins"
+        :loading-initial="loading && displayPins.length === 0"
+        :loading-more="isFetchingNextPage && displayPins.length > 0"
         @toggle-save="handleToggleSave"
         @open-pin="openPin"
       />
@@ -192,17 +191,14 @@ const openPin = (slug: string) => {
         </span>
       </div>
 
-      <PinSkeleton v-if="loading && displayPins.length === 0" />
-
       <PinGrid
-        v-else
+        v-if="displayPins.length > 0 || (loading && displayPins.length === 0) || (isFetchingNextPage && displayPins.length > 0)"
         :pins="displayPins"
+        :loading-initial="loading && displayPins.length === 0"
+        :loading-more="isFetchingNextPage && displayPins.length > 0"
         @toggle-save="handleToggleSave"
         @open-pin="openPin"
       />
     </section>
-
-    <!-- Pinterest-like skeleton while fetching next page -->
-    <PinSkeleton v-if="isFetchingNextPage" class="mt-6" />
   </div>
 </template>

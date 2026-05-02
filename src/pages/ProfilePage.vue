@@ -5,7 +5,6 @@ import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins, mapDjangoPinToFrontend } from '../composables/usePins'
 import type { User, Pin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
-import PinSkeleton from '../components/PinSkeleton.vue'
 import ProfileHeaderSkeleton from '../components/ProfileHeaderSkeleton.vue'
 import UserListSkeleton from '../components/UserListSkeleton.vue'
 import CreatorStatsSkeleton from '../components/CreatorStatsSkeleton.vue'
@@ -372,6 +371,15 @@ const profilePinsTotalDisplay = computed(() => {
 const displayPins = computed(() => {
   return activeTab.value === 'created' ? createdPins.value : savedPinsList.value
 })
+
+const profileGridLoadingInitial = computed(() => {
+  if (displayPins.value.length > 0) return false
+  return activeTab.value === 'created' ? profilePinsLoading.value : savedPinsLoading.value
+})
+
+const profileGridLoadingMore = computed(
+  () => profilePinsLoadingMore.value || savedPinsLoadingMore.value,
+)
 
 const showProfileInfiniteSentinel = computed(() => {
   if (displayPins.value.length === 0) return false
@@ -780,7 +788,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 <template>
   <div v-if="loading" class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <ProfileHeaderSkeleton />
-    <PinSkeleton class="mt-4" />
+    <PinGrid class="mt-4" :pins="[]" loading-initial />
   </div>
 
   <div v-else-if="profileUser" class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -1275,7 +1283,14 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     </div>
 
     <!-- Pins grid -->
-    <PinSkeleton v-if="((activeTab === 'created' ? profilePinsLoading : savedPinsLoading) && displayPins.length === 0)" />
+    <PinGrid
+      v-if="displayPins.length > 0 || profileGridLoadingInitial"
+      :pins="displayPins"
+      :loading-initial="profileGridLoadingInitial"
+      :loading-more="profileGridLoadingMore"
+      @toggle-save="handleToggleSave"
+      @open-pin="openPin"
+    />
 
     <div v-else-if="displayPins.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
       <span class="material-symbols-outlined text-5xl text-neutral-300 mb-3">
@@ -1303,21 +1318,12 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </router-link>
     </div>
 
-    <PinGrid
-      v-else
-      :pins="displayPins"
-      @toggle-save="handleToggleSave"
-      @open-pin="openPin"
-    />
-
     <div
       v-if="showProfileInfiniteSentinel"
       ref="infiniteScrollSentinel"
-      class="w-full py-6 min-h-[72px]"
+      class="w-full py-6 min-h-[40px]"
       aria-hidden="true"
-    >
-      <PinSkeleton v-if="profilePinsLoadingMore || savedPinsLoadingMore" />
-    </div>
+    />
 
     <StoryViewer
       v-if="currentUser && activeStories.length > 0"

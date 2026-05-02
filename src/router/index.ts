@@ -32,6 +32,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/pin/:slug/edit',
+      name: 'edit-pin',
+      component: () => import('../pages/CreatePinPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/pin/:slug',
       name: 'pin-detail',
       component: () => import('../pages/PinDetailPage.vue'),
@@ -163,7 +169,7 @@ router.beforeEach(async (to, from) => {
   }
 
   /* Profil serveur à jour (ex. date de naissance) avant la création — sans écran de chargement global. */
-  if (to.name === 'create' && isAuthenticated.value) {
+  if ((to.name === 'create' || to.name === 'edit-pin') && isAuthenticated.value) {
     const { fetchCurrentUser } = useAuth()
     await fetchCurrentUser({ silent: true })
   }

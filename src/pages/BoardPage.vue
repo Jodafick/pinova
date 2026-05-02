@@ -2,7 +2,6 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PinGrid from '../components/PinGrid.vue'
-import PinSkeleton from '../components/PinSkeleton.vue'
 import BoardHeaderSkeleton from '../components/BoardHeaderSkeleton.vue'
 import UserListSkeleton from '../components/UserListSkeleton.vue'
 import api from '../api'
@@ -12,13 +11,14 @@ import type { Pin } from '../types'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { shareUrlWithFallback } from '../utils/shareFallback'
+import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 
 const { t } = useI18n()
-const { showAlert, showPrompt } = useAppModal()
+const { showAlert, showPrompt, showConfirm } = useAppModal()
 const route = useRoute()
 const router = useRouter()
 const { toggleSave } = usePins()
-const { currentUser } = useAuth()
+const { currentUser, updateBoard, deleteBoard } = useAuth()
 
 const boardId = computed(() => Number(route.params.boardId))
 const loading = ref(true)
@@ -28,7 +28,18 @@ const ownerUsername = ref('')
 const boardPins = ref<Pin[]>([])
 const viewerCanManage = ref(false)
 const boardIsPrivate = ref(false)
+const boardIsOwner = ref(false)
+const boardDescription = ref('')
 
+const boardEditOpen = ref(false)
+const boardEditSaving = ref(false)
+const editBoardName = ref('')
+const editBoardDescription = ref('')
+const editBoardPrivate = ref(false)
+
+const boardDeletePending = ref(false)
+
+const boardEditCanTogglePrivate = computed(() => viewerCanManage.value && boardIsOwner.value)
 const organizeModalOpen = ref(false)
 const organizePins = ref<
   Array<{ id: number; slug: string; title: string; image: string; position: number; scheduled_publish_at?: string | null }>
@@ -54,6 +65,8 @@ async function loadBoard() {
     ownerUsername.value = res.data.owner_username || ''
     viewerCanManage.value = !!(res.data.viewer_can_manage ?? res.data.viewerCanManage)
     boardIsPrivate.value = !!(res.data.is_private ?? res.data.isPrivate)
+    boardIsOwner.value = !!(res.data.is_owner ?? res.data.isOwner)
+    boardDescription.value = String(res.data.description ?? '')
     boardPins.value = (res.data.pins || []).map(mapDjangoPinToFrontend)
   } catch (e: unknown) {
     const status = (e as { response?: { status?: number } })?.response?.status
@@ -61,6 +74,8 @@ async function loadBoard() {
     boardPins.value = []
     viewerCanManage.value = false
     boardIsPrivate.value = false
+    boardIsOwner.value = false
+    boardDescription.value = ''
   } finally {
     loading.value = false
   }
@@ -188,6 +203,79 @@ async function shareThisBoard() {
   }
 }
 
+function openBoardEditor() {
+  if (!viewerCanManage.value) return
+  editBoardName.value = boardName.value
+  editBoardDescription.value = boardDescription.value
+  editBoardPrivate.value = boardIsPrivate.value
+  boardEditOpen.value = true
+}
+
+function closeBoardEditor() {
+  boardEditOpen.value = false
+}
+
+async function submitBoardMeta() {
+  if (!boardId.value || !viewerCanManage.value) return
+  boardEditSaving.value = true
+  try {
+    const payload: { name?: string; description?: string; isPrivate?: boolean } = {
+      name: editBoardName.value.trim(),
+      description: editBoardDescription.value.trim(),
+    }
+    if (!payload.name) {
+      await showAlert(t('board.nameRequired'), { variant: 'warning', title: t('modal.errorTitle') })
+      return
+    }
+    if (boardEditCanTogglePrivate.value) {
+      payload.isPrivate = editBoardPrivate.value
+    }
+    await updateBoard(boardId.value, payload)
+    boardName.value = payload.name
+    boardDescription.value = payload.description ?? ''
+    if (boardEditCanTogglePrivate.value) {
+      boardIsPrivate.value = !!payload.isPrivate
+    }
+    boardEditOpen.value = false
+  } catch (err: unknown) {
+    const ax = err as { response?: { data?: Record<string, unknown> | string } }
+    const data = ax.response?.data
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      await showAlert(
+        formatDrfErrorMessages(data as Record<string, unknown>).slice(0, 6).join('\n') || t('board.organizeError'),
+        { variant: 'danger', title: t('modal.errorTitle') },
+      )
+    } else {
+      await showAlert(typeof data === 'string' ? data : t('board.organizeError'), {
+        variant: 'danger',
+        title: t('modal.errorTitle'),
+      })
+    }
+  } finally {
+    boardEditSaving.value = false
+  }
+}
+
+async function confirmDeleteBoard() {
+  if (!boardIsOwner.value || !boardId.value) return
+  const ok = await showConfirm({
+    title: t('board.deleteConfirmTitle'),
+    message: t('board.deleteConfirmBody'),
+    variant: 'danger',
+  })
+  if (!ok) return
+  boardDeletePending.value = true
+  try {
+    await deleteBoard(boardId.value)
+    const owner = ownerUsername.value.trim()
+    router.replace(owner ? `/profile/${owner}` : '/')
+  } catch {
+    await showAlert(t('board.deleteError'), { variant: 'danger', title: t('modal.errorTitle') })
+  } finally {
+    boardDeletePending.value = false
+  }
+}
+
 onMounted(loadBoard)
 watch([boardId, () => route.query.share], loadBoard)
 </script>
@@ -205,7 +293,7 @@ watch([boardId, () => route.query.share], loadBoard)
 
     <div v-if="loading" class="animate-pulse">
       <BoardHeaderSkeleton />
-      <PinSkeleton class="mt-8" />
+      <PinGrid class="mt-8" :pins="[]" loading-initial />
     </div>
 
     <div v-else-if="loadError === 'not_found'" class="text-center py-16 text-neutral-600">
@@ -230,6 +318,26 @@ watch([boardId, () => route.query.share], loadBoard)
           <p class="text-sm text-neutral-500 mt-2">{{ t('board.pinCount', { count: boardPins.length }) }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-end ml-auto">
+          <button
+            v-if="viewerCanManage"
+            type="button"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 bg-white text-neutral-800 text-sm font-semibold hover:bg-neutral-50 transition"
+            @click="openBoardEditor"
+          >
+            <span class="material-symbols-outlined text-lg">edit</span>
+            {{ t('board.editBoard') }}
+          </button>
+          <button
+            v-if="boardIsOwner"
+            type="button"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-200 bg-white text-red-700 text-sm font-semibold hover:bg-red-50 transition disabled:opacity-50"
+            :disabled="boardDeletePending"
+            @click="confirmDeleteBoard"
+          >
+            <span v-if="boardDeletePending" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+            <span v-else class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
+            {{ t('board.deleteBoard') }}
+          </button>
           <button
             v-if="showOrganizeButton"
             type="button"
@@ -301,6 +409,53 @@ watch([boardId, () => route.query.share], loadBoard)
             @click="saveBoardOrder"
           >
             {{ organizeSaving ? t('common.loading') : t('profile.boards.organizeSave') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="boardEditOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 sm:p-7">
+        <h3 class="text-lg font-bold text-neutral-900 mb-4">{{ t('board.editTitle') }}</h3>
+        <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('board.editName') }}</label>
+        <input
+          v-model="editBoardName"
+          type="text"
+          class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-pink-500"
+          maxlength="255"
+        />
+        <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('board.editDescription') }}</label>
+        <textarea
+          v-model="editBoardDescription"
+          rows="3"
+          class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+        />
+        <label
+          v-if="boardEditCanTogglePrivate"
+          class="flex items-start gap-2 text-sm text-neutral-800 mb-6 cursor-pointer"
+        >
+          <input v-model="editBoardPrivate" type="checkbox" class="mt-1 rounded border-neutral-300 text-pink-600" />
+          <span>
+            {{ t('profile.boards.modal.private') }}
+            <span class="block text-[11px] text-neutral-500 font-normal">{{ t('board.editPrivateHelp') }}</span>
+          </span>
+        </label>
+        <div class="flex flex-col-reverse sm:flex-row gap-2 justify-end">
+          <button type="button" class="px-4 py-2 rounded-full text-sm font-semibold bg-neutral-100 text-neutral-800" @click="closeBoardEditor">
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="px-5 py-2 rounded-full text-sm font-semibold bg-pink-600 text-white hover:bg-pink-700 disabled:opacity-50"
+            :disabled="boardEditSaving"
+            @click="submitBoardMeta"
+          >
+            {{ boardEditSaving ? t('board.savingBoard') : t('board.saveChanges') }}
           </button>
         </div>
       </div>

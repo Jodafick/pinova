@@ -163,7 +163,7 @@ onUnmounted(() => {
 
       <div
         ref="scrollEl"
-        class="flex-1 min-w-0 flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pt-1 scroll-smooth snap-x snap-mandatory overscroll-x-contain touch-pan-x [scrollbar-width:thin]"
+        class="flex-1 min-w-0 flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pt-1 scroll-smooth snap-x snap-mandatory overscroll-x-contain touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         @scroll.passive="syncScrollMetrics"
       >
         <button

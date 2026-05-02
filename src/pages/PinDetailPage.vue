@@ -5,7 +5,6 @@ import { usePins, getFullMediaUrl } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { displayInitials } from '../utils/displayInitials'
 import PinGrid from '../components/PinGrid.vue'
-import PinSkeleton from '../components/PinSkeleton.vue'
 import PinDetailSkeleton from '../components/PinDetailSkeleton.vue'
 import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
@@ -15,6 +14,7 @@ import {
   moderationScanText,
   moderationScanImageFile,
   viewerCanRevealSensitiveMedia,
+  sensitiveMediaBlurredByDefault,
 } from '../composables/useModeration'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
@@ -22,7 +22,7 @@ import { useDataSaver } from '../composables/useDataSaver'
 import { shareUrlWithFallback } from '../utils/shareFallback'
 
 const { t } = useI18n()
-const { showAlert, showPrompt } = useAppModal()
+const { showAlert, showPrompt, showConfirm } = useAppModal()
 
 const route = useRoute()
 const router = useRouter()
@@ -49,11 +49,21 @@ const {
   getPinDownload,
   reportPin,
   reportComment,
+  deletePin,
 } = usePins()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
 const viewerCanRevealSensitive = computed(() =>
   viewerCanRevealSensitiveMedia(isAuthenticated.value, currentUser.value?.birthDate),
+)
+
+const blurSensitiveByDefault = computed(() =>
+  sensitiveMediaBlurredByDefault(
+    isAuthenticated.value,
+    currentUser.value?.birthDate,
+    currentUser.value?.subscription?.plan,
+    currentUser.value?.subscription?.sensitiveMediaBlurByDefault,
+  ),
 )
 
 const { detailVideoPreload, isLowDataMode } = useDataSaver()
@@ -652,6 +662,25 @@ const goBack = () => {
 const openRelatedPin = (slug: string) => {
   router.push(`/pin/${slug}`)
 }
+
+const confirmDeletePin = async () => {
+  const p = pin.value
+  if (!p || !isPinOwner.value) return
+  const ok = await showConfirm({
+    title: t('pin.delete.confirmTitle'),
+    message: t('pin.delete.confirmBody'),
+    variant: 'danger',
+  })
+  if (!ok) return
+  const slug = p.slug
+  const profile = p.username
+  try {
+    await deletePin(slug)
+    router.push(profile ? `/profile/${profile}` : '/')
+  } catch {
+    await showAlert(t('pin.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
 </script>
 
 <template>
@@ -711,6 +740,7 @@ const openRelatedPin = (slug: string) => {
                 v-if="pin.imageUrl"
                 :sensitive="!!pin.mediaSensitiveBlur"
                 :viewer-can-reveal="viewerCanRevealSensitive"
+                :blur-by-default="blurSensitiveByDefault"
                 wrapper-class="w-full flex justify-center"
               >
                 <img
@@ -730,6 +760,7 @@ const openRelatedPin = (slug: string) => {
                 v-else-if="pin.storyVideoUrl"
                 :sensitive="!!pin.mediaSensitiveBlur"
                 :viewer-can-reveal="viewerCanRevealSensitive"
+                :blur-by-default="blurSensitiveByDefault"
                 wrapper-class="w-full flex justify-center"
               >
                 <video
@@ -750,7 +781,24 @@ const openRelatedPin = (slug: string) => {
           <div class="lg:flex-1 lg:min-w-0 p-6 sm:p-8 lg:p-10 flex flex-col lg:max-h-[80vh] lg:overflow-y-auto min-h-0">
             <!-- Actions bar -->
             <div class="flex items-center justify-between mb-6">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
+                <router-link
+                  v-if="isPinOwner && pin.slug"
+                  :to="`/pin/${pin.slug}/edit`"
+                  class="inline-flex h-10 w-10 rounded-full hover:bg-neutral-100 items-center justify-center text-neutral-700 shrink-0"
+                  :aria-label="t('pin.a11y.edit')"
+                >
+                  <span class="material-symbols-outlined text-xl" aria-hidden="true">edit</span>
+                </router-link>
+                <button
+                  v-if="isPinOwner"
+                  type="button"
+                  class="inline-flex h-10 w-10 rounded-full hover:bg-red-50 text-neutral-700 hover:text-red-700 items-center justify-center shrink-0 transition"
+                  :aria-label="t('pin.a11y.delete')"
+                  @click="confirmDeletePin"
+                >
+                  <span class="material-symbols-outlined text-xl" aria-hidden="true">delete</span>
+                </button>
                 <button
                   type="button"
                   class="w-10 h-10 rounded-full flex items-center justify-center transition"
@@ -1050,10 +1098,9 @@ const openRelatedPin = (slug: string) => {
       <!-- Related pins -->
       <section v-if="relatedPins.length > 0 || pinsLoading" class="px-3 sm:px-6 lg:px-10 xl:px-16 pb-10">
         <h2 class="text-xl font-bold text-neutral-900 mb-5">{{ t('pin.related') }}</h2>
-        <PinSkeleton v-if="pinsLoading && relatedPins.length === 0" />
         <PinGrid
-          v-else
           :pins="relatedPins"
+          :loading-initial="pinsLoading && relatedPins.length === 0"
           @toggle-save="handleToggleSaveRelated"
           @open-pin="openRelatedPin"
         />

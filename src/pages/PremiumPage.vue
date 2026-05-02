@@ -15,7 +15,6 @@ const seatBundle = ref<'solo' | 'family' | 'team'>('solo')
 const checkoutPendingPlan = ref<string | null>(null)
 const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
-const pricingLoading = ref(true)
 const trialPending = ref(false)
 const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
 type PricingCycle = {
@@ -24,7 +23,14 @@ type PricingCycle = {
   currency_iso: string
   duration_days: number
 }
-const pricingCatalog = ref<Record<string, Record<string, PricingCycle>>>({})
+type PlanCatalog = Record<string, Record<string, PricingCycle>>
+type SeatBundleKey = 'solo' | 'family' | 'team'
+
+const pricingByBundle = ref<Partial<Record<SeatBundleKey, PlanCatalog>>>({})
+const pricingLoading = ref(true)
+const annualDiscountPercent = ref(10)
+
+const ZERO_DECIMAL_ISO = new Set(['XOF', 'XAF', 'JPY', 'KRW', 'CLP'])
 const seatInviteLimits = ref<{ solo: number; family: number; team: number }>({
   solo: 0,
   family: 5,
@@ -33,10 +39,12 @@ const seatInviteLimits = ref<{ solo: number; family: number; team: number }>({
 
 const formatCurrency = (amount: number, currencyIso: string) => {
   try {
+    const iso = (currencyIso || 'XOF').toUpperCase()
     return new Intl.NumberFormat(currentLang.value || 'fr', {
       style: 'currency',
-      currency: currencyIso,
-      maximumFractionDigits: 2,
+      currency: iso,
+      maximumFractionDigits: ZERO_DECIMAL_ISO.has(iso) ? 0 : 2,
+      minimumFractionDigits: ZERO_DECIMAL_ISO.has(iso) ? 0 : undefined,
     }).format(amount)
   } catch (_) {
     return `${amount} ${currencyIso}`
@@ -46,10 +54,45 @@ const formatCurrency = (amount: number, currencyIso: string) => {
 const monthlyDisplayFromYearly = (yearlyAmount: number, currencyIso: string) =>
   formatCurrency(yearlyAmount / 12, currencyIso)
 
+const normalizeBundle = (b: unknown): SeatBundleKey => {
+  const x = String(b || 'solo').toLowerCase().trim()
+  if (x === 'family' || x === 'team') return x
+  return 'solo'
+}
+
+const pricingCatalog = computed(() => {
+  const key = normalizeBundle(seatBundle.value)
+  return pricingByBundle.value[key] ?? pricingByBundle.value.solo ?? {}
+})
+
 const readCycle = (planId: string, cycle: 'monthly' | 'yearly') =>
   pricingCatalog.value[planId]?.[cycle]
 
 const currentPlanId = computed(() => currentUser.value?.subscription?.plan || 'free')
+
+const isSeatMember = computed(() => !!currentUser.value?.subscription?.isSeatMember)
+
+const ownerActiveBillingCycle = computed((): 'monthly' | 'yearly' | null => {
+  const c = currentUser.value?.subscription?.activeBillingCycle
+  return c === 'monthly' || c === 'yearly' ? c : null
+})
+
+function paidTierFullyMatchesSelection(planId: 'plus' | 'pro'): boolean {
+  if (currentPlanId.value !== planId) return false
+  if (normalizeBundle(seatBundle.value) !== normalizeBundle(currentUser.value?.subscription?.seatBundle)) {
+    return false
+  }
+  const refCycle = ownerActiveBillingCycle.value
+  if (!refCycle) return true
+  return billingCycle.value === refCycle
+}
+
+function planTierLocked(planId: string): boolean {
+  if (planId === 'free') return false
+  if (isSeatMember.value) return true
+  if (planId === 'plus' || planId === 'pro') return paidTierFullyMatchesSelection(planId)
+  return false
+}
 
 const showTrialCta = computed(
   () => isAuthenticated.value && (currentUser.value?.subscription?.trialEligible ?? false),
@@ -57,14 +100,25 @@ const showTrialCta = computed(
 
 const loadPricingCatalog = () => {
   pricingLoading.value = true
-  const params: Record<string, string> = {}
-  if (seatBundle.value !== 'solo') {
-    params.seat_bundle = seatBundle.value
-  }
   api
-    .get('subscription/pricing/', { params })
+    .get('subscription/pricing/')
     .then((response) => {
-      pricingCatalog.value = response.data?.plans || {}
+      const raw = response.data?.pricing_by_bundle as
+        | Partial<Record<SeatBundleKey, PlanCatalog>>
+        | undefined
+      if (raw && typeof raw === 'object') {
+        pricingByBundle.value = {
+          solo: raw.solo || {},
+          family: raw.family || {},
+          team: raw.team || {},
+        }
+      } else {
+        pricingByBundle.value = { solo: response.data?.plans || {} }
+      }
+      const ad = response.data?.annual_discount_percent
+      if (typeof ad === 'number' && Number.isFinite(ad) && ad > 0 && ad <= 99) {
+        annualDiscountPercent.value = Math.round(ad)
+      }
       const sil = response.data?.seat_invite_limits
       if (sil && typeof sil === 'object') {
         const f = Number((sil as { family?: unknown }).family)
@@ -85,9 +139,46 @@ const loadPricingCatalog = () => {
     })
 }
 
-watch(seatBundle, () => {
-  loadPricingCatalog()
-})
+const yearlyDiscountBadge = computed(() =>
+  t('premium.cycle.discountBadge', { n: annualDiscountPercent.value }),
+)
+
+function yearlySavingsVsMonthly(planId: string): number | null {
+  if (planId === 'free') return null
+  const m = readCycle(planId, 'monthly')
+  const y = readCycle(planId, 'yearly')
+  if (!m || !y) return null
+  const ifPaidMonthly = Number(m.amount_display) * 12
+  const diff = ifPaidMonthly - Number(y.amount_display)
+  if (diff < 0.5) return null
+  return diff
+}
+
+function yearlySavingsText(planId: string, currencyIso: string): string | null {
+  const s = yearlySavingsVsMonthly(planId)
+  if (s == null) return null
+  return t('premium.yearlySavings', { amount: formatCurrency(s, currencyIso) })
+}
+
+watch(
+  () => currentUser.value?.subscription?.seatBundle,
+  (b) => {
+    const sub = currentUser.value?.subscription
+    if (!sub || sub.plan === 'free' || sub.isSeatMember) return
+    seatBundle.value = normalizeBundle(b)
+  },
+  { immediate: true },
+)
+
+watch(
+  () => currentUser.value?.subscription?.activeBillingCycle,
+  (cycle) => {
+    const sub = currentUser.value?.subscription
+    if (!sub || sub.plan === 'free' || sub.isSeatMember) return
+    if (cycle === 'monthly' || cycle === 'yearly') billingCycle.value = cycle
+  },
+  { immediate: true },
+)
 
 const handleStartTrial = async () => {
   if (!isAuthenticated.value) {
@@ -132,7 +223,7 @@ const plans = computed(() => [
     badge: null,
     color: 'border-neutral-200',
     cta: currentPlanId.value === 'free' ? t('premium.plan.free.cta') : t('premium.plan.free.name'),
-    ctaDisabled: true,
+    tierLocked: false,
     features: [
       { label: t('premium.feature.adsEnabled'), included: true },
       { label: t('premium.feature.partnerAdsEnabled'), included: true },
@@ -156,8 +247,13 @@ const plans = computed(() => [
     isPriceReady: !!(readCycle('plus', 'monthly') && readCycle('plus', 'yearly')),
     badge: t('premium.plan.plus.badge'),
     color: 'border-pink-500 ring-4 ring-pink-100',
-    cta: currentPlanId.value === 'plus' ? t('premium.plan.free.cta') : t('premium.plan.plus.cta'),
-    ctaDisabled: currentPlanId.value === 'plus',
+    cta:
+      currentPlanId.value === 'plus'
+        ? paidTierFullyMatchesSelection('plus')
+          ? t('premium.plan.free.cta')
+          : t('premium.plan.sameTier.ctaUpdate')
+        : t('premium.plan.plus.cta'),
+    tierLocked: planTierLocked('plus'),
     features: [
       { label: t('premium.feature.allFree'), included: true },
       { label: t('premium.feature.disableAdsOnly'), included: true },
@@ -183,8 +279,13 @@ const plans = computed(() => [
     isPriceReady: !!(readCycle('pro', 'monthly') && readCycle('pro', 'yearly')),
     badge: t('premium.plan.pro.badge'),
     color: 'border-amber-400',
-    cta: currentPlanId.value === 'pro' ? t('premium.plan.free.cta') : t('premium.plan.pro.cta'),
-    ctaDisabled: currentPlanId.value === 'pro',
+    cta:
+      currentPlanId.value === 'pro'
+        ? paidTierFullyMatchesSelection('pro')
+          ? t('premium.plan.free.cta')
+          : t('premium.plan.sameTier.ctaUpdate')
+        : t('premium.plan.pro.cta'),
+    tierLocked: planTierLocked('pro'),
     features: [
       { label: t('premium.feature.allPlus'), included: true },
       { label: t('premium.feature.disableAllAds'), included: true },
@@ -288,6 +389,10 @@ const handleCheckout = async (planId: string) => {
     router.push('/login')
     return
   }
+  if (isSeatMember.value) {
+    paymentInfoMessage.value = t('premium.seatMember.manageNote')
+    return
+  }
   checkoutPendingPlan.value = planId
   paymentInfoMessage.value = ''
   const popup = openCheckoutPopup()
@@ -370,6 +475,9 @@ onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('message', handlePaymentMessage)
   }
+  if (isAuthenticated.value) {
+    void fetchCurrentUser({ silent: true })
+  }
   loadPricingCatalog()
   handlePopupCallbackReturn().catch(() => undefined)
 })
@@ -399,10 +507,23 @@ onUnmounted(() => {
         {{ t('premium.b2bLine') }}
       </p>
 
+      <div
+        v-if="isAuthenticated && isSeatMember"
+        class="mt-6 max-w-2xl mx-auto rounded-2xl border border-amber-200 bg-amber-50/95 px-4 py-3 text-sm text-amber-950 leading-snug text-center shadow-sm"
+        role="status"
+      >
+        {{ t('premium.seatMember.manageNote') }}
+      </div>
+
       <!-- Billing toggle -->
-      <div class="inline-flex items-center bg-neutral-100 rounded-full p-1 mt-8">
+      <div
+        class="inline-flex items-center bg-neutral-100 rounded-full p-1 mt-8"
+        :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''"
+      >
         <button
           class="px-5 py-2 rounded-full text-sm font-semibold transition"
+          type="button"
+          :disabled="isSeatMember"
           :class="billingCycle === 'monthly' ? 'bg-white shadow text-neutral-900' : 'text-neutral-500'"
           @click="billingCycle = 'monthly'"
         >
@@ -410,21 +531,27 @@ onUnmounted(() => {
         </button>
         <button
           class="px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2"
+          type="button"
+          :disabled="isSeatMember"
           :class="billingCycle === 'yearly' ? 'bg-white shadow text-neutral-900' : 'text-neutral-500'"
           @click="billingCycle = 'yearly'"
         >
           {{ t('premium.cycle.yearly') }}
-          <span class="text-[10px] uppercase tracking-wide bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{{ t('premium.cycle.discount') }}</span>
+          <span
+            v-if="annualDiscountPercent > 0"
+            class="text-[10px] uppercase tracking-wide bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold"
+          >{{ yearlyDiscountBadge }}</span>
         </button>
       </div>
 
       <div class="mt-6 space-y-2">
         <p class="text-xs font-semibold text-neutral-600">{{ t('premium.bundle.title') }}</p>
-        <div class="inline-flex flex-wrap justify-center gap-2">
+        <div class="inline-flex flex-wrap justify-center gap-2" :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''">
           <button
             type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold border transition"
             :class="seatBundle === 'solo' ? 'border-pink-500 bg-pink-50 text-pink-800' : 'border-neutral-200 text-neutral-600'"
+            :disabled="isSeatMember"
             @click="seatBundle = 'solo'"
           >
             {{ t('premium.bundle.solo') }}
@@ -433,6 +560,7 @@ onUnmounted(() => {
             type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold border transition"
             :class="seatBundle === 'family' ? 'border-pink-500 bg-pink-50 text-pink-800' : 'border-neutral-200 text-neutral-600'"
+            :disabled="isSeatMember"
             @click="seatBundle = 'family'"
           >
             {{ t('premium.bundle.family') }}
@@ -441,6 +569,7 @@ onUnmounted(() => {
             type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold border transition"
             :class="seatBundle === 'team' ? 'border-pink-500 bg-pink-50 text-pink-800' : 'border-neutral-200 text-neutral-600'"
+            :disabled="isSeatMember"
             @click="seatBundle = 'team'"
           >
             {{ t('premium.bundle.team') }}
@@ -505,9 +634,13 @@ onUnmounted(() => {
             <span class="text-sm text-neutral-500">{{ t('premium.priceUnit') }}</span>
           </template>
         </div>
-        <p class="text-xs text-neutral-400 mb-5 h-4">
+        <p class="text-xs text-neutral-400 mb-5 min-h-[2.5rem]">
           <template v-if="!pricingLoading && plan.isPriceReady && Number(plan.yearly) > 0 && billingCycle === 'yearly'">
-            {{ t('premium.yearlyBilled', { amount: formatCurrency(Number(plan.yearly), String(plan.currencyIso)) }) }}
+            <span class="block">{{ t('premium.yearlyBilled', { amount: formatCurrency(Number(plan.yearly), String(plan.currencyIso)) }) }}</span>
+            <span
+              v-if="yearlySavingsText(plan.id, String(plan.currencyIso))"
+              class="block text-emerald-700 font-medium mt-0.5"
+            >{{ yearlySavingsText(plan.id, String(plan.currencyIso)) }}</span>
           </template>
         </p>
 
@@ -518,7 +651,7 @@ onUnmounted(() => {
             : plan.id === 'pro'
               ? 'bg-neutral-900 text-white hover:bg-neutral-800'
               : 'bg-neutral-100 text-neutral-500 cursor-not-allowed'"
-          :disabled="pricingLoading || !plan.isPriceReady || plan.ctaDisabled || checkoutPendingPlan === plan.id"
+          :disabled="pricingLoading || !plan.isPriceReady || plan.tierLocked || checkoutPendingPlan === plan.id"
           @click="handleCheckout(plan.id)"
         >
           <span v-if="checkoutPendingPlan === plan.id" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>

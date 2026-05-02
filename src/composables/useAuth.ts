@@ -32,7 +32,9 @@ const defaultUser: User = {
     trialEligible: false,
     trialConsumedAt: null,
     digestCreatorWeekly: true,
-  },
+      activeBillingCycle: null,
+      sensitiveMediaBlurByDefault: true,
+    },
   birthDate: null,
 }
 
@@ -99,6 +101,11 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       trialEligible: djangoUser.subscription?.trial_eligible ?? false,
       trialConsumedAt: djangoUser.subscription?.trial_consumed_at ?? profile.subscription_trial_consumed_at ?? null,
       digestCreatorWeekly: djangoUser.subscription?.digest_creator_weekly ?? true,
+      activeBillingCycle: djangoUser.subscription?.active_billing_cycle ?? null,
+      sensitiveMediaBlurByDefault:
+        djangoUser.subscription?.sensitive_media_blur_by_default !== undefined
+          ? !!djangoUser.subscription.sensitive_media_blur_by_default
+          : true,
       accountScheduledDeletionAt:
         djangoUser.subscription?.account_scheduled_deletion_at ?? null,
       seatBundle: djangoUser.subscription?.seat_bundle ?? 'solo',
@@ -205,7 +212,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsDigestCreatorWeekly?: boolean }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean }) {
     try {
       const formData = new FormData()
       if (data.displayName) formData.append('display_name', data.displayName)
@@ -228,6 +235,10 @@ export function useAuth() {
       if (data.notificationsRecommendations !== undefined) formData.append('notifications_recommendations', data.notificationsRecommendations ? 'true' : 'false')
       if (data.notificationsDigestCreatorWeekly !== undefined) {
         formData.append('notifications_digest_creator_weekly', data.notificationsDigestCreatorWeekly ? 'true' : 'false')
+      }
+
+      if (data.sensitiveMediaBlurByDefault !== undefined) {
+        formData.append('sensitive_media_blur_by_default', data.sensitiveMediaBlurByDefault ? 'true' : 'false')
       }
 
       const response = await api.patch('me/', formData, {
@@ -378,6 +389,22 @@ export function useAuth() {
     return response.data
   }
 
+  async function updateBoard(
+    boardId: number,
+    payload: { name?: string; description?: string; isPrivate?: boolean },
+  ) {
+    const body: Record<string, unknown> = {}
+    if (payload.name !== undefined) body.name = payload.name
+    if (payload.description !== undefined) body.description = payload.description
+    if (payload.isPrivate !== undefined) body.is_private = !!payload.isPrivate
+    const response = await api.patch(`boards/${boardId}/`, body)
+    return response.data
+  }
+
+  async function deleteBoard(boardId: number) {
+    await api.delete(`boards/${boardId}/`)
+  }
+
   async function fetchMyBoards() {
     const response = await api.get('boards/')
     const raw = response.data?.results ?? response.data
@@ -444,6 +471,11 @@ export function useAuth() {
     return response.data?.results || []
   }
 
+  async function fetchSubscriptionInvoiceReceipt(invoiceId: number) {
+    const response = await api.get(`subscription/invoices/${invoiceId}/receipt/`)
+    return response.data as { invoice_url?: string | null; error?: string; detail?: string }
+  }
+
   async function fetchSupportTickets() {
     const response = await api.get('support/tickets/')
     return response.data?.results || []
@@ -470,6 +502,8 @@ export function useAuth() {
     fetchCurrentUser,
     fetchUserProfile,
     createBoard,
+    updateBoard,
+    deleteBoard,
     fetchMyBoards,
     fetchBoardCollaborators,
     addBoardCollaborator,
@@ -480,6 +514,7 @@ export function useAuth() {
     manageSubscription,
     startPlusTrial,
     fetchSubscriptionInvoices,
+    fetchSubscriptionInvoiceReceipt,
     fetchSupportTickets,
     createSupportTicket,
   }
