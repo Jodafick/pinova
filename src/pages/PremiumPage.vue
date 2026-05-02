@@ -15,6 +15,20 @@ const checkoutPendingPlan = ref<string | null>(null)
 const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
 const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
+const pricingCatalog = ref<Record<string, Record<string, { amount_display: number; currency_iso: string; duration_days: number }>>>({})
+
+const openCheckoutPopup = () => {
+  if (typeof window === 'undefined') return null
+  const width = 520
+  const height = 760
+  const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2)
+  const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2)
+  return window.open(
+    'about:blank',
+    'pinova_fedapay_checkout',
+    `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
+  )
+}
 
 const plans = computed(() => [
   {
@@ -43,8 +57,8 @@ const plans = computed(() => [
     id: 'plus',
     name: t('premium.plan.plus.name'),
     tagline: t('premium.plan.plus.tagline'),
-    monthly: 4.99,
-    yearly: 49,
+    monthly: pricingCatalog.value.plus?.monthly?.amount_display ?? 4.99,
+    yearly: pricingCatalog.value.plus?.yearly?.amount_display ?? 49,
     badge: t('premium.plan.plus.badge'),
     color: 'border-pink-500 ring-4 ring-pink-100',
     cta: t('premium.plan.plus.cta'),
@@ -65,8 +79,8 @@ const plans = computed(() => [
     id: 'pro',
     name: t('premium.plan.pro.name'),
     tagline: t('premium.plan.pro.tagline'),
-    monthly: 12.99,
-    yearly: 129,
+    monthly: pricingCatalog.value.pro?.monthly?.amount_display ?? 12.99,
+    yearly: pricingCatalog.value.pro?.yearly?.amount_display ?? 129,
     badge: t('premium.plan.pro.badge'),
     color: 'border-amber-400',
     cta: t('premium.plan.pro.cta'),
@@ -99,6 +113,7 @@ const handleCheckout = async (planId: string) => {
   }
   checkoutPendingPlan.value = planId
   paymentInfoMessage.value = ''
+  const popup = openCheckoutPopup()
   try {
     const response = await api.post('subscription/checkout/', {
       plan: planId,
@@ -110,11 +125,18 @@ const handleCheckout = async (planId: string) => {
       window.localStorage.setItem(PENDING_TX_STORAGE_KEY, String(transactionId))
     }
     if (checkoutUrl) {
-      window.location.href = checkoutUrl
+      if (popup && !popup.closed) {
+        popup.location.href = checkoutUrl
+        popup.focus()
+      } else {
+        window.open(checkoutUrl, '_blank', 'noopener,noreferrer')
+      }
       return
     }
+    if (popup && !popup.closed) popup.close()
     paymentInfoMessage.value = t('premium.payment.checkoutError')
   } catch (err: any) {
+    if (popup && !popup.closed) popup.close()
     paymentInfoMessage.value = err?.response?.data?.error || t('premium.payment.checkoutError')
   } finally {
     checkoutPendingPlan.value = null
@@ -147,6 +169,11 @@ const confirmPendingPayment = async () => {
 }
 
 onMounted(() => {
+  api.get('subscription/pricing/')
+    .then((response) => {
+      pricingCatalog.value = response.data?.plans || {}
+    })
+    .catch(() => undefined)
   if (currentUser.value?.subscription?.plan) {
     selectedPlan.value = currentUser.value.subscription.plan
   }
