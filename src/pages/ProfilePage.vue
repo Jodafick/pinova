@@ -7,6 +7,7 @@ import type { User } from '../types'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 import { useI18n } from '../i18n'
+import api from '../api'
 
 const { t } = useI18n()
 
@@ -23,6 +24,10 @@ const creatorStatsLoading = ref(false)
 const creatorStats = ref<{
   totals?: { pins?: number; likes?: number; saves?: number; comments?: number; views?: number }
 } | null>(null)
+const showFollowersModal = ref(false)
+const showFollowingModal = ref(false)
+const relationsLoading = ref(false)
+const relationItems = ref<Array<{ username: string; display_name: string; avatar_color: string; avatar?: string | null; is_pro?: boolean }>>([])
 
 const isMyProfile = computed(() => {
   return !route.params.username || (currentUser.value && route.params.username === currentUser.value.username)
@@ -206,6 +211,34 @@ const openPin = (slug: string) => {
   router.push(`/pin/${slug}`)
 }
 
+const openFollowersModal = async () => {
+  if (!profileUser.value) return
+  showFollowersModal.value = true
+  showFollowingModal.value = false
+  relationsLoading.value = true
+  relationItems.value = []
+  try {
+    const response = await api.get(`profiles/${profileUser.value.username}/followers/`)
+    relationItems.value = response.data?.results || []
+  } finally {
+    relationsLoading.value = false
+  }
+}
+
+const openFollowingModal = async () => {
+  if (!profileUser.value) return
+  showFollowingModal.value = true
+  showFollowersModal.value = false
+  relationsLoading.value = true
+  relationItems.value = []
+  try {
+    const response = await api.get(`profiles/${profileUser.value.username}/following/`)
+    relationItems.value = response.data?.results || []
+  } finally {
+    relationsLoading.value = false
+  }
+}
+
 const handleInviteCollaborator = async (boardId: number) => {
   if (!isMyProfile.value) return
   const plan = currentPlan.value
@@ -246,10 +279,11 @@ const handleInviteCollaborator = async (boardId: number) => {
       </div>
 
       <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-1">
+        <span v-if="profileUser.subscription?.plan === 'pro'" class="material-symbols-outlined text-amber-500 text-base align-middle mr-1">verified</span>
         {{ profileUser.displayName }}
       </h1>
       <div
-        v-if="currentPlan === 'pro'"
+        v-if="isMyProfile && currentPlan === 'pro'"
         class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold mb-2"
       >
         <span class="material-symbols-outlined text-sm">verified</span>
@@ -265,9 +299,13 @@ const handleInviteCollaborator = async (boardId: number) => {
       </p>
 
       <div class="flex items-center gap-6 text-sm text-neutral-600 mb-6">
-        <span><strong class="text-neutral-900">{{ profileUser.followers }}</strong> {{ t('profile.followers') }}</span>
+        <button class="hover:text-pink-600 transition" @click="openFollowersModal">
+          <strong class="text-neutral-900">{{ profileUser.followers }}</strong> {{ t('profile.followers') }}
+        </button>
         <span class="w-1 h-1 rounded-full bg-neutral-300"></span>
-        <span><strong class="text-neutral-900">{{ profileUser.following }}</strong> {{ t('profile.following') }}</span>
+        <button class="hover:text-pink-600 transition" @click="openFollowingModal">
+          <strong class="text-neutral-900">{{ profileUser.following }}</strong> {{ t('profile.following') }}
+        </button>
         <span class="w-1 h-1 rounded-full bg-neutral-300"></span>
         <span><strong class="text-neutral-900">{{ createdPins.length }}</strong> {{ t('profile.pinsCount') }}</span>
       </div>
@@ -293,6 +331,7 @@ const handleInviteCollaborator = async (boardId: number) => {
           </button>
         </template>
         <router-link
+          v-if="isMyProfile"
           to="/premium"
           class="px-5 py-2.5 rounded-full bg-amber-50 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition inline-flex items-center gap-1.5"
         >
@@ -423,6 +462,43 @@ const handleInviteCollaborator = async (boardId: number) => {
               {{ t('profile.boards.modal.create') }}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showFollowersModal || showFollowingModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50">
+      <div class="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+          <h3 class="font-semibold text-neutral-900">
+            {{ showFollowersModal ? t('profile.followers') : t('profile.following') }}
+          </h3>
+          <button class="text-neutral-500 hover:text-neutral-700" @click="showFollowersModal = false; showFollowingModal = false">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="max-h-96 overflow-y-auto">
+          <div v-if="relationsLoading" class="p-6 text-center text-sm text-neutral-500">{{ t('common.loading') }}</div>
+          <div v-else-if="relationItems.length === 0" class="p-6 text-center text-sm text-neutral-500">
+            {{ t('following.empty') }}
+          </div>
+          <button
+            v-for="item in relationItems"
+            :key="item.username"
+            class="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-50 text-left"
+            @click="showFollowersModal = false; showFollowingModal = false; router.push(`/profile/${item.username}`)"
+          >
+            <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center" :class="item.avatar_color">
+              <img v-if="item.avatar" :src="item.avatar" class="w-full h-full object-cover" />
+              <span v-else class="text-white text-xs font-bold">{{ item.display_name?.slice(0,1) }}</span>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm text-neutral-900 truncate flex items-center gap-1">
+                <span v-if="item.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>
+                {{ item.display_name }}
+              </p>
+              <p class="text-xs text-neutral-500">@{{ item.username }}</p>
+            </div>
+          </button>
         </div>
       </div>
     </div>

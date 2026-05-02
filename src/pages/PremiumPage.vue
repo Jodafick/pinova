@@ -42,6 +42,8 @@ const monthlyDisplayFromYearly = (yearlyAmount: number, currencyIso: string) =>
 const readCycle = (planId: string, cycle: 'monthly' | 'yearly') =>
   pricingCatalog.value[planId]?.[cycle]
 
+const currentPlanId = computed(() => currentUser.value?.subscription?.plan || 'free')
+
 const openCheckoutPopup = () => {
   if (typeof window === 'undefined') return null
   const width = 520
@@ -66,7 +68,7 @@ const plans = computed(() => [
     isPriceReady: !!(readCycle('free', 'monthly') && readCycle('free', 'yearly')),
     badge: null,
     color: 'border-neutral-200',
-    cta: t('premium.plan.free.cta'),
+    cta: currentPlanId.value === 'free' ? t('premium.plan.free.cta') : t('premium.plan.free.name'),
     ctaDisabled: true,
     features: [
       { label: t('premium.feature.adsEnabled'), included: true },
@@ -90,8 +92,8 @@ const plans = computed(() => [
     isPriceReady: !!(readCycle('plus', 'monthly') && readCycle('plus', 'yearly')),
     badge: t('premium.plan.plus.badge'),
     color: 'border-pink-500 ring-4 ring-pink-100',
-    cta: t('premium.plan.plus.cta'),
-    ctaDisabled: false,
+    cta: currentPlanId.value === 'plus' ? t('premium.plan.free.cta') : t('premium.plan.plus.cta'),
+    ctaDisabled: currentPlanId.value === 'plus',
     features: [
       { label: t('premium.feature.allFree'), included: true },
       { label: t('premium.feature.disableAdsOnly'), included: true },
@@ -114,8 +116,8 @@ const plans = computed(() => [
     isPriceReady: !!(readCycle('pro', 'monthly') && readCycle('pro', 'yearly')),
     badge: t('premium.plan.pro.badge'),
     color: 'border-amber-400',
-    cta: t('premium.plan.pro.cta'),
-    ctaDisabled: false,
+    cta: currentPlanId.value === 'pro' ? t('premium.plan.free.cta') : t('premium.plan.pro.cta'),
+    ctaDisabled: currentPlanId.value === 'pro',
     features: [
       { label: t('premium.feature.allPlus'), included: true },
       { label: t('premium.feature.disableAllAds'), included: true },

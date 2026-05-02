@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
@@ -40,6 +40,15 @@ const userInitials = computed(() => {
   return name.slice(0, 2).toUpperCase()
 })
 
+const currentPlan = computed<'free' | 'plus' | 'pro'>(() => {
+  return currentUser.value?.subscription?.plan || 'free'
+})
+const currentPlanLabel = computed(() => {
+  if (currentPlan.value === 'pro') return 'PRO'
+  if (currentPlan.value === 'plus') return 'PLUS'
+  return 'FREE'
+})
+
 const navItems = computed(() => [
   { name: 'home', label: t('nav.home'), to: '/' },
   { name: 'explore', label: t('nav.explore'), to: '/explore' },
@@ -57,6 +66,8 @@ watch(searchQuery, (value) => {
 })
 
 const notifications = ref<any[]>([])
+const pushLoading = ref(false)
+const pushEnabled = ref(false)
 
 const fetchNotifications = async () => {
   if (!isAuthenticated.value) return
@@ -65,6 +76,62 @@ const fetchNotifications = async () => {
     notifications.value = response.data.results || response.data
   } catch (err) {
     console.error('Error fetching notifications:', err)
+  }
+}
+
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
+const syncPushSubscription = async () => {
+  if (!isAuthenticated.value) return
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return
+  if (Notification.permission !== 'granted') return
+  try {
+    const keyResp = await api.get('notifications/push_public_key/')
+    const publicKey = String(keyResp.data?.public_key || '')
+    const enabled = !!keyResp.data?.enabled && !!publicKey
+    if (!enabled) {
+      pushEnabled.value = false
+      return
+    }
+    const registration = await navigator.serviceWorker.register('/pinova-push-sw.js', { scope: '/push/' })
+    const existingSub = await registration.pushManager.getSubscription()
+    const pushSub = existingSub || await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    })
+    const json = pushSub.toJSON() as any
+    await api.post('notifications/push_subscribe/', {
+      endpoint: json.endpoint,
+      p256dh: json.keys?.p256dh,
+      auth: json.keys?.auth,
+    })
+    pushEnabled.value = true
+  } catch (err) {
+    pushEnabled.value = false
+  }
+}
+
+const enablePushNotifications = async () => {
+  if (pushLoading.value) return
+  pushLoading.value = true
+  try {
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') {
+      pushEnabled.value = false
+      return
+    }
+    await syncPushSubscription()
+  } finally {
+    pushLoading.value = false
   }
 }
 
@@ -110,6 +177,8 @@ const handleNotificationClick = async (notification: any) => {
   } else if (notification.pin_id) {
     // Fallback legacy notifications lacking slug.
     router.push('/')
+  } else if (notification.action_url) {
+    router.push(String(notification.action_url))
   }
   closeDropdowns()
 }
@@ -117,6 +186,7 @@ const handleNotificationClick = async (notification: any) => {
 onMounted(() => {
   fetchNotifications()
   fetchConversations()
+  syncPushSubscription().catch(() => undefined)
 })
 
 const handleSearch = () => {
@@ -132,12 +202,31 @@ const handleLogout = () => {
   router.push('/')
 }
 
+const handleWorkerMessage = (event: MessageEvent) => {
+  const payload = event.data || {}
+  if (payload.type === 'pinova_push_click' && payload.action_url) {
+    router.push(String(payload.action_url))
+  }
+}
+
 const closeDropdowns = () => {
   showUserMenu.value = false
   showNotifications.value = false
   showSearchResults.value = false
   showMessages.value = false
 }
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('message', handleWorkerMessage)
+  }
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('message', handleWorkerMessage)
+  }
+})
 </script>
 
 <template>
@@ -288,6 +377,9 @@ const closeDropdowns = () => {
                   </span>
                 </div>
                 <div class="flex-1">
+                  <p v-if="notification.title" class="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 mb-0.5">
+                    {{ notification.title }}
+                  </p>
                   <p class="text-sm text-neutral-800 leading-snug">{{ notification.message }}</p>
                   <p class="text-xs text-neutral-400 mt-1">@{{ notification.sender_username }}</p>
                 </div>
@@ -384,7 +476,10 @@ const closeDropdowns = () => {
           >
             <!-- User info -->
             <div class="px-4 py-4 border-b border-neutral-100">
-              <p class="font-semibold text-neutral-900 text-sm">{{ currentUser?.displayName }}</p>
+              <p class="font-semibold text-neutral-900 text-sm flex items-center gap-1.5">
+                <span v-if="currentPlan === 'pro'" class="material-symbols-outlined text-amber-500 text-base">verified</span>
+                <span>{{ currentUser?.displayName }}</span>
+              </p>
               <p class="text-xs text-neutral-500">@{{ currentUser?.username }}</p>
               <p class="text-xs text-neutral-400 mt-0.5">{{ currentUser?.email }}</p>
             </div>
@@ -437,8 +532,25 @@ const closeDropdowns = () => {
               >
                 <span class="material-symbols-outlined text-lg">workspace_premium</span>
                 {{ t('nav.premium') }}
-                <span class="ml-auto text-[9px] uppercase tracking-wider bg-pink-100 text-pink-700 px-1.5 py-0.5 rounded font-bold">{{ t('nav.premium.badge') }}</span>
+                <span
+                  class="ml-auto text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold"
+                  :class="currentPlan === 'pro'
+                    ? 'bg-amber-100 text-amber-700'
+                    : currentPlan === 'plus'
+                      ? 'bg-pink-100 text-pink-700'
+                      : 'bg-neutral-100 text-neutral-600'"
+                >
+                  {{ currentPlanLabel }}
+                </span>
               </router-link>
+              <button
+                class="flex items-center gap-3 px-4 py-2.5 w-full hover:bg-neutral-50 transition text-sm text-neutral-700"
+                :disabled="pushLoading || pushEnabled"
+                @click="enablePushNotifications"
+              >
+                <span class="material-symbols-outlined text-lg">notifications_active</span>
+                <span>{{ pushEnabled ? 'Push activé' : (pushLoading ? 'Activation...' : 'Activer le push') }}</span>
+              </button>
             </div>
 
             <div class="border-t border-neutral-100 py-1">
