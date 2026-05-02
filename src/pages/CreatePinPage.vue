@@ -34,7 +34,7 @@ const myBoards = ref<{ id: number; name: string; is_private?: boolean }[]>([])
 
 // Crédit créateur certifié
 const certifyCredit = ref(true)
-type TopicOption = { name: string; originalName: string }
+type TopicOption = { name: string; originalName: string; icon?: string; color?: string }
 const dynamicTopics = ref<TopicOption[]>([])
 const boardsLoading = ref(false)
 const showCategoryDropdown = ref(false)
@@ -67,6 +67,8 @@ const loadTopics = async (query = '') => {
     dynamicTopics.value = payload.map((item: any) => ({
       name: item?.name || '',
       originalName: item?.originalName || item?.name || '',
+      icon: item?.icon || 'category',
+      color: item?.color || '#6B7280',
     })).filter((item: TopicOption) => item.name)
   } catch (err) {
     console.warn('Impossible de charger les catégories dynamiques', err)
@@ -339,10 +341,11 @@ const selectCategory = (selected: TopicOption) => {
                   v-for="topicItem in filteredTopics"
                   :key="topicItem.originalName"
                   type="button"
-                  class="w-full text-left px-3 py-2 text-sm hover:bg-neutral-50"
+                  class="w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 flex items-center gap-2"
                   @click="selectCategory(topicItem)"
                 >
-                  {{ topicItem.name }}
+                  <span class="material-symbols-outlined text-base text-neutral-500">{{ topicItem.icon || 'category' }}</span>
+                  <span>{{ topicItem.name }}</span>
                 </button>
                 <button
                   v-if="categorySearch.trim() && !resolvedTopics.some((item) => item.name === categorySearch.trim() || item.originalName === categorySearch.trim())"

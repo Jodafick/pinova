@@ -35,6 +35,9 @@ const tipsSaved = ref(false)
 const preferredCurrency = ref('XOF')
 const detectedCountryCode = ref('')
 const supportedCurrencies = ref<string[]>([])
+const webNotificationsLoading = ref(false)
+const webNotificationsEnabled = ref(false)
+const webNotificationsError = ref('')
 
 const currentPlan = ref<'free' | 'plus' | 'pro'>('free')
 
@@ -48,6 +51,88 @@ const currencyOptionLabel = (currency: string) => {
     return symbol ? `${currency} (${symbol})` : currency
   } catch (_) {
     return currency
+  }
+}
+
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
+const syncWebNotificationState = async () => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    webNotificationsEnabled.value = false
+    return
+  }
+  if (Notification.permission !== 'granted') {
+    webNotificationsEnabled.value = false
+    return
+  }
+  try {
+    const keyResp = await api.get('notifications/push_public_key/')
+    const publicKey = String(keyResp.data?.public_key || '')
+    const enabled = !!keyResp.data?.enabled && !!publicKey
+    if (!enabled) {
+      webNotificationsEnabled.value = false
+      return
+    }
+    const registration = await navigator.serviceWorker.register('/pinova-push-sw.js', { scope: '/push/' })
+    const existingSub = await registration.pushManager.getSubscription()
+    if (!existingSub) {
+      webNotificationsEnabled.value = false
+      return
+    }
+    webNotificationsEnabled.value = true
+  } catch {
+    webNotificationsEnabled.value = false
+  }
+}
+
+const activateWebNotifications = async () => {
+  if (webNotificationsLoading.value) return
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    webNotificationsError.value = t('settings.notifications.web.errorUnsupported')
+    return
+  }
+  webNotificationsLoading.value = true
+  webNotificationsError.value = ''
+  try {
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') {
+      webNotificationsEnabled.value = false
+      webNotificationsError.value = t('settings.notifications.web.errorDenied')
+      return
+    }
+    const keyResp = await api.get('notifications/push_public_key/')
+    const publicKey = String(keyResp.data?.public_key || '')
+    const enabled = !!keyResp.data?.enabled && !!publicKey
+    if (!enabled) {
+      webNotificationsError.value = t('settings.notifications.web.errorUnavailable')
+      return
+    }
+    const registration = await navigator.serviceWorker.register('/pinova-push-sw.js', { scope: '/push/' })
+    const existingSub = await registration.pushManager.getSubscription()
+    const subscription = existingSub || await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    })
+    const json = subscription.toJSON() as any
+    await api.post('notifications/push_subscribe/', {
+      endpoint: json.endpoint,
+      p256dh: json.keys?.p256dh,
+      auth: json.keys?.auth,
+    })
+    webNotificationsEnabled.value = true
+  } catch {
+    webNotificationsError.value = t('settings.notifications.web.errorGeneric')
+  } finally {
+    webNotificationsLoading.value = false
   }
 }
 
@@ -77,6 +162,7 @@ onMounted(() => {
       }
     })
     .catch(() => undefined)
+  syncWebNotificationState().catch(() => undefined)
   enforceAdPreferencesByPlan()
 })
 
@@ -377,6 +463,25 @@ const handleLogout = () => {
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
+          <div class="rounded-xl border border-neutral-200 p-4 flex items-center justify-between gap-4">
+            <div>
+              <p class="text-sm font-medium text-neutral-700">{{ t('settings.notifications.web.title') }}</p>
+              <p class="text-xs text-neutral-500">{{ t('settings.notifications.web.desc') }}</p>
+            </div>
+            <button
+              class="px-4 py-2 rounded-full text-xs font-semibold transition"
+              :class="webNotificationsEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-900 text-white hover:bg-neutral-800'"
+              :disabled="webNotificationsLoading || webNotificationsEnabled"
+              @click="activateWebNotifications"
+            >
+              {{
+                webNotificationsEnabled
+                  ? t('settings.notifications.web.enabled')
+                  : (webNotificationsLoading ? t('settings.notifications.web.activating') : t('settings.notifications.web.enable'))
+              }}
+            </button>
+          </div>
+          <p v-if="webNotificationsError" class="text-xs text-pink-600">{{ webNotificationsError }}</p>
         </div>
       </section>
 

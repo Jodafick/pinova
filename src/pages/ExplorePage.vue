@@ -16,7 +16,10 @@ const { toggleSavePin } = useAuth()
 
 type TopicCategory = {
   name: string
+  slug?: string
   originalName?: string
+  icon?: string
+  color?: string
   pinCount: number
 }
 
@@ -25,32 +28,6 @@ const categoriesLoading = ref(false)
 const selectedCategory = ref<string | null>(null)
 const categorySearch = ref('')
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
-
-const categoryIcons: Record<string, string> = {
-  'Maison et déco': 'home',
-  'Recettes faciles': 'restaurant',
-  'Voyages': 'flight',
-  'Inspiration design': 'palette',
-  'Art & illustration': 'brush',
-  'Plantes': 'park',
-  'Mode': 'checkroom',
-  'Bien-être': 'self_improvement',
-  'Photographie': 'photo_camera',
-  'DIY & Crafts': 'construction',
-}
-
-const categoryColors: Record<string, string> = {
-  'Maison et déco': 'from-amber-400 to-orange-500',
-  'Recettes faciles': 'from-emerald-400 to-green-600',
-  'Voyages': 'from-sky-400 to-blue-600',
-  'Inspiration design': 'from-violet-400 to-purple-600',
-  'Art & illustration': 'from-pink-400 to-rose-600',
-  'Plantes': 'from-lime-400 to-green-500',
-  'Mode': 'from-fuchsia-400 to-pink-600',
-  'Bien-être': 'from-teal-400 to-cyan-600',
-  'Photographie': 'from-slate-400 to-gray-600',
-  'DIY & Crafts': 'from-orange-400 to-pink-500',
-}
 
 const displayPins = computed(() => pins.value)
 
@@ -161,14 +138,13 @@ const openPin = (slug: string) => {
           :key="category.originalName || category.name"
           class="relative overflow-hidden rounded-2xl p-5 text-left text-white transition-all hover:scale-[1.02] hover:shadow-lg"
           :class="[
-            'bg-gradient-to-br',
-            categoryColors[category.name] || 'from-neutral-400 to-neutral-600',
             selectedCategory === (category.originalName || category.name) ? 'ring-2 ring-offset-2 ring-pink-500 scale-[1.02] shadow-lg' : ''
           ]"
+          :style="{ background: category.color || '#6B7280' }"
           @click="selectCategory(category.originalName || category.name)"
         >
           <span class="material-symbols-outlined text-3xl mb-2 opacity-90">
-            {{ categoryIcons[category.name] || 'category' }}
+            {{ category.icon || 'category' }}
           </span>
           <p class="text-sm font-semibold leading-tight">{{ category.name }}</p>
           <p class="text-xs opacity-80 mt-0.5">

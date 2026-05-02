@@ -66,8 +66,6 @@ watch(searchQuery, (value) => {
 })
 
 const notifications = ref<any[]>([])
-const pushLoading = ref(false)
-const pushEnabled = ref(false)
 
 const fetchNotifications = async () => {
   if (!isAuthenticated.value) return
@@ -76,62 +74,6 @@ const fetchNotifications = async () => {
     notifications.value = response.data.results || response.data
   } catch (err) {
     console.error('Error fetching notifications:', err)
-  }
-}
-
-const urlBase64ToUint8Array = (base64String: string) => {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = window.atob(base64)
-  const outputArray = new Uint8Array(rawData.length)
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i)
-  }
-  return outputArray
-}
-
-const syncPushSubscription = async () => {
-  if (!isAuthenticated.value) return
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return
-  if (Notification.permission !== 'granted') return
-  try {
-    const keyResp = await api.get('notifications/push_public_key/')
-    const publicKey = String(keyResp.data?.public_key || '')
-    const enabled = !!keyResp.data?.enabled && !!publicKey
-    if (!enabled) {
-      pushEnabled.value = false
-      return
-    }
-    const registration = await navigator.serviceWorker.register('/pinova-push-sw.js', { scope: '/push/' })
-    const existingSub = await registration.pushManager.getSubscription()
-    const pushSub = existingSub || await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
-    })
-    const json = pushSub.toJSON() as any
-    await api.post('notifications/push_subscribe/', {
-      endpoint: json.endpoint,
-      p256dh: json.keys?.p256dh,
-      auth: json.keys?.auth,
-    })
-    pushEnabled.value = true
-  } catch (err) {
-    pushEnabled.value = false
-  }
-}
-
-const enablePushNotifications = async () => {
-  if (pushLoading.value) return
-  pushLoading.value = true
-  try {
-    const permission = await Notification.requestPermission()
-    if (permission !== 'granted') {
-      pushEnabled.value = false
-      return
-    }
-    await syncPushSubscription()
-  } finally {
-    pushLoading.value = false
   }
 }
 
@@ -186,7 +128,6 @@ const handleNotificationClick = async (notification: any) => {
 onMounted(() => {
   fetchNotifications()
   fetchConversations()
-  syncPushSubscription().catch(() => undefined)
 })
 
 const handleSearch = () => {
@@ -543,14 +484,6 @@ onUnmounted(() => {
                   {{ currentPlanLabel }}
                 </span>
               </router-link>
-              <button
-                class="flex items-center gap-3 px-4 py-2.5 w-full hover:bg-neutral-50 transition text-sm text-neutral-700"
-                :disabled="pushLoading || pushEnabled"
-                @click="enablePushNotifications"
-              >
-                <span class="material-symbols-outlined text-lg">notifications_active</span>
-                <span>{{ pushEnabled ? 'Push activé' : (pushLoading ? 'Activation...' : 'Activer le push') }}</span>
-              </button>
             </div>
 
             <div class="border-t border-neutral-100 py-1">
