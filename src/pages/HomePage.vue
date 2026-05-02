@@ -87,9 +87,6 @@ const openPin = (slug: string) => {
   router.push(`/pin/${slug}`)
 }
 
-const openMore = (slug: string) => {
-  router.push(`/pin/${slug}`)
-}
 </script>
 
 <template>
@@ -147,7 +144,6 @@ const openMore = (slug: string) => {
       :pins="filteredPins"
       @toggle-save="handleToggleSave"
       @open-pin="openPin"
-      @more="openMore"
     />
 
     <!-- Pinterest-like skeleton while fetching next page -->

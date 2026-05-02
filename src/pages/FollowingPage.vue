@@ -114,7 +114,6 @@ const followSuggestedUser = async (username: string) => {
       :pins="displayPins"
       @toggle-save="handleToggleSave"
       @open-pin="openPin"
-      @more="openPin"
     />
 
     <PinSkeleton v-if="isFetchingNextPage || hasNextPage" class="mt-6 hidden" />

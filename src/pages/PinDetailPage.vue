@@ -7,8 +7,6 @@ import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
-import PrivateTags from '../components/PrivateTags.vue'
-import ProvenanceChain from '../components/ProvenanceChain.vue'
 import { useI18n } from '../i18n'
 
 const { t } = useI18n()
@@ -31,9 +29,6 @@ const {
   translateComment,
   toggleCommentLike,
   translatePinDescription,
-  fetchProvenance,
-  fetchPrivateTags,
-  savePrivateTags,
   trackPinView,
   getPinDownload,
 } = usePins()
@@ -41,22 +36,6 @@ const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
 const pinSlug = computed(() => route.params.slug as string)
 const pin = computed(() => getPin(pinSlug.value))
-const selectedVariantKind = ref<string | null>(null)
-
-watch(pinSlug, () => {
-  selectedVariantKind.value = null
-})
-
-const displayImageUrl = computed(() => {
-  const p = pin.value
-  if (!p) return ''
-  if (selectedVariantKind.value && p.variants?.length) {
-    const found = p.variants.find((x) => x.kind === selectedVariantKind.value)
-    if (found?.url) return found.url
-  }
-  return p.imageUrl
-})
-
 const isPinOwner = computed(() => !!(currentUser.value && pin.value && currentUser.value.username === pin.value.username))
 const targetLang = computed(() => currentUser.value?.preferredLanguage || navigator.language?.split('-')[0] || 'fr')
 
@@ -177,9 +156,6 @@ const commentsPage = ref(1)
 const commentsHasNext = ref(false)
 const commentsLoadingMore = ref(false)
 const descriptionText = ref('')
-const provenanceHash = ref('')
-const provenanceEvents = ref<any[]>([])
-const privateTags = ref<string[]>([])
 const commentSort = ref<'recent' | 'relevant'>(
   typeof window !== 'undefined' && window.localStorage.getItem('pinova_comment_sort') === 'relevant'
     ? 'relevant'
@@ -272,25 +248,6 @@ const loadPinMetadata = async () => {
   }
   if (!pin.value) return
   descriptionText.value = pin.value.description
-  try {
-    const provenance = await fetchProvenance(pin.value.slug)
-    provenanceHash.value = provenance?.root_hash || pin.value.provenanceRootHash || ''
-    provenanceEvents.value = provenance?.events || []
-  } catch (err) {
-    console.error('Erreur lors du chargement de la provenance', err)
-    provenanceHash.value = pin.value.provenanceRootHash || ''
-    provenanceEvents.value = []
-  }
-  if (isAuthenticated.value && isPinOwner.value) {
-    try {
-      privateTags.value = await fetchPrivateTags(pin.value.slug)
-    } catch (err) {
-      console.error('Erreur lors du chargement des tags privés', err)
-      privateTags.value = []
-    }
-  } else {
-    privateTags.value = []
-  }
 }
 
 const handleRichSubmit = async (
@@ -435,21 +392,16 @@ const handleTranslateDescription = async () => {
   }
 }
 
-const handlePrivateTagsUpdate = async (tags: string[]) => {
-  if (!pin.value || !isAuthenticated.value) return
-  privateTags.value = await savePrivateTags(pin.value.slug, tags)
-}
-
 const handleToggleSaveRelated = async (slug: string) => {
-  const pin = pins.value.find(p => p.slug === slug)
-  if (pin) {
-    toggleSavePin(pin.id)
+  const relatedPin = pins.value.find((p) => p.slug === slug)
+  if (relatedPin) {
+    toggleSavePin(relatedPin.id)
   }
   try {
     await toggleSave(slug)
   } catch (err) {
-    if (pin) {
-      toggleSavePin(pin.id)
+    if (relatedPin) {
+      toggleSavePin(relatedPin.id)
     }
     console.error('Erreur sauvegarde pin relié', err)
   }
@@ -545,43 +497,22 @@ const openRelatedPin = (slug: string) => {
         </button>
 
         <!-- Main card -->
-        <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col lg:flex-row">
+        <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col lg:flex-row lg:max-h-[80vh]">
           <!-- Image -->
-          <div class="lg:w-1/2 bg-neutral-100">
-            <div v-if="pin.variants?.length" class="p-3 sm:p-4 flex flex-wrap gap-2 border-b border-neutral-200 bg-white/80">
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs font-semibold transition"
-                :class="!selectedVariantKind ? 'bg-pink-600 text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'"
-                @click="selectedVariantKind = null"
-              >
-                {{ t('pin.variant.original') }}
-              </button>
-              <button
-                v-for="v in pin.variants"
-                :key="v.kind"
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs font-semibold transition capitalize"
-                :class="selectedVariantKind === v.kind ? 'bg-pink-600 text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'"
-                @click="selectedVariantKind = v.kind"
-              >
-                {{ t(`pin.variant.${v.kind}`) }}
-              </button>
-            </div>
+          <div class="lg:w-1/2 bg-neutral-100 flex flex-col lg:max-h-[80vh] lg:overflow-hidden shrink-0">
             <img
-              :src="displayImageUrl"
+              :src="pin.imageUrl"
               :alt="pin.title"
-              class="w-full h-80 sm:h-96 lg:h-full object-cover select-none"
+              class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
               draggable="false"
               @dblclick.prevent="handleLike"
               @contextmenu.prevent
               @dragstart.prevent
             />
-            <p class="text-[11px] text-neutral-400 px-3 py-2">{{ t('pin.doubleTapLikeHint') }}</p>
           </div>
 
           <!-- Details -->
-          <div class="lg:w-1/2 p-6 sm:p-8 lg:p-10 flex flex-col">
+          <div class="lg:w-1/2 p-6 sm:p-8 lg:p-10 flex flex-col lg:max-h-[80vh] lg:overflow-y-auto min-h-0">
             <!-- Actions bar -->
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center gap-2">
@@ -607,9 +538,6 @@ const openRelatedPin = (slug: string) => {
                 >
                   <span v-if="downloadingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
                   <span v-else class="material-symbols-outlined">download</span>
-                </button>
-                <button class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition">
-                  <span class="material-symbols-outlined">more_horiz</span>
                 </button>
               </div>
               <button
@@ -672,24 +600,18 @@ const openRelatedPin = (slug: string) => {
               </div>
             </div>
 
-            <!-- Crédit créateur certifié (provenance) -->
-            <div class="mb-6">
-              <ProvenanceChain
-                :creator="pin.user"
-                :creator-avatar="pin.userAvatarColor"
-                :certified="!!pin.certifiedCredit"
-                :hash="provenanceHash || pin.provenanceRootHash"
-                :events="provenanceEvents"
-              />
-            </div>
-
-            <!-- Tags privés -->
-            <div v-if="isPinOwner" class="mb-6">
-              <PrivateTags
-                :model-value="privateTags"
-                :editable="isAuthenticated"
-                @update:model-value="handlePrivateTagsUpdate"
-              />
+            <!-- Tags privés (lecture seule — créés à la publication) -->
+            <div v-if="isPinOwner && pin.privateTags?.length" class="mb-6">
+              <p class="text-xs font-semibold text-neutral-500 mb-2">{{ t('pin.privateTags.readonlyTitle') }}</p>
+              <div class="flex flex-wrap gap-2">
+                <span
+                  v-for="tag in pin.privateTags"
+                  :key="tag"
+                  class="px-2.5 py-1 rounded-full bg-neutral-900 text-xs font-medium text-white"
+                >
+                  {{ tag }}
+                </span>
+              </div>
             </div>
 
             <!-- Author -->
@@ -843,7 +765,6 @@ const openRelatedPin = (slug: string) => {
           :pins="relatedPins"
           @toggle-save="handleToggleSaveRelated"
           @open-pin="openRelatedPin"
-          @more="openRelatedPin"
         />
       </section>
     </div>

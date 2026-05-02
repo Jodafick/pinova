@@ -18,6 +18,7 @@ export const en: Record<string, string> = {
 
   'nav.home': 'Home',
   'nav.explore': 'Explore',
+  'nav.stories': 'Stories',
   'nav.create': 'Create',
   'nav.following': 'Following',
   'nav.profile': 'Profile',
@@ -45,6 +46,12 @@ export const en: Record<string, string> = {
 
   'create.title': 'Create a Pin',
   'create.subtitle': 'Share an inspiring idea with the community',
+  'create.step.next': 'Next step',
+  'create.step.back': 'Back to step 1',
+  'create.step1.banner': 'Step 1 of 2 — pin details.',
+  'create.step1.sideHint': 'Next you will upload the image and publishing options.',
+  'create.step1.titleRequired': 'Title is required.',
+  'create.step1.categoryRequired': 'Pick or enter a category.',
   'create.publish': 'Publish',
   'create.publishing': 'Publishing...',
   'create.upload.title': 'Drag and drop an image or GIF',
@@ -112,8 +119,12 @@ export const en: Record<string, string> = {
   'pin.variant.square': 'Square',
   'pin.variant.landscape': 'Landscape',
   'pin.doubleTapLikeHint': 'Double-click the image to like.',
+  'pin.privateTags.readonlyTitle': 'Private tags',
   'story.viewPin': 'View pin',
-  'story.doubleTapHint': 'Double-click or double tap to like',
+
+  'stories.title': 'Stories',
+  'stories.subtitle': 'Active stories from the community. If recommendations are enabled in settings, ordering reflects your interests.',
+  'stories.empty': 'No stories right now.',
 
   'translate.translateTo': 'Translate to {lang}',
   'translate.viewOriginal': 'View original ({lang})',
@@ -274,6 +285,7 @@ export const en: Record<string, string> = {
   'profile.boards.organizeClose': 'Close',
   'profile.boards.reorganize': 'Reorder pins',
   'profile.stories.title': 'Stories',
+  'profile.stories.openRing': 'Open your stories — tap your profile photo',
   'profile.tab.created': 'Created',
   'profile.tab.saved': 'Saved',
   'profile.empty.created.title': 'No pins created',
@@ -285,6 +297,8 @@ export const en: Record<string, string> = {
   'board.loadError': 'Could not load this board.',
   'board.pinCount': '{count} pins on this board',
   'board.empty': 'No pins on this board yet.',
+  'board.organizePins': 'Organize pins',
+  'board.organizeError': 'Could not save pin order.',
 
   'login.hero.title': 'Find your next ideas',
   'login.hero.desc': 'Explore billions of ideas in every domain: home, recipes, fashion, travel and so much more.',

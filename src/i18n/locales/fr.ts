@@ -21,6 +21,7 @@ export const fr: Record<string, string> = {
   // Header
   'nav.home': 'Accueil',
   'nav.explore': 'Explorer',
+  'nav.stories': 'Stories',
   'nav.create': 'Créer',
   'nav.following': 'Suivis',
   'nav.profile': 'Profil',
@@ -50,6 +51,12 @@ export const fr: Record<string, string> = {
   // Create Pin
   'create.title': 'Créer un Pin',
   'create.subtitle': 'Partagez une idée inspirante avec la communauté',
+  'create.step.next': 'Étape suivante',
+  'create.step.back': 'Retour à l\'étape 1',
+  'create.step1.banner': 'Étape 1 sur 2 — informations du pin.',
+  'create.step1.sideHint': 'À l\'étape suivante vous ajouterez l\'image et les options de publication.',
+  'create.step1.titleRequired': 'Le titre est obligatoire.',
+  'create.step1.categoryRequired': 'Choisissez ou saisissez une catégorie.',
   'create.publish': 'Publier',
   'create.publishing': 'Publication...',
   'create.upload.title': 'Glissez-déposez une image ou un GIF',
@@ -118,8 +125,12 @@ export const fr: Record<string, string> = {
   'pin.variant.square': 'Carré',
   'pin.variant.landscape': 'Paysage',
   'pin.doubleTapLikeHint': 'Double-cliquez sur l\'image pour aimer.',
+  'pin.privateTags.readonlyTitle': 'Tags privés',
   'story.viewPin': 'Voir le pin',
-  'story.doubleTapHint': 'Double-cliquez ou double tapez pour aimer',
+
+  'stories.title': 'Stories',
+  'stories.subtitle': 'Stories actives de la communauté. Si les recommandations sont activées dans vos paramètres, l\'ordre suit vos centres d\'intérêt.',
+  'stories.empty': 'Aucune story pour le moment.',
 
   // Translate button
   'translate.translateTo': 'Traduire en {lang}',
@@ -288,6 +299,7 @@ export const fr: Record<string, string> = {
   'profile.boards.organizeClose': 'Fermer',
   'profile.boards.reorganize': 'Réorganiser les pins',
   'profile.stories.title': 'Stories',
+  'profile.stories.openRing': 'Voir vos stories — appuyez sur votre photo',
   'profile.tab.created': 'Créés',
   'profile.tab.saved': 'Enregistrés',
   'profile.empty.created.title': 'Aucun pin créé',
@@ -299,6 +311,8 @@ export const fr: Record<string, string> = {
   'board.loadError': 'Impossible de charger ce tableau.',
   'board.pinCount': '{count} pins dans ce tableau',
   'board.empty': 'Aucun pin dans ce tableau pour le moment.',
+  'board.organizePins': 'Organiser les pins',
+  'board.organizeError': 'Impossible d\'enregistrer l\'ordre des pins.',
 
   // Login
   'login.hero.title': 'Trouvez vos prochaines idées',

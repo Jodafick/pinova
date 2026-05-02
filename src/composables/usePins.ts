@@ -57,8 +57,6 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
       isPrivate: !!board.is_private,
       position: typeof board.position === 'number' ? board.position : undefined,
     })),
-    certifiedCredit: djangoPin.certified_credit || false,
-    provenanceRootHash: djangoPin.provenance_root_hash || '',
     scheduledPublishAt: djangoPin.scheduled_publish_at || null,
     createdAt: djangoPin.created_at,
     liked: djangoPin.is_liked || false,
@@ -66,9 +64,6 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     isFollowing: author.is_following || false,
     authorFollowersCount: typeof author.followers_count === 'number' ? author.followers_count : 0,
     isStory: !!djangoPin.is_story,
-    variants: Array.isArray(djangoPin.variants)
-      ? djangoPin.variants.map((v: any) => ({ kind: v.kind, url: getFullMediaUrl(v.url) }))
-      : [],
     storyExpiresAt: djangoPin.story_expires_at ?? undefined,
   }
 }

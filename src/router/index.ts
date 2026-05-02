@@ -22,6 +22,12 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
+      path: '/stories',
+      name: 'stories',
+      component: () => import('../pages/StoriesPage.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/following',
       name: 'following',
       component: () => import('../pages/FollowingPage.vue'),

@@ -47,6 +47,7 @@ const loadProfile = async () => {
           pinCount: board.pin_count ?? board.pinCount ?? 0,
           isPrivate: board.is_private ?? board.isPrivate ?? false,
           collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
+          previewImages: board.preview_images ?? board.previewImages ?? [],
         }))
       } catch (err) {
         console.error('Erreur chargement tableaux:', err)
@@ -183,6 +184,7 @@ const handleCreateBoard = async () => {
       pinCount: board.pin_count ?? board.pinCount ?? 0,
       isPrivate: board.is_private ?? board.isPrivate ?? false,
       collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
+      previewImages: [],
     }
     profileUser.value.boards = [nextBoard, ...(profileUser.value.boards ?? [])]
     newBoardName.value = ''
@@ -386,7 +388,33 @@ function goToBoard(boardId: number) {
   <div v-else-if="profileUser" class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <!-- Profile header -->
     <section class="flex flex-col items-center text-center mb-10">
+      <button
+        v-if="activeStories.length > 0"
+        type="button"
+        class="relative mb-4 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
+        :aria-label="t('profile.stories.openRing')"
+        @click="openStoryViewer(0)"
+      >
+        <span
+          class="absolute -inset-1 rounded-full bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500 p-[3px]"
+          aria-hidden="true"
+        />
+        <span class="relative flex rounded-full bg-white p-[2px]">
+          <span
+            class="w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold text-white shadow-inner overflow-hidden avatar-shadow"
+            :class="profileUser.avatarColor"
+          >
+            <img
+              v-if="profileUser.avatarUrl"
+              :src="profileUser.avatarUrl"
+              class="w-full h-full object-cover"
+            />
+            <span v-else class="avatar-text">{{ profileUser.displayName[0] }}</span>
+          </span>
+        </span>
+      </button>
       <div
+        v-else
         class="w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold text-white shadow-lg mb-4 overflow-hidden avatar-shadow"
         :class="profileUser.avatarColor"
       >
@@ -460,36 +488,6 @@ function goToBoard(boardId: number) {
       </div>
     </section>
 
-    <!-- Stories 24h actives -->
-    <section v-if="activeStories.length > 0" class="mb-10">
-      <p class="text-xs font-semibold text-neutral-600 mb-3">{{ t('profile.stories.title') }}</p>
-      <div class="flex gap-3 overflow-x-auto pb-2">
-        <button
-          v-for="(sp, si) in activeStories"
-          :key="sp.slug"
-          type="button"
-          class="shrink-0 flex flex-col items-center gap-1.5 w-[76px] text-left"
-          @click="openStoryViewer(si)"
-        >
-          <div
-            class="w-[72px] h-[72px] rounded-full p-[3px] bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500"
-          >
-            <div class="w-full h-full rounded-full overflow-hidden bg-white p-[2px]">
-              <img
-                :src="sp.imageUrl"
-                :alt="sp.title"
-                class="w-full h-full rounded-full object-cover bg-neutral-100 pointer-events-none select-none"
-                draggable="false"
-                @contextmenu.prevent
-              />
-            </div>
-          </div>
-          <span class="text-[10px] text-neutral-600 text-center line-clamp-2 w-full">{{ sp.title }}</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- Boards section -->
     <section class="mb-10" v-if="boards.length > 0 || isMyProfile">
       <h2 class="text-lg font-semibold text-neutral-900 mb-4">{{ t('profile.boards') }}</h2>
 
@@ -530,22 +528,41 @@ function goToBoard(boardId: number) {
         <div
           v-for="board in boards"
           :key="board.id"
-          class="group relative bg-neutral-100 rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer hover:shadow-md transition"
+          class="group relative bg-neutral-200 rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer hover:shadow-md transition ring-1 ring-black/5"
           role="button"
           tabindex="0"
           @click="goToBoard(board.id)"
           @keydown.enter.prevent="goToBoard(board.id)"
         >
-          <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-          <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
-            <p class="font-semibold text-sm">{{ board.name }}</p>
-            <p class="text-xs opacity-80">{{ t('explore.pinsCount', { count: board.pinCount }) }}</p>
-            <p v-if="board.collaboratorCount" class="text-[11px] opacity-80">
+          <div class="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-neutral-300">
+            <template v-if="board.previewImages && board.previewImages.length">
+              <img
+                v-for="(src, pi) in board.previewImages.slice(0, 4)"
+                :key="pi"
+                :src="src"
+                alt=""
+                class="w-full h-full object-cover bg-neutral-100 min-h-0"
+                draggable="false"
+                @contextmenu.prevent
+              />
+            </template>
+            <div
+              v-else
+              class="col-span-2 row-span-2 flex items-center justify-center bg-neutral-100 text-neutral-400"
+            >
+              <span class="material-symbols-outlined text-4xl">collections</span>
+            </div>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none"></div>
+          <div class="absolute bottom-0 left-0 right-0 p-4 text-white pointer-events-none">
+            <p class="font-semibold text-sm drop-shadow-sm">{{ board.name }}</p>
+            <p class="text-xs opacity-90">{{ t('explore.pinsCount', { count: board.pinCount }) }}</p>
+            <p v-if="board.collaboratorCount" class="text-[11px] opacity-90">
               {{ board.collaboratorCount }} collab.
             </p>
           </div>
-          <div v-if="board.isPrivate" class="absolute top-3 right-3">
-            <span class="material-symbols-outlined text-white text-sm">lock</span>
+          <div v-if="board.isPrivate" class="absolute top-3 right-3 z-10">
+            <span class="material-symbols-outlined text-white text-sm drop-shadow">lock</span>
           </div>
           <button
             v-if="isMyProfile"
@@ -798,7 +815,6 @@ function goToBoard(boardId: number) {
       :pins="displayPins"
       @toggle-save="handleToggleSave"
       @open-pin="openPin"
-      @more="openPin"
     />
 
     <StoryViewer

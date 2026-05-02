@@ -333,6 +333,7 @@ export function useAuth() {
       name: String(b.name ?? ''),
       is_private: !!(b.is_private ?? b.isPrivate),
       pin_count: Number(b.pin_count ?? b.pinCount ?? 0),
+      preview_images: (b.preview_images as string[] | undefined) ?? (b.previewImages as string[] | undefined) ?? [],
     }))
   }
 

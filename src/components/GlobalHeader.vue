@@ -50,6 +50,7 @@ const currentPlanLabel = computed(() => {
 const navItems = computed(() => [
   { name: 'home', label: t('nav.home'), to: '/' },
   { name: 'explore', label: t('nav.explore'), to: '/explore' },
+  { name: 'stories', label: t('nav.stories'), to: '/stories' },
   ...(isAuthenticated.value ? [{ name: 'following', label: t('nav.following'), to: '/following' }] : []),
   { name: 'create', label: t('nav.create'), to: '/create' },
 ])

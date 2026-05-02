@@ -174,7 +174,6 @@ const openPin = (slug: string) => {
         :pins="displayPins"
         @toggle-save="handleToggleSave"
         @open-pin="openPin"
-        @more="openPin"
       />
     </section>
 
@@ -195,7 +194,6 @@ const openPin = (slug: string) => {
         :pins="displayPins"
         @toggle-save="handleToggleSave"
         @open-pin="openPin"
-        @more="openPin"
       />
     </section>
 

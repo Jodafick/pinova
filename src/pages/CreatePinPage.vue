@@ -34,13 +34,6 @@ const myBoards = ref<{ id: number; name: string; is_private?: boolean }[]>([])
 
 const currentPlan = computed<'free' | 'plus' | 'pro'>(() => currentUser.value?.subscription?.plan || 'free')
 
-// Crédit créateur certifié (plan Pro uniquement, aligné backend)
-const canCertifyCredit = computed(() => currentPlan.value === 'pro')
-const certifyCredit = ref(false)
-watch(canCertifyCredit, (ok) => {
-  certifyCredit.value = ok
-}, { immediate: true })
-
 const canSchedulePublish = computed(() => currentPlan.value === 'pro')
 const scheduledPublishLocal = ref('')
 watch(canSchedulePublish, (ok) => {
@@ -53,10 +46,26 @@ const showCategoryDropdown = ref(false)
 const categorySearch = ref('')
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 
+const createStep = ref<1 | 2>(1)
+
+function goStep2() {
+  if (!title.value.trim()) {
+    window.alert(t('create.step1.titleRequired'))
+    return
+  }
+  const resolvedTopic = topic.value || categorySearch.value.trim()
+  if (!resolvedTopic) {
+    window.alert(t('create.step1.categoryRequired'))
+    return
+  }
+  createStep.value = 2
+}
+
+function goStep1() {
+  createStep.value = 1
+}
+
 const isStory = ref(false)
-const variantStoryFile = ref<File | null>(null)
-const variantSquareFile = ref<File | null>(null)
-const variantLandscapeFile = ref<File | null>(null)
 
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
 const canUsePrivateTags = computed(() => currentPlan.value !== 'free')
@@ -165,7 +174,6 @@ const submitPin = async () => {
     formData.append('topic', resolvedTopic)
     formData.append('visibility', visibility.value)
     formData.append('is_story', isStory.value ? 'true' : 'false')
-    formData.append('certified_credit', canCertifyCredit.value && certifyCredit.value ? 'true' : 'false')
     if (canSchedulePublish.value && scheduledPublishLocal.value) {
       const d = new Date(scheduledPublishLocal.value)
       if (!Number.isNaN(d.getTime())) {
@@ -182,19 +190,32 @@ const submitPin = async () => {
     }
     selectedBoardIds.value.forEach((boardId) => formData.append('board_ids_input', String(boardId)))
 
-    if (variantStoryFile.value) formData.append('variant_story', variantStoryFile.value)
-    if (variantSquareFile.value) formData.append('variant_square', variantSquareFile.value)
-    if (variantLandscapeFile.value) formData.append('variant_landscape', variantLandscapeFile.value)
-
     if (currentUser.value) {
       formData.append('author', currentUser.value.id.toString())
     }
 
     await addPin(formData)
     router.push('/')
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Erreur lors de la publication:', err)
-    window.alert(t('create.publish.error'))
+    const ax = err as { response?: { data?: Record<string, unknown> } }
+    const data = ax.response?.data
+    const step1Fields = ['title', 'topic', 'description', 'link', 'public_tags_input']
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      const keys = Object.keys(data)
+      if (keys.some((k) => step1Fields.includes(k))) {
+        createStep.value = 1
+      }
+      const lines = keys.flatMap((k) => {
+        const v = data[k]
+        if (Array.isArray(v)) return v.map((x) => `${k}: ${String(x)}`)
+        if (v && typeof v === 'object') return [`${k}: ${JSON.stringify(v)}`]
+        return [`${k}: ${String(v)}`]
+      })
+      window.alert(lines.slice(0, 8).join('\n') || t('create.publish.error'))
+    } else {
+      window.alert(t('create.publish.error'))
+    }
   } finally {
     saving.value = false
   }
@@ -222,6 +243,7 @@ const selectCategory = (selected: TopicOption) => {
       <div>
         <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">{{ t('create.title') }}</h1>
         <p class="text-sm text-neutral-500 mt-1">{{ t('create.subtitle') }}</p>
+        <p v-if="createStep === 1" class="text-xs text-pink-600 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
       </div>
       <div class="flex items-center gap-3">
         <button
@@ -231,6 +253,8 @@ const selectCategory = (selected: TopicOption) => {
           {{ t('common.cancel') }}
         </button>
         <button
+          v-if="createStep === 2"
+          type="button"
           class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition flex items-center gap-2"
           :disabled="!title || !imagePreviewUrl || saving"
           @click="submitPin"
@@ -241,14 +265,23 @@ const selectCategory = (selected: TopicOption) => {
           </svg>
           {{ saving ? t('create.publishing') : t('create.publish') }}
         </button>
+        <button
+          v-else
+          type="button"
+          class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition"
+          :disabled="!title.trim()"
+          @click="goStep2"
+        >
+          {{ t('create.step.next') }}
+        </button>
       </div>
     </div>
 
     <!-- Form -->
     <div class="bg-white rounded-3xl shadow-lg border border-neutral-100 overflow-hidden">
       <div class="flex flex-col lg:flex-row">
-        <!-- Image upload area -->
-        <div class="lg:w-2/5 p-6 sm:p-8 bg-neutral-50 border-b lg:border-b-0 lg:border-r border-neutral-100">
+        <!-- Image (étape 2) -->
+        <div v-if="createStep === 2" class="lg:w-2/5 p-6 sm:p-8 bg-neutral-50 border-b lg:border-b-0 lg:border-r border-neutral-100">
           <div
             v-if="!imagePreviewUrl"
             class="h-80 lg:h-full min-h-[320px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 text-center cursor-pointer transition-colors"
@@ -309,8 +342,29 @@ const selectCategory = (selected: TopicOption) => {
           <input ref="fileInput" type="file" accept="image/*,image/gif" class="hidden" @change="onFileChange" />
         </div>
 
+        <div
+          v-else
+          class="lg:w-2/5 p-6 sm:p-8 bg-neutral-50 border-b lg:border-b-0 lg:border-r border-neutral-100 hidden lg:flex flex-col items-center justify-center text-center min-h-[300px]"
+        >
+          <span class="material-symbols-outlined text-5xl text-neutral-300 mb-3">add_photo_alternate</span>
+          <p class="text-sm text-neutral-600 font-medium">{{ t('create.step1.sideHint') }}</p>
+        </div>
+
         <!-- Fields -->
         <div class="lg:w-3/5 p-6 sm:p-8 space-y-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span
+              class="text-xs font-bold px-2 py-1 rounded-full"
+              :class="createStep === 1 ? 'bg-pink-600 text-white' : 'bg-neutral-200 text-neutral-600'"
+            >1</span>
+            <span class="text-neutral-300">→</span>
+            <span
+              class="text-xs font-bold px-2 py-1 rounded-full"
+              :class="createStep === 2 ? 'bg-pink-600 text-white' : 'bg-neutral-200 text-neutral-600'"
+            >2</span>
+          </div>
+
+          <template v-if="createStep === 1">
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.title') }}</label>
             <input
@@ -396,7 +450,9 @@ const selectCategory = (selected: TopicOption) => {
               class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
             />
           </div>
+          </template>
 
+          <template v-else>
           <div class="pt-4 border-t border-neutral-100">
             <div class="flex items-center justify-between mb-2">
               <label class="block text-sm font-medium text-neutral-700">{{ t('create.field.boards') }}</label>
@@ -471,41 +527,6 @@ const selectCategory = (selected: TopicOption) => {
             </label>
           </div>
 
-          <!-- Variantes (story / carré / paysage) -->
-          <div class="pt-4 border-t border-neutral-100">
-            <p class="text-sm font-medium text-neutral-700 mb-1">{{ t('create.variants.title') }}</p>
-            <p class="text-xs text-neutral-500 mb-3">{{ t('create.variants.subtitle') }}</p>
-            <div class="grid sm:grid-cols-3 gap-3">
-              <div>
-                <label class="text-[11px] text-neutral-600 block mb-1">{{ t('create.variants.story') }}</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  class="text-xs w-full"
-                  @change="variantStoryFile = ($event.target as HTMLInputElement).files?.[0] ?? null"
-                />
-              </div>
-              <div>
-                <label class="text-[11px] text-neutral-600 block mb-1">{{ t('create.variants.square') }}</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  class="text-xs w-full"
-                  @change="variantSquareFile = ($event.target as HTMLInputElement).files?.[0] ?? null"
-                />
-              </div>
-              <div>
-                <label class="text-[11px] text-neutral-600 block mb-1">{{ t('create.variants.landscape') }}</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  class="text-xs w-full"
-                  @change="variantLandscapeFile = ($event.target as HTMLInputElement).files?.[0] ?? null"
-                />
-              </div>
-            </div>
-          </div>
-
           <!-- Publication planifiée (Pro) -->
           <div v-if="canSchedulePublish" class="pt-4 border-t border-neutral-100">
             <label class="block text-sm font-medium text-neutral-700 mb-1">{{ t('create.schedule.title') }}</label>
@@ -515,26 +536,6 @@ const selectCategory = (selected: TopicOption) => {
               type="datetime-local"
               class="w-full max-w-xs px-3 py-2 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
-          </div>
-
-          <!-- Crédit créateur certifié (Pro seulement) -->
-          <div v-if="canCertifyCredit" class="pt-4 border-t border-neutral-100">
-            <label class="flex items-start gap-3 cursor-pointer">
-              <div class="relative mt-0.5">
-                <input v-model="certifyCredit" type="checkbox" class="sr-only peer" />
-                <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-emerald-500 rounded-full transition-colors"></div>
-                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
-              </div>
-              <div class="flex-1">
-                <div class="flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-base text-emerald-600 fill-1">verified</span>
-                  <p class="text-sm font-semibold text-neutral-800">{{ t('create.certify.title') }}</p>
-                </div>
-                <p class="text-xs text-neutral-500 mt-0.5">
-                  {{ t('create.certify.desc') }}
-                </p>
-              </div>
-            </label>
           </div>
 
           <div class="pt-4 border-t border-neutral-100">
@@ -559,6 +560,15 @@ const selectCategory = (selected: TopicOption) => {
               </p>
             </div>
           </div>
+
+          <button
+            type="button"
+            class="text-sm font-semibold text-neutral-600 hover:text-neutral-900 pt-2"
+            @click="goStep1"
+          >
+            ← {{ t('create.step.back') }}
+          </button>
+          </template>
         </div>
       </div>
     </div>

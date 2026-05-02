@@ -26,8 +26,6 @@ export type Pin = {
     isPrivate?: boolean
     position?: number
   }[]
-  certifiedCredit?: boolean
-  provenanceRootHash?: string
   tall?: boolean
   saved?: boolean
   liked?: boolean
@@ -39,8 +37,6 @@ export type Pin = {
   /** Story 24h (badge filtre actif / archivé pour l'auteur) */
   isStory?: boolean
   storyExpiresAt?: string
-  /** Formats alternatifs (story / carré / paysage) sans dupliquer le pin métier */
-  variants?: Array<{ kind: string; url: string }>
   createdAt: string
 }
 
@@ -82,6 +78,7 @@ export type User = {
     pinCount: number
     isPrivate: boolean
     collaboratorCount?: number
+    previewImages?: string[]
   }[]
 }
 

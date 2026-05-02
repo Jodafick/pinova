@@ -18,7 +18,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'toggle-save', slug: string): void
   (e: 'open-pin', slug: string): void
-  (e: 'more', slug: string): void
 }>()
 
 const columnCount = ref(2)
@@ -115,23 +114,23 @@ onUnmounted(() => {
         class="group relative rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all cursor-pointer"
         @click="onArticleClick(pin, $event)"
       >
-        <!-- Image container -->
+        <!-- Image container : hauteur naturelle après chargement -->
         <div
           data-pin-media
-          class="relative overflow-hidden rounded-2xl bg-neutral-100 aspect-[3/4]"
+          class="relative overflow-hidden rounded-2xl bg-neutral-100 min-h-[140px]"
           @click.stop="onPinMediaTap(pin)"
           @dblclick.stop.prevent="onPinMediaDblClick(pin)"
         >
           <div
             v-if="!isImageLoaded(pin.id)"
-            class="absolute inset-0 animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200"
+            class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200"
           ></div>
           <img
             :src="pin.imageUrl"
             :alt="pin.title"
-            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-500 select-none"
+            class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none"
             draggable="false"
-            :class="isImageLoaded(pin.id) ? 'opacity-100' : 'opacity-0'"
+            :class="isImageLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
             loading="lazy"
             @load="markImageLoaded(pin.id)"
             @contextmenu.prevent
@@ -181,15 +180,6 @@ onUnmounted(() => {
               <span class="truncate">{{ pin.link }}</span>
             </a>
             <div v-else></div>
-
-            <div class="flex items-center gap-1.5">
-              <button
-                class="w-8 h-8 rounded-full bg-white/95 flex items-center justify-center text-neutral-700 shadow-md hover:bg-white transition"
-                @click.stop="emit('more', pin.slug)"
-              >
-                <span class="material-symbols-outlined text-lg">more_horiz</span>
-              </button>
-            </div>
           </div>
         </div>
 
