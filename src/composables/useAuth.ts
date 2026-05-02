@@ -101,6 +101,12 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       digestCreatorWeekly: djangoUser.subscription?.digest_creator_weekly ?? true,
       accountScheduledDeletionAt:
         djangoUser.subscription?.account_scheduled_deletion_at ?? null,
+      seatBundle: djangoUser.subscription?.seat_bundle ?? 'solo',
+      isSeatMember: !!djangoUser.subscription?.is_seat_member,
+      sponsorUsername: djangoUser.subscription?.sponsor_username ?? null,
+      seatMaxInvitees: typeof djangoUser.subscription?.seat_max_invitees === 'number'
+        ? djangoUser.subscription.seat_max_invitees
+        : undefined,
     },
     boards: djangoUser.boards || [],
     birthDate: birthNormalized,

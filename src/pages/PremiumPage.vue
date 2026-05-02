@@ -25,6 +25,11 @@ type PricingCycle = {
   duration_days: number
 }
 const pricingCatalog = ref<Record<string, Record<string, PricingCycle>>>({})
+const seatInviteLimits = ref<{ solo: number; family: number; team: number }>({
+  solo: 0,
+  family: 5,
+  team: 15,
+})
 
 const formatCurrency = (amount: number, currencyIso: string) => {
   try {
@@ -60,6 +65,17 @@ const loadPricingCatalog = () => {
     .get('subscription/pricing/', { params })
     .then((response) => {
       pricingCatalog.value = response.data?.plans || {}
+      const sil = response.data?.seat_invite_limits
+      if (sil && typeof sil === 'object') {
+        const f = Number((sil as { family?: unknown }).family)
+        const tm = Number((sil as { team?: unknown }).team)
+        const so = Number((sil as { solo?: unknown }).solo)
+        seatInviteLimits.value = {
+          solo: Number.isFinite(so) ? so : 0,
+          family: Number.isFinite(f) ? f : 5,
+          team: Number.isFinite(tm) ? tm : 15,
+        }
+      }
     })
     .catch(() => {
       paymentInfoMessage.value = t('premium.payment.checkoutError')
@@ -433,9 +449,9 @@ onUnmounted(() => {
         <p class="text-[11px] text-neutral-400 max-w-lg mx-auto leading-relaxed">
           {{
             seatBundle === 'family'
-              ? t('premium.bundle.familyDesc')
+              ? t('premium.bundle.familyDesc', { n: seatInviteLimits.family })
               : seatBundle === 'team'
-                ? t('premium.bundle.teamDesc')
+                ? t('premium.bundle.teamDesc', { n: seatInviteLimits.team })
                 : t('premium.bundle.soloDesc')
           }}
         </p>

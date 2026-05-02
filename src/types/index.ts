@@ -90,6 +90,12 @@ export type User = {
     digestCreatorWeekly?: boolean
     /** ISO — réservé au propriétaire ; suppression de compte programmée */
     accountScheduledDeletionAt?: string | null
+    /** solo | family | team — utilisateur propriétaire de la facture */
+    seatBundle?: string
+    isSeatMember?: boolean
+    sponsorUsername?: string | null
+    /** Plafond d’invités (famille ou équipe) — propriétaire hub uniquement */
+    seatMaxInvitees?: number
   }
   boards?: {
     id: number

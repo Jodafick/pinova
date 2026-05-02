@@ -84,6 +84,38 @@ const supportMessage = ref('')
 const supportSubmitting = ref(false)
 const supportTickets = ref<any[]>([])
 
+type SeatHubIncoming = {
+  id: string
+  owner_username: string
+  owner_display_name: string
+  expires_at: string
+}
+
+type SeatHubResp =
+  | { role: 'none'; seat_bundle: string; incoming_invitations: SeatHubIncoming[] }
+  | {
+      role: 'member'
+      sponsor_username: string | null
+      sponsor_display_name: string | null
+      seat_plan: string
+      incoming_invitations: SeatHubIncoming[]
+    }
+  | {
+      role: 'owner'
+      seat_bundle: string
+      max_invitees: number
+      used_slots: number
+      members: { username: string; display_name: string; joined_at: string }[]
+      pending_invitations: { id: string; invitee_username: string; expires_at: string; created_at: string }[]
+      incoming_invitations: SeatHubIncoming[]
+    }
+
+const seatHubLoading = ref(false)
+const seatHub = ref<SeatHubResp | null>(null)
+const seatBusy = ref(false)
+const seatInviteUsername = ref('')
+const seatInviteTokens = ref<Record<string, string>>({})
+
 const accountDeletionBusy = ref(false)
 
 const scheduledAccountDeletion = computed(() => currentUser.value?.subscription?.accountScheduledDeletionAt || null)
@@ -257,7 +289,133 @@ onMounted(() => {
   enforceAdPreferencesByPlan()
   void loadSupportTickets()
   void loadBillingInvoices()
+  void loadSeatHub()
 })
+
+const loadSeatHub = async () => {
+  if (!currentUser.value) return
+  seatHubLoading.value = true
+  try {
+    const res = await api.get('subscription/seats/')
+    seatHub.value = res.data as SeatHubResp
+    const inc = seatHub.value.incoming_invitations || []
+    for (const row of inc) {
+      if (seatInviteTokens.value[row.id] === undefined) seatInviteTokens.value[row.id] = ''
+    }
+  } catch {
+    seatHub.value = null
+  } finally {
+    seatHubLoading.value = false
+  }
+}
+
+const sendSeatInvite = async () => {
+  const uname = seatInviteUsername.value.trim().replace(/^@/, '')
+  if (uname.length < 2 || seatBusy.value) return
+  seatBusy.value = true
+  try {
+    const res = await api.post('subscription/seats/invites/', { username: uname })
+    seatInviteUsername.value = ''
+    const tok = String(res.data?.invite_token || '')
+    await showAlert(tok ? `${t('settings.seats.inviteTokenExplain')}:\n\n${tok}` : t('settings.seats.error'), {
+      title: tok ? t('settings.seats.inviteCreatedTitle') : t('modal.errorTitle'),
+      variant: tok ? 'success' : 'danger',
+    })
+    await loadSeatHub()
+    await fetchCurrentUser({ silent: true })
+  } catch {
+    await showAlert(t('settings.seats.error'), { variant: 'danger', title: t('modal.errorTitle') })
+  } finally {
+    seatBusy.value = false
+  }
+}
+
+const revokeSeatInviteOutgoing = async (id: string) => {
+  if (seatBusy.value) return
+  seatBusy.value = true
+  try {
+    await api.delete(`subscription/seats/invites/${encodeURIComponent(id)}/`)
+    await loadSeatHub()
+  } catch {
+    await showAlert(t('settings.seats.error'), { variant: 'danger' })
+  } finally {
+    seatBusy.value = false
+  }
+}
+
+const removeSeatMember = async (username: string) => {
+  if (seatBusy.value) return
+  seatBusy.value = true
+  try {
+    await api.delete(`subscription/seats/members/${encodeURIComponent(username)}/`)
+    await loadSeatHub()
+    await fetchCurrentUser({ silent: true })
+  } catch {
+    await showAlert(t('settings.seats.error'), { variant: 'danger' })
+  } finally {
+    seatBusy.value = false
+  }
+}
+
+const respondSeatInvite = async (id: string, action: 'accept' | 'decline') => {
+  const token = (seatInviteTokens.value[id] || '').trim()
+  if (!token) {
+    await showAlert(t('settings.seats.error'), { variant: 'danger' })
+    return
+  }
+  if (seatBusy.value) return
+  seatBusy.value = true
+  try {
+    await api.post(`subscription/seats/invites/${encodeURIComponent(id)}/`, { action, token })
+    await loadSeatHub()
+    await fetchCurrentUser({ silent: true })
+  } catch {
+    await showAlert(t('settings.seats.error'), { variant: 'danger' })
+  } finally {
+    seatBusy.value = false
+  }
+}
+
+const leaveSeatGroup = async () => {
+  if (seatBusy.value) return
+  seatBusy.value = true
+  try {
+    await api.post('subscription/seats/leave/')
+    await loadSeatHub()
+    await fetchCurrentUser({ silent: true })
+    currentPlan.value = currentUser.value?.subscription?.plan || 'free'
+    enforceAdPreferencesByPlan()
+  } catch {
+    await showAlert(t('settings.seats.error'), { variant: 'danger' })
+  } finally {
+    seatBusy.value = false
+  }
+}
+
+const revokeAllSeatGroup = async () => {
+  if (seatBusy.value) return
+  const typed = await showPrompt({
+    message: t('settings.seats.revokeAllPrompt'),
+    title: t('settings.seats.revokeAll'),
+    placeholder: 'REVOQUER',
+    variant: 'warning',
+  })
+  const tconfirm = String(typed ?? '').trim().toUpperCase()
+  if (tconfirm !== 'REVOQUER' && tconfirm !== 'REVOKE') return
+  seatBusy.value = true
+  try {
+    await api.post('subscription/seats/revoke-all/')
+    await loadSeatHub()
+    await fetchCurrentUser({ silent: true })
+    currentPlan.value = currentUser.value?.subscription?.plan || 'free'
+    enforceAdPreferencesByPlan()
+  } catch {
+    await showAlert(t('settings.seats.error'), { variant: 'danger' })
+  } finally {
+    seatBusy.value = false
+  }
+}
+
 
 const canToggleAdAds = () => currentPlan.value === 'plus' || currentPlan.value === 'pro'
 const canTogglePartnerAds = () => currentPlan.value === 'pro'
@@ -1021,6 +1179,151 @@ async function cancelAccountDeletion() {
             </button>
           </div>
           <p v-if="tipsSaved" class="text-xs text-emerald-700">{{ t('settings.tips.saved') }}</p>
+        </div>
+      </section>
+
+      <section
+        v-if="currentUser"
+        class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden"
+      >
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.seats.title') }}</h2>
+          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.seats.subtitle') }}</p>
+        </div>
+        <div class="p-6 space-y-4 text-sm">
+          <p v-if="seatHubLoading" class="text-xs text-neutral-400">{{ t('settings.seats.loading') }}</p>
+          <template v-else-if="seatHub">
+            <!-- Invitations entrantes -->
+            <div v-if="seatHub.incoming_invitations?.length" class="space-y-3 rounded-xl border border-amber-100 bg-amber-50/80 p-3">
+              <p class="text-xs font-semibold text-neutral-900">{{ t('settings.seats.incoming') }}</p>
+              <div v-for="row in seatHub.incoming_invitations" :key="row.id" class="space-y-2 border border-amber-200/70 rounded-lg p-2 bg-white">
+                <p class="text-xs text-neutral-700">
+                  {{ row.owner_display_name || row.owner_username }}
+                  <span class="text-neutral-400">(@{{ row.owner_username }})</span>
+                </p>
+                <input
+                  v-model="seatInviteTokens[row.id]"
+                  type="password"
+                  autocomplete="new-password"
+                  :placeholder="t('settings.seats.tokenPlaceholder')"
+                  class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-xs"
+                />
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 rounded-full bg-pink-600 text-white text-[11px] font-semibold disabled:opacity-50"
+                    :disabled="seatBusy"
+                    @click="respondSeatInvite(row.id, 'accept')"
+                  >
+                    {{ t('settings.seats.accept') }}
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 rounded-full border border-neutral-300 text-neutral-800 text-[11px] font-semibold disabled:opacity-50"
+                    :disabled="seatBusy"
+                    @click="respondSeatInvite(row.id, 'decline')"
+                  >
+                    {{ t('settings.seats.decline') }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <template v-if="seatHub.role === 'member'">
+              <p class="text-xs text-neutral-700">
+                {{ t('settings.seats.memberOf', { username: seatHub.sponsor_display_name || seatHub.sponsor_username || '' }) }}
+              </p>
+              <button
+                type="button"
+                class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
+                :disabled="seatBusy"
+                @click="leaveSeatGroup"
+              >
+                {{ t('settings.seats.leave') }}
+              </button>
+            </template>
+
+            <template v-else-if="seatHub.role === 'owner'">
+              <p class="text-xs text-neutral-600">
+                {{
+                  t('settings.seats.ownerSummary', {
+                    used: seatHub.used_slots,
+                    max: seatHub.max_invitees,
+                    bundle: seatHub.seat_bundle,
+                  })
+                }}
+              </p>
+              <div class="flex flex-wrap gap-2 items-end">
+                <div class="min-w-[140px] flex-1">
+                  <label class="block text-[11px] font-medium text-neutral-600 mb-1">{{ t('settings.seats.inviteLabel') }}</label>
+                  <input
+                    v-model="seatInviteUsername"
+                    type="text"
+                    :placeholder="t('settings.seats.invitePlaceholder')"
+                    class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold disabled:opacity-50"
+                  :disabled="seatBusy"
+                  @click="sendSeatInvite"
+                >
+                  {{ t('settings.seats.sendInvite') }}
+                </button>
+              </div>
+              <p v-if="seatHub.members?.length" class="text-xs font-semibold text-neutral-800 pt-2">{{ t('settings.seats.members') }}</p>
+              <ul v-if="seatHub.members?.length" class="space-y-1">
+                <li
+                  v-for="m in seatHub.members"
+                  :key="m.username"
+                  class="flex justify-between gap-2 text-xs py-1 border-b border-neutral-100"
+                >
+                  <span>@{{ m.username }}</span>
+                  <button
+                    type="button"
+                    class="text-pink-600 font-semibold disabled:opacity-50"
+                    :disabled="seatBusy"
+                    @click="removeSeatMember(m.username)"
+                  >
+                    {{ t('settings.seats.removeMember') }}
+                  </button>
+                </li>
+              </ul>
+              <p v-if="seatHub.pending_invitations?.length" class="text-xs font-semibold text-neutral-800 pt-2">{{ t('settings.seats.pendingOut') }}</p>
+              <ul v-if="seatHub.pending_invitations?.length" class="space-y-1">
+                <li
+                  v-for="p in seatHub.pending_invitations"
+                  :key="p.id"
+                  class="flex justify-between gap-2 text-xs py-1 border-b border-neutral-100"
+                >
+                  <span>@{{ p.invitee_username }}</span>
+                  <button
+                    type="button"
+                    class="text-neutral-600 font-semibold disabled:opacity-50"
+                    :disabled="seatBusy"
+                    @click="revokeSeatInviteOutgoing(p.id)"
+                  >
+                    {{ t('settings.seats.revokeInvite') }}
+                  </button>
+                </li>
+              </ul>
+              <div class="pt-2 border-t border-neutral-100 mt-3">
+                <button
+                  type="button"
+                  class="text-xs font-semibold text-rose-600 hover:underline disabled:opacity-50"
+                  :disabled="seatBusy"
+                  @click="revokeAllSeatGroup"
+                >
+                  {{ t('settings.seats.revokeAll') }}
+                </button>
+              </div>
+            </template>
+
+            <template v-else>
+              <p v-if="!seatHub.incoming_invitations?.length" class="text-xs text-neutral-500">{{ t('settings.seats.none') }}</p>
+            </template>
+          </template>
         </div>
       </section>
 
