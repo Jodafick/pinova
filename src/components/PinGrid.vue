@@ -86,6 +86,20 @@ const isSavePending = (slug: string) => isPinSavePending(slug)
             @load="markImageLoaded(pin.id)"
           />
 
+          <div
+            v-if="pin.scheduledPublishAt"
+            class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow"
+          >
+            {{ t('pin.scheduledBadge') }}
+          </div>
+          <div
+            v-if="pin.isStory"
+            class="absolute z-10 px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-bold shadow"
+            :class="pin.scheduledPublishAt ? 'top-2 right-2' : 'top-2 left-2'"
+          >
+            {{ t('pin.storyBadge') }}
+          </div>
+
           <!-- Dark overlay on hover -->
           <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
 

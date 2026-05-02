@@ -38,12 +38,23 @@ const certifyCredit = ref(false)
 watch(canCertifyCredit, (ok) => {
   certifyCredit.value = ok
 }, { immediate: true })
+
+const canSchedulePublish = computed(() => currentPlan.value === 'pro')
+const scheduledPublishLocal = ref('')
+watch(canSchedulePublish, (ok) => {
+  if (!ok) scheduledPublishLocal.value = ''
+}, { immediate: true })
 type TopicOption = { name: string; originalName: string; icon?: string; color?: string }
 const dynamicTopics = ref<TopicOption[]>([])
 const boardsLoading = ref(false)
 const showCategoryDropdown = ref(false)
 const categorySearch = ref('')
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
+
+const isStory = ref(false)
+const variantStoryFile = ref<File | null>(null)
+const variantSquareFile = ref<File | null>(null)
+const variantLandscapeFile = ref<File | null>(null)
 
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
 const currentPlan = computed<'free' | 'plus' | 'pro'>(() => currentUser.value?.subscription?.plan || 'free')
@@ -152,7 +163,14 @@ const submitPin = async () => {
     const resolvedTopic = topic.value || categorySearch.value.trim() || 'Général'
     formData.append('topic', resolvedTopic)
     formData.append('visibility', visibility.value)
+    formData.append('is_story', isStory.value ? 'true' : 'false')
     formData.append('certified_credit', canCertifyCredit.value && certifyCredit.value ? 'true' : 'false')
+    if (canSchedulePublish.value && scheduledPublishLocal.value) {
+      const d = new Date(scheduledPublishLocal.value)
+      if (!Number.isNaN(d.getTime())) {
+        formData.append('scheduled_publish_at', d.toISOString())
+      }
+    }
     publicTagsInput.value
       .split(',')
       .map((tag) => tag.trim())
@@ -162,7 +180,11 @@ const submitPin = async () => {
       privateTags.value.forEach((tag) => formData.append('private_tags_input', tag))
     }
     selectedBoardIds.value.forEach((boardId) => formData.append('board_ids_input', String(boardId)))
-    
+
+    if (variantStoryFile.value) formData.append('variant_story', variantStoryFile.value)
+    if (variantSquareFile.value) formData.append('variant_square', variantSquareFile.value)
+    if (variantLandscapeFile.value) formData.append('variant_landscape', variantLandscapeFile.value)
+
     if (currentUser.value) {
       formData.append('author', currentUser.value.id.toString())
     }
@@ -431,6 +453,67 @@ const selectCategory = (selected: TopicOption) => {
                 <p class="text-[10px] text-neutral-500 leading-tight">{{ option.desc }}</p>
               </button>
             </div>
+          </div>
+
+          <!-- Story 24h -->
+          <div class="pt-4 border-t border-neutral-100">
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input
+                v-model="isStory"
+                type="checkbox"
+                class="mt-1 rounded border-neutral-300 text-pink-600 focus:ring-pink-500"
+              />
+              <div>
+                <p class="text-sm font-medium text-neutral-800">{{ t('create.story.title') }}</p>
+                <p class="text-xs text-neutral-500">{{ t('create.story.subtitle') }}</p>
+              </div>
+            </label>
+          </div>
+
+          <!-- Variantes (story / carré / paysage) -->
+          <div class="pt-4 border-t border-neutral-100">
+            <p class="text-sm font-medium text-neutral-700 mb-1">{{ t('create.variants.title') }}</p>
+            <p class="text-xs text-neutral-500 mb-3">{{ t('create.variants.subtitle') }}</p>
+            <div class="grid sm:grid-cols-3 gap-3">
+              <div>
+                <label class="text-[11px] text-neutral-600 block mb-1">{{ t('create.variants.story') }}</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="text-xs w-full"
+                  @change="variantStoryFile = ($event.target as HTMLInputElement).files?.[0] ?? null"
+                />
+              </div>
+              <div>
+                <label class="text-[11px] text-neutral-600 block mb-1">{{ t('create.variants.square') }}</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="text-xs w-full"
+                  @change="variantSquareFile = ($event.target as HTMLInputElement).files?.[0] ?? null"
+                />
+              </div>
+              <div>
+                <label class="text-[11px] text-neutral-600 block mb-1">{{ t('create.variants.landscape') }}</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="text-xs w-full"
+                  @change="variantLandscapeFile = ($event.target as HTMLInputElement).files?.[0] ?? null"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Publication planifiée (Pro) -->
+          <div v-if="canSchedulePublish" class="pt-4 border-t border-neutral-100">
+            <label class="block text-sm font-medium text-neutral-700 mb-1">{{ t('create.schedule.title') }}</label>
+            <p class="text-xs text-neutral-500 mb-2">{{ t('create.schedule.subtitle') }}</p>
+            <input
+              v-model="scheduledPublishLocal"
+              type="datetime-local"
+              class="w-full max-w-xs px-3 py-2 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+            />
           </div>
 
           <!-- Crédit créateur certifié (Pro seulement) -->

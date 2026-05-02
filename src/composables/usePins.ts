@@ -27,7 +27,7 @@ function getFullMediaUrl(url: string | null): string {
 }
 
 // Mapper pour convertir les données Django vers le format attendu par le Frontend
-function mapDjangoPinToFrontend(djangoPin: any): Pin {
+export function mapDjangoPinToFrontend(djangoPin: any): Pin {
   const author = djangoPin.author_profile || {}
   return {
     id: djangoPin.id,
@@ -55,14 +55,21 @@ function mapDjangoPinToFrontend(djangoPin: any): Pin {
       id: board.id,
       name: board.name,
       isPrivate: !!board.is_private,
+      position: typeof board.position === 'number' ? board.position : undefined,
     })),
     certifiedCredit: djangoPin.certified_credit || false,
     provenanceRootHash: djangoPin.provenance_root_hash || '',
+    scheduledPublishAt: djangoPin.scheduled_publish_at || null,
     createdAt: djangoPin.created_at,
     liked: djangoPin.is_liked || false,
     saved: djangoPin.is_saved || false,
     isFollowing: author.is_following || false,
     authorFollowersCount: typeof author.followers_count === 'number' ? author.followers_count : 0,
+    isStory: !!djangoPin.is_story,
+    variants: Array.isArray(djangoPin.variants)
+      ? djangoPin.variants.map((v: any) => ({ kind: v.kind, url: getFullMediaUrl(v.url) }))
+      : [],
+    storyExpiresAt: djangoPin.story_expires_at ?? undefined,
   }
 }
 

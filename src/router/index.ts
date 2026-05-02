@@ -40,6 +40,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/profile/:username/board/:boardId',
+      name: 'board',
+      component: () => import('../pages/BoardPage.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/profile/:username?',
       name: 'profile',
       component: () => import('../pages/ProfilePage.vue'),

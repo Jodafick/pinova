@@ -24,6 +24,7 @@ export type Pin = {
     id: number
     name: string
     isPrivate?: boolean
+    position?: number
   }[]
   certifiedCredit?: boolean
   provenanceRootHash?: string
@@ -33,6 +34,13 @@ export type Pin = {
   isFollowing?: boolean
   /** Nombre d'abonnés de l'auteur (profil public). */
   authorFollowersCount?: number
+  /** ISO — réservé à l'auteur par l'API */
+  scheduledPublishAt?: string | null
+  /** Story 24h (badge filtre actif / archivé pour l'auteur) */
+  isStory?: boolean
+  storyExpiresAt?: string
+  /** Formats alternatifs (story / carré / paysage) sans dupliquer le pin métier */
+  variants?: Array<{ kind: string; url: string }>
   createdAt: string
 }
 

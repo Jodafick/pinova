@@ -41,6 +41,22 @@ const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 
 const pinSlug = computed(() => route.params.slug as string)
 const pin = computed(() => getPin(pinSlug.value))
+const selectedVariantKind = ref<string | null>(null)
+
+watch(pinSlug, () => {
+  selectedVariantKind.value = null
+})
+
+const displayImageUrl = computed(() => {
+  const p = pin.value
+  if (!p) return ''
+  if (selectedVariantKind.value && p.variants?.length) {
+    const found = p.variants.find((x) => x.kind === selectedVariantKind.value)
+    if (found?.url) return found.url
+  }
+  return p.imageUrl
+})
+
 const isPinOwner = computed(() => !!(currentUser.value && pin.value && currentUser.value.username === pin.value.username))
 const targetLang = computed(() => currentUser.value?.preferredLanguage || navigator.language?.split('-')[0] || 'fr')
 
@@ -532,8 +548,28 @@ const openRelatedPin = (slug: string) => {
         <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col lg:flex-row">
           <!-- Image -->
           <div class="lg:w-1/2 bg-neutral-100">
+            <div v-if="pin.variants?.length" class="p-3 sm:p-4 flex flex-wrap gap-2 border-b border-neutral-200 bg-white/80">
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold transition"
+                :class="!selectedVariantKind ? 'bg-pink-600 text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'"
+                @click="selectedVariantKind = null"
+              >
+                {{ t('pin.variant.original') }}
+              </button>
+              <button
+                v-for="v in pin.variants"
+                :key="v.kind"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold transition capitalize"
+                :class="selectedVariantKind === v.kind ? 'bg-pink-600 text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'"
+                @click="selectedVariantKind = v.kind"
+              >
+                {{ t(`pin.variant.${v.kind}`) }}
+              </button>
+            </div>
             <img
-              :src="pin.imageUrl"
+              :src="displayImageUrl"
               :alt="pin.title"
               class="w-full h-80 sm:h-96 lg:h-full object-cover"
             />
@@ -596,8 +632,15 @@ const openRelatedPin = (slug: string) => {
             </a>
 
             <!-- Title & Description -->
-            <div class="flex items-start gap-2 mb-3">
-              <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 flex-1">{{ pin.title }}</h1>
+            <div class="flex items-start gap-2 mb-3 flex-wrap">
+              <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 flex-1 min-w-[12rem]">{{ pin.title }}</h1>
+              <span
+                v-if="pin.isStory"
+                class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0 bg-violet-100 text-violet-800"
+              >
+                <span class="material-symbols-outlined text-xs">auto_stories</span>
+                {{ t('pin.storyBadge') }}
+              </span>
               <span
                 v-if="pinVisibility !== 'public'"
                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0"

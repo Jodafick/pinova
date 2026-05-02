@@ -2,8 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { usePins } from '../composables/usePins'
-import type { User } from '../types'
+import { usePins, mapDjangoPinToFrontend } from '../composables/usePins'
+import type { User, Pin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 import { useI18n } from '../i18n'
@@ -70,6 +70,10 @@ const loadProfile = async () => {
     creatorStats.value = null
   }
   loading.value = false
+  if (!route.params.username && profileUser.value) {
+    void loadBoardSuggestions()
+  }
+  void loadActiveStories()
 }
 
 const handleFollow = async () => {
@@ -183,6 +187,7 @@ const handleCreateBoard = async () => {
     newBoardName.value = ''
     newBoardPrivate.value = false
     showCreateBoard.value = false
+    void loadBoardSuggestions()
   } catch (err) {
     console.error('Erreur création tableau:', err)
   }
@@ -259,6 +264,108 @@ const handleInviteCollaborator = async (boardId: number) => {
     console.error('Erreur invitation collaborateur:', err)
     window.alert(err?.response?.data?.error || 'Impossible d\'ajouter ce collaborateur.')
   }
+}
+
+type BoardSuggestions = {
+  new_board_hints: Array<{ name: string; topic_slug: string; pin_count_hint: number }>
+  existing_boards: Array<{ id: number; name: string; overlap_score: number; pin_count: number }>
+}
+
+const boardSuggestions = ref<BoardSuggestions | null>(null)
+const activeStories = ref<Pin[]>([])
+const organizeBoardId = ref<number | null>(null)
+const organizePins = ref<
+  Array<{ id: number; slug: string; title: string; image: string; position: number; scheduled_publish_at?: string | null }>
+>([])
+const organizeLoading = ref(false)
+const organizeSaving = ref(false)
+const dragOrganizeIndex = ref<number | null>(null)
+
+async function loadActiveStories() {
+  if (!profileUser.value?.username) return
+  try {
+    const res = await api.get('pins/active-stories/', { params: { username: profileUser.value.username } })
+    activeStories.value = (res.data.pins || []).map(mapDjangoPinToFrontend)
+  } catch {
+    activeStories.value = []
+  }
+}
+
+async function loadBoardSuggestions() {
+  if (!currentUser.value || route.params.username) return
+  try {
+    const res = await api.get('boards/suggestions/')
+    boardSuggestions.value = res.data
+  } catch {
+    boardSuggestions.value = null
+  }
+}
+
+async function openOrganizeBoard(boardId: number) {
+  organizeBoardId.value = boardId
+  organizeLoading.value = true
+  organizePins.value = []
+  dragOrganizeIndex.value = null
+  try {
+    const res = await api.get(`boards/${boardId}/ordered-pins/`)
+    organizePins.value = [...(res.data.pins || [])]
+  } catch (err) {
+    console.error(err)
+    organizeBoardId.value = null
+  } finally {
+    organizeLoading.value = false
+  }
+}
+
+function closeOrganizeBoard() {
+  organizeBoardId.value = null
+  organizePins.value = []
+}
+
+async function saveBoardOrder() {
+  if (!organizeBoardId.value) return
+  organizeSaving.value = true
+  try {
+    await api.post(`boards/${organizeBoardId.value}/reorder-pins/`, {
+      pin_ids: organizePins.value.map((p) => p.id),
+    })
+    closeOrganizeBoard()
+    await loadProfile()
+  } catch (err: any) {
+    window.alert(err?.response?.data?.error || 'Erreur lors du réordonnancement.')
+  } finally {
+    organizeSaving.value = false
+  }
+}
+
+function onOrganizeDragStart(index: number) {
+  dragOrganizeIndex.value = index
+}
+
+function onOrganizeDragOver(event: DragEvent) {
+  event.preventDefault()
+}
+
+function onOrganizeDrop(index: number) {
+  const from = dragOrganizeIndex.value
+  dragOrganizeIndex.value = null
+  if (from === null || from === index) return
+  const arr = [...organizePins.value]
+  const moved = arr.splice(from, 1)[0]
+  if (moved === undefined) return
+  arr.splice(index, 0, moved)
+  organizePins.value = arr
+}
+
+function applyBoardSuggestionName(name: string) {
+  newBoardName.value = name
+  showCreateBoard.value = true
+}
+
+function goToBoard(boardId: number) {
+  const uname = profileUser.value?.username
+  if (!uname) return
+  router.push(`/profile/${uname}/board/${boardId}`)
 }
 </script>
 
@@ -344,14 +451,74 @@ const handleInviteCollaborator = async (boardId: number) => {
       </div>
     </section>
 
+    <!-- Stories 24h actives -->
+    <section v-if="activeStories.length > 0" class="mb-10">
+      <p class="text-xs font-semibold text-neutral-600 mb-3">{{ t('profile.stories.title') }}</p>
+      <div class="flex gap-3 overflow-x-auto pb-2">
+        <router-link
+          v-for="sp in activeStories"
+          :key="sp.slug"
+          :to="`/pin/${sp.slug}`"
+          class="shrink-0 flex flex-col items-center gap-1.5 w-[76px]"
+        >
+          <div
+            class="w-[72px] h-[72px] rounded-full p-[3px] bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500"
+          >
+            <div class="w-full h-full rounded-full overflow-hidden bg-white p-[2px]">
+              <img :src="sp.imageUrl" :alt="sp.title" class="w-full h-full rounded-full object-cover bg-neutral-100" />
+            </div>
+          </div>
+          <span class="text-[10px] text-neutral-600 text-center line-clamp-2 w-full">{{ sp.title }}</span>
+        </router-link>
+      </div>
+    </section>
+
     <!-- Boards section -->
     <section class="mb-10" v-if="boards.length > 0 || isMyProfile">
       <h2 class="text-lg font-semibold text-neutral-900 mb-4">{{ t('profile.boards') }}</h2>
+
+      <div
+        v-if="isMyProfile && boardSuggestions && (boardSuggestions.new_board_hints?.length || boardSuggestions.existing_boards?.length)"
+        class="mb-4 rounded-2xl border border-neutral-100 bg-white p-4"
+      >
+        <p class="text-xs font-semibold text-neutral-800 mb-2">{{ t('profile.boards.suggestionsTitle') }}</p>
+        <div v-if="boardSuggestions.new_board_hints?.length" class="mb-3">
+          <p class="text-[11px] text-neutral-500 mb-1">{{ t('profile.boards.suggestionsNew') }}</p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="hint in boardSuggestions.new_board_hints"
+              :key="hint.topic_slug + hint.name"
+              type="button"
+              class="px-3 py-1 rounded-full text-xs bg-pink-50 text-pink-700 border border-pink-100 hover:bg-pink-100"
+              @click="applyBoardSuggestionName(hint.name)"
+            >
+              + {{ hint.name }}
+            </button>
+          </div>
+        </div>
+        <div v-if="boardSuggestions.existing_boards?.length">
+          <p class="text-[11px] text-neutral-500 mb-1">{{ t('profile.boards.suggestionsExisting') }}</p>
+          <div class="flex flex-wrap gap-2">
+            <span
+              v-for="b in boardSuggestions.existing_boards"
+              :key="b.id"
+              class="text-xs px-2 py-1 rounded-lg bg-neutral-100 text-neutral-600"
+            >
+              {{ b.name }} · {{ b.overlap_score }}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <div
           v-for="board in boards"
           :key="board.id"
           class="group relative bg-neutral-100 rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer hover:shadow-md transition"
+          role="button"
+          tabindex="0"
+          @click="goToBoard(board.id)"
+          @keydown.enter.prevent="goToBoard(board.id)"
         >
           <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
           <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
@@ -365,8 +532,17 @@ const handleInviteCollaborator = async (boardId: number) => {
             <span class="material-symbols-outlined text-white text-sm">lock</span>
           </div>
           <button
+            v-if="isMyProfile"
+            type="button"
+            class="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-white/95 shadow-md flex items-center justify-center text-neutral-700 hover:bg-white"
+            :title="t('profile.boards.reorganize')"
+            @click.stop="openOrganizeBoard(board.id)"
+          >
+            <span class="material-symbols-outlined text-lg">drag_indicator</span>
+          </button>
+          <button
             v-if="isMyProfile && currentPlan !== 'free'"
-            class="absolute top-3 left-3 px-2 py-1 rounded-full bg-white/90 text-[10px] font-bold text-neutral-700 hover:bg-white"
+            class="absolute top-3 left-3 px-2 py-1 rounded-full bg-white/90 text-[10px] font-bold text-neutral-700 hover:bg-white z-10"
             @click.stop="handleInviteCollaborator(board.id)"
           >
             + Collab
@@ -384,6 +560,53 @@ const handleInviteCollaborator = async (boardId: number) => {
         </button>
       </div>
     </section>
+
+    <!-- Réorganiser pins du board -->
+    <div v-if="organizeBoardId !== null" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
+      <div class="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+        <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+          <h3 class="text-lg font-bold text-neutral-900">{{ t('profile.boards.organizeTitle') }}</h3>
+          <button type="button" class="text-neutral-500 hover:text-neutral-800" @click="closeOrganizeBoard">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <p class="text-xs text-neutral-500 px-5 pt-3">{{ t('profile.boards.organizeHint') }}</p>
+        <div class="flex-1 overflow-y-auto px-5 py-4 min-h-[120px]">
+          <div v-if="organizeLoading" class="text-sm text-neutral-500">{{ t('common.loading') }}</div>
+          <ul v-else class="space-y-2">
+            <li
+              v-for="(p, idx) in organizePins"
+              :key="p.id"
+              draggable="true"
+              class="flex items-center gap-3 p-2 rounded-xl border border-neutral-100 bg-neutral-50 cursor-grab active:cursor-grabbing"
+              @dragstart="onOrganizeDragStart(idx)"
+              @dragover="onOrganizeDragOver($event)"
+              @drop.prevent="onOrganizeDrop(idx)"
+            >
+              <img :src="p.image" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0 bg-neutral-200" />
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-neutral-900 truncate">{{ p.title }}</p>
+                <p v-if="p.scheduled_publish_at" class="text-[10px] text-amber-700">{{ t('pin.scheduledBadge') }}</p>
+              </div>
+              <span class="material-symbols-outlined text-neutral-400 text-lg shrink-0">drag_indicator</span>
+            </li>
+          </ul>
+        </div>
+        <div class="px-5 py-4 border-t border-neutral-100 flex gap-2 justify-end">
+          <button type="button" class="px-4 py-2 rounded-full text-sm font-semibold bg-neutral-100 text-neutral-800" @click="closeOrganizeBoard">
+            {{ t('profile.boards.organizeClose') }}
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-full text-sm font-semibold bg-pink-600 text-white disabled:opacity-50"
+            :disabled="organizeSaving || organizeLoading || organizePins.length === 0"
+            @click="saveBoardOrder"
+          >
+            {{ organizeSaving ? t('common.loading') : t('profile.boards.organizeSave') }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <section
       v-if="isMyProfile && currentPlan === 'pro'"
