@@ -278,7 +278,8 @@ const selectCategory = (selected: TopicOption) => {
     </div>
 
     <!-- Form -->
-    <div class="bg-white rounded-3xl shadow-lg border border-neutral-100 overflow-hidden">
+    <!-- Formulaire : overflow visible pour que la liste catégories ne soit pas coupée -->
+    <div class="bg-white rounded-3xl shadow-lg border border-neutral-100 overflow-visible">
       <div class="flex flex-col lg:flex-row">
         <!-- Image (étape 2) -->
         <div v-if="createStep === 2" class="lg:w-2/5 p-6 sm:p-8 bg-neutral-50 border-b lg:border-b-0 lg:border-r border-neutral-100">
@@ -398,7 +399,7 @@ const selectCategory = (selected: TopicOption) => {
             </div>
           </div>
 
-          <div>
+          <div class="relative z-40 isolate">
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.category') }}</label>
             <div class="relative">
               <input
@@ -417,7 +418,7 @@ const selectCategory = (selected: TopicOption) => {
               </button>
               <div
                 v-if="showCategoryDropdown"
-                class="absolute z-20 mt-2 w-full bg-white border border-neutral-200 rounded-xl shadow-lg max-h-56 overflow-y-auto"
+                class="absolute z-[60] mt-2 w-full bg-white border border-neutral-200 rounded-xl shadow-lg max-h-56 overflow-y-auto"
               >
                 <button
                   v-for="topicItem in filteredTopics"

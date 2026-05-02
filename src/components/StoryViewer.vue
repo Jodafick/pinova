@@ -21,10 +21,19 @@ const { toggleLike } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
 const { t } = useI18n()
 
+/** Durée d’affichage d’un segment (barre de progression + auto-suivant). */
+const STORY_DURATION_MS = 8000
+
 const index = ref(0)
 const heartBurst = ref(false)
+/** Recrée l’animation CSS de la barre du segment courant à chaque story. */
+const progressAnimKey = ref(0)
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
+
+function bumpProgressAnimation() {
+  progressAnimKey.value++
+}
 
 function clearAdvance() {
   if (advanceTimer) {
@@ -36,7 +45,7 @@ function clearAdvance() {
 function scheduleAdvance() {
   clearAdvance()
   if (!props.modelValue || props.pins.length === 0) return
-  advanceTimer = setTimeout(goNext, 8000)
+  advanceTimer = setTimeout(goNext, STORY_DURATION_MS)
 }
 
 watch(
@@ -45,6 +54,7 @@ watch(
     if (open && props.pins.length > 0) {
       const maxIdx = props.pins.length - 1
       index.value = Math.min(Math.max(0, props.initialIndex ?? 0), maxIdx)
+      bumpProgressAnimation()
       scheduleAdvance()
     } else {
       clearAdvance()
@@ -57,11 +67,15 @@ watch(
   (v) => {
     if (!props.modelValue || props.pins.length === 0) return
     index.value = Math.min(Math.max(0, v ?? 0), props.pins.length - 1)
+    bumpProgressAnimation()
   },
 )
 
 watch(index, () => {
-  if (props.modelValue) scheduleAdvance()
+  if (props.modelValue) {
+    bumpProgressAnimation()
+    scheduleAdvance()
+  }
 })
 
 const current = computed(() => props.pins[index.value])
@@ -154,17 +168,27 @@ onUnmounted(() => {
       role="dialog"
       aria-modal="true"
     >
-      <!-- Progress -->
-      <div class="flex gap-1 px-2 pt-safe pt-3 shrink-0 z-50">
-        <div
-          v-for="(_, si) in pins"
-          :key="si"
-          class="h-0.5 flex-1 rounded-full bg-white/15 overflow-hidden"
-        >
+      <!-- Progress + auteur -->
+      <div class="shrink-0 z-50 px-2 pt-safe pt-3 space-y-2">
+        <div class="flex gap-1">
           <div
-            class="h-full bg-white transition-[width] duration-100 ease-linear"
-            :style="{ width: si < index ? '100%' : si === index ? '72%' : '0%' }"
-          />
+            v-for="(_, si) in pins"
+            :key="si"
+            class="h-0.5 flex-1 rounded-full bg-white/15 overflow-hidden"
+          >
+            <div v-if="si < index" class="h-full w-full bg-white rounded-full" />
+            <div
+              v-else-if="si === index"
+              :key="`bar-${si}-${progressAnimKey}`"
+              class="story-progress-segment h-full bg-white rounded-full"
+              :style="{ animationDuration: `${STORY_DURATION_MS}ms` }"
+            />
+          </div>
+        </div>
+        <div class="flex justify-center px-2 pb-1">
+          <span class="text-sm font-semibold text-white drop-shadow-md truncate max-w-[min(100%,280px)]">
+            {{ current?.user }}
+          </span>
         </div>
       </div>
 
@@ -265,6 +289,20 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+.story-progress-segment {
+  width: 0%;
+  animation-name: story-progress-grow;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes story-progress-grow {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
 }
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);

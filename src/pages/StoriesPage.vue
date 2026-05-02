@@ -5,28 +5,70 @@ import { mapDjangoPinToFrontend } from '../composables/usePins'
 import type { Pin } from '../types'
 import StoryViewer from '../components/StoryViewer.vue'
 import { useI18n } from '../i18n'
+import { API_BASE_URL } from '../env'
 
 const { t } = useI18n()
 
-const pins = ref<Pin[]>([])
+function mediaUrl(url: string | undefined | null) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
+}
+
+type StoryRingGroupUi = {
+  username: string
+  display_name: string
+  avatar_url: string
+  avatar_color: string
+  cover_image_url: string
+  pins: Pin[]
+}
+
+const groups = ref<StoryRingGroupUi[]>([])
 const loading = ref(true)
 const viewerOpen = ref(false)
-const initialIndex = ref(0)
+const viewerPins = ref<Pin[]>([])
 
 async function load() {
   loading.value = true
   try {
     const res = await api.get('pins/active-stories/')
-    pins.value = (res.data.pins || []).map(mapDjangoPinToFrontend)
+    const rawGroups = res.data.groups
+    if (Array.isArray(rawGroups) && rawGroups.length > 0) {
+      groups.value = rawGroups.map((g: Record<string, unknown>) => ({
+        username: String(g.username ?? ''),
+        display_name: String(g.display_name ?? g.username ?? ''),
+        avatar_url: mediaUrl(g.avatar_url as string),
+        avatar_color: String(g.avatar_color ?? 'bg-neutral-400'),
+        cover_image_url: mediaUrl(g.cover_image_url as string),
+        pins: ((g.pins as unknown[]) || []).map(mapDjangoPinToFrontend),
+      }))
+    } else {
+      const flat = ((res.data.pins || []) as unknown[]).map(mapDjangoPinToFrontend)
+      groups.value =
+        flat.length > 0
+          ? [
+              {
+                username: flat[0]?.username ?? '',
+                display_name: flat[0]?.user ?? '',
+                avatar_url: flat[0]?.userAvatarUrl ?? '',
+                avatar_color: flat[0]?.userAvatarColor ?? 'bg-neutral-400',
+                cover_image_url: flat[0]?.imageUrl ?? '',
+                pins: flat,
+              },
+            ]
+          : []
+    }
   } catch {
-    pins.value = []
+    groups.value = []
   } finally {
     loading.value = false
   }
 }
 
-function openAt(i: number) {
-  initialIndex.value = i
+/** À partir de l’utilisateur cliqué : toutes ses stories puis celles des suivants (ordre reco conservé). */
+function openAt(groupIndex: number) {
+  viewerPins.value = groups.value.slice(groupIndex).flatMap((g) => g.pins)
   viewerOpen.value = true
 }
 
@@ -42,14 +84,14 @@ onMounted(load)
       <div class="w-10 h-10 border-4 border-neutral-100 border-t-pink-600 rounded-full animate-spin"></div>
     </div>
 
-    <div v-else-if="pins.length === 0" class="py-20 text-center text-neutral-500 text-sm">
+    <div v-else-if="groups.length === 0" class="py-20 text-center text-neutral-500 text-sm">
       {{ t('stories.empty') }}
     </div>
 
     <div v-else class="mt-10 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory">
       <button
-        v-for="(p, i) in pins"
-        :key="p.slug"
+        v-for="(g, i) in groups"
+        :key="g.username || `g-${i}`"
         type="button"
         class="snap-start shrink-0 flex flex-col items-center gap-2 w-[84px]"
         @click="openAt(i)"
@@ -57,8 +99,8 @@ onMounted(load)
         <div class="w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500">
           <div class="w-full h-full rounded-full overflow-hidden bg-white p-[2px]">
             <img
-              :src="p.imageUrl"
-              :alt="p.title"
+              :src="g.cover_image_url || g.pins[g.pins.length - 1]?.imageUrl || ''"
+              :alt="g.display_name"
               class="w-full h-full rounded-full object-cover bg-neutral-100 pointer-events-none select-none"
               draggable="false"
               @contextmenu.prevent
@@ -68,6 +110,6 @@ onMounted(load)
       </button>
     </div>
 
-    <StoryViewer v-if="pins.length > 0" v-model="viewerOpen" :pins="pins" :initial-index="initialIndex" />
+    <StoryViewer v-if="viewerPins.length > 0" v-model="viewerOpen" :pins="viewerPins" :initial-index="0" />
   </div>
 </template>

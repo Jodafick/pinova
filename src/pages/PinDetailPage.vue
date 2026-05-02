@@ -50,6 +50,15 @@ const translatingDescription = ref(false)
 const submittingComment = ref(false)
 const downloadingPin = ref(false)
 
+/** `true` = paysage, `false` = portrait, `null` = pas encore chargé. */
+const detailImageLandscape = ref<boolean | null>(null)
+
+function onDetailImageLoad(e: Event) {
+  const img = e.target as HTMLImageElement
+  if (!img.naturalWidth || !img.naturalHeight) return
+  detailImageLandscape.value = img.naturalWidth >= img.naturalHeight
+}
+
 onMounted(async () => {
   if (pins.value.length === 0 || !pin.value) {
     await fetchPins()
@@ -61,6 +70,7 @@ onMounted(async () => {
 })
 
 watch(pinSlug, async () => {
+  detailImageLandscape.value = null
   if (!pin.value) {
     await fetchPins(true)
   }
@@ -432,9 +442,26 @@ const handleLoadMoreReplies = async (commentId: number) => {
   richComments.value = [...richComments.value]
 }
 
-const handleShare = () => {
-  navigator.clipboard.writeText(window.location.href)
-  alert(t('pin.share.copied'))
+const handleShare = async () => {
+  if (!pin.value) return
+  const url = typeof window !== 'undefined' ? window.location.href : ''
+  const title = pin.value.title || 'Pinova'
+  const text = (pin.value.description || '').slice(0, 280)
+  try {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      await navigator.share({ title, text, url })
+      return
+    }
+  } catch (err: unknown) {
+    const name = err && typeof err === 'object' && 'name' in err ? String((err as { name?: string }).name) : ''
+    if (name === 'AbortError') return
+  }
+  try {
+    await navigator.clipboard.writeText(url)
+    alert(t('pin.share.copied'))
+  } catch {
+    window.prompt('Copiez ce lien manuellement :', url)
+  }
 }
 
 const handleDownload = async () => {
@@ -498,21 +525,35 @@ const openRelatedPin = (slug: string) => {
 
         <!-- Main card -->
         <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col lg:flex-row lg:max-h-[80vh]">
-          <!-- Image -->
-          <div class="lg:w-1/2 bg-neutral-100 flex flex-col lg:max-h-[80vh] lg:overflow-hidden shrink-0">
-            <img
-              :src="pin.imageUrl"
-              :alt="pin.title"
-              class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
-              draggable="false"
-              @dblclick.prevent="handleLike"
-              @contextmenu.prevent
-              @dragstart.prevent
-            />
+          <!-- Image : paysage centré verticalement ; portrait → colonne plus large pour mieux remplir -->
+          <div
+            class="bg-neutral-100 flex flex-col lg:max-h-[80vh] lg:overflow-hidden shrink-0 min-h-[200px] lg:min-h-0"
+            :class="
+              detailImageLandscape === false
+                ? 'lg:flex-[1.38] lg:basis-0 lg:min-w-0'
+                : 'lg:flex-none lg:w-1/2'
+            "
+            :style="detailImageLandscape === true ? { justifyContent: 'center' } : undefined"
+          >
+            <div
+              class="w-full flex min-h-0"
+              :class="detailImageLandscape === true ? 'flex-1 items-center justify-center' : ''"
+            >
+              <img
+                :src="pin.imageUrl"
+                :alt="pin.title"
+                class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
+                draggable="false"
+                @load="onDetailImageLoad"
+                @dblclick.prevent="handleLike"
+                @contextmenu.prevent
+                @dragstart.prevent
+              />
+            </div>
           </div>
 
           <!-- Details -->
-          <div class="lg:w-1/2 p-6 sm:p-8 lg:p-10 flex flex-col lg:max-h-[80vh] lg:overflow-y-auto min-h-0">
+          <div class="lg:flex-1 lg:min-w-0 p-6 sm:p-8 lg:p-10 flex flex-col lg:max-h-[80vh] lg:overflow-y-auto min-h-0">
             <!-- Actions bar -->
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center gap-2">
