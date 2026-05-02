@@ -179,6 +179,8 @@ const handlePopupCallbackReturn = async () => {
   if (!statusValue || !transactionId) return
 
   window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
+  const confirmStatus = await confirmPaymentTransaction(transactionId, true)
+  const confirmed = confirmStatus === 'approved'
   if (window.opener && !window.opener.closed) {
     window.opener.postMessage(
       {
@@ -186,13 +188,13 @@ const handlePopupCallbackReturn = async () => {
         callback_url: window.location.href,
         callback_query: Object.fromEntries(params.entries()),
         status: statusValue,
+        confirm_status: confirmStatus,
+        confirmed,
         transaction_id: transactionId,
       },
       window.location.origin,
     )
-    setTimeout(() => {
-      window.close()
-    }, 350)
+    // Fermeture volontaire par l'utilisateur pour faciliter le debug.
   } else {
     await confirmPendingPayment(transactionId)
   }
@@ -265,9 +267,15 @@ const handlePaymentMessage = async (event: MessageEvent) => {
     callbackUrl,
     callbackQuery,
     transactionId,
+    confirmStatus: payload.confirm_status,
+    confirmed: !!payload.confirmed,
   })
   window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
-  await confirmPendingPayment(transactionId)
+  if (!payload.confirmed) {
+    await confirmPendingPayment(transactionId)
+  } else {
+    window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
+  }
   const remainingTx = window.localStorage.getItem(PENDING_TX_STORAGE_KEY)
   if (!remainingTx) {
     window.location.reload()
