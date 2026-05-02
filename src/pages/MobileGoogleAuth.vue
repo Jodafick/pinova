@@ -52,7 +52,7 @@ const handleGoogleClick = () => {
   // Google OAuth URL for Implicit Flow (Redirect)
   const clientId = '274683910451-u52eib3lr7t5qehu23bhnafn85ovaub3.apps.googleusercontent.com'
   const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
-  const scope = encodeURIComponent('email profile openid')
+  const scope = encodeURIComponent('openid email profile https://www.googleapis.com/auth/userinfo.profile')
   const responseType = 'token'
   
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}`

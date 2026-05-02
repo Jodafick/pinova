@@ -21,13 +21,18 @@ const { toggleLike } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
 const { t } = useI18n()
 
-/** Durée d’affichage d’un segment (barre de progression + auto-suivant). */
-const STORY_DURATION_MS = 8000
+/** Durée image par défaut ; vidéo = métadonnées (bornée). */
+const DEFAULT_IMAGE_MS = 8000
+const MIN_VIDEO_MS = 3000
+const MAX_VIDEO_MS = 120_000
 
 const index = ref(0)
 const heartBurst = ref(false)
+const expandedDesc = ref(false)
 /** Recrée l’animation CSS de la barre du segment courant à chaque story. */
 const progressAnimKey = ref(0)
+/** Durée du segment courant (barre + auto-suivant). */
+const slideDurationMs = ref(DEFAULT_IMAGE_MS)
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -45,7 +50,20 @@ function clearAdvance() {
 function scheduleAdvance() {
   clearAdvance()
   if (!props.modelValue || props.pins.length === 0) return
-  advanceTimer = setTimeout(goNext, STORY_DURATION_MS)
+  advanceTimer = setTimeout(goNext, slideDurationMs.value)
+}
+
+function restartCurrentSegment() {
+  expandedDesc.value = false
+  clearAdvance()
+  bumpProgressAnimation()
+  const pin = props.pins[index.value]
+  if (!pin || !props.modelValue) return
+  slideDurationMs.value = DEFAULT_IMAGE_MS
+  if (pin.storyVideoUrl?.trim()) {
+    return
+  }
+  scheduleAdvance()
 }
 
 watch(
@@ -54,8 +72,7 @@ watch(
     if (open && props.pins.length > 0) {
       const maxIdx = props.pins.length - 1
       index.value = Math.min(Math.max(0, props.initialIndex ?? 0), maxIdx)
-      bumpProgressAnimation()
-      scheduleAdvance()
+      restartCurrentSegment()
     } else {
       clearAdvance()
     }
@@ -67,18 +84,41 @@ watch(
   (v) => {
     if (!props.modelValue || props.pins.length === 0) return
     index.value = Math.min(Math.max(0, v ?? 0), props.pins.length - 1)
-    bumpProgressAnimation()
+    restartCurrentSegment()
   },
 )
 
 watch(index, () => {
-  if (props.modelValue) {
-    bumpProgressAnimation()
-    scheduleAdvance()
-  }
+  if (props.modelValue) restartCurrentSegment()
 })
 
 const current = computed(() => props.pins[index.value])
+
+const rawDescription = computed(() => (current.value?.description || '').trim())
+
+const descriptionNeedsExpand = computed(() => rawDescription.value.length > 220)
+
+const descriptionDisplay = computed(() => {
+  const d = rawDescription.value
+  if (!d) return ''
+  if (!descriptionNeedsExpand.value || expandedDesc.value) return d
+  const slice = d.slice(0, 220).trimEnd()
+  return slice.length < d.length ? `${slice}…` : d
+})
+
+const storyAuthorInitials = computed(() => {
+  const pin = current.value
+  if (!pin?.user?.trim()) return '?'
+  const parts = pin.user.trim().split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    const first = parts[0] ?? ''
+    const last = parts[parts.length - 1] ?? ''
+    const a = first[0] || ''
+    const b = last[0] || ''
+    return (a + b).toUpperCase()
+  }
+  return pin.user.trim().slice(0, 2).toUpperCase()
+})
 
 /** L'auteur de la story voit le compteur de likes ; les autres non. */
 const showLikeCountForStory = computed(() => {
@@ -109,6 +149,16 @@ function goPrev() {
   }
 }
 
+function onStoryVideoLoadedMetadata(e: Event) {
+  const v = e.target as HTMLVideoElement
+  let ms = Math.round(v.duration * 1000)
+  if (!Number.isFinite(ms) || ms <= 0) ms = DEFAULT_IMAGE_MS
+  ms = Math.min(Math.max(ms, MIN_VIDEO_MS), MAX_VIDEO_MS)
+  slideDurationMs.value = ms
+  bumpProgressAnimation()
+  scheduleAdvance()
+}
+
 async function doLike() {
   const pin = current.value
   if (!pin || !isAuthenticated.value) {
@@ -124,6 +174,13 @@ async function doLike() {
   } catch {
     heartBurst.value = false
   }
+}
+
+function openAuthorProfile() {
+  const u = current.value?.username
+  if (!u) return
+  close()
+  router.push(`/profile/${encodeURIComponent(u)}`)
 }
 
 function openPinPage() {
@@ -181,14 +238,37 @@ onUnmounted(() => {
               v-else-if="si === index"
               :key="`bar-${si}-${progressAnimKey}`"
               class="story-progress-segment h-full bg-white rounded-full"
-              :style="{ animationDuration: `${STORY_DURATION_MS}ms` }"
+              :style="{ animationDuration: `${slideDurationMs}ms` }"
             />
           </div>
         </div>
         <div class="flex justify-center px-2 pb-1">
-          <span class="text-sm font-semibold text-white drop-shadow-md truncate max-w-[min(100%,280px)]">
-            {{ current?.user }}
-          </span>
+          <button
+            type="button"
+            class="flex items-center gap-2.5 max-w-[min(100%,320px)] rounded-full px-2 py-1 pr-3 hover:bg-white/10 transition cursor-pointer pointer-events-auto"
+            @click.stop="openAuthorProfile"
+          >
+            <span
+              class="relative h-9 w-9 shrink-0 rounded-full overflow-hidden ring-2 ring-white/35 shadow-md flex items-center justify-center text-white"
+              :class="
+                current?.userAvatarUrl
+                  ? 'bg-neutral-900'
+                  : current?.userAvatarColor || 'bg-neutral-700'
+              "
+            >
+              <img
+                v-if="current?.userAvatarUrl"
+                :src="current.userAvatarUrl"
+                alt=""
+                class="h-full w-full object-cover"
+                draggable="false"
+              />
+              <span v-else class="text-[11px] font-bold text-white leading-none">{{ storyAuthorInitials }}</span>
+            </span>
+            <span class="text-sm font-semibold text-white drop-shadow-md truncate text-left">
+              {{ current?.user }}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -223,12 +303,25 @@ onUnmounted(() => {
           @dblclick.stop.prevent="doLike"
         />
 
-        <div class="relative flex-1 flex items-center justify-center px-3 pb-16 pt-14 sm:px-8">
+        <div class="relative flex-1 flex items-center justify-center px-3 pb-28 pt-14 sm:px-8">
           <div
             v-if="current"
             class="relative max-w-[min(100%,520px)] w-full rounded-2xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-white/10"
           >
+            <video
+              v-if="current.storyVideoUrl"
+              :key="`${current.slug}-video`"
+              :src="current.storyVideoUrl"
+              class="w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block"
+              playsinline
+              muted
+              autoplay
+              @loadedmetadata="onStoryVideoLoadedMetadata"
+              @ended="goNext"
+              @contextmenu.prevent
+            />
             <img
+              v-else-if="current.imageUrl"
               :src="current.imageUrl"
               :alt="current.title"
               class="w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block"
@@ -236,6 +329,31 @@ onUnmounted(() => {
               @contextmenu.prevent
               @dragstart.prevent
             />
+
+            <!-- Description bas du média -->
+            <div
+              v-if="rawDescription"
+              class="absolute inset-x-0 bottom-0 z-[35] pointer-events-none flex flex-col justify-end"
+            >
+              <div
+                class="mx-2 mb-2 rounded-xl bg-black/60 backdrop-blur-sm px-3 py-2.5 pointer-events-auto border border-white/10"
+              >
+                <p
+                  class="text-white text-sm leading-snug whitespace-pre-wrap break-words"
+                  :class="descriptionNeedsExpand && !expandedDesc ? 'max-h-[5rem] overflow-hidden' : ''"
+                >
+                  {{ descriptionDisplay }}
+                </p>
+                <button
+                  v-if="descriptionNeedsExpand"
+                  type="button"
+                  class="mt-1.5 text-xs font-semibold text-white/90 hover:text-white underline-offset-2 hover:underline"
+                  @click.stop="expandedDesc = !expandedDesc"
+                >
+                  {{ expandedDesc ? t('story.description.less') : t('story.description.more') }}
+                </button>
+              </div>
+            </div>
 
             <button
               type="button"
@@ -266,10 +384,9 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="pointer-events-none absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-black/70 to-transparent z-20" />
-
       <div class="absolute bottom-6 inset-x-0 z-40 flex justify-center px-4 pointer-events-none">
         <button
+          v-if="current?.slug"
           type="button"
           class="pointer-events-auto px-5 py-2.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-xs font-semibold hover:bg-white/25 transition"
           @click="openPinPage"

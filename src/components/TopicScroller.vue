@@ -1,6 +1,8 @@
 <script setup lang="ts">
+export type TopicChip = { canonical: string; label: string }
+
 const props = defineProps<{
-  topics: string[]
+  topics: TopicChip[]
   activeTopic: string | null
 }>()
 
@@ -8,11 +10,11 @@ const emit = defineEmits<{
   (e: 'select', topic: string | null): void
 }>()
 
-const handleClick = (topic: string) => {
-  if (props.activeTopic === topic) {
+const handleClick = (canonical: string) => {
+  if (props.activeTopic === canonical) {
     emit('select', null)
   } else {
-    emit('select', topic)
+    emit('select', canonical)
   }
 }
 </script>
@@ -21,17 +23,18 @@ const handleClick = (topic: string) => {
   <section class="mb-4 sm:mb-5">
     <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
       <button
-        v-for="topic in topics"
-        :key="topic"
+        v-for="item in topics"
+        :key="item.canonical"
+        type="button"
         class="shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors"
         :class="
-          topic === activeTopic
+          item.canonical === activeTopic
             ? 'bg-neutral-900 text-white'
             : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
         "
-        @click="handleClick(topic)"
+        @click="handleClick(item.canonical)"
       >
-        {{ topic }}
+        {{ item.label }}
       </button>
     </div>
   </section>
@@ -46,4 +49,3 @@ const handleClick = (topic: string) => {
   scrollbar-width: none;
 }
 </style>
-

@@ -8,7 +8,7 @@ import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 import { useI18n } from '../i18n'
 
-const { t } = useI18n()
+const { t, currentLang } = useI18n()
 
 const router = useRouter()
 const { pins, loading, fetchDiscoverPins, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
@@ -34,8 +34,7 @@ const displayPins = computed(() => pins.value)
 const loadCategories = async (query = '') => {
   categoriesLoading.value = true
   try {
-    const lang = navigator.language?.split('-')[0] || 'fr'
-    const response = await api.get('pins/topics/', { params: { limit: 10, q: query, lang } })
+    const response = await api.get('pins/topics/', { params: { limit: 10, q: query, lang: currentLang.value } })
     categories.value = Array.isArray(response.data) ? response.data : []
   } catch (err) {
     console.error('Erreur lors du chargement des categories:', err)
@@ -80,6 +79,11 @@ watch(categorySearch, (value) => {
 
 watch(selectedCategory, async (topic) => {
   await fetchDiscoverPins(true, topic)
+})
+
+watch(currentLang, async () => {
+  await loadCategories(categorySearch.value.trim())
+  await fetchDiscoverPins(true, selectedCategory.value)
 })
 
 const handleToggleSave = async (slug: string) => {

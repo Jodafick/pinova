@@ -4,6 +4,8 @@ export type Pin = {
   title: string
   description: string
   imageUrl: string
+  /** Vidéo story (MP4/WebM/MOV) */
+  storyVideoUrl?: string
   user: string
   username: string
   userId: number
@@ -17,6 +19,8 @@ export type Pin = {
     reactions: number
   }
   topic: string
+  /** Libellé topic traduit (API topic_meta.name) pour l’affichage ; `topic` reste le nom canonique. */
+  topicDisplay?: string
   visibility?: 'public' | 'followers' | 'private'
   hashtags?: string[]
   privateTags?: string[]
@@ -60,6 +64,8 @@ export type User = {
   following: number
   isFollowing?: boolean
   savedPins: number[]
+  /** Jeton profil privé (?share=) — réservé au propriétaire */
+  profileShareToken?: string | null
   subscription?: {
     plan: 'free' | 'plus' | 'pro'
     renewalAt?: string | null
@@ -79,6 +85,7 @@ export type User = {
     isPrivate: boolean
     collaboratorCount?: number
     previewImages?: string[]
+    shareToken?: string | null
   }[]
 }
 

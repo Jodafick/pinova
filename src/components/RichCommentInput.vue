@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
+import 'emoji-picker-element'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
+import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
 
 const { t } = useI18n()
 const { currentUser } = useAuth()
+const { showAlert } = useAppModal()
 
 const text = ref('')
 const showGifPicker = ref(false)
+const showEmojiPicker = ref(false)
 const showMentionList = ref(false)
 const selectedGif = ref<string | null>(null)
 const selectedMediaFile = ref<File | null>(null)
@@ -51,6 +55,16 @@ const filteredUsers = computed(() => {
 const canUseGifComments = computed(() => {
   const plan = currentUser.value?.subscription?.plan || 'free'
   return plan === 'plus' || plan === 'pro'
+})
+
+/** Images jointes et GIF en fichier : même condition Plus/Pro que les GIF liés. */
+const canUsePremiumCommentMedia = canUseGifComments
+
+const pickerLocale = computed(() => {
+  const lang = (currentUser.value?.preferredLanguage || 'fr').toLowerCase()
+  if (lang.startsWith('en')) return 'en'
+  if (lang.startsWith('es')) return 'es'
+  return 'fr'
 })
 
 const fetchMentionUsers = async (query: string, reset = true) => {
@@ -99,6 +113,7 @@ const handleInput = () => {
     if (!after.includes(' ') && after.length <= 20) {
       mentionFilter.value = after
       showMentionList.value = true
+      showEmojiPicker.value = false
       if (mentionTimer) clearTimeout(mentionTimer)
       mentionTimer = setTimeout(() => {
         void fetchMentionUsers(after, true)
@@ -125,9 +140,65 @@ const insertMention = (username: string) => {
   nextTick(() => inputEl.value?.focus())
 }
 
+const insertAtCursor = (el: HTMLInputElement, chunk: string) => {
+  const start = el.selectionStart ?? text.value.length
+  const end = el.selectionEnd ?? start
+  text.value = text.value.slice(0, start) + chunk + text.value.slice(end)
+  nextTick(() => {
+    el.focus()
+    const pos = start + chunk.length
+    el.setSelectionRange(pos, pos)
+  })
+}
+
+function onEmojiClick(ev: Event) {
+  const detail = (ev as CustomEvent<{ unicode?: string; emoji?: { unicode?: string } }>).detail
+  const unicode =
+    detail?.unicode ??
+    (detail?.emoji && typeof detail.emoji.unicode === 'string' ? detail.emoji.unicode : '')
+  if (!unicode || !inputEl.value) return
+  insertAtCursor(inputEl.value, unicode)
+  showEmojiPicker.value = false
+}
+
+function toggleGifPicker() {
+  showGifPicker.value = !showGifPicker.value
+  showEmojiPicker.value = false
+  showMentionList.value = false
+}
+
+function toggleEmojiPicker() {
+  showEmojiPicker.value = !showEmojiPicker.value
+  showGifPicker.value = false
+  showMentionList.value = false
+}
+
+function closeFloatingPanels() {
+  showGifPicker.value = false
+  showEmojiPicker.value = false
+  showMentionList.value = false
+}
+
+function onDocPointerDown(ev: MouseEvent | TouchEvent) {
+  const target = ev.target as Node | null
+  const root = rootEl.value
+  if (!root || !target || root.contains(target)) return
+  closeFloatingPanels()
+}
+
+const rootEl = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+  document.addEventListener('pointerdown', onDocPointerDown, true)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('pointerdown', onDocPointerDown, true)
+})
+
 const pickGif = (url: string) => {
   if (!canUseGifComments.value) {
-    window.alert(t('comment.gif.upgradeRequired'))
+    void showAlert(t('comment.gif.upgradeRequired'), { variant: 'warning' })
     return
   }
   selectedGif.value = url
@@ -146,16 +217,16 @@ const removeGif = () => {
 const pickMediaFile = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
-  if (!file.type.startsWith('image/')) {
-    window.alert('Fichier image uniquement.')
+  if (!canUsePremiumCommentMedia.value) {
+    void showAlert(t('comment.media.upgradeRequired'), { variant: 'warning' })
     return
   }
-  if (file.type === 'image/gif' && !canUseGifComments.value) {
-    window.alert(t('comment.gif.upgradeRequired'))
+  if (!file.type.startsWith('image/')) {
+    void showAlert(t('comment.media.imageOnly'), { variant: 'warning' })
     return
   }
   if (file.size > 5 * 1024 * 1024) {
-    window.alert('Image/GIF trop lourd (max 5MB).')
+    void showAlert(t('comment.media.tooLarge'), { variant: 'warning' })
     return
   }
   if (selectedMediaPreview.value) {
@@ -183,6 +254,24 @@ const setReply = (username: string) => {
   nextTick(() => inputEl.value?.focus())
 }
 
+function openMentionPicker() {
+  text.value += '@'
+  mentionFilter.value = ''
+  showMentionList.value = true
+  showGifPicker.value = false
+  showEmojiPicker.value = false
+  nextTick(() => inputEl.value?.focus())
+  void fetchMentionUsers('', true)
+}
+
+function triggerMediaFileDialog() {
+  if (!canUsePremiumCommentMedia.value) {
+    void showAlert(t('comment.media.upgradeRequired'), { variant: 'warning' })
+    return
+  }
+  mediaInputEl.value?.click()
+}
+
 const submit = () => {
   if (!text.value.trim() && !selectedGif.value && !selectedMediaFile.value) return
   emit('submit', {
@@ -196,6 +285,7 @@ const submit = () => {
   removeMedia()
   replyingTo.value = null
   showGifPicker.value = false
+  showEmojiPicker.value = false
   showMentionList.value = false
 }
 
@@ -208,7 +298,7 @@ defineExpose({ setReply })
 </script>
 
 <template>
-  <div class="relative">
+  <div ref="rootEl" class="relative">
     <!-- Reply badge -->
     <div
       v-if="replyingTo"
@@ -258,19 +348,21 @@ defineExpose({ setReply })
 
       <!-- GIF button -->
       <button
+        type="button"
         class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition relative disabled:opacity-40 disabled:cursor-not-allowed"
         :title="canUseGifComments ? t('comment.gif.title') : t('comment.gif.upgradeRequired')"
         :disabled="!canUseGifComments"
-        @click="showGifPicker = !showGifPicker; showMentionList = false"
+        @click="toggleGifPicker"
       >
         <span class="text-[10px] font-bold border border-current rounded px-1 leading-none py-0.5">{{ t('comment.gif') }}</span>
       </button>
 
       <!-- Mention button -->
       <button
+        type="button"
         class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
         :title="t('comment.mention.title')"
-        @click="text += '@'; mentionFilter = ''; showMentionList = true; inputEl?.focus(); void fetchMentionUsers('', true)"
+        @click="openMentionPicker"
       >
         <span class="material-symbols-outlined text-lg">alternate_email</span>
       </button>
@@ -284,17 +376,20 @@ defineExpose({ setReply })
       />
 
       <button
+        type="button"
         class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
-        title="Image/GIF"
-        @click="mediaInputEl?.click()"
+        :class="{ 'opacity-40': !canUsePremiumCommentMedia }"
+        :title="canUsePremiumCommentMedia ? t('comment.media.title') : t('comment.media.upgradeRequired')"
+        @click="triggerMediaFileDialog"
       >
         <span class="material-symbols-outlined text-lg">add_photo_alternate</span>
       </button>
 
-      <!-- Emoji placeholder -->
       <button
+        type="button"
         class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
         :title="t('comment.emoji.title')"
+        @click="toggleEmojiPicker"
       >
         <span class="material-symbols-outlined text-lg">mood</span>
       </button>
@@ -317,7 +412,7 @@ defineExpose({ setReply })
     >
       <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
         <h4 class="text-sm font-semibold">{{ t('comment.gif.trending') }}</h4>
-        <button class="text-neutral-400 hover:text-neutral-700" @click="showGifPicker = false">
+        <button type="button" class="text-neutral-400 hover:text-neutral-700" @click="showGifPicker = false">
           <span class="material-symbols-outlined text-base">close</span>
         </button>
       </div>
@@ -343,6 +438,24 @@ defineExpose({ setReply })
           <span class="absolute bottom-1 left-1 text-[9px] font-bold bg-black/60 text-white px-1 rounded">GIF</span>
         </button>
       </div>
+    </div>
+
+    <!-- Emoji picker -->
+    <div
+      v-if="showEmojiPicker"
+      class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden z-40 flex flex-col max-h-[min(380px,70vh)]"
+    >
+      <div class="px-4 py-2 border-b border-neutral-100 flex items-center justify-between shrink-0 bg-white">
+        <h4 class="text-sm font-semibold text-neutral-900">{{ t('comment.emoji.title') }}</h4>
+        <button type="button" class="text-neutral-400 hover:text-neutral-700" @click="showEmojiPicker = false">
+          <span class="material-symbols-outlined text-base">close</span>
+        </button>
+      </div>
+      <emoji-picker
+        class="pinova-emoji-picker border-0 shadow-none w-full min-h-0 flex-1"
+        :locale="pickerLocale"
+        @emoji-click="onEmojiClick"
+      />
     </div>
 
     <!-- Mention list dropdown -->
@@ -372,3 +485,10 @@ defineExpose({ setReply })
     </div>
   </div>
 </template>
+
+<style>
+.pinova-emoji-picker {
+  width: 100%;
+  height: min(320px, 55vh);
+}
+</style>

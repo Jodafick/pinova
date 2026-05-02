@@ -54,6 +54,7 @@ const handleRegister = async () => {
 }
 
 const { login: googleLogin } = useTokenClient({
+  scope: 'https://www.googleapis.com/auth/userinfo.profile',
   onSuccess: async (response) => {
     loading.value = true
     const result = await socialLogin('google', response.access_token)

@@ -7,8 +7,10 @@ import { mapDjangoPinToFrontend, usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import type { Pin } from '../types'
 import { useI18n } from '../i18n'
+import { useAppModal } from '../composables/useAppModal'
 
 const { t } = useI18n()
+const { showAlert } = useAppModal()
 const route = useRoute()
 const router = useRouter()
 const { toggleSave } = usePins()
@@ -41,7 +43,8 @@ async function loadBoard() {
   loading.value = true
   loadError.value = null
   try {
-    const res = await api.get(`boards/${boardId.value}/`)
+    const shareParam = typeof route.query.share === 'string' ? route.query.share : ''
+    const res = await api.get(`boards/${boardId.value}/`, shareParam ? { params: { share: shareParam } } : {})
     boardName.value = res.data.name || ''
     ownerUsername.value = res.data.owner_username || ''
     viewerCanManage.value = !!(res.data.viewer_can_manage ?? res.data.viewerCanManage)
@@ -103,7 +106,10 @@ async function saveBoardOrder() {
     closeOrganize()
     await loadBoard()
   } catch (err: any) {
-    window.alert(err?.response?.data?.error || t('board.organizeError'))
+    await showAlert(err?.response?.data?.error || t('board.organizeError'), {
+      variant: 'danger',
+      title: t('modal.errorTitle'),
+    })
   } finally {
     organizeSaving.value = false
   }
@@ -129,7 +135,7 @@ function onOrganizeDrop(index: number) {
 }
 
 onMounted(loadBoard)
-watch(boardId, loadBoard)
+watch([boardId, () => route.query.share], loadBoard)
 </script>
 
 <template>

@@ -8,7 +8,7 @@ import TopicScroller from '../components/TopicScroller.vue'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 
-const { t } = useI18n()
+const { t, currentLang } = useI18n()
 
 const router = useRouter()
 const { pins, topics, loading, fetchHomeFeed, trackSearchInteraction, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
@@ -66,6 +66,10 @@ watch(searchQuery, (value) => {
   searchTrackTimer = setTimeout(() => {
     void trackSearchInteraction(query)
   }, 500)
+})
+
+watch(currentLang, () => {
+  void fetchHomeFeed(true, activeTopic.value)
 })
 
 const handleToggleSave = async (slug: string) => {

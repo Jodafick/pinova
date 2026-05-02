@@ -3,10 +3,12 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api'
 import { useI18n } from '../i18n'
+import { useAppModal } from '../composables/useAppModal'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { showAlert } = useAppModal()
 
 const email = ref(route.query.email as string || '')
 const otp = ref('')
@@ -51,7 +53,7 @@ const handleResend = async () => {
 
   try {
     await api.post('resend-otp/', { email: email.value })
-    alert(t('otp.resent'))
+    await showAlert(t('otp.resent'), { variant: 'success' })
   } catch (err: any) {
     error.value = err.response?.data?.error || t('otp.error.resend')
   } finally {

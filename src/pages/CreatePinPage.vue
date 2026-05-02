@@ -8,7 +8,7 @@ import { useAppModal } from '../composables/useAppModal'
 import PrivateTags from '../components/PrivateTags.vue'
 import api from '../api'
 
-const { t } = useI18n()
+const { t, currentLang } = useI18n()
 const { showAlert } = useAppModal()
 
 const router = useRouter()
@@ -21,6 +21,8 @@ const link = ref('')
 const topic = ref('')
 const imageFile = ref<File | null>(null)
 const imagePreviewUrl = ref<string | null>(null)
+const storyVideoFile = ref<File | null>(null)
+const storyVideoPreviewUrl = ref<string | null>(null)
 const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const saving = ref(false)
@@ -69,11 +71,20 @@ function goStep1() {
 
 const isStory = ref(false)
 
+watch(isStory, (on) => {
+  if (!on && storyVideoFile.value) clearStoryVideo()
+})
+
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
+const fileAcceptAttr = computed(() =>
+  isStory.value
+    ? 'image/*,image/gif,video/mp4,video/webm,video/quicktime'
+    : 'image/*,image/gif',
+)
 const canUsePrivateTags = computed(() => currentPlan.value !== 'free')
 const resolvedTopics = computed<TopicOption[]>(() => {
   if (dynamicTopics.value.length > 0) return dynamicTopics.value
-  return topics.value.map((topicName) => ({ name: topicName, originalName: topicName }))
+  return topics.value.map((chip) => ({ name: chip.label, originalName: chip.canonical }))
 })
 const filteredTopics = computed(() => {
   const q = categorySearch.value.trim().toLowerCase()
@@ -88,8 +99,9 @@ const filteredTopics = computed(() => {
 
 const loadTopics = async (query = '') => {
   try {
-    const lang = navigator.language?.split('-')[0] || 'fr'
-    const response = await api.get('pins/topics/', { params: { lang, q: query, limit: 20 } })
+    const response = await api.get('pins/topics/', {
+      params: { lang: currentLang.value, q: query, limit: 20 },
+    })
     const payload = Array.isArray(response.data) ? response.data : []
     dynamicTopics.value = payload.map((item: any) => ({
       name: item?.name || '',
@@ -134,26 +146,43 @@ watch(categorySearch, (value) => {
   }, 250)
 })
 
-const setImageFile = (file: File) => {
-  if (!file.type.startsWith('image/')) {
-    void showAlert(t('create.upload.invalid'), { variant: 'warning' })
+watch(currentLang, () => {
+  void loadTopics(categorySearch.value.trim())
+})
+
+function clearStoryVideo() {
+  if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
+  storyVideoFile.value = null
+  storyVideoPreviewUrl.value = null
+}
+
+function setMediaFile(file: File) {
+  if (file.type.startsWith('video/')) {
+    isStory.value = true
+    if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
+    storyVideoFile.value = file
+    storyVideoPreviewUrl.value = URL.createObjectURL(file)
     return
   }
-  if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
-  imageFile.value = file
-  imagePreviewUrl.value = URL.createObjectURL(file)
+  if (file.type.startsWith('image/')) {
+    if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
+    imageFile.value = file
+    imagePreviewUrl.value = URL.createObjectURL(file)
+    return
+  }
+  void showAlert(t('create.upload.invalid'), { variant: 'warning' })
 }
 
 const onFileChange = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
-  if (file) setImageFile(file)
+  if (file) setMediaFile(file)
 }
 
 const onDrop = (e: DragEvent) => {
   e.preventDefault()
   isDragging.value = false
   const file = e.dataTransfer?.files?.[0]
-  if (file) setImageFile(file)
+  if (file) setMediaFile(file)
 }
 
 const clearImage = () => {
@@ -162,8 +191,13 @@ const clearImage = () => {
   imagePreviewUrl.value = null
 }
 
+const clearStep2Media = () => {
+  clearImage()
+  clearStoryVideo()
+}
+
 const submitPin = async () => {
-  if (!title.value || !imageFile.value) return
+  if (!title.value || (!imageFile.value && !storyVideoFile.value)) return
   saving.value = true
 
   try {
@@ -171,11 +205,12 @@ const submitPin = async () => {
     formData.append('title', title.value)
     formData.append('description', description.value || '')
     formData.append('link', link.value || '')
-    formData.append('image', imageFile.value)
+    if (imageFile.value) formData.append('image', imageFile.value)
+    if (storyVideoFile.value) formData.append('story_video', storyVideoFile.value)
     const resolvedTopic = topic.value || categorySearch.value.trim() || 'Général'
     formData.append('topic', resolvedTopic)
     formData.append('visibility', visibility.value)
-    formData.append('is_story', isStory.value ? 'true' : 'false')
+    formData.append('is_story', (isStory.value || !!storyVideoFile.value) ? 'true' : 'false')
     if (canSchedulePublish.value && scheduledPublishLocal.value) {
       const d = new Date(scheduledPublishLocal.value)
       if (!Number.isNaN(d.getTime())) {
@@ -261,7 +296,7 @@ const selectCategory = (selected: TopicOption) => {
           v-if="createStep === 2"
           type="button"
           class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition flex items-center gap-2"
-          :disabled="!title || !imagePreviewUrl || saving"
+          :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl) || saving"
           @click="submitPin"
         >
           <svg v-if="saving" class="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -289,7 +324,7 @@ const selectCategory = (selected: TopicOption) => {
         <!-- Image (étape 2) -->
         <div v-if="createStep === 2" class="lg:w-2/5 p-6 sm:p-8 bg-neutral-50 border-b lg:border-b-0 lg:border-r border-neutral-100">
           <div
-            v-if="!imagePreviewUrl"
+            v-if="!imagePreviewUrl && !storyVideoPreviewUrl"
             class="h-80 lg:h-full min-h-[320px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 text-center cursor-pointer transition-colors"
             :class="isDragging
               ? 'border-pink-400 bg-pink-50/60'
@@ -321,31 +356,50 @@ const selectCategory = (selected: TopicOption) => {
               <p class="text-xs text-neutral-400 mt-2">
                 {{ t('create.upload.specs') }}
               </p>
+              <p v-if="isStory" class="text-[11px] text-neutral-500 mt-2">
+                {{ t('create.upload.videoHint') }}
+              </p>
+              <div v-if="isStory" class="flex items-center justify-center gap-2 mt-2 flex-wrap">
+                <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-violet-100 text-violet-800 rounded font-bold">MP4</span>
+                <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-violet-100 text-violet-800 rounded font-bold">WEBM</span>
+                <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-violet-100 text-violet-800 rounded font-bold">MOV</span>
+              </div>
             </div>
           </div>
 
           <div v-else class="relative">
-            <img
-              :src="imagePreviewUrl"
-              alt="Aperçu"
-              class="w-full rounded-2xl object-cover max-h-[500px]"
+            <video
+              v-if="storyVideoPreviewUrl"
+              :src="storyVideoPreviewUrl"
+              controls
+              muted
+              playsinline
+              class="w-full rounded-2xl bg-black object-contain max-h-[500px]"
             />
-            <span
-              v-if="isGif"
-              class="absolute top-3 left-3 px-2 py-1 rounded-md bg-pink-600 text-white text-[10px] font-bold tracking-wider flex items-center gap-1 shadow"
-            >
-              <span class="material-symbols-outlined text-sm">animation</span>
-              {{ t('create.gif.label') }}
-            </span>
+            <template v-else>
+              <img
+                :src="imagePreviewUrl || ''"
+                alt="Aperçu"
+                class="w-full rounded-2xl object-cover max-h-[500px]"
+              />
+              <span
+                v-if="isGif"
+                class="absolute top-3 left-3 px-2 py-1 rounded-md bg-pink-600 text-white text-[10px] font-bold tracking-wider flex items-center gap-1 shadow"
+              >
+                <span class="material-symbols-outlined text-sm">animation</span>
+                {{ t('create.gif.label') }}
+              </span>
+            </template>
             <button
+              type="button"
               class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition"
-              @click="clearImage"
+              @click="clearStep2Media"
             >
               <span class="material-symbols-outlined text-neutral-600">close</span>
             </button>
           </div>
 
-          <input ref="fileInput" type="file" accept="image/*,image/gif" class="hidden" @change="onFileChange" />
+          <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange" />
         </div>
 
         <div
@@ -385,6 +439,7 @@ const selectCategory = (selected: TopicOption) => {
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.description') }}</label>
             <textarea
               v-model="description"
+              maxlength="1000"
               rows="4"
               :placeholder="t('create.field.description.placeholder')"
               class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition resize-none placeholder:text-neutral-400"

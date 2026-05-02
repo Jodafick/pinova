@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import type { Pin } from '../types'
 import api from '../api'
 import { API_BASE_URL } from '../env'
+import { useI18n } from '../i18n'
 
 const pins = ref<Pin[]>([])
 const loading = ref(false)
@@ -34,7 +35,8 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     slug: djangoPin.slug,
     title: djangoPin.title,
     description: djangoPin.description,
-    imageUrl: getFullMediaUrl(djangoPin.image),
+    imageUrl: djangoPin.image ? getFullMediaUrl(djangoPin.image) : '',
+    storyVideoUrl: djangoPin.story_video_url ? getFullMediaUrl(djangoPin.story_video_url) : '',
     user: author.display_name || author.username || 'Inconnu',
     username: author.username || 'inconnu',
     userId: author.id,
@@ -47,7 +49,8 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
       saves: djangoPin.saves_count || 0, 
       reactions: djangoPin.likes_count || 0 
     },
-    topic: djangoPin.topic || 'Général',
+    topic: (djangoPin.topic_meta?.originalName ?? djangoPin.topic) || 'Général',
+    topicDisplay: (djangoPin.topic_meta?.name ?? djangoPin.topic) || 'Général',
     visibility: djangoPin.visibility || 'public',
     hashtags: djangoPin.hashtags || [],
     privateTags: djangoPin.private_tags || [],
@@ -69,6 +72,7 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
 }
 
 export function usePins() {
+  const { currentLang } = useI18n()
   const setPendingFlag = (store: Record<string, boolean>, key: string, value: boolean) => {
     if (!key) return
     if (value) {
@@ -83,14 +87,20 @@ export function usePins() {
   const isAuthorFollowPending = (username: string) => !!followPendingByUsername.value[username]
 
   const topics = computed(() => {
-    const counts = new Map<string, number>()
+    const counts = new Map<string, { count: number; label: string }>()
     pins.value.forEach((pin) => {
-      counts.set(pin.topic, (counts.get(pin.topic) || 0) + 1)
+      const canonical = pin.topic
+      const label = pin.topicDisplay ?? pin.topic
+      const prev = counts.get(canonical)
+      counts.set(canonical, {
+        count: (prev?.count ?? 0) + 1,
+        label: prev?.label ?? label,
+      })
     })
     return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]))
       .slice(0, 10)
-      .map(([topic]) => topic)
+      .map(([canonical, v]) => ({ canonical, label: v.label }))
   })
 
   const loadPinCollection = async (
@@ -111,6 +121,7 @@ export function usePins() {
       const response = await api.get(endpoint, {
         params: {
           page: currentPage.value,
+          lang: currentLang.value,
           ...extraParams,
         },
       })

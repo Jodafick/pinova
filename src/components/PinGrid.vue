@@ -43,11 +43,11 @@ const columns = computed(() => {
   return cols
 })
 
-const markImageLoaded = (pinId: number) => {
+const markMediaLoaded = (pinId: number) => {
   loadedImages.value[pinId] = true
 }
 
-const isImageLoaded = (pinId: number) => !!loadedImages.value[pinId]
+const isMediaLoaded = (pinId: number) => !!loadedImages.value[pinId]
 const isSavePending = (slug: string) => isPinSavePending(slug)
 
 function clearMediaTimer(pinId: number) {
@@ -122,19 +122,31 @@ onUnmounted(() => {
           @dblclick.stop.prevent="onPinMediaDblClick(pin)"
         >
           <div
-            v-if="!isImageLoaded(pin.id)"
+            v-if="!isMediaLoaded(pin.id)"
             class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200"
           ></div>
           <img
+            v-if="pin.imageUrl"
             :src="pin.imageUrl"
             :alt="pin.title"
             class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none"
             draggable="false"
-            :class="isImageLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
+            :class="isMediaLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
             loading="lazy"
-            @load="markImageLoaded(pin.id)"
+            @load="markMediaLoaded(pin.id)"
             @contextmenu.prevent
             @dragstart.prevent
+          />
+          <video
+            v-else-if="pin.storyVideoUrl"
+            :src="pin.storyVideoUrl"
+            muted
+            playsinline
+            preload="metadata"
+            class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none max-h-[480px]"
+            :class="isMediaLoaded(pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
+            @loadedmetadata="markMediaLoaded(pin.id)"
+            @error="markMediaLoaded(pin.id)"
           />
 
           <div

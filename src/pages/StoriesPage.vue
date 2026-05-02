@@ -66,7 +66,7 @@ async function load() {
   }
 }
 
-/** À partir de l’utilisateur cliqué : toutes ses stories puis celles des suivants (ordre reco conservé). */
+/** À partir de l'utilisateur cliqué : toutes ses stories puis celles des suivants (ordre reco conservé). */
 function openAt(groupIndex: number) {
   viewerPins.value = groups.value.slice(groupIndex).flatMap((g) => g.pins)
   viewerOpen.value = true
@@ -80,8 +80,23 @@ onMounted(load)
     <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">{{ t('stories.title') }}</h1>
     <p class="text-sm text-neutral-500 mt-2 max-w-xl">{{ t('stories.subtitle') }}</p>
 
-    <div v-if="loading" class="flex justify-center py-24">
-      <div class="w-10 h-10 border-4 border-neutral-100 border-t-pink-600 rounded-full animate-spin"></div>
+    <!-- Skeleton -->
+    <div v-if="loading" class="mt-10 animate-pulse space-y-8">
+      <div class="flex gap-4 overflow-x-auto pb-4 scrollbar-none">
+        <div
+          v-for="i in 14"
+          :key="'sk-ring-' + i"
+          class="snap-start shrink-0 flex flex-col items-center gap-2 w-[84px]"
+        >
+          <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-neutral-200 via-neutral-100 to-neutral-200 p-[3px]">
+            <div class="w-full h-full rounded-full bg-neutral-100" />
+          </div>
+        </div>
+      </div>
+      <div class="hidden sm:flex gap-3 justify-center">
+        <div class="h-10 w-40 rounded-full bg-neutral-100" />
+        <div class="h-10 w-40 rounded-full bg-neutral-100" />
+      </div>
     </div>
 
     <div v-else-if="groups.length === 0" class="py-20 text-center text-neutral-500 text-sm">

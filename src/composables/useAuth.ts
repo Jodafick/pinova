@@ -67,6 +67,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     following: profile.following_count || 0,
     isFollowing: profile.is_following || false,
     savedPins: djangoUser.saved_pins || [],
+    profileShareToken: profile.share_token ? String(profile.share_token) : undefined,
     subscription: {
       plan: djangoUser.subscription?.plan || profile.subscription_plan || 'free',
       renewalAt: djangoUser.subscription?.renewal_at || profile.subscription_renewal_at || null,
@@ -137,9 +138,10 @@ export function useAuth() {
     }
   }
 
-  async function fetchUserProfile(username: string): Promise<User | null> {
+  async function fetchUserProfile(username: string, opts?: { share?: string | null }): Promise<User | null> {
     try {
-      const response = await api.get(`profiles/${username}/`)
+      const params = opts?.share ? { share: opts.share } : {}
+      const response = await api.get(`profiles/${username}/`, { params })
       return mapDjangoUserToFrontend(response.data)
     } catch (err) {
       console.error(`❌ Erreur lors du chargement du profil ${username}:`, err)

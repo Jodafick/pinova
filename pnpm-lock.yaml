@@ -11,6 +11,9 @@ importers:
       axios:
         specifier: ^1.14.0
         version: 1.15.0
+      emoji-picker-element:
+        specifier: ^1.29.1
+        version: 1.29.1
       vue:
         specifier: ^3.5.25
         version: 3.5.32(typescript@5.9.3)
@@ -1252,6 +1255,9 @@ packages:
 
   electron-to-chromium@1.5.334:
     resolution: {integrity: sha512-mgjZAz7Jyx1SRCwEpy9wefDS7GvNPazLthHg8eQMJ76wBdGQQDW33TCrUTvQ4wzpmOrv2zrFoD3oNufMdyMpog==}
+
+  emoji-picker-element@1.29.1:
+    resolution: {integrity: sha512-TOiHzu9Dqib3x4MwcAi3wi3RdyT4SoeB4b15AvH1ks4SBwTl7DeebhZ0d3x6dNi4XfNU7IGRZ7NBQllj0RqwrQ==}
 
   enhanced-resolve@5.20.1:
     resolution: {integrity: sha512-Qohcme7V1inbAfvjItgw0EaxVX5q2rdVEZHRBrEQdRZTssLDGsL8Lwrznl8oQ/6kuTJONLaDcGjkNP247XEhcA==}
@@ -3439,6 +3445,8 @@ snapshots:
       jake: 10.9.4
 
   electron-to-chromium@1.5.334: {}
+
+  emoji-picker-element@1.29.1: {}
 
   enhanced-resolve@5.20.1:
     dependencies:

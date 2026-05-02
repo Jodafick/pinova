@@ -61,6 +61,12 @@ function onDetailImageLoad(e: Event) {
   detailImageLandscape.value = img.naturalWidth >= img.naturalHeight
 }
 
+function onDetailVideoLoadedMetadata(e: Event) {
+  const v = e.target as HTMLVideoElement
+  if (!v.videoWidth || !v.videoHeight) return
+  detailImageLandscape.value = v.videoWidth >= v.videoHeight
+}
+
 onMounted(async () => {
   if (pins.value.length === 0 || !pin.value) {
     await fetchPins()
@@ -547,6 +553,7 @@ const openRelatedPin = (slug: string) => {
               :class="detailImageLandscape === true ? 'flex-1 items-center justify-center' : ''"
             >
               <img
+                v-if="pin.imageUrl"
                 :src="pin.imageUrl"
                 :alt="pin.title"
                 class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
@@ -555,6 +562,17 @@ const openRelatedPin = (slug: string) => {
                 @dblclick.prevent="handleLike"
                 @contextmenu.prevent
                 @dragstart.prevent
+              />
+              <video
+                v-else-if="pin.storyVideoUrl"
+                :src="pin.storyVideoUrl"
+                controls
+                playsinline
+                preload="metadata"
+                class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
+                @loadedmetadata="onDetailVideoLoadedMetadata"
+                @dblclick.prevent="handleLike"
+                @contextmenu.prevent
               />
             </div>
           </div>
@@ -581,7 +599,7 @@ const openRelatedPin = (slug: string) => {
                 </button>
                 <button
                   class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 transition"
-                  :disabled="downloadingPin"
+                  :disabled="downloadingPin || !pin.imageUrl"
                   @click="handleDownload"
                 >
                   <span v-if="downloadingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
@@ -716,7 +734,7 @@ const openRelatedPin = (slug: string) => {
               </span>
               <span class="flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-lg">sell</span>
-                {{ pin.topic }}
+                {{ pin.topicDisplay ?? pin.topic }}
               </span>
             </div>
 

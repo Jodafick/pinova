@@ -50,7 +50,7 @@ const currentPlanLabel = computed(() => {
 const navItems = computed(() => [
   { name: 'home', label: t('nav.home'), to: '/' },
   { name: 'explore', label: t('nav.explore'), to: '/explore' },
-  { name: 'stories', label: t('nav.stories'), to: '/stories' },
+  ...(isAuthenticated.value ? [{ name: 'stories', label: t('nav.stories'), to: '/stories' }] : []),
   ...(isAuthenticated.value ? [{ name: 'following', label: t('nav.following'), to: '/following' }] : []),
   { name: 'create', label: t('nav.create'), to: '/create' },
 ])
@@ -243,84 +243,28 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Right icons / Actions -->
-    <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
-      <!-- Language switcher (toujours visible) -->
-      <LanguageSwitcher />
-
+    <!-- Right icons / Actions : connecté → photo profil en premier, puis notif, langue -->
+    <div class="flex items-center gap-1 sm:gap-2 shrink-0">
       <template v-if="isAuthenticated">
-        <!-- Notifications -->
+        <!-- Photo profil = entrée principale du menu utilisateur -->
         <div class="relative z-30">
           <button
-            class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 text-neutral-600 transition relative"
-            @click.stop="showNotifications = !showNotifications; showUserMenu = false"
-          >
-            <span class="material-symbols-outlined text-xl">notifications</span>
-            <span v-if="notifications.some(n => !n.is_read)" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white"></span>
-          </button>
-
-          <!-- Notifications dropdown -->
-          <div
-            v-if="showNotifications"
-            class="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
-          >
-            <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
-              <h3 class="font-semibold text-neutral-900">{{ t('header.notifications') }}</h3>
-              <button
-                v-if="notifications.some(n => !n.is_read)"
-                class="text-xs text-pink-600 font-medium hover:underline"
-                @click="markAllAsRead"
-              >
-                {{ t('header.notifications.markAllRead') }}
-              </button>
-            </div>
-            <div class="max-h-80 overflow-y-auto">
-              <div v-if="notifications.length === 0" class="p-8 text-center text-neutral-400">
-                <span class="material-symbols-outlined text-4xl mb-2">notifications_off</span>
-                <p class="text-sm">{{ t('header.notifications.empty') }}</p>
-              </div>
-              <div
-                v-for="notification in notifications"
-                :key="notification.id"
-                class="p-4 hover:bg-neutral-50 transition flex items-start gap-3 border-b border-neutral-50 last:border-0 cursor-pointer"
-                :class="{ 'bg-blue-50/30': !notification.is_read }"
-                @click="handleNotificationClick(notification)"
-              >
-                <div class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-neutral-600">
-                    {{ 
-                      notification.notification_type === 'follow' ? 'person_add' : 
-                      notification.notification_type === 'comment' ? 'chat' :
-                      notification.notification_type === 'welcome' ? 'celebration' : 
-                      'bookmark' 
-                    }}
-                  </span>
-                </div>
-                <div class="flex-1">
-                  <p v-if="notification.title" class="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 mb-0.5">
-                    {{ notification.title }}
-                  </p>
-                  <p class="text-sm text-neutral-800 leading-snug">{{ notification.message }}</p>
-                  <p class="text-xs text-neutral-400 mt-1">@{{ notification.sender_username }}</p>
-                </div>
-                <div v-if="!notification.is_read" class="w-2 h-2 rounded-full bg-pink-600 mt-2"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- User menu -->
-        <div class="relative z-30">
-          <button
-            class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 transition border-2 border-[#E92389] focus:border-pink-500 focus:outline-none avatar-shadow hover:border-pink-500 hover:scale-105"
+            type="button"
+            class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full transition ring-2 ring-pink-500 hover:ring-pink-600 hover:scale-[1.02] shadow-md overflow-hidden focus:outline-none focus:ring-offset-2 focus:ring-offset-white focus:ring-pink-500"
+            :aria-label="t('header.user.myProfile')"
             @click.stop="showUserMenu = !showUserMenu; showNotifications = false"
           >
             <div
-              class="w-8 h-8 flex items-center justify-center rounded-full  text-xs font-bold overflow-hidden avatar-shadow"
-              >
-              <!-- :class="currentUser?.avatarColor || 'bg-neutral-800'" -->
-              <img v-if="currentUser?.avatarUrl" :src="currentUser.avatarUrl" class="w-full h-full object-cover rounded-full" />
-              <span v-else class="avatar-text text-[#E92389]">{{ userInitials }}</span>
+              class="w-full h-full flex items-center justify-center rounded-full text-xs sm:text-sm font-bold overflow-hidden"
+              :class="currentUser?.avatarUrl ? 'bg-neutral-100' : (currentUser?.avatarColor || 'bg-neutral-800')"
+            >
+              <img
+                v-if="currentUser?.avatarUrl"
+                :src="currentUser.avatarUrl"
+                alt=""
+                class="w-full h-full object-cover rounded-full"
+              />
+              <span v-else class="text-white drop-shadow-sm">{{ userInitials }}</span>
             </div>
           </button>
 
@@ -330,13 +274,27 @@ onUnmounted(() => {
             class="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
           >
             <!-- User info -->
-            <div class="px-4 py-4 border-b border-neutral-100">
-              <p class="font-semibold text-neutral-900 text-sm flex items-center gap-1.5">
-                <span v-if="currentPlan === 'pro'" class="material-symbols-outlined text-amber-500 text-base">verified</span>
-                <span>{{ currentUser?.displayName }}</span>
-              </p>
-              <p class="text-xs text-neutral-500">@{{ currentUser?.username }}</p>
-              <p class="text-xs text-neutral-400 mt-0.5">{{ currentUser?.email }}</p>
+            <div class="px-4 py-4 border-b border-neutral-100 flex gap-3">
+              <div
+                class="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-pink-100 flex items-center justify-center text-sm font-bold"
+                :class="currentUser?.avatarUrl ? 'bg-neutral-100' : (currentUser?.avatarColor || 'bg-neutral-800')"
+              >
+                <img
+                  v-if="currentUser?.avatarUrl"
+                  :src="currentUser.avatarUrl"
+                  alt=""
+                  class="w-full h-full object-cover"
+                />
+                <span v-else class="text-white">{{ userInitials }}</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-semibold text-neutral-900 text-sm flex items-center gap-1.5">
+                  <span v-if="currentPlan === 'pro'" class="material-symbols-outlined text-amber-500 text-base shrink-0">verified</span>
+                  <span class="truncate">{{ currentUser?.displayName }}</span>
+                </p>
+                <p class="text-xs text-neutral-500 truncate">@{{ currentUser?.username }}</p>
+                <p class="text-xs text-neutral-400 mt-0.5 truncate">{{ currentUser?.email }}</p>
+              </div>
             </div>
 
             <div class="py-1">
@@ -411,9 +369,74 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
+
+        <!-- Notifications -->
+        <div class="relative z-30">
+          <button
+            type="button"
+            class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 text-neutral-600 transition relative"
+            @click.stop="showNotifications = !showNotifications; showUserMenu = false"
+          >
+            <span class="material-symbols-outlined text-xl">notifications</span>
+            <span v-if="notifications.some(n => !n.is_read)" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white"></span>
+          </button>
+
+          <!-- Notifications dropdown -->
+          <div
+            v-if="showNotifications"
+            class="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+          >
+            <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
+              <h3 class="font-semibold text-neutral-900">{{ t('header.notifications') }}</h3>
+              <button
+                v-if="notifications.some(n => !n.is_read)"
+                type="button"
+                class="text-xs text-pink-600 font-medium hover:underline"
+                @click="markAllAsRead"
+              >
+                {{ t('header.notifications.markAllRead') }}
+              </button>
+            </div>
+            <div class="max-h-80 overflow-y-auto">
+              <div v-if="notifications.length === 0" class="p-8 text-center text-neutral-400">
+                <span class="material-symbols-outlined text-4xl mb-2">notifications_off</span>
+                <p class="text-sm">{{ t('header.notifications.empty') }}</p>
+              </div>
+              <div
+                v-for="notification in notifications"
+                :key="notification.id"
+                class="p-4 hover:bg-neutral-50 transition flex items-start gap-3 border-b border-neutral-50 last:border-0 cursor-pointer"
+                :class="{ 'bg-blue-50/30': !notification.is_read }"
+                @click="handleNotificationClick(notification)"
+              >
+                <div class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-neutral-600">
+                    {{
+                      notification.notification_type === 'follow' ? 'person_add' :
+                      notification.notification_type === 'comment' ? 'chat' :
+                      notification.notification_type === 'welcome' ? 'celebration' :
+                      'bookmark'
+                    }}
+                  </span>
+                </div>
+                <div class="flex-1">
+                  <p v-if="notification.title" class="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 mb-0.5">
+                    {{ notification.title }}
+                  </p>
+                  <p class="text-sm text-neutral-800 leading-snug">{{ notification.message }}</p>
+                  <p class="text-xs text-neutral-400 mt-1">@{{ notification.sender_username }}</p>
+                </div>
+                <div v-if="!notification.is_read" class="w-2 h-2 rounded-full bg-pink-600 mt-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <LanguageSwitcher />
       </template>
-      
+
       <template v-else>
+        <LanguageSwitcher />
         <div class="flex items-center gap-2">
           <router-link
             to="/login"

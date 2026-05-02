@@ -11,7 +11,7 @@ import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
 
-const { t } = useI18n()
+const { t, currentLang } = useI18n()
 const { showAlert, showPrompt } = useAppModal()
 
 const router = useRouter()
@@ -36,8 +36,47 @@ const isMyProfile = computed(() => {
   return !route.params.username || (currentUser.value && route.params.username === currentUser.value.username)
 })
 
+const profilePins = ref<Pin[]>([])
+const profilePinsLoading = ref(false)
+
+async function loadProfilePins(username: string) {
+  profilePinsLoading.value = true
+  profilePins.value = []
+  try {
+    let page = 1
+    const maxPages = 60
+    while (page <= maxPages) {
+      const res = await api.get('pins/', {
+        params: {
+          author: username,
+          page,
+          page_size: 100,
+          lang: currentLang.value,
+        },
+      })
+      const batch = res.data.results || []
+      profilePins.value.push(...batch.map(mapDjangoPinToFrontend))
+      if (!res.data.next) break
+      page += 1
+    }
+  } catch (err) {
+    console.error('Erreur chargement pins du profil:', err)
+    profilePins.value = []
+  } finally {
+    profilePinsLoading.value = false
+  }
+}
+
+const profileShareQueryParams = computed(() => {
+  const s = route.query.share
+  return typeof s === 'string' && s ? { share: s } : {}
+})
+
 const loadProfile = async () => {
   loading.value = true
+  const shareQuery = typeof route.query.share === 'string' ? route.query.share : ''
+  const profileShareOpts = shareQuery ? { share: shareQuery } : undefined
+
   if (!route.params.username) {
     profileUser.value = currentUser.value
     if (profileUser.value) {
@@ -50,6 +89,7 @@ const loadProfile = async () => {
           isPrivate: board.is_private ?? board.isPrivate ?? false,
           collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
           previewImages: board.preview_images ?? board.previewImages ?? [],
+          shareToken: board.share_token ?? board.shareToken ?? undefined,
         }))
       } catch (err) {
         console.error('Erreur chargement tableaux:', err)
@@ -57,7 +97,7 @@ const loadProfile = async () => {
     }
     isFollowing.value = false
   } else {
-    profileUser.value = await fetchUserProfile(route.params.username as string)
+    profileUser.value = await fetchUserProfile(route.params.username as string, profileShareOpts)
     isFollowing.value = profileUser.value?.isFollowing || false
   }
   if (isMyProfile.value && currentPlan.value === 'pro') {
@@ -77,7 +117,18 @@ const loadProfile = async () => {
   if (!route.params.username && profileUser.value) {
     void loadBoardSuggestions()
   }
-  void loadActiveStories()
+  if (currentUser.value) {
+    void loadActiveStories()
+  } else {
+    activeStories.value = []
+  }
+
+  const uname = profileUser.value?.username
+  if (uname) {
+    await loadProfilePins(uname)
+  } else {
+    profilePins.value = []
+  }
 }
 
 const handleFollow = async () => {
@@ -108,7 +159,19 @@ onMounted(async () => {
   if (pins.value.length === 0) fetchPins()
 })
 
-watch(() => route.params.username, loadProfile)
+watch([() => route.params.username, () => route.query.share], () => {
+  activeTab.value = 'created'
+  void loadProfile()
+})
+
+watch(isMyProfile, (mine) => {
+  if (!mine) activeTab.value = 'created'
+})
+
+watch(currentLang, () => {
+  const uname = profileUser.value?.username
+  if (uname) void loadProfilePins(uname)
+})
 
 type Tab = 'created' | 'saved'
 const activeTab = ref<Tab>('created')
@@ -116,10 +179,7 @@ const showCreateBoard = ref(false)
 const newBoardName = ref('')
 const newBoardPrivate = ref(false)
 
-const createdPins = computed(() => {
-  if (!profileUser.value) return []
-  return pins.value.filter((p) => p.user === profileUser.value!.displayName || p.user === profileUser.value!.username)
-})
+const createdPins = computed(() => profilePins.value)
 
 const savedPins = computed(() => {
   if (!profileUser.value) return []
@@ -187,6 +247,7 @@ const handleCreateBoard = async () => {
       isPrivate: board.is_private ?? board.isPrivate ?? false,
       collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
       previewImages: [],
+      shareToken: board.share_token ?? board.shareToken ?? undefined,
     }
     profileUser.value.boards = [nextBoard, ...(profileUser.value.boards ?? [])]
     newBoardName.value = ''
@@ -228,7 +289,9 @@ const openFollowersModal = async () => {
   relationsLoading.value = true
   relationItems.value = []
   try {
-    const response = await api.get(`profiles/${profileUser.value.username}/followers/`)
+    const response = await api.get(`profiles/${profileUser.value.username}/followers/`, {
+      params: profileShareQueryParams.value,
+    })
     relationItems.value = response.data?.results || []
   } finally {
     relationsLoading.value = false
@@ -242,7 +305,9 @@ const openFollowingModal = async () => {
   relationsLoading.value = true
   relationItems.value = []
   try {
-    const response = await api.get(`profiles/${profileUser.value.username}/following/`)
+    const response = await api.get(`profiles/${profileUser.value.username}/following/`, {
+      params: profileShareQueryParams.value,
+    })
     relationItems.value = response.data?.results || []
   } finally {
     relationsLoading.value = false
@@ -253,10 +318,14 @@ const handleInviteCollaborator = async (boardId: number) => {
   if (!isMyProfile.value) return
   const plan = currentPlan.value
   if (plan === 'free') {
-    window.alert('Les boards collaboratifs nécessitent Plus ou Pro.')
+    await showAlert(t('profile.boards.collabRequiresPlan'), { variant: 'warning' })
     return
   }
-  const username = window.prompt('Nom utilisateur à inviter :')?.trim()
+  const username = await showPrompt({
+    title: t('profile.boards.invitePromptTitle'),
+    message: t('profile.boards.invitePromptMessage'),
+    placeholder: t('profile.boards.invitePlaceholder'),
+  })
   if (!username) return
   try {
     await addBoardCollaborator(boardId, username)
@@ -267,7 +336,10 @@ const handleInviteCollaborator = async (boardId: number) => {
     }
   } catch (err: any) {
     console.error('Erreur invitation collaborateur:', err)
-    window.alert(err?.response?.data?.error || 'Impossible d\'ajouter ce collaborateur.')
+    await showAlert(err?.response?.data?.error || t('profile.boards.inviteError'), {
+      variant: 'danger',
+      title: t('modal.errorTitle'),
+    })
   }
 }
 
@@ -295,7 +367,10 @@ const organizeSaving = ref(false)
 const dragOrganizeIndex = ref<number | null>(null)
 
 async function loadActiveStories() {
-  if (!profileUser.value?.username) return
+  if (!currentUser.value || !profileUser.value?.username) {
+    activeStories.value = []
+    return
+  }
   try {
     const res = await api.get('pins/active-stories/', { params: { username: profileUser.value.username } })
     activeStories.value = (res.data.pins || []).map(mapDjangoPinToFrontend)
@@ -345,7 +420,10 @@ async function saveBoardOrder() {
     closeOrganizeBoard()
     await loadProfile()
   } catch (err: any) {
-    window.alert(err?.response?.data?.error || 'Erreur lors du réordonnancement.')
+    await showAlert(err?.response?.data?.error || t('profile.boards.reorderError'), {
+      variant: 'danger',
+      title: t('modal.errorTitle'),
+    })
   } finally {
     organizeSaving.value = false
   }
@@ -380,6 +458,44 @@ function goToBoard(boardId: number) {
   if (!uname) return
   router.push(`/profile/${uname}/board/${boardId}`)
 }
+
+async function handleShareProfile() {
+  if (!profileUser.value) return
+  try {
+    if (isMyProfile.value && profileUser.value.privateProfile) {
+      const res = await api.post('me/profile-share-token/', {})
+      const token = res.data?.share_token
+      if (!token) throw new Error('no token')
+      const url = `${window.location.origin}/profile/${profileUser.value.username}?share=${encodeURIComponent(token)}`
+      await navigator.clipboard.writeText(url)
+    } else if (isMyProfile.value) {
+      const url = `${window.location.origin}/profile/${profileUser.value.username}`
+      await navigator.clipboard.writeText(url)
+    } else {
+      await navigator.clipboard.writeText(window.location.href)
+    }
+    await showAlert(t('profile.share.copied'), { variant: 'success' })
+  } catch {
+    await showAlert(t('profile.share.copyError'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
+
+async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
+  if (!isMyProfile.value || !profileUser.value) return
+  try {
+    let url = `${window.location.origin}/profile/${profileUser.value.username}/board/${board.id}`
+    if (board.isPrivate) {
+      const res = await api.post(`boards/${board.id}/share-token/`, {})
+      const token = res.data?.share_token
+      if (!token) throw new Error('no token')
+      url += `?share=${encodeURIComponent(token)}`
+    }
+    await navigator.clipboard.writeText(url)
+    await showAlert(t('profile.share.boardCopied'), { variant: 'success' })
+  } catch {
+    await showAlert(t('profile.share.copyError'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
 </script>
 
 <template>
@@ -391,7 +507,7 @@ function goToBoard(boardId: number) {
     <!-- Profile header -->
     <section class="flex flex-col items-center text-center mb-10">
       <button
-        v-if="activeStories.length > 0"
+        v-if="currentUser && activeStories.length > 0"
         type="button"
         class="relative mb-4 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
         :aria-label="t('profile.stories.openRing')"
@@ -484,7 +600,12 @@ function goToBoard(boardId: number) {
           <span class="material-symbols-outlined text-base">workspace_premium</span>
           Plan {{ currentPlanLabel }}
         </router-link>
-        <button class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition">
+        <button
+          type="button"
+          class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition"
+          :title="t('profile.share.profileTitle')"
+          @click="handleShareProfile"
+        >
           <span class="material-symbols-outlined text-neutral-600">share</span>
         </button>
       </div>
@@ -566,6 +687,15 @@ function goToBoard(boardId: number) {
           <div v-if="board.isPrivate" class="absolute top-3 right-3 z-10">
             <span class="material-symbols-outlined text-white text-sm drop-shadow">lock</span>
           </div>
+          <button
+            v-if="isMyProfile"
+            type="button"
+            class="absolute top-3 right-14 z-10 w-9 h-9 rounded-full bg-white/95 shadow-md flex items-center justify-center text-neutral-700 hover:bg-white"
+            :title="t('profile.share.boardTitle')"
+            @click.stop="shareBoardLink(board)"
+          >
+            <span class="material-symbols-outlined text-lg">ios_share</span>
+          </button>
           <button
             v-if="isMyProfile"
             type="button"
@@ -773,6 +903,7 @@ function goToBoard(boardId: number) {
         {{ t('profile.tab.created') }}
       </button>
       <button
+        v-if="isMyProfile"
         class="px-6 py-3 text-sm font-semibold transition-colors border-b-2"
         :class="activeTab === 'saved'
           ? 'border-neutral-900 text-neutral-900'
@@ -784,7 +915,7 @@ function goToBoard(boardId: number) {
     </div>
 
     <!-- Pins grid -->
-    <PinSkeleton v-if="pinsLoading && displayPins.length === 0" />
+    <PinSkeleton v-if="((activeTab === 'created' ? profilePinsLoading : pinsLoading) && displayPins.length === 0)" />
 
     <div v-else-if="displayPins.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
       <span class="material-symbols-outlined text-5xl text-neutral-300 mb-3">
@@ -820,7 +951,7 @@ function goToBoard(boardId: number) {
     />
 
     <StoryViewer
-      v-if="activeStories.length > 0"
+      v-if="currentUser && activeStories.length > 0"
       v-model="storyViewerOpen"
       :pins="activeStories"
       :initial-index="storyViewerInitialIndex"
