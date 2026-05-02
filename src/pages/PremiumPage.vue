@@ -213,14 +213,22 @@ const handlePopupCallbackReturn = async () => {
   if (!statusValue || !transactionId) return
 
   window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
+  const confirmStatus = await confirmPaymentTransaction(transactionId, true)
+  const isConfirmed = confirmStatus === 'approved'
   if (window.opener && !window.opener.closed) {
     window.opener.postMessage(
-      { type: 'pinova_payment_callback', status: statusValue, transaction_id: transactionId },
+      {
+        type: 'pinova_payment_callback',
+        status: statusValue,
+        confirm_status: confirmStatus,
+        confirmed: isConfirmed,
+        transaction_id: transactionId,
+      },
       window.location.origin,
     )
     setTimeout(() => {
       window.close()
-    }, 250)
+    }, 400)
   } else {
     await confirmPendingPayment(transactionId)
   }
@@ -290,6 +298,12 @@ const handlePaymentMessage = async (event: MessageEvent) => {
   if (!transactionId) return
   clearAutoConfirmTimer()
   window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
+  if (payload.confirmed) {
+    window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
+    paymentInfoMessage.value = t('premium.payment.success', { plan: String(currentUser.value?.subscription?.plan || '').toUpperCase() })
+    window.location.reload()
+    return
+  }
   await confirmPendingPayment(transactionId)
 }
 
