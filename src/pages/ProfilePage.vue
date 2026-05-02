@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { usePins, mapDjangoPinToFrontend } from '../composables/usePins'
@@ -10,6 +10,9 @@ import StoryViewer from '../components/StoryViewer.vue'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
+import { displayInitials } from '../utils/displayInitials'
+
+const PROFILE_PINS_PAGE_SIZE = 24
 
 const { t, currentLang } = useI18n()
 const { showAlert, showPrompt } = useAppModal()
@@ -17,7 +20,7 @@ const { showAlert, showPrompt } = useAppModal()
 const router = useRouter()
 const route = useRoute()
 const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow, createBoard, fetchMyBoards, addBoardCollaborator } = useAuth()
-const { pins, toggleSave, fetchPins, fetchCreatorStats, loading: pinsLoading } = usePins()
+const { pins, toggleSave, fetchPins, fetchCreatorStats } = usePins()
 
 const profileUser = ref<User | null>(null)
 const loading = ref(true)
@@ -36,35 +39,111 @@ const isMyProfile = computed(() => {
   return !route.params.username || (currentUser.value && route.params.username === currentUser.value.username)
 })
 
+type Tab = 'created' | 'saved'
+const activeTab = ref<Tab>('created')
+
 const profilePins = ref<Pin[]>([])
 const profilePinsLoading = ref(false)
+const profilePinsLoadingMore = ref(false)
+const profilePinsHasMore = ref(true)
+const profilePinsNextPage = ref(1)
 
-async function loadProfilePins(username: string) {
-  profilePinsLoading.value = true
-  profilePins.value = []
+async function loadProfilePins(username: string, reset: boolean) {
+  if (reset) {
+    profilePins.value = []
+    profilePinsNextPage.value = 1
+    profilePinsHasMore.value = true
+    profilePinsLoading.value = true
+  } else {
+    if (!profilePinsHasMore.value || profilePinsLoadingMore.value || profilePinsLoading.value) return
+    profilePinsLoadingMore.value = true
+  }
   try {
-    let page = 1
-    const maxPages = 60
-    while (page <= maxPages) {
-      const res = await api.get('pins/', {
-        params: {
-          author: username,
-          page,
-          page_size: 100,
-          lang: currentLang.value,
-        },
-      })
-      const batch = res.data.results || []
-      profilePins.value.push(...batch.map(mapDjangoPinToFrontend))
-      if (!res.data.next) break
-      page += 1
-    }
+    const page = profilePinsNextPage.value
+    const res = await api.get('pins/', {
+      params: {
+        author: username,
+        page,
+        page_size: PROFILE_PINS_PAGE_SIZE,
+        lang: currentLang.value,
+      },
+    })
+    const batch = (res.data.results || []).map(mapDjangoPinToFrontend)
+    profilePins.value.push(...batch)
+    const hasMore = !!res.data.next
+    profilePinsHasMore.value = hasMore && batch.length > 0
+    if (hasMore && batch.length > 0) profilePinsNextPage.value = page + 1
   } catch (err) {
     console.error('Erreur chargement pins du profil:', err)
-    profilePins.value = []
+    if (reset) profilePins.value = []
+    profilePinsHasMore.value = false
   } finally {
     profilePinsLoading.value = false
+    profilePinsLoadingMore.value = false
   }
+}
+
+function loadMoreCreatedPins() {
+  const uname = profileUser.value?.username
+  if (!uname || activeTab.value !== 'created') return
+  void loadProfilePins(uname, false)
+}
+
+const savedPinsList = ref<Pin[]>([])
+const savedPinsLoading = ref(false)
+const savedPinsLoadingMore = ref(false)
+const savedPinsHasMore = ref(true)
+const savedPinsNextPage = ref(1)
+/** False jusqu'à ce que l'utilisateur ouvre l'onglet Enregistrés au moins une fois (session profil). */
+const savedPinsEverOpened = ref(false)
+
+async function loadSavedPins(reset: boolean) {
+  if (!currentUser.value) return
+  if (reset) {
+    savedPinsList.value = []
+    savedPinsNextPage.value = 1
+    savedPinsHasMore.value = true
+    savedPinsLoading.value = true
+  } else {
+    if (!savedPinsHasMore.value || savedPinsLoadingMore.value || savedPinsLoading.value) return
+    savedPinsLoadingMore.value = true
+  }
+  try {
+    const page = savedPinsNextPage.value
+    const res = await api.get('pins/', {
+      params: {
+        saved_by_me: '1',
+        page,
+        page_size: PROFILE_PINS_PAGE_SIZE,
+        lang: currentLang.value,
+      },
+    })
+    const batch = (res.data.results || []).map(mapDjangoPinToFrontend)
+    savedPinsList.value.push(...batch)
+    const hasMore = !!res.data.next
+    savedPinsHasMore.value = hasMore && batch.length > 0
+    if (hasMore && batch.length > 0) savedPinsNextPage.value = page + 1
+  } catch (err) {
+    console.error('Erreur chargement pins enregistrés:', err)
+    if (reset) savedPinsList.value = []
+    savedPinsHasMore.value = false
+  } finally {
+    savedPinsLoading.value = false
+    savedPinsLoadingMore.value = false
+  }
+}
+
+function loadMoreSavedPins() {
+  void loadSavedPins(false)
+}
+
+function resetSavedPinsState() {
+  savedPinsEverOpened.value = false
+  savedPinsList.value = []
+  savedPinsNextPage.value = 1
+  savedPinsHasMore.value = true
+  savedPinsLoading.value = false
+  savedPinsLoadingMore.value = false
 }
 
 const profileShareQueryParams = computed(() => {
@@ -74,6 +153,7 @@ const profileShareQueryParams = computed(() => {
 
 const loadProfile = async () => {
   loading.value = true
+  resetSavedPinsState()
   const shareQuery = typeof route.query.share === 'string' ? route.query.share : ''
   const profileShareOpts = shareQuery ? { share: shareQuery } : undefined
 
@@ -125,7 +205,7 @@ const loadProfile = async () => {
 
   const uname = profileUser.value?.username
   if (uname) {
-    await loadProfilePins(uname)
+    await loadProfilePins(uname, true)
   } else {
     profilePins.value = []
   }
@@ -157,6 +237,8 @@ const handleFollow = async () => {
 onMounted(async () => {
   await loadProfile()
   if (pins.value.length === 0) fetchPins()
+  await nextTick()
+  attachInfiniteScroll()
 })
 
 watch([() => route.params.username, () => route.query.share], () => {
@@ -170,29 +252,70 @@ watch(isMyProfile, (mine) => {
 
 watch(currentLang, () => {
   const uname = profileUser.value?.username
-  if (uname) void loadProfilePins(uname)
+  if (uname) void loadProfilePins(uname, true)
+  if (savedPinsEverOpened.value && isMyProfile.value && currentUser.value) void loadSavedPins(true)
+})
+watch(activeTab, (tab) => {
+  if (tab === 'saved' && isMyProfile.value && currentUser.value && !savedPinsEverOpened.value) {
+    savedPinsEverOpened.value = true
+    void loadSavedPins(true)
+  }
 })
 
-type Tab = 'created' | 'saved'
-const activeTab = ref<Tab>('created')
 const showCreateBoard = ref(false)
 const newBoardName = ref('')
 const newBoardPrivate = ref(false)
 
 const createdPins = computed(() => profilePins.value)
 
-const savedPins = computed(() => {
-  if (!profileUser.value) return []
-  // Si c'est mon profil, on peut utiliser currentUser.savedPins
-  if (isMyProfile.value && currentUser.value) {
-    return pins.value.filter((p) => currentUser.value!.savedPins.includes(p.id) || p.saved)
-  }
-  return pins.value.filter((p) => profileUser.value!.savedPins.includes(p.id))
+const displayPins = computed(() => {
+  return activeTab.value === 'created' ? createdPins.value : savedPinsList.value
 })
 
-const displayPins = computed(() => {
-  return activeTab.value === 'created' ? createdPins.value : savedPins.value
+const showProfileInfiniteSentinel = computed(() => {
+  if (displayPins.value.length === 0) return false
+  if (activeTab.value === 'created') {
+    return profilePinsHasMore.value || profilePinsLoadingMore.value
+  }
+  if (!isMyProfile.value) return false
+  return savedPinsHasMore.value || savedPinsLoadingMore.value
 })
+
+const infiniteScrollSentinel = ref<HTMLElement | null>(null)
+let infiniteScrollObserver: IntersectionObserver | null = null
+
+function disconnectInfiniteScroll() {
+  infiniteScrollObserver?.disconnect()
+  infiniteScrollObserver = null
+}
+
+function attachInfiniteScroll() {
+  disconnectInfiniteScroll()
+  const el = infiniteScrollSentinel.value
+  if (!el) return
+  infiniteScrollObserver = new IntersectionObserver(
+    (entries) => {
+      if (!entries[0]?.isIntersecting) return
+      if (activeTab.value === 'created') {
+        if (profilePinsHasMore.value && !profilePinsLoading.value && !profilePinsLoadingMore.value) {
+          loadMoreCreatedPins()
+        }
+      } else if (activeTab.value === 'saved' && isMyProfile.value) {
+        if (savedPinsHasMore.value && !savedPinsLoading.value && !savedPinsLoadingMore.value) {
+          loadMoreSavedPins()
+        }
+      }
+    },
+    { root: null, rootMargin: '280px', threshold: 0 },
+  )
+  infiniteScrollObserver.observe(el)
+}
+
+watch([activeTab, () => displayPins.value.length, profilePinsHasMore, savedPinsHasMore], () => {
+  nextTick(() => attachInfiniteScroll())
+})
+
+onUnmounted(() => disconnectInfiniteScroll())
 
 const boards = computed(() => profileUser.value?.boards ?? [])
 const currentPlan = computed<'free' | 'plus' | 'pro'>(() => {
@@ -264,12 +387,29 @@ const handleToggleSave = async (slug: string) => {
     router.push('/login')
     return
   }
-  const pin = pins.value.find(p => p.slug === slug)
+  const pin =
+    pins.value.find((p) => p.slug === slug) ||
+    profilePins.value.find((p) => p.slug === slug) ||
+    savedPinsList.value.find((p) => p.slug === slug)
   if (pin) {
     toggleSavePin(pin.id)
   }
   try {
-    await toggleSave(slug)
+    const data = await toggleSave(slug)
+    const idx = savedPinsList.value.findIndex((p) => p.slug === slug)
+    if (idx !== -1 && data && data.status !== 'saved') {
+      savedPinsList.value.splice(idx, 1)
+    }
+    const pp = profilePins.value.find((p) => p.slug === slug)
+    if (pp && data) {
+      pp.saved = data.status === 'saved'
+      if (typeof data.saves_count === 'number') pp.stats.saves = data.saves_count
+    }
+    const sp = savedPinsList.value.find((p) => p.slug === slug)
+    if (sp && data) {
+      sp.saved = data.status === 'saved'
+      if (typeof data.saves_count === 'number') sp.stats.saves = data.saves_count
+    }
   } catch (err) {
     if (pin) {
       toggleSavePin(pin.id)
@@ -527,7 +667,7 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
               :src="profileUser.avatarUrl"
               class="w-full h-full object-cover"
             />
-            <span v-else class="avatar-text">{{ profileUser.displayName[0] }}</span>
+            <span v-else class="avatar-text">{{ displayInitials(profileUser.displayName) }}</span>
           </span>
         </span>
       </button>
@@ -537,7 +677,7 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
         :class="profileUser.avatarColor"
       >
         <img v-if="profileUser.avatarUrl" :src="profileUser.avatarUrl" class="w-full h-full object-cover rounded-full" />
-        <span v-else class="avatar-text">{{ profileUser.displayName[0] }}</span>
+        <span v-else class="avatar-text">{{ displayInitials(profileUser.displayName) }}</span>
       </div>
 
       <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-1">
@@ -915,7 +1055,7 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
     </div>
 
     <!-- Pins grid -->
-    <PinSkeleton v-if="((activeTab === 'created' ? profilePinsLoading : pinsLoading) && displayPins.length === 0)" />
+    <PinSkeleton v-if="((activeTab === 'created' ? profilePinsLoading : savedPinsLoading) && displayPins.length === 0)" />
 
     <div v-else-if="displayPins.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
       <span class="material-symbols-outlined text-5xl text-neutral-300 mb-3">
@@ -949,6 +1089,18 @@ async function shareBoardLink(board: { id: number; isPrivate: boolean }) {
       @toggle-save="handleToggleSave"
       @open-pin="openPin"
     />
+
+    <div
+      v-if="showProfileInfiniteSentinel"
+      ref="infiniteScrollSentinel"
+      class="flex justify-center items-center py-10 min-h-[64px]"
+      aria-hidden="true"
+    >
+      <span
+        v-if="profilePinsLoadingMore || savedPinsLoadingMore"
+        class="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"
+      />
+    </div>
 
     <StoryViewer
       v-if="currentUser && activeStories.length > 0"

@@ -5,6 +5,7 @@ import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import TopicScroller from '../components/TopicScroller.vue'
+import HomeStoriesStrip from '../components/HomeStoriesStrip.vue'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
 
@@ -115,6 +116,8 @@ const openPin = (slug: string) => {
         </router-link>
       </div>
     </section>
+
+    <HomeStoriesStrip v-if="currentUser" />
 
     <!-- Search bar for home page -->
     <div class="mb-5 sm:hidden">

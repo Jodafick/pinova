@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import api from '../api'
+import { displayInitials } from '../utils/displayInitials'
 
 const router = useRouter()
 const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket } = useAuth()
@@ -439,7 +440,7 @@ const handleLogout = () => {
               :class="currentUser.avatarColor"
             >
               <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" />
-              <span v-else>{{ displayName[0] || '?' }}</span>
+              <span v-else class="text-center leading-none px-1">{{ displayInitials(displayName) }}</span>
             </div>
             <div>
               <input 

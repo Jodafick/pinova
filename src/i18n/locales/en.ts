@@ -264,6 +264,9 @@ export const en: Record<string, string> = {
   'home.empty.title': 'No results',
   'home.empty.desc': 'Try another search or explore other categories to find inspiration.',
   'home.fab.aria': 'Create a pin',
+  'home.stories.title': 'Stories',
+  'home.stories.prev': 'Scroll stories left',
+  'home.stories.next': 'Scroll stories right',
 
   'explore.title': 'Explore',
   'explore.subtitle': 'Discover trending content and explore by category',

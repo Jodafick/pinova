@@ -276,6 +276,9 @@ export const fr: Record<string, string> = {
   'home.empty.title': 'Aucun résultat',
   'home.empty.desc': 'Essayez une autre recherche ou explorez d\'autres catégories pour trouver de l\'inspiration.',
   'home.fab.aria': 'Créer un pin',
+  'home.stories.title': 'Stories',
+  'home.stories.prev': 'Faire défiler les stories vers la gauche',
+  'home.stories.next': 'Faire défiler les stories vers la droite',
 
   // Explore
   'explore.title': 'Explorer',
