@@ -79,7 +79,7 @@ export const en: Record<string, string> = {
   'create.schedule.title': 'Scheduled publish (Pro)',
   'create.schedule.subtitle': 'Pick a date and time: your pin becomes visible automatically then (lightweight server batch).',
   'create.story.title': 'Publish as a 24h story',
-  'create.story.subtitle': 'Shown in the profile Stories strip until it expires; hidden from the main feed once expired for others.',
+  'create.story.subtitle': 'Also adds a story with the same image, visible for 24h in your profile Stories strip; hidden from the main feed once expired for others.',
   'create.variants.title': 'Same-pin variants (optional)',
   'create.variants.subtitle': 'Add crops for Stories (9:16), square or landscape without duplicating comments or stats.',
   'create.variants.story': 'Story image',
@@ -111,6 +111,9 @@ export const en: Record<string, string> = {
   'pin.variant.story': 'Story',
   'pin.variant.square': 'Square',
   'pin.variant.landscape': 'Landscape',
+  'pin.doubleTapLikeHint': 'Double-click the image to like.',
+  'story.viewPin': 'View pin',
+  'story.doubleTapHint': 'Double-click or double tap to like',
 
   'translate.translateTo': 'Translate to {lang}',
   'translate.viewOriginal': 'View original ({lang})',

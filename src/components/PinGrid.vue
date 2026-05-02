@@ -3,10 +3,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Pin } from '../types'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
+import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 
-const { formatCount, isPinSavePending } = usePins()
+const { formatCount, isPinSavePending, toggleLike } = usePins()
 const { isAuthenticated } = useAuth()
+const router = useRouter()
 const { t } = useI18n()
 
 const props = defineProps<{
@@ -21,6 +23,7 @@ const emit = defineEmits<{
 
 const columnCount = ref(2)
 const loadedImages = ref<Record<number, boolean>>({})
+const mediaTapTimers = new Map<number, ReturnType<typeof setTimeout>>()
 
 const updateColumnCount = () => {
   const width = window.innerWidth
@@ -29,15 +32,6 @@ const updateColumnCount = () => {
   else if (width >= 640) columnCount.value = 3
   else columnCount.value = 2
 }
-
-onMounted(() => {
-  updateColumnCount()
-  window.addEventListener('resize', updateColumnCount)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', updateColumnCount)
-})
 
 const columns = computed(() => {
   const cols = Array.from({ length: columnCount.value }, () => [] as Pin[])
@@ -56,6 +50,56 @@ const markImageLoaded = (pinId: number) => {
 
 const isImageLoaded = (pinId: number) => !!loadedImages.value[pinId]
 const isSavePending = (slug: string) => isPinSavePending(slug)
+
+function clearMediaTimer(pinId: number) {
+  const t = mediaTapTimers.get(pinId)
+  if (t) clearTimeout(t)
+  mediaTapTimers.delete(pinId)
+}
+
+async function doubleTapLike(pin: Pin) {
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  await toggleLike(pin.slug)
+}
+
+function onPinMediaTap(pin: Pin) {
+  const existing = mediaTapTimers.get(pin.id)
+  if (existing) {
+    clearMediaTimer(pin.id)
+    void doubleTapLike(pin)
+    return
+  }
+  const t = setTimeout(() => {
+    mediaTapTimers.delete(pin.id)
+    emit('open-pin', pin.slug)
+  }, 320)
+  mediaTapTimers.set(pin.id, t)
+}
+
+function onPinMediaDblClick(pin: Pin) {
+  clearMediaTimer(pin.id)
+  void doubleTapLike(pin)
+}
+
+function onArticleClick(pin: Pin, e: MouseEvent) {
+  const el = e.target as HTMLElement | null
+  if (el?.closest('[data-pin-media]')) return
+  emit('open-pin', pin.slug)
+}
+
+onMounted(() => {
+  updateColumnCount()
+  window.addEventListener('resize', updateColumnCount)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateColumnCount)
+  mediaTapTimers.forEach((tid) => clearTimeout(tid))
+  mediaTapTimers.clear()
+})
 </script>
 
 <template>
@@ -69,10 +113,15 @@ const isSavePending = (slug: string) => isPinSavePending(slug)
         v-for="pin in column"
         :key="pin.id"
         class="group relative rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all cursor-pointer"
-        @click="emit('open-pin', pin.slug)"
+        @click="onArticleClick(pin, $event)"
       >
         <!-- Image container -->
-        <div class="relative overflow-hidden rounded-2xl bg-neutral-100 aspect-[3/4]">
+        <div
+          data-pin-media
+          class="relative overflow-hidden rounded-2xl bg-neutral-100 aspect-[3/4]"
+          @click.stop="onPinMediaTap(pin)"
+          @dblclick.stop.prevent="onPinMediaDblClick(pin)"
+        >
           <div
             v-if="!isImageLoaded(pin.id)"
             class="absolute inset-0 animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200"
@@ -80,10 +129,13 @@ const isSavePending = (slug: string) => isPinSavePending(slug)
           <img
             :src="pin.imageUrl"
             :alt="pin.title"
-            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
+            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-500 select-none"
+            draggable="false"
             :class="isImageLoaded(pin.id) ? 'opacity-100' : 'opacity-0'"
             loading="lazy"
             @load="markImageLoaded(pin.id)"
+            @contextmenu.prevent
+            @dragstart.prevent
           />
 
           <div

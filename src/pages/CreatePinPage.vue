@@ -114,7 +114,7 @@ onMounted(async () => {
 
 watch(currentUser, async () => {
   await loadBoards()
-})
+}, { immediate: true })
 
 watch(categorySearch, (value) => {
   if (categorySearchTimer) clearTimeout(categorySearchTimer)

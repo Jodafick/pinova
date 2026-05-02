@@ -6,6 +6,7 @@ import { usePins, mapDjangoPinToFrontend } from '../composables/usePins'
 import type { User, Pin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
 import PinSkeleton from '../components/PinSkeleton.vue'
+import StoryViewer from '../components/StoryViewer.vue'
 import { useI18n } from '../i18n'
 import api from '../api'
 
@@ -273,6 +274,14 @@ type BoardSuggestions = {
 
 const boardSuggestions = ref<BoardSuggestions | null>(null)
 const activeStories = ref<Pin[]>([])
+const storyViewerOpen = ref(false)
+const storyViewerInitialIndex = ref(0)
+
+function openStoryViewer(index: number) {
+  storyViewerInitialIndex.value = index
+  storyViewerOpen.value = true
+}
+
 const organizeBoardId = ref<number | null>(null)
 const organizePins = ref<
   Array<{ id: number; slug: string; title: string; image: string; position: number; scheduled_publish_at?: string | null }>
@@ -455,21 +464,28 @@ function goToBoard(boardId: number) {
     <section v-if="activeStories.length > 0" class="mb-10">
       <p class="text-xs font-semibold text-neutral-600 mb-3">{{ t('profile.stories.title') }}</p>
       <div class="flex gap-3 overflow-x-auto pb-2">
-        <router-link
-          v-for="sp in activeStories"
+        <button
+          v-for="(sp, si) in activeStories"
           :key="sp.slug"
-          :to="`/pin/${sp.slug}`"
-          class="shrink-0 flex flex-col items-center gap-1.5 w-[76px]"
+          type="button"
+          class="shrink-0 flex flex-col items-center gap-1.5 w-[76px] text-left"
+          @click="openStoryViewer(si)"
         >
           <div
             class="w-[72px] h-[72px] rounded-full p-[3px] bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500"
           >
             <div class="w-full h-full rounded-full overflow-hidden bg-white p-[2px]">
-              <img :src="sp.imageUrl" :alt="sp.title" class="w-full h-full rounded-full object-cover bg-neutral-100" />
+              <img
+                :src="sp.imageUrl"
+                :alt="sp.title"
+                class="w-full h-full rounded-full object-cover bg-neutral-100 pointer-events-none select-none"
+                draggable="false"
+                @contextmenu.prevent
+              />
             </div>
           </div>
           <span class="text-[10px] text-neutral-600 text-center line-clamp-2 w-full">{{ sp.title }}</span>
-        </router-link>
+        </button>
       </div>
     </section>
 
@@ -783,6 +799,13 @@ function goToBoard(boardId: number) {
       @toggle-save="handleToggleSave"
       @open-pin="openPin"
       @more="openPin"
+    />
+
+    <StoryViewer
+      v-if="activeStories.length > 0"
+      v-model="storyViewerOpen"
+      :pins="activeStories"
+      :initial-index="storyViewerInitialIndex"
     />
   </div>
 </template>

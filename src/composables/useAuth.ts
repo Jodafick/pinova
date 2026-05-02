@@ -326,7 +326,14 @@ export function useAuth() {
 
   async function fetchMyBoards() {
     const response = await api.get('boards/')
-    return response.data?.results || response.data || []
+    const raw = response.data?.results ?? response.data
+    const list = Array.isArray(raw) ? raw : []
+    return list.map((b: Record<string, unknown>) => ({
+      id: Number(b.id),
+      name: String(b.name ?? ''),
+      is_private: !!(b.is_private ?? b.isPrivate),
+      pin_count: Number(b.pin_count ?? b.pinCount ?? 0),
+    }))
   }
 
   async function fetchBoardCollaborators(boardId: number) {

@@ -571,8 +571,13 @@ const openRelatedPin = (slug: string) => {
             <img
               :src="displayImageUrl"
               :alt="pin.title"
-              class="w-full h-80 sm:h-96 lg:h-full object-cover"
+              class="w-full h-80 sm:h-96 lg:h-full object-cover select-none"
+              draggable="false"
+              @dblclick.prevent="handleLike"
+              @contextmenu.prevent
+              @dragstart.prevent
             />
+            <p class="text-[11px] text-neutral-400 px-3 py-2">{{ t('pin.doubleTapLikeHint') }}</p>
           </div>
 
           <!-- Details -->

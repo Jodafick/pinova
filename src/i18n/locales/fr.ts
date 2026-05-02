@@ -84,7 +84,7 @@ export const fr: Record<string, string> = {
   'create.schedule.title': 'Publication planifiée (Pro)',
   'create.schedule.subtitle': 'Choisissez une date et une heure : le pin sera visible automatiquement à ce moment-là (traitement léger côté serveur).',
   'create.story.title': 'Publier comme story (24 h)',
-  'create.story.subtitle': 'Visible dans la rangée Stories du profil jusqu\'à expiration ; masquée du fil général une fois expirée pour les autres.',
+  'create.story.subtitle': 'Crée aussi une story avec la même image, visible 24 h dans la rangée Stories du profil ; masquée du fil général une fois expirée pour les autres.',
   'create.variants.title': 'Variantes du même pin (optionnel)',
   'create.variants.subtitle': 'Ajoutez des recadrages pour Stories (9:16), carré ou paysage sans dupliquer commentaires ni stats.',
   'create.variants.story': 'Image story',
@@ -117,6 +117,9 @@ export const fr: Record<string, string> = {
   'pin.variant.story': 'Story',
   'pin.variant.square': 'Carré',
   'pin.variant.landscape': 'Paysage',
+  'pin.doubleTapLikeHint': 'Double-cliquez sur l\'image pour aimer.',
+  'story.viewPin': 'Voir le pin',
+  'story.doubleTapHint': 'Double-cliquez ou double tapez pour aimer',
 
   // Translate button
   'translate.translateTo': 'Traduire en {lang}',
