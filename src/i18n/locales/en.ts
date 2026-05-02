@@ -391,6 +391,7 @@ export const en: Record<string, string> = {
   'creator.weeklyEmpty': 'Not enough views in this period yet. Share a pin to kick off your stats.',
   'creator.digestHint': 'Turn the weekly “most viewed pins” email on or off under Settings → Accessibility & data.',
   'creator.errorLoad': 'Unable to load creator statistics.',
+  'creator.retry': 'Try again',
   'creator.profileStatsTitle': 'Advanced statistics',
   'creator.openDashboard': 'Creator dashboard',
 

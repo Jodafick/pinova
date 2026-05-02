@@ -396,6 +396,7 @@ export const fr: Record<string, string> = {
   'creator.weeklyEmpty': 'Pas encore assez de vues cette période. Partagez un pin pour lancer vos stats.',
   'creator.digestHint': 'Activez ou désactivez le récap hebdomadaire par e-mail (« vos pins les plus vus ») dans Paramètres → Accessibilité & données.',
   'creator.errorLoad': 'Impossible de charger vos statistiques créateur.',
+  'creator.retry': 'Réessayer',
   'creator.profileStatsTitle': 'Statistiques avancées',
   'creator.openDashboard': 'Tableau de bord créateur',
 
