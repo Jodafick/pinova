@@ -14,6 +14,7 @@ const selectedPlan = ref<string | null>('plus')
 const checkoutPendingPlan = ref<string | null>(null)
 const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
+const pricingLoading = ref(true)
 const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
 type PricingCycle = {
   amount_minor: number
@@ -22,8 +23,6 @@ type PricingCycle = {
   duration_days: number
 }
 const pricingCatalog = ref<Record<string, Record<string, PricingCycle>>>({})
-
-const defaultCurrency = ref('EUR')
 
 const formatCurrency = (amount: number, currencyIso: string) => {
   try {
@@ -39,6 +38,9 @@ const formatCurrency = (amount: number, currencyIso: string) => {
 
 const monthlyDisplayFromYearly = (yearlyAmount: number, currencyIso: string) =>
   formatCurrency(yearlyAmount / 12, currencyIso)
+
+const readCycle = (planId: string, cycle: 'monthly' | 'yearly') =>
+  pricingCatalog.value[planId]?.[cycle]
 
 const openCheckoutPopup = () => {
   if (typeof window === 'undefined') return null
@@ -58,9 +60,10 @@ const plans = computed(() => [
     id: 'free',
     name: t('premium.plan.free.name'),
     tagline: t('premium.plan.free.tagline'),
-    monthly: 0,
-    yearly: 0,
-    currencyIso: defaultCurrency.value,
+    monthly: readCycle('free', 'monthly')?.amount_display ?? null,
+    yearly: readCycle('free', 'yearly')?.amount_display ?? null,
+    currencyIso: readCycle('free', 'monthly')?.currency_iso || readCycle('free', 'yearly')?.currency_iso || null,
+    isPriceReady: !!(readCycle('free', 'monthly') && readCycle('free', 'yearly')),
     badge: null,
     color: 'border-neutral-200',
     cta: t('premium.plan.free.cta'),
@@ -81,9 +84,10 @@ const plans = computed(() => [
     id: 'plus',
     name: t('premium.plan.plus.name'),
     tagline: t('premium.plan.plus.tagline'),
-    monthly: pricingCatalog.value.plus?.monthly?.amount_display ?? 4.99,
-    yearly: pricingCatalog.value.plus?.yearly?.amount_display ?? 49,
-    currencyIso: pricingCatalog.value.plus?.monthly?.currency_iso || defaultCurrency.value,
+    monthly: readCycle('plus', 'monthly')?.amount_display ?? null,
+    yearly: readCycle('plus', 'yearly')?.amount_display ?? null,
+    currencyIso: readCycle('plus', 'monthly')?.currency_iso || readCycle('plus', 'yearly')?.currency_iso || null,
+    isPriceReady: !!(readCycle('plus', 'monthly') && readCycle('plus', 'yearly')),
     badge: t('premium.plan.plus.badge'),
     color: 'border-pink-500 ring-4 ring-pink-100',
     cta: t('premium.plan.plus.cta'),
@@ -104,9 +108,10 @@ const plans = computed(() => [
     id: 'pro',
     name: t('premium.plan.pro.name'),
     tagline: t('premium.plan.pro.tagline'),
-    monthly: pricingCatalog.value.pro?.monthly?.amount_display ?? 12.99,
-    yearly: pricingCatalog.value.pro?.yearly?.amount_display ?? 129,
-    currencyIso: pricingCatalog.value.pro?.monthly?.currency_iso || defaultCurrency.value,
+    monthly: readCycle('pro', 'monthly')?.amount_display ?? null,
+    yearly: readCycle('pro', 'yearly')?.amount_display ?? null,
+    currencyIso: readCycle('pro', 'monthly')?.currency_iso || readCycle('pro', 'yearly')?.currency_iso || null,
+    isPriceReady: !!(readCycle('pro', 'monthly') && readCycle('pro', 'yearly')),
     badge: t('premium.plan.pro.badge'),
     color: 'border-amber-400',
     cta: t('premium.plan.pro.cta'),
@@ -198,9 +203,13 @@ onMounted(() => {
   api.get('subscription/pricing/')
     .then((response) => {
       pricingCatalog.value = response.data?.plans || {}
-      defaultCurrency.value = response.data?.currency?.selected || defaultCurrency.value
     })
-    .catch(() => undefined)
+    .catch(() => {
+      paymentInfoMessage.value = t('premium.payment.checkoutError')
+    })
+    .finally(() => {
+      pricingLoading.value = false
+    })
   if (currentUser.value?.subscription?.plan) {
     selectedPlan.value = currentUser.value.subscription.plan
   }
@@ -263,14 +272,19 @@ onMounted(() => {
         <p class="text-sm text-neutral-500 mt-1 mb-5">{{ plan.tagline }}</p>
 
         <div class="flex items-baseline gap-1 mb-1">
-          <span class="text-4xl font-bold text-neutral-900">
-            {{ billingCycle === 'monthly' ? formatCurrency(plan.monthly, plan.currencyIso) : monthlyDisplayFromYearly(plan.yearly, plan.currencyIso) }}
-          </span>
-          <span class="text-sm text-neutral-500">{{ t('premium.priceUnit') }}</span>
+          <template v-if="pricingLoading || !plan.isPriceReady">
+            <span class="inline-block h-10 w-32 rounded bg-neutral-200 animate-pulse"></span>
+          </template>
+          <template v-else>
+            <span class="text-4xl font-bold text-neutral-900">
+              {{ billingCycle === 'monthly' ? formatCurrency(Number(plan.monthly), String(plan.currencyIso)) : monthlyDisplayFromYearly(Number(plan.yearly), String(plan.currencyIso)) }}
+            </span>
+            <span class="text-sm text-neutral-500">{{ t('premium.priceUnit') }}</span>
+          </template>
         </div>
         <p class="text-xs text-neutral-400 mb-5 h-4">
-          <template v-if="plan.yearly > 0 && billingCycle === 'yearly'">
-            {{ t('premium.yearlyBilled', { amount: formatCurrency(plan.yearly, plan.currencyIso) }) }}
+          <template v-if="!pricingLoading && plan.isPriceReady && Number(plan.yearly) > 0 && billingCycle === 'yearly'">
+            {{ t('premium.yearlyBilled', { amount: formatCurrency(Number(plan.yearly), String(plan.currencyIso)) }) }}
           </template>
         </p>
 
@@ -281,7 +295,7 @@ onMounted(() => {
             : plan.id === 'pro'
               ? 'bg-neutral-900 text-white hover:bg-neutral-800'
               : 'bg-neutral-100 text-neutral-500 cursor-not-allowed'"
-          :disabled="plan.ctaDisabled || checkoutPendingPlan === plan.id"
+          :disabled="pricingLoading || !plan.isPriceReady || plan.ctaDisabled || checkoutPendingPlan === plan.id"
           @click="handleCheckout(plan.id)"
         >
           <span v-if="checkoutPendingPlan === plan.id" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
