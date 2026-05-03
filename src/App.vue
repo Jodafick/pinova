@@ -97,6 +97,7 @@ const isAuthPage = computed(() => {
           <router-link v-if="isAuthenticated" to="/settings" class="hover:text-neutral-700 transition">{{ t('nav.settings') }}</router-link>
           <router-link to="/legal/privacy" class="hover:text-neutral-700 transition">{{ t('app.footer.privacy') }}</router-link>
           <router-link to="/legal/terms" class="hover:text-neutral-700 transition">{{ t('app.footer.terms') }}</router-link>
+          <router-link to="/contact" class="hover:text-neutral-700 transition">{{ t('app.footer.contact') }}</router-link>
         </nav>
 
         <p class="text-xs text-neutral-400 text-center sm:text-right">

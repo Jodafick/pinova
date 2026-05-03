@@ -92,6 +92,12 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
+      path: '/contact',
+      name: 'contact',
+      component: () => import('../pages/ContactPage.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/creator',
       name: 'creator',
       component: () => import('../pages/CreatorDashboardPage.vue'),

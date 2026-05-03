@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from '../i18n'
 import api from '../api'
+import { CONTACT_EMAIL as FALLBACK_EMAIL } from '../env'
 
 const route = useRoute()
 const { t, currentLang } = useI18n()
@@ -13,6 +14,13 @@ const error = ref('')
 const title = ref('')
 const body = ref('')
 const updatedAt = ref<string | null>(null)
+const contactEmail = ref('')
+
+const mailtoLegalContact = computed(() => {
+  if (slug.value !== 'contact') return ''
+  const email = contactEmail.value.trim() || FALLBACK_EMAIL
+  return `mailto:${email}?subject=${encodeURIComponent('Pinova')}`
+})
 
 /** Paragraphes : découpage sur lignes vides pour un rendu plus aéré que `pre-wrap`. */
 const bodyParagraphs = computed(() => {
@@ -57,6 +65,15 @@ const docVisual = computed(() => {
       iconBg: 'bg-emerald-500/15 text-emerald-700',
     }
   }
+  if (slug.value === 'contact') {
+    return {
+      badge: t('app.footer.contact'),
+      icon: 'mail',
+      articleClass: 'from-pink-50 via-white to-neutral-50/90',
+      badgeClass: 'bg-pink-100 text-pink-900 border-pink-200/80',
+      iconBg: 'bg-pink-500/15 text-pink-700',
+    }
+  }
   return {
     badge: t('legal.badgeTerms'),
     icon: 'contract',
@@ -68,7 +85,7 @@ const docVisual = computed(() => {
 
 async function load() {
   const s = slug.value
-  if (s !== 'privacy' && s !== 'terms') {
+  if (s !== 'privacy' && s !== 'terms' && s !== 'contact') {
     error.value = 'invalid'
     loading.value = false
     return
@@ -80,6 +97,8 @@ async function load() {
     title.value = res.data?.title || ''
     body.value = res.data?.body || ''
     updatedAt.value = res.data?.updated_at || null
+    contactEmail.value =
+      typeof res.data?.contact_email === 'string' ? res.data.contact_email : ''
   } catch {
     error.value = 'load'
   } finally {
@@ -223,6 +242,22 @@ watch([slug, currentLang], load, { immediate: true })
               {{ para }}
             </p>
           </template>
+        </div>
+
+        <div
+          v-if="slug === 'contact'"
+          class="mt-10 pt-8 border-t border-neutral-200/70"
+        >
+          <a
+            :href="mailtoLegalContact"
+            class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-pink-600 text-white text-sm font-semibold shadow-md hover:bg-pink-700 transition"
+          >
+            <span class="material-symbols-outlined text-xl">outgoing_mail</span>
+            {{ t('contact.emailCta') }}
+          </a>
+          <p class="mt-3 text-sm text-pink-900/80 font-medium break-all">
+            {{ contactEmail.trim() || FALLBACK_EMAIL }}
+          </p>
         </div>
       </div>
     </article>

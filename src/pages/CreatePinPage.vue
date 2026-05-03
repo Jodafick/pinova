@@ -146,14 +146,14 @@ function goStep1() {
 const isStory = ref(false)
 
 watch(isStory, (on) => {
-  if (!on && storyVideoFile.value) clearStoryVideo()
+  if (on) clearStoryVideo()
 })
 
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
 const fileAcceptAttr = computed(() =>
   isStory.value
-    ? 'image/*,image/gif,video/mp4,video/webm,video/quicktime'
-    : 'image/*,image/gif',
+    ? 'image/*,image/gif'
+    : 'image/*,image/gif,video/mp4,video/webm,video/quicktime',
 )
 const canUsePrivateTags = computed(() => currentPlan.value !== 'free')
 const resolvedTopics = computed<TopicOption[]>(() => {
@@ -228,7 +228,8 @@ onMounted(async () => {
       visibility.value = (p.visibility as typeof visibility.value) || 'public'
       isStory.value = !!p.isStory
       existingImageUrl.value = p.imageUrl || null
-      existingStoryVideoUrl.value = !p.imageUrl && p.storyVideoUrl ? p.storyVideoUrl : null
+      existingStoryVideoUrl.value =
+        !p.isStory && !p.imageUrl && p.storyVideoUrl ? p.storyVideoUrl : null
       pendingSensitiveBlur.value = !!p.mediaSensitiveBlur
       publicTagsInput.value = (p.hashtags || []).map((h) => String(h).replace(/^#/, '').trim()).filter(Boolean).join(', ')
       selectedBoardIds.value = (p.boards || []).filter((b) => {
@@ -362,7 +363,13 @@ async function ensureBirthDateBeforeMedia(): Promise<boolean> {
 async function setMediaFile(file: File) {
   if (!(await ensureBirthDateBeforeMedia())) return
   if (file.type.startsWith('video/')) {
-    isStory.value = true
+    if (isStory.value) {
+      void showAlert(t('create.upload.videoNotForStory'), { variant: 'warning' })
+      return
+    }
+    if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
+    imageFile.value = null
+    imagePreviewUrl.value = null
     if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
     storyVideoFile.value = file
     storyVideoPreviewUrl.value = URL.createObjectURL(file)
@@ -370,6 +377,9 @@ async function setMediaFile(file: File) {
     return
   }
   if (file.type.startsWith('image/')) {
+    if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
+    storyVideoFile.value = null
+    storyVideoPreviewUrl.value = null
     if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
     imageFile.value = file
     imagePreviewUrl.value = URL.createObjectURL(file)
@@ -455,7 +465,7 @@ const submitPin = async () => {
     const resolvedTopic = topic.value || categorySearch.value.trim() || 'Général'
     formData.append('topic', resolvedTopic)
     formData.append('visibility', visibility.value)
-    formData.append('is_story', (isStory.value || !!storyVideoFile.value || !!existingStoryVideoUrl.value) ? 'true' : 'false')
+    formData.append('is_story', isStory.value ? 'true' : 'false')
     if (canSchedulePublish.value && scheduledPublishLocal.value) {
       const d = new Date(scheduledPublishLocal.value)
       if (!Number.isNaN(d.getTime())) {
@@ -631,10 +641,10 @@ const selectCategory = (selected: TopicOption) => {
               <p class="text-xs text-neutral-400 mt-2">
                 {{ t('create.upload.specs') }}
               </p>
-              <p v-if="isStory" class="text-[11px] text-neutral-500 mt-2">
+              <p v-if="!isStory" class="text-[11px] text-neutral-500 mt-2">
                 {{ t('create.upload.videoHint') }}
               </p>
-              <div v-if="isStory" class="flex items-center justify-center gap-2 mt-2 flex-wrap">
+              <div v-if="!isStory" class="flex items-center justify-center gap-2 mt-2 flex-wrap">
                 <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-violet-100 text-violet-800 rounded font-bold">MP4</span>
                 <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-violet-100 text-violet-800 rounded font-bold">WEBM</span>
                 <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-violet-100 text-violet-800 rounded font-bold">MOV</span>

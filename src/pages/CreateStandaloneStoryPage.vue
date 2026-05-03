@@ -9,7 +9,6 @@ import {
   hasRequiredBirthDateForMediaPublish,
   isVerifiedAdultFromBirthDate,
   moderationScanImageFile,
-  moderationScanVideoFile,
   moderationScanText,
 } from '../composables/useModeration'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
@@ -21,9 +20,7 @@ const { isAuthenticated, currentUser, fetchCurrentUser } = useAuth()
 
 const description = ref('')
 const imageFile = ref<File | null>(null)
-const videoFile = ref<File | null>(null)
 const imagePreviewUrl = ref<string | null>(null)
-const videoPreviewUrl = ref<string | null>(null)
 const saving = ref(false)
 const blurSensitive = ref(false)
 const mediaModerationPending = ref(false)
@@ -49,15 +46,6 @@ function revoke(name: string | null) {
   if (name) URL.revokeObjectURL(name)
 }
 
-function clearVideoSelection() {
-  mediaScanGeneration++
-  mediaModerationPending.value = false
-  revoke(videoPreviewUrl.value)
-  videoPreviewUrl.value = null
-  videoFile.value = null
-  pendingSensitiveBlur.value = false
-}
-
 function clearImageSelection() {
   mediaScanGeneration++
   mediaModerationPending.value = false
@@ -65,35 +53,6 @@ function clearImageSelection() {
   imagePreviewUrl.value = null
   imageFile.value = null
   pendingSensitiveBlur.value = false
-}
-
-async function runVideoModeration(file: File) {
-  if (!file.type.startsWith('video/')) return
-  const gen = ++mediaScanGeneration
-  mediaModerationPending.value = true
-  try {
-    const r = await moderationScanVideoFile(file, 5, moderationBirthOpts.value)
-    if (gen !== mediaScanGeneration) return
-    if (r.level === 'block') {
-      pendingSensitiveBlur.value = false
-      clearVideoSelection()
-      await showAlert(t('moderation.imageSensitiveBlocked'), {
-        variant: 'danger',
-        title: t('modal.errorTitle'),
-      })
-      return
-    }
-    if (r.level === 'blur') {
-      pendingSensitiveBlur.value = true
-      await showAlert(t('moderation.blurTierPublish'), { variant: 'info' })
-      return
-    }
-    pendingSensitiveBlur.value = false
-  } catch (err) {
-    console.warn('Scan NSFW vidéo story', err)
-  } finally {
-    if (gen === mediaScanGeneration) mediaModerationPending.value = false
-  }
 }
 
 async function runImageModeration(file: File) {
@@ -126,7 +85,6 @@ async function runImageModeration(file: File) {
 }
 
 async function pickImage(ev: Event) {
-  clearVideoSelection()
   const input = ev.target as HTMLInputElement
   const f = input.files?.[0] ?? null
   input.value = ''
@@ -146,29 +104,6 @@ async function pickImage(ev: Event) {
   void runImageModeration(f)
 }
 
-async function pickVideo(ev: Event) {
-  clearImageSelection()
-  const input = ev.target as HTMLInputElement
-  const f = input.files?.[0] ?? null
-  input.value = ''
-  const okType = f?.type ? /^video\/(mp4|webm|quicktime)$/i.test(f.type) : false
-  const okName = /\.(mp4|webm|mov)$/i.test((f?.name || '').trim())
-  if (!f || (!okType && !okName)) return
-  await fetchCurrentUser({ silent: true })
-  if (!hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
-    await showAlert(t('moderation.publishRequiresBirthDate'), {
-      variant: 'warning',
-      title: t('moderation.publishBirthDateTitle'),
-    })
-    return
-  }
-  revoke(videoPreviewUrl.value)
-  videoPreviewUrl.value = null
-  videoFile.value = f
-  videoPreviewUrl.value = URL.createObjectURL(f)
-  void runVideoModeration(f)
-}
-
 onMounted(async () => {
   if (!isAuthenticated.value) {
     router.push('/login')
@@ -183,7 +118,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   revoke(imagePreviewUrl.value)
-  revoke(videoPreviewUrl.value)
 })
 
 async function submit() {
@@ -194,8 +128,8 @@ async function submit() {
     })
     return
   }
-  if (!imageFile.value && !videoFile.value) {
-    await showAlert(t('story.standalone.needMedia'), { variant: 'warning' })
+  if (!imageFile.value) {
+    await showAlert(t('story.standalone.needImage'), { variant: 'warning' })
     return
   }
   if (mediaModerationPending.value) return
@@ -215,8 +149,7 @@ async function submit() {
     const fd = new FormData()
     if (description.value.trim()) fd.append('description', description.value.trim())
     if (blurPublish) fd.append('media_sensitive_blur', 'true')
-    if (videoFile.value) fd.append('story_video', videoFile.value)
-    else if (imageFile.value) fd.append('image', imageFile.value)
+    fd.append('image', imageFile.value)
 
     const res = await api.post('pins/standalone-story/', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -267,14 +200,6 @@ async function submit() {
               {{ t('story.standalone.pickImage') }}
               <input type="file" accept="image/*" class="hidden" :disabled="mediaModerationPending" @change="(e) => void pickImage(e)">
             </label>
-            <label
-              class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-100 transition disabled:opacity-40"
-              :class="{ 'pointer-events-none': mediaModerationPending }"
-            >
-              <span class="material-symbols-outlined text-lg">movie</span>
-              {{ t('story.standalone.pickVideo') }}
-              <input type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" class="hidden" :disabled="mediaModerationPending" @change="(e) => void pickVideo(e)">
-            </label>
           </div>
           <p class="text-xs text-neutral-500 mt-2">{{ t('story.standalone.mediaHint') }}</p>
         </div>
@@ -286,9 +211,6 @@ async function submit() {
 
         <div v-if="imagePreviewUrl" class="rounded-xl overflow-hidden border border-neutral-200 bg-black">
           <img :src="imagePreviewUrl" alt="" class="max-h-[360px] w-full object-contain">
-        </div>
-        <div v-else-if="videoPreviewUrl" class="rounded-xl overflow-hidden border border-neutral-200 bg-black">
-          <video :src="videoPreviewUrl" class="max-h-[360px] w-full" controls muted playsinline />
         </div>
 
         <div>

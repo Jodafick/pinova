@@ -24,6 +24,12 @@ export const fr: Record<string, string> = {
   'app.copyright': '© 2026 Pinova. Tous droits réservés.',
   'app.footer.privacy': 'Confidentialité',
   'app.footer.terms': 'Conditions',
+  'app.footer.contact': 'Contact',
+
+  'contact.title': 'Nous contacter',
+  'contact.lead': 'Une question, un problème ou une suggestion ? Écrivez-nous.',
+  'contact.emailCta': 'Envoyer un e-mail',
+  'contact.response': 'Nous répondons en général sous quelques jours ouvrés.',
 
   // Header
   'nav.home': 'Accueil',
@@ -84,7 +90,9 @@ export const fr: Record<string, string> = {
   'create.upload.specs': 'Recommandé 1000x1500px · max 20 Mo',
   'create.gif.label': 'GIF ANIMÉ',
   'create.upload.invalid': 'Merci de déposer un fichier image (JPG, PNG, WEBP, GIF).',
-  'create.upload.videoHint': 'Pour une story vous pouvez aussi envoyer une courte vidéo (MP4, WebM ou MOV).',
+  'create.upload.videoHint': 'Pour une épingle classique (sans mode story), tu peux ajouter une courte vidéo (MP4, WebM ou MOV).',
+  'create.upload.videoNotForStory':
+    'Le format story accepte seulement une image ou un GIF. Désactive « Publier comme story » pour joindre une vidéo.',
   'create.publish.error': 'Erreur lors de la publication du pin.',
   'create.field.title': 'Titre *',
   'create.field.title.placeholder': 'Ajoutez un titre accrocheur',
@@ -242,10 +250,9 @@ export const fr: Record<string, string> = {
   'story.description.less': 'Réduire',
   'story.standalone.title': 'Story éphémère (Plus / Pro)',
   'story.standalone.subtitle': 'Publication sans ajouter d’épingle à votre grille.',
-  'story.standalone.media': 'Photo ou vidéo',
+  'story.standalone.media': 'Photo',
   'story.standalone.pickImage': 'Choisir une image',
-  'story.standalone.pickVideo': 'Choisir une vidéo',
-  'story.standalone.mediaHint': 'Une seule vue : image OU vidéo (MP4, WebM ou MOV ; max 48 Mo).',
+  'story.standalone.mediaHint': 'Une seule image (JPG, PNG, WEBP, GIF), mêmes limites qu’une épingle classique.',
   'story.standalone.caption': 'Légende (optionnel)',
   'story.standalone.captionPlaceholder': 'Texte qui apparaît sur la story…',
   'story.standalone.sensitiveBlur':
@@ -253,7 +260,7 @@ export const fr: Record<string, string> = {
   'story.standalone.publish': 'Publier la story',
   'story.standalone.success': 'Story publiée.',
   'story.standalone.error': 'Publication impossible.',
-  'story.standalone.needMedia': 'Ajoute une image ou une courte vidéo.',
+  'story.standalone.needImage': 'Ajoute une image pour publier la story.',
   'story.standalone.needPlus': 'Abonnement Plus ou Pro requis pour les stories éphémères hors pin.',
   'story.standalone.navShort': 'Story',
   'story.likers.title': 'J’aime · {count}',
