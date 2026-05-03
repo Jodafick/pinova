@@ -539,9 +539,12 @@ export function usePins() {
   }
 
   function formatCount(count: number): string {
-    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M'
-    if (count >= 1000) return (count / 1000).toFixed(1) + 'k'
-    return count.toString()
+    const n = Number(count)
+    if (!Number.isFinite(n) || n <= 0) return '0'
+    if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B'
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'k'
+    return String(Math.floor(n))
   }
 
   async function trackPinView(pinSlug: string) {
