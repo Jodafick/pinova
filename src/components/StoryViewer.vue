@@ -47,6 +47,9 @@ const MAX_VIDEO_MS = 120_000
 const index = ref(0)
 const heartBurst = ref(false)
 const expandedDesc = ref(false)
+/** État like / reactions — props.story ≠ store `pins`; toggleLike ne met pas à jour le viewer. */
+const storyLikedBySlug = ref<Record<string, boolean>>({})
+const storyReactionsBySlug = ref<Record<string, number>>({})
 /** Recrée l’animation CSS de la barre du segment courant à chaque story. */
 const progressAnimKey = ref(0)
 /** Durée du segment courant (barre + auto-suivant). */
@@ -102,16 +105,35 @@ function restartCurrentSegment() {
   scheduleAdvance()
 }
 
+function syncStoryEngagementFromProps() {
+  const liked: Record<string, boolean> = {}
+  const reactions: Record<string, number> = {}
+  for (const p of props.pins) {
+    liked[p.slug] = !!p.liked
+    reactions[p.slug] = p.stats?.reactions ?? 0
+  }
+  storyLikedBySlug.value = liked
+  storyReactionsBySlug.value = reactions
+}
+
 watch(
   () => props.modelValue,
   (open) => {
     if (open && props.pins.length > 0) {
+      syncStoryEngagementFromProps()
       const maxIdx = props.pins.length - 1
       index.value = Math.min(Math.max(0, props.initialIndex ?? 0), maxIdx)
       restartCurrentSegment()
     } else {
       clearAdvance()
     }
+  },
+)
+
+watch(
+  () => props.modelValue && props.pins.length,
+  () => {
+    if (props.modelValue && props.pins.length > 0) syncStoryEngagementFromProps()
   },
 )
 
@@ -129,6 +151,20 @@ watch(index, () => {
 })
 
 const current = computed(() => props.pins[index.value])
+
+const currentStoryLiked = computed(() => {
+  const p = current.value
+  if (!p) return false
+  const v = storyLikedBySlug.value[p.slug]
+  return typeof v === 'boolean' ? v : !!p.liked
+})
+
+const currentStoryReactions = computed(() => {
+  const p = current.value
+  if (!p) return 0
+  const v = storyReactionsBySlug.value[p.slug]
+  return typeof v === 'number' ? v : (p.stats?.reactions ?? 0)
+})
 
 const rawDescription = computed(() => (current.value?.description || '').trim())
 
@@ -239,10 +275,44 @@ async function doLike() {
   window.setTimeout(() => {
     heartBurst.value = false
   }, 900)
+
+  const slug = pin.slug
+  const prevLikedStored = storyLikedBySlug.value[slug]
+  const prevLiked =
+    typeof prevLikedStored === 'boolean' ? prevLikedStored : !!pin.liked
+  const prevCount =
+    slug in storyReactionsBySlug.value
+      ? storyReactionsBySlug.value[slug]!
+      : (pin.stats?.reactions ?? 0)
+  const nextLiked = !prevLiked
+  storyLikedBySlug.value = { ...storyLikedBySlug.value, [slug]: nextLiked }
+  storyReactionsBySlug.value = {
+    ...storyReactionsBySlug.value,
+    [slug]: Math.max(0, prevCount + (nextLiked ? 1 : -1)),
+  }
+
   try {
-    await toggleLike(pin.slug)
+    const data = await toggleLike(slug) as {
+      status?: string
+      likes_count?: number
+    }
+    storyLikedBySlug.value = {
+      ...storyLikedBySlug.value,
+      [slug]: data.status === 'liked',
+    }
+    if (typeof data.likes_count === 'number') {
+      storyReactionsBySlug.value = {
+        ...storyReactionsBySlug.value,
+        [slug]: data.likes_count,
+      }
+    }
   } catch {
     heartBurst.value = false
+    storyLikedBySlug.value = { ...storyLikedBySlug.value, [slug]: prevLiked }
+    storyReactionsBySlug.value = {
+      ...storyReactionsBySlug.value,
+      [slug]: prevCount,
+    }
   }
 }
 
@@ -445,13 +515,13 @@ onUnmounted(() => {
               @click.stop="doLike"
             >
               <span
-                class="material-symbols-outlined text-[26px]"
-                :class="current?.liked ? 'fill-1 text-pink-400' : ''"
+                class="material-symbols-outlined text-[26px] transition-colors"
+                :class="currentStoryLiked ? 'story-ms-heart-on text-pink-400' : 'text-white'"
               >favorite</span>
               <span
                 v-if="showLikeCountForStory"
                 class="text-xs font-semibold tabular-nums min-w-[1.25rem]"
-              >{{ current?.stats.reactions ?? 0 }}</span>
+              >{{ currentStoryReactions }}</span>
             </button>
 
             <transition name="fade">
@@ -459,7 +529,7 @@ onUnmounted(() => {
                 v-if="heartBurst"
                 class="pointer-events-none absolute inset-0 flex items-center justify-center"
               >
-                <span class="material-symbols-outlined text-white text-[100px] drop-shadow-2xl animate-pulse fill-1">
+                <span class="material-symbols-outlined story-ms-heart-on text-pink-300 text-[100px] drop-shadow-2xl animate-pulse">
                   favorite
                 </span>
               </div>
@@ -491,6 +561,10 @@ onUnmounted(() => {
 .fade-leave-to {
   opacity: 0;
 }
+.story-ms-heart-on {
+  font-variation-settings: 'FILL' 1, 'wght' 600;
+}
+
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
 }
