@@ -2,7 +2,9 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import BillingInvoicesSkeleton from '../components/BillingInvoicesSkeleton.vue'
+import BillingReceiptPdfModal from '../components/BillingReceiptPdfModal.vue'
 import { useAuth } from '../composables/useAuth'
+import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
 import { useI18n } from '../i18n'
 
 const router = useRouter()
@@ -27,6 +29,7 @@ const billingInvoices = ref<InvoiceRow[]>([])
 const loading = ref(false)
 const receiptLoadingId = ref<number | null>(null)
 const receiptError = ref('')
+const { receiptPdfOpen, receiptPdfUrl, closeReceiptPdf, openReceiptPdf } = useBillingReceiptPdfModal()
 
 const formatInvoiceWhen = (iso: string) => {
   const d = new Date(iso)
@@ -50,7 +53,7 @@ const invoiceAmountLabel = (row: { amount_display: number; currency_iso: string 
   }
 }
 
-const openReceipt = async (inv: InvoiceRow) => {
+async function fetchAndShowReceipt(inv: InvoiceRow) {
   receiptError.value = ''
   receiptLoadingId.value = inv.id
   try {
@@ -62,15 +65,25 @@ const openReceipt = async (inv: InvoiceRow) => {
       if (prev) {
         billingInvoices.value[idx] = { ...prev, invoice_url: url }
       }
-      window.open(url, '_blank', 'noopener,noreferrer')
+      openReceiptPdf(url)
     } else {
-      receiptError.value = t('billing.fetchReceiptUnavailable')
+      receiptError.value = data?.detail
+        ? String(data.detail)
+        : t('billing.fetchReceiptUnavailable')
     }
   } catch {
     receiptError.value = t('billing.fetchReceiptError')
   } finally {
     receiptLoadingId.value = null
   }
+}
+
+function viewReceipt(inv: InvoiceRow) {
+  if (inv.invoice_url) {
+    openReceiptPdf(inv.invoice_url)
+    return
+  }
+  void fetchAndShowReceipt(inv)
 }
 
 onMounted(async () => {
@@ -128,24 +141,18 @@ onMounted(async () => {
             </div>
             <div class="flex flex-wrap gap-2 shrink-0">
               <template v-if="inv.status === 'approved'">
-                <a
-                  v-if="inv.invoice_url"
-                  :href="inv.invoice_url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-[11px] font-semibold text-pink-600 hover:underline"
-                >
-                  {{ t('settings.subscription.openReceipt') }}
-                </a>
                 <button
-                  v-else
                   type="button"
                   class="text-[11px] font-semibold text-pink-600 hover:underline disabled:opacity-50"
                   :disabled="receiptLoadingId === inv.id"
-                  @click="openReceipt(inv)"
+                  @click="viewReceipt(inv)"
                 >
                   {{
-                    receiptLoadingId === inv.id ? t('billing.fetchReceiptBusy') : t('billing.fetchReceipt')
+                    receiptLoadingId === inv.id
+                      ? t('billing.fetchReceiptBusy')
+                      : inv.invoice_url
+                        ? t('settings.subscription.openReceipt')
+                        : t('billing.fetchReceipt')
                   }}
                 </button>
               </template>
@@ -163,5 +170,11 @@ onMounted(async () => {
         </ul>
       </template>
     </div>
+
+    <BillingReceiptPdfModal
+      :open="receiptPdfOpen"
+      :url="receiptPdfUrl"
+      @close="closeReceiptPdf"
+    />
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
@@ -7,8 +7,25 @@ import api from '../api'
 import { displayInitials } from '../utils/displayInitials'
 import { useDataSaver } from '../composables/useDataSaver'
 import BillingInvoicesSkeleton from '../components/BillingInvoicesSkeleton.vue'
+import BillingReceiptPdfModal from '../components/BillingReceiptPdfModal.vue'
+import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
+import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
+
+const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
+  { id: 'settings-profile', icon: 'person', labelKey: 'settings.nav.profile' },
+  { id: 'settings-notifications', icon: 'notifications', labelKey: 'settings.nav.notifications' },
+  { id: 'settings-privacy', icon: 'lock', labelKey: 'settings.nav.privacy' },
+  { id: 'settings-access', icon: 'accessibility_new', labelKey: 'settings.nav.access' },
+  { id: 'settings-ads', icon: 'campaign', labelKey: 'settings.nav.ads' },
+  { id: 'settings-tips', icon: 'payments', labelKey: 'settings.nav.tips' },
+  { id: 'settings-seats', icon: 'group', labelKey: 'settings.nav.seats' },
+  { id: 'settings-subscription', icon: 'workspace_premium', labelKey: 'settings.nav.subscription' },
+  { id: 'settings-support', icon: 'support_agent', labelKey: 'settings.nav.support' },
+  { id: 'settings-password', icon: 'key', labelKey: 'settings.nav.password' },
+  { id: 'settings-danger', icon: 'warning', labelKey: 'settings.nav.danger' },
+]
 
 const router = useRouter()
 const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket, fetchSubscriptionInvoices, fetchSubscriptionInvoiceReceipt, fetchCurrentUser } =
@@ -85,6 +102,7 @@ const billingInvoices = ref<
 >([])
 const billingInvoicesLoading = ref(false)
 const billingReceiptLoadingId = ref<number | null>(null)
+const { receiptPdfOpen, receiptPdfUrl, closeReceiptPdf, openReceiptPdf } = useBillingReceiptPdfModal()
 const supportSubject = ref('')
 const supportMessage = ref('')
 const supportSubmitting = ref(false)
@@ -120,6 +138,7 @@ const seatHubLoading = ref(false)
 const seatHub = ref<SeatHubResp | null>(null)
 const seatBusy = ref(false)
 const seatInviteUsername = ref('')
+const seatInviteSearchOpen = ref(false)
 const seatInviteTokens = ref<Record<string, string>>({})
 
 const accountDeletionBusy = ref(false)
@@ -332,8 +351,8 @@ const loadSeatHub = async () => {
   }
 }
 
-const sendSeatInvite = async () => {
-  const uname = seatInviteUsername.value.trim().replace(/^@/, '')
+const sendSeatInvite = async (usernameOverride?: string) => {
+  const uname = (usernameOverride ?? seatInviteUsername.value).trim().replace(/^@/, '')
   if (uname.length < 2 || seatBusy.value) return
   seatBusy.value = true
   try {
@@ -351,6 +370,10 @@ const sendSeatInvite = async () => {
   } finally {
     seatBusy.value = false
   }
+}
+
+function onSeatInviteUserPick(username: string) {
+  void sendSeatInvite(username)
 }
 
 const revokeSeatInviteOutgoing = async (id: string) => {
@@ -717,7 +740,7 @@ const invoiceAmountLabel = (row: { amount_display: number; currency_iso: string 
   }
 }
 
-const openBillingReceipt = async (inv: { id: number; invoice_url?: string }) => {
+async function fetchBillingReceiptFromApi(inv: { id: number }) {
   billingReceiptLoadingId.value = inv.id
   try {
     const data = await fetchSubscriptionInvoiceReceipt(inv.id)
@@ -728,13 +751,25 @@ const openBillingReceipt = async (inv: { id: number; invoice_url?: string }) => 
       if (prev) {
         billingInvoices.value[ix] = { ...prev, invoice_url: url }
       }
-      window.open(url, '_blank', 'noopener,noreferrer')
+      openReceiptPdf(url)
+    } else {
+      await showAlert(data?.detail ? String(data.detail) : t('billing.fetchReceiptUnavailable'), {
+        variant: 'warning',
+      })
     }
   } catch {
-    /* silencieux : lien optionnel depuis les réglages */
+    await showAlert(t('billing.fetchReceiptError'), { variant: 'danger', title: t('modal.errorTitle') })
   } finally {
     billingReceiptLoadingId.value = null
   }
+}
+
+function viewBillingReceipt(inv: { id: number; invoice_url?: string }) {
+  if (inv.invoice_url) {
+    openReceiptPdf(inv.invoice_url)
+    return
+  }
+  void fetchBillingReceiptFromApi(inv)
 }
 
 const loadSupportTickets = async () => {
@@ -802,12 +837,95 @@ async function cancelAccountDeletion() {
     accountDeletionBusy.value = false
   }
 }
+
+const activeSectionId = ref('settings-profile')
+
+const settingsNavItems = computed(() =>
+  SETTINGS_NAV_ROWS.filter((row) => row.id !== 'settings-seats' || currentUser.value).map((row) => ({
+    id: row.id,
+    icon: row.icon,
+    label: t(row.labelKey),
+  })),
+)
+
+function scrollToSettingsSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+let settingsNavScrollRaf: number | null = null
+
+function refreshSettingsActiveSection() {
+  const ids = settingsNavItems.value.map((i) => i.id)
+  if (!ids.length) return
+  const line = 120
+  let current = ids[0]
+  if (!current) return
+  for (const sid of ids) {
+    const el = document.getElementById(sid)
+    if (!el) continue
+    if (el.getBoundingClientRect().top <= line) current = sid
+  }
+  if (current && activeSectionId.value !== current) activeSectionId.value = current
+}
+
+function scheduleRefreshSettingsActiveSection() {
+  if (typeof window === 'undefined') return
+  if (settingsNavScrollRaf !== null) return
+  settingsNavScrollRaf = window.requestAnimationFrame(() => {
+    settingsNavScrollRaf = null
+    refreshSettingsActiveSection()
+  })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', scheduleRefreshSettingsActiveSection, { passive: true })
+  window.addEventListener('resize', scheduleRefreshSettingsActiveSection, { passive: true })
+  scheduleRefreshSettingsActiveSection()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', scheduleRefreshSettingsActiveSection)
+  window.removeEventListener('resize', scheduleRefreshSettingsActiveSection)
+  if (settingsNavScrollRaf !== null) {
+    cancelAnimationFrame(settingsNavScrollRaf)
+    settingsNavScrollRaf = null
+  }
+})
+
+watch(
+  () => settingsNavItems.value.map((i) => i.id).join(','),
+  () => scheduleRefreshSettingsActiveSection(),
+)
 </script>
 
 <template>
   <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">{{ t('settings.title') }}</h1>
-    <p class="text-sm text-neutral-500 mb-8">{{ t('settings.subtitle') }}</p>
+    <p class="text-sm text-neutral-500 mb-5">{{ t('settings.subtitle') }}</p>
+
+    <nav
+      :aria-label="t('settings.navLabel')"
+      class="sticky top-14 z-20 mb-8 rounded-2xl border border-neutral-200/85 bg-white/95 backdrop-blur-md shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] ring-1 ring-black/[0.03]"
+    >
+      <div class="flex gap-1.5 overflow-x-auto px-3 py-2.5 no-scrollbar scroll-pl-1 scroll-pr-6 touch-pan-x">
+        <button
+          v-for="item in settingsNavItems"
+          :key="item.id"
+          type="button"
+          :aria-current="activeSectionId === item.id ? 'true' : undefined"
+          class="shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-[12px] font-semibold tracking-tight transition focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
+          :class="
+            activeSectionId === item.id
+              ? 'border-pink-500 bg-pink-600 text-white shadow-md shadow-pink-600/25'
+              : 'border-neutral-200 bg-neutral-50/90 text-neutral-700 hover:bg-white hover:border-pink-300'
+          "
+          @click="scrollToSettingsSection(item.id)"
+        >
+          <span class="material-symbols-outlined text-[18px] leading-none shrink-0" aria-hidden="true">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+        </button>
+      </div>
+    </nav>
 
     <div
       v-if="scheduledAccountDeletion"
@@ -838,9 +956,7 @@ async function cancelAccountDeletion() {
 
     <div class="space-y-8">
       <!-- Profile section -->
-      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.profile.title') }}</h2>
+      <section id="settings-profile" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.profile.subtitle') }}</p>
         </div>
 
@@ -963,9 +1079,7 @@ async function cancelAccountDeletion() {
       </section>
 
       <!-- Notifications preferences -->
-      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.notifications.title') }}</h2>
+      <section id="settings-notifications" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.notifications.subtitle') }}</p>
         </div>
         <div class="p-6 space-y-4">
@@ -1035,9 +1149,7 @@ async function cancelAccountDeletion() {
       </section>
 
       <!-- Privacy -->
-      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.privacy.title') }}</h2>
+      <section id="settings-privacy" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
         </div>
         <div class="p-6 space-y-4">
           <label class="flex items-center justify-between py-2 cursor-pointer">
@@ -1076,9 +1188,7 @@ async function cancelAccountDeletion() {
       </section>
 
       <!-- Accessibilité & données -->
-      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.access.title') }}</h2>
+      <section id="settings-access" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.access.subtitle') }}</p>
         </div>
         <div class="p-6 space-y-4">
@@ -1167,10 +1277,7 @@ async function cancelAccountDeletion() {
       </section>
 
       <!-- Ads preferences -->
-      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.ads.title') }}</h2>
+      <section id="settings-ads" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
             <p class="text-xs text-neutral-500 mt-0.5">{{ adSectionHint() }}</p>
           </div>
           <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
@@ -1218,10 +1325,7 @@ async function cancelAccountDeletion() {
         </div>
       </section>
 
-      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.tips.title') }}</h2>
+      <section id="settings-tips" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.tips.subtitle') }}</p>
           </div>
           <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
@@ -1266,7 +1370,8 @@ async function cancelAccountDeletion() {
 
       <section
         v-if="currentUser"
-        class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden"
+        id="settings-seats"
+        class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden"
       >
         <div class="px-6 py-5 border-b border-neutral-100">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.seats.title') }}</h2>
@@ -1335,24 +1440,36 @@ async function cancelAccountDeletion() {
                   })
                 }}
               </p>
-              <div class="flex flex-wrap gap-2 items-end">
-                <div class="min-w-[140px] flex-1">
-                  <label class="block text-[11px] font-medium text-neutral-600 mb-1">{{ t('settings.seats.inviteLabel') }}</label>
-                  <input
-                    v-model="seatInviteUsername"
-                    type="text"
-                    :placeholder="t('settings.seats.invitePlaceholder')"
-                    class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm"
-                  />
-                </div>
+              <div class="space-y-2">
                 <button
                   type="button"
-                  class="px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold disabled:opacity-50"
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-pink-200 bg-pink-50 text-pink-900 text-xs font-semibold hover:bg-pink-100 disabled:opacity-50 transition"
                   :disabled="seatBusy"
-                  @click="sendSeatInvite"
+                  @click="seatInviteSearchOpen = true"
                 >
-                  {{ t('settings.seats.sendInvite') }}
+                  <span class="material-symbols-outlined text-lg" aria-hidden="true">person_search</span>
+                  {{ t('settings.seats.inviteSearchMember') }}
                 </button>
+                <p class="text-[11px] text-neutral-500">{{ t('settings.seats.inviteOrManualHint') }}</p>
+                <div class="flex flex-wrap gap-2 items-end">
+                  <div class="min-w-[140px] flex-1">
+                    <label class="block text-[11px] font-medium text-neutral-600 mb-1">{{ t('settings.seats.inviteLabel') }}</label>
+                    <input
+                      v-model="seatInviteUsername"
+                      type="text"
+                      :placeholder="t('settings.seats.invitePlaceholder')"
+                      class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold disabled:opacity-50"
+                    :disabled="seatBusy"
+                    @click="sendSeatInvite()"
+                  >
+                    {{ t('settings.seats.sendInvite') }}
+                  </button>
+                </div>
               </div>
               <p v-if="seatHub.members?.length" class="text-xs font-semibold text-neutral-800 pt-2">{{ t('settings.seats.members') }}</p>
               <ul v-if="seatHub.members?.length" class="space-y-1">
@@ -1409,10 +1526,7 @@ async function cancelAccountDeletion() {
         </div>
       </section>
 
-      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 flex flex-wrap items-start justify-between gap-3">
-          <div class="min-w-0">
-            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.subscription.title') }}</h2>
+      <section id="settings-subscription" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
             <router-link to="/billing" class="inline-flex mt-2 text-xs font-semibold text-pink-600 hover:underline">
               {{ t('settings.subscription.viewBillingPage') }} →
@@ -1498,26 +1612,18 @@ async function cancelAccountDeletion() {
                 </div>
                 <div class="flex flex-wrap gap-2 shrink-0">
                   <template v-if="inv.status === 'approved'">
-                    <a
-                      v-if="inv.invoice_url"
-                      :href="inv.invoice_url"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="text-[11px] font-semibold text-pink-600 hover:underline"
-                    >
-                      {{ t('settings.subscription.openReceipt') }}
-                    </a>
                     <button
-                      v-else
                       type="button"
                       class="text-[11px] font-semibold text-pink-600 hover:underline disabled:opacity-50"
                       :disabled="billingReceiptLoadingId === inv.id"
-                      @click="openBillingReceipt(inv)"
+                      @click="viewBillingReceipt(inv)"
                     >
                       {{
                         billingReceiptLoadingId === inv.id
                           ? t('billing.fetchReceiptBusy')
-                          : t('billing.fetchReceipt')
+                          : inv.invoice_url
+                            ? t('settings.subscription.openReceipt')
+                            : t('billing.fetchReceipt')
                       }}
                     </button>
                   </template>
@@ -1537,9 +1643,7 @@ async function cancelAccountDeletion() {
         </div>
       </section>
 
-      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.support.title') }}</h2>
+      <section id="settings-support" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.support.subtitle') }}</p>
         </div>
         <div class="p-6 space-y-3">
@@ -1579,10 +1683,7 @@ async function cancelAccountDeletion() {
       </section>
 
       <!-- Password section -->
-      <section class="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.password.title') }}</h2>
+      <section id="settings-password" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.password.subtitle') }}</p>
           </div>
           <div v-if="passwordSaved" class="text-green-600 flex items-center gap-1 text-xs font-bold animate-fade-in">
@@ -1643,9 +1744,7 @@ async function cancelAccountDeletion() {
       </section>
 
       <!-- Danger zone -->
-      <section class="bg-white rounded-2xl border border-pink-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-pink-100">
-          <h2 class="text-lg font-semibold text-pink-600">{{ t('settings.danger.title') }}</h2>
+      <section id="settings-danger" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-pink-100 shadow-sm overflow-hidden">
         </div>
         <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-50">
           <div>
@@ -1682,4 +1781,15 @@ async function cancelAccountDeletion() {
       </section>
     </div>
   </div>
+
+  <BillingReceiptPdfModal :open="receiptPdfOpen" :url="receiptPdfUrl" @close="closeReceiptPdf" />
+
+  <UserSearchPickModal
+    v-if="seatHub?.role === 'owner'"
+    v-model="seatInviteSearchOpen"
+    :title="t('settings.seats.invitePickTitle')"
+    :message="t('settings.seats.invitePickMessage')"
+    :input-placeholder="t('settings.seats.invitePlaceholder')"
+    @pick="onSeatInviteUserPick"
+  />
 </template>

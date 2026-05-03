@@ -513,6 +513,12 @@ export const fr: Record<string, string> = {
   'billing.fetchReceiptBusy': 'Récupération…',
   'billing.fetchReceiptError': 'Impossible de récupérer le reçu. Réessayez plus tard.',
   'billing.fetchReceiptUnavailable': 'Aucun reçu disponible pour cette transaction sur FedaPay.',
+  'billing.receiptModal.title': 'Reçu de paiement',
+  'billing.receiptModal.download': 'Télécharger',
+  'billing.receiptModal.close': 'Fermer',
+  'billing.receiptModal.noUrl': 'Aucune adresse de document disponible.',
+  'billing.receiptModal.hintIframe':
+    'Si l’aperçu reste vide ou est bloqué, utilisez « Télécharger », un autre navigateur ou autorisez l’affichage tiers.',
 
   // Login
   'login.hero.title': 'Trouvez vos prochaines idées',
@@ -624,6 +630,18 @@ export const fr: Record<string, string> = {
 
   // Settings
   'settings.title': 'Paramètres',
+  'settings.navLabel': 'Aller à une section',
+  'settings.nav.profile': 'Profil',
+  'settings.nav.notifications': 'Notifications',
+  'settings.nav.privacy': 'Confidentialité',
+  'settings.nav.access': 'Affichage & données',
+  'settings.nav.ads': 'Publicités',
+  'settings.nav.tips': 'Pourboires',
+  'settings.nav.seats': 'Abonnement groupe',
+  'settings.nav.subscription': 'Abonnement',
+  'settings.nav.support': 'Support',
+  'settings.nav.password': 'Mot de passe',
+  'settings.nav.danger': 'Zone sensible',
   'settings.subtitle': 'Gérez votre profil et vos préférences',
   'settings.saved': 'Profil mis à jour avec succès !',
   'settings.profile.title': 'Profil public',
@@ -745,6 +763,10 @@ export const fr: Record<string, string> = {
   'settings.seats.ownerSummary': '{used} / {max} sièges · {bundle}',
   'settings.seats.inviteLabel': 'Nom d’utilisateur à inviter',
   'settings.seats.invitePlaceholder': 'pseudo',
+  'settings.seats.inviteSearchMember': 'Rechercher un membre',
+  'settings.seats.inviteOrManualHint': 'Ou entrez son pseudo ci-dessous.',
+  'settings.seats.invitePickTitle': 'Inviter sur l’abonnement groupe',
+  'settings.seats.invitePickMessage': 'Tapez quelques lettres du pseudo ou du nom pour voir les profils compatibles avec votre inscription.',
   'settings.seats.sendInvite': 'Inviter',
   'settings.seats.inviteCreatedTitle': 'Invitation créée',
   'settings.seats.inviteTokenExplain': 'Jeton confidentiel pour l’invité (à copier avant fermeture)',
