@@ -428,10 +428,19 @@ export function useAuth() {
   }
 
   async function fetchMyBoards() {
-    const response = await api.get('boards/')
-    const raw = response.data?.results ?? response.data
-    const list = Array.isArray(raw) ? raw : []
-    return list.map((b: Record<string, unknown>) => ({
+    const all: Record<string, unknown>[] = []
+    let page = 1
+    const page_size = 100
+    while (page <= 100) {
+      const response = await api.get('boards/', { params: { page, page_size } })
+      const data = response.data as { results?: unknown[]; next?: string | null }
+      const chunk = data?.results ?? (Array.isArray(data) ? (data as unknown[]) : [])
+      if (!Array.isArray(chunk) || chunk.length === 0) break
+      all.push(...(chunk as Record<string, unknown>[]))
+      if (!data?.next) break
+      page += 1
+    }
+    return all.map((b: Record<string, unknown>) => ({
       id: Number(b.id),
       name: String(b.name ?? ''),
       is_private: !!(b.is_private ?? b.isPrivate),

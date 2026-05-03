@@ -402,13 +402,18 @@ export function usePins() {
     return response.data
   }
 
-  async function fetchCreatorWeeklyStats(days = 7) {
-    const response = await api.get('pins/creator-weekly-stats/', { params: { days } })
+  async function fetchCreatorWeeklyStats(
+    days = 7,
+    params?: { page?: number; page_size?: number },
+  ) {
+    const response = await api.get('pins/creator-weekly-stats/', {
+      params: { days, ...params },
+    })
     return response.data
   }
 
-  async function fetchCreatorStats() {
-    const response = await api.get('pins/creator-stats/')
+  async function fetchCreatorStats(params?: { top_page?: number; top_page_size?: number }) {
+    const response = await api.get('pins/creator-stats/', { params })
     return response.data
   }
 

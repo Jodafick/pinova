@@ -521,6 +521,8 @@ export const en: Record<string, string> = {
   'creator.digestHint': 'Turn the weekly “most viewed pins” email on or off under Settings → Accessibility & data.',
   'creator.errorLoad': 'Unable to load creator statistics.',
   'creator.retry': 'Try again',
+  'creator.loadMoreTop': 'Load more — all-time ranking',
+  'creator.loadMoreWeekly': 'Load more — this period',
   'creator.profileStatsTitle': 'Advanced statistics',
   'creator.openDashboard': 'Creator dashboard',
 

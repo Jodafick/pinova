@@ -21,6 +21,14 @@ const weeklyPins = ref<
   { id: number; slug: string; title: string; views_week: number; thumbnail_url: string | null }[]
 >([])
 const weeklyMeta = ref<{ total_view_events_period: number; period_days: number } | null>(null)
+const topPinsHasMore = ref(false)
+const weeklyPinsHasMore = ref(false)
+const topPinsLoadingMore = ref(false)
+const weeklyPinsLoadingMore = ref(false)
+const topPinsPage = ref(1)
+const weeklyPinsPage = ref(1)
+const TOP_PAGE_SIZE = 10
+const WEEKLY_PAGE_SIZE = 10
 
 const isPro = computed(() => currentUser.value?.subscription?.plan === 'pro')
 
@@ -124,8 +132,15 @@ const load = async () => {
   }
   loading.value = true
   errorMsg.value = ''
+  topPinsHasMore.value = false
+  weeklyPinsHasMore.value = false
+  topPinsPage.value = 1
+  weeklyPinsPage.value = 1
   try {
-    const [all, weekly] = await Promise.all([fetchCreatorStats(), fetchCreatorWeeklyStats(7)])
+    const [all, weekly] = await Promise.all([
+      fetchCreatorStats({ top_page: 1, top_page_size: TOP_PAGE_SIZE }),
+      fetchCreatorWeeklyStats(7, { page: 1, page_size: WEEKLY_PAGE_SIZE }),
+    ])
     creatorTotals.value = all?.totals || null
     topAllTime.value = all?.top_pins || []
     weeklyPins.value = weekly?.top_pins || []
@@ -133,6 +148,8 @@ const load = async () => {
       total_view_events_period: weekly?.total_view_events_period ?? 0,
       period_days: weekly?.period_days ?? 7,
     }
+    topPinsHasMore.value = !!all?.top_pins_pagination?.has_next
+    weeklyPinsHasMore.value = !!weekly?.pagination?.has_next
   } catch {
     errorMsg.value = t('creator.errorLoad')
     creatorTotals.value = null
@@ -141,6 +158,48 @@ const load = async () => {
     weeklyMeta.value = null
   } finally {
     loading.value = false
+  }
+}
+
+const loadMoreTopPins = async () => {
+  if (!topPinsHasMore.value || topPinsLoadingMore.value) return
+  const nextPage = topPinsPage.value + 1
+  topPinsLoadingMore.value = true
+  try {
+    const all = await fetchCreatorStats({ top_page: nextPage, top_page_size: TOP_PAGE_SIZE })
+    const chunk = all?.top_pins || []
+    const seen = new Set(topAllTime.value.map((p) => p.id))
+    for (const p of chunk) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id)
+        topAllTime.value.push(p)
+      }
+    }
+    topPinsPage.value = nextPage
+    topPinsHasMore.value = !!all?.top_pins_pagination?.has_next
+  } finally {
+    topPinsLoadingMore.value = false
+  }
+}
+
+const loadMoreWeeklyPins = async () => {
+  if (!weeklyPinsHasMore.value || weeklyPinsLoadingMore.value) return
+  const nextPage = weeklyPinsPage.value + 1
+  weeklyPinsLoadingMore.value = true
+  try {
+    const weekly = await fetchCreatorWeeklyStats(7, { page: nextPage, page_size: WEEKLY_PAGE_SIZE })
+    const chunk = weekly?.top_pins || []
+    const seen = new Set(weeklyPins.value.map((p) => p.id))
+    for (const p of chunk) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id)
+        weeklyPins.value.push(p)
+      }
+    }
+    weeklyPinsPage.value = nextPage
+    weeklyPinsHasMore.value = !!weekly?.pagination?.has_next
+  } finally {
+    weeklyPinsLoadingMore.value = false
   }
 }
 
@@ -350,8 +409,19 @@ onMounted(async () => {
                 </div>
               </li>
             </ul>
+            <div v-if="weeklyPins.length && weeklyPinsHasMore" class="mt-4 flex justify-center">
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm hover:border-pink-200 hover:bg-pink-50/50 disabled:opacity-50"
+                :disabled="weeklyPinsLoadingMore"
+                @click="loadMoreWeeklyPins"
+              >
+                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">expand_more</span>
+                {{ t('creator.loadMoreWeekly') }}
+              </button>
+            </div>
             <div
-              v-else
+              v-else-if="!weeklyPins.length"
               class="flex flex-col items-center justify-center text-center px-6 py-16 sm:py-20 rounded-xl border border-dashed border-neutral-200 bg-neutral-50/65"
             >
               <span class="material-symbols-outlined text-[48px] text-neutral-300 mb-4" aria-hidden="true">bar_chart</span>
@@ -401,6 +471,17 @@ onMounted(async () => {
               </div>
             </li>
           </ul>
+          <div v-if="topPinsHasMore" class="px-5 py-4 sm:px-7 border-t border-neutral-100 flex justify-center bg-neutral-50/40">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm hover:border-pink-200 hover:bg-pink-50/50 disabled:opacity-50"
+              :disabled="topPinsLoadingMore"
+              @click="loadMoreTopPins"
+            >
+              <span class="material-symbols-outlined text-[18px]" aria-hidden="true">expand_more</span>
+              {{ t('creator.loadMoreTop') }}
+            </button>
+          </div>
         </section>
 
         <footer class="pt-5 border-t border-neutral-200/80">
