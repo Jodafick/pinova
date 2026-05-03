@@ -195,14 +195,28 @@ export function usePins() {
     await api.delete(`pins/${pinSlug}/comments/${commentId}/`)
   }
 
-  async function reportPin(pinSlug: string, reason = '') {
-    const response = await api.post(`pins/${pinSlug}/report/`, { reason })
+  async function reportPin(pinSlug: string, payload: { category: string; details: string }) {
+    const response = await api.post(`pins/${encodeURIComponent(pinSlug)}/report/`, payload)
     return response.data
   }
 
-  async function reportComment(commentId: number, reason = '') {
-    const response = await api.post(`pins/comments/${commentId}/report/`, { reason })
+  async function reportComment(commentId: number, payload: { category: string; details: string }) {
+    const response = await api.post(`pins/comments/${commentId}/report/`, payload)
     return response.data
+  }
+
+  async function reportProfile(username: string, payload: { category: string; details: string }) {
+    const response = await api.post(`profiles/${encodeURIComponent(username)}/report/`, payload)
+    return response.data
+  }
+
+  async function blockUser(username: string) {
+    const res = await api.post('blocks/', { username })
+    return res.data as { id: number; username: string; display_name: string; created_at: string }
+  }
+
+  async function unblockUser(blockId: number) {
+    await api.delete(`blocks/${blockId}/`)
   }
 
   async function fetchRecommendations(reset = false) {
@@ -555,6 +569,9 @@ export function usePins() {
     deletePinComment,
     reportPin,
     reportComment,
+    reportProfile,
+    blockUser,
+    unblockUser,
     fetchRecommendations,
     fetchHomeFeed,
     fetchDiscoverPins,

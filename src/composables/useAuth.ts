@@ -24,6 +24,7 @@ const defaultUser: User = {
   followers: 120,
   following: 85,
   savedPins: [],
+  blockedUsernames: [],
   subscription: {
     plan: 'free',
     renewalAt: null,
@@ -120,6 +121,9 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     boards: djangoUser.boards || [],
     birthDate: birthNormalized,
     pinsCount: typeof djangoUser.pins_count === 'number' ? djangoUser.pins_count : undefined,
+    blockedUsernames: Array.isArray(djangoUser.blocked_usernames)
+      ? djangoUser.blocked_usernames.map((x: unknown) => String(x))
+      : [],
   }
 }
 
@@ -127,6 +131,8 @@ export type FetchUserProfileResult = {
   user: User | null
   /** Statut HTTP en cas d’échec (404, 403, etc.) — absent si succès réseau. */
   httpStatus?: number
+  /** True si l’API a renvoyé `code: user_blocked` (profil masqué par blocage). */
+  blocked?: boolean
 }
 
 export function useAuth() {
@@ -197,10 +203,11 @@ export function useAuth() {
       const response = await api.get(`profiles/${username}/`, { params })
       return { user: mapDjangoUserToFrontend(response.data) }
     } catch (err: unknown) {
-      const ax = err as { response?: { status?: number } }
+      const ax = err as { response?: { status?: number; data?: { code?: string } } }
       const status = ax.response?.status
+      const blocked = ax.response?.data?.code === 'user_blocked'
       console.error(`❌ Erreur lors du chargement du profil ${username}:`, err)
-      return { user: null, httpStatus: status }
+      return { user: null, httpStatus: status, blocked }
     }
   }
 

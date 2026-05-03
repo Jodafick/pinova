@@ -135,6 +135,8 @@ export type User = {
   birthDate?: string | null
   /** Nombre de pins créés visibles pour le visiteur (API `pins_count`). */
   pinsCount?: number
+  /** Comptes que j’ai bloqués (API `blocked_usernames`). */
+  blockedUsernames?: string[]
 }
 
 export type Notification = {

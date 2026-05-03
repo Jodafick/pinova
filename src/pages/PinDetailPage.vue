@@ -19,6 +19,7 @@ import {
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
 import StoryLikersModal from '../components/StoryLikersModal.vue'
+import ReportContentModal from '../components/ReportContentModal.vue'
 import { useDataSaver } from '../composables/useDataSaver'
 import { shareUrlWithFallback } from '../utils/shareFallback'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
@@ -626,6 +627,16 @@ const handleModerateComment = async (commentId: number, hidden: boolean) => {
   }
 }
 
+const reportModalOpen = ref(false)
+const reportTarget = ref<'pin' | 'comment'>('pin')
+const reportCommentId = ref<number | null>(null)
+
+const reportModalContextLabel = computed(() => {
+  if (!pin.value) return ''
+  if (reportTarget.value === 'pin') return pin.value.title
+  return `Commentaire #${reportCommentId.value ?? ''} · ${pin.value.title}`
+})
+
 const handleReportPin = async () => {
   if (!pin.value || !isAuthenticated.value) {
     router.push('/login')
@@ -635,12 +646,9 @@ const handleReportPin = async () => {
     await showAlert(t('moderation.reportOwnDisabled'), { variant: 'info' })
     return
   }
-  try {
-    await reportPin(pin.value.slug)
-    await showAlert(t('moderation.reportSent'), { variant: 'success' })
-  } catch {
-    await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
-  }
+  reportTarget.value = 'pin'
+  reportCommentId.value = null
+  reportModalOpen.value = true
 }
 
 const handleReportComment = async (commentId: number) => {
@@ -648,8 +656,20 @@ const handleReportComment = async (commentId: number) => {
     router.push('/login')
     return
   }
+  reportTarget.value = 'comment'
+  reportCommentId.value = commentId
+  reportModalOpen.value = true
+}
+
+async function handleSubmitReport(payload: { category: string; details: string }) {
+  if (!pin.value) return
   try {
-    await reportComment(commentId)
+    if (reportTarget.value === 'pin') {
+      await reportPin(pin.value.slug, payload)
+    } else if (reportCommentId.value != null) {
+      await reportComment(reportCommentId.value, payload)
+    }
+    reportModalOpen.value = false
     await showAlert(t('moderation.reportSent'), { variant: 'success' })
   } catch {
     await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
@@ -1228,6 +1248,12 @@ async function deletePinFromMenu() {
     <StoryLikersModal
       v-model="storyLikersOpen"
       :pin-slug="storyLikersOpen ? (pin?.slug ?? null) : null"
+    />
+
+    <ReportContentModal
+      v-model="reportModalOpen"
+      :context-label="reportModalContextLabel"
+      @submit="handleSubmitReport"
     />
 
     <Teleport to="body">

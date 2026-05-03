@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { usePins } from '../composables/usePins'
 import { useI18n } from '../i18n'
 import api from '../api'
 import { displayInitials } from '../utils/displayInitials'
@@ -18,6 +19,7 @@ const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-profile', icon: 'person', labelKey: 'settings.nav.profile' },
   { id: 'settings-notifications', icon: 'notifications', labelKey: 'settings.nav.notifications' },
   { id: 'settings-privacy', icon: 'lock', labelKey: 'settings.nav.privacy' },
+  { id: 'settings-blocked', icon: 'block', labelKey: 'settings.nav.blocked' },
   { id: 'settings-access', icon: 'accessibility_new', labelKey: 'settings.nav.access' },
   { id: 'settings-ads', icon: 'campaign', labelKey: 'settings.nav.ads' },
   { id: 'settings-tips', icon: 'payments', labelKey: 'settings.nav.tips' },
@@ -31,6 +33,7 @@ const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
 const router = useRouter()
 const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket, fetchSubscriptionInvoices, fetchSubscriptionInvoiceReceipt, fetchCurrentUser } =
   useAuth()
+const { unblockUser } = usePins()
 const { t, currentLang } = useI18n()
 const { showAlert, showPrompt } = useAppModal()
 const {
@@ -38,6 +41,35 @@ const {
   isLowDataMode,
   setOverride: setDataSaverOverride,
 } = useDataSaver()
+
+type BlockedRow = { id: number; username: string; display_name?: string; displayName?: string }
+const blockedRows = ref<BlockedRow[]>([])
+const blockedLoading = ref(false)
+
+async function loadBlockedList() {
+  if (!currentUser.value) return
+  blockedLoading.value = true
+  try {
+    const res = await api.get('blocks/', { params: { page_size: 100 } })
+    const raw = res.data?.results ?? res.data ?? []
+    blockedRows.value = Array.isArray(raw) ? raw : []
+  } catch {
+    blockedRows.value = []
+  } finally {
+    blockedLoading.value = false
+  }
+}
+
+async function handleUnblockUser(row: BlockedRow) {
+  try {
+    await unblockUser(row.id)
+    await showAlert(t('settings.blocked.unblocked'), { variant: 'success' })
+    await loadBlockedList()
+    await fetchCurrentUser({ silent: true })
+  } catch {
+    await showAlert(t('settings.blocked.unblockError'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
 
 const displayName = ref('')
 const username = ref('')
@@ -338,6 +370,7 @@ onMounted(() => {
   void loadSupportTickets()
   void loadBillingInvoices()
   void loadSeatHub()
+  void loadBlockedList()
 })
 
 watch(
@@ -1233,6 +1266,38 @@ watch(
             {{ privacySaving ? t('settings.privacy.saving') : t('settings.privacy.save') }}
           </button>
           <p v-if="privacySaved" class="text-xs text-emerald-700">{{ t('settings.privacy.saved') }}</p>
+        </div>
+      </section>
+
+      <section id="settings-blocked" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.blocked.title') }}</h2>
+          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.blocked.subtitle') }}</p>
+        </div>
+        <div class="p-6">
+          <div v-if="blockedLoading" class="text-sm text-neutral-500">{{ t('common.loading') }}</div>
+          <p v-else-if="blockedRows.length === 0" class="text-sm text-neutral-500">{{ t('settings.blocked.empty') }}</p>
+          <ul v-else class="divide-y divide-neutral-100 rounded-xl border border-neutral-100 overflow-hidden">
+            <li
+              v-for="row in blockedRows"
+              :key="row.id"
+              class="flex items-center justify-between gap-3 px-4 py-3 bg-white"
+            >
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-neutral-900 truncate">
+                  {{ row.display_name || row.displayName || row.username }}
+                </p>
+                <p class="text-xs text-neutral-500">@{{ row.username }}</p>
+              </div>
+              <button
+                type="button"
+                class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                @click="handleUnblockUser(row)"
+              >
+                {{ t('settings.blocked.unblock') }}
+              </button>
+            </li>
+          </ul>
         </div>
       </section>
 

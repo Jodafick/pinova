@@ -11,6 +11,7 @@ import CreatorStatsSkeleton from '../components/CreatorStatsSkeleton.vue'
 import StoryViewer from '../components/StoryViewer.vue'
 import StoryRingCover from '../components/StoryRingCover.vue'
 import UserSearchPickModal from '../components/UserSearchPickModal.vue'
+import ReportContentModal from '../components/ReportContentModal.vue'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
@@ -24,17 +25,31 @@ import {
 const PROFILE_PINS_PAGE_SIZE = 24
 
 const { t, currentLang } = useI18n()
-const { showAlert, showPrompt } = useAppModal()
+const { showAlert, showPrompt, showConfirm } = useAppModal()
 
 const router = useRouter()
 const route = useRoute()
-const { currentUser, toggleSavePin, fetchUserProfile, toggleFollow: apiToggleFollow, createBoard, fetchMyBoards, addBoardCollaborator, fetchPendingBoardInvitations, acceptBoardInvitation, declineBoardInvitation } = useAuth()
-const { pins, toggleSave, fetchPins, fetchCreatorStats } = usePins()
+const {
+  currentUser,
+  toggleSavePin,
+  fetchUserProfile,
+  fetchCurrentUser,
+  toggleFollow: apiToggleFollow,
+  createBoard,
+  fetchMyBoards,
+  addBoardCollaborator,
+  fetchPendingBoardInvitations,
+  acceptBoardInvitation,
+  declineBoardInvitation,
+} = useAuth()
+const { pins, toggleSave, fetchPins, fetchCreatorStats, reportProfile, blockUser } = usePins()
 
 const profileUser = ref<User | null>(null)
 const loading = ref(true)
 /** Dernier code HTTP si le chargement `profiles/:user/` a échoué (ex. 403, 404). */
 const profileHttpStatus = ref<number | undefined>(undefined)
+/** Profil masqué par blocage mutuel (API `user_blocked`). */
+const profileLoadBlocked = ref(false)
 const isFollowing = ref(false)
 const followingProfilePending = ref(false)
 const creatorStatsLoading = ref(false)
@@ -51,6 +66,7 @@ const isMyProfile = computed(() => {
 })
 
 const profileUnavailableTitle = computed(() => {
+  if (profileLoadBlocked.value) return t('profile.blocked.title')
   const s = profileHttpStatus.value
   if (s === 404) return t('profile.unavailable.notFoundTitle')
   if (s === 403) return t('profile.unavailable.privateTitle')
@@ -58,6 +74,7 @@ const profileUnavailableTitle = computed(() => {
 })
 
 const profileUnavailableDesc = computed(() => {
+  if (profileLoadBlocked.value) return t('profile.blocked.desc')
   const s = profileHttpStatus.value
   if (s === 404) return t('profile.unavailable.notFoundDesc')
   if (s === 403) return t('profile.unavailable.privateDesc')
@@ -239,6 +256,7 @@ const loadProfile = async () => {
   const profileShareOpts = shareQuery ? { share: shareQuery } : undefined
 
   profileHttpStatus.value = undefined
+  profileLoadBlocked.value = false
 
   if (!route.params.username) {
     if (!currentUser.value) {
@@ -273,6 +291,7 @@ const loadProfile = async () => {
     const result = await fetchUserProfile(route.params.username as string, profileShareOpts)
     profileUser.value = result.user
     profileHttpStatus.value = result.httpStatus
+    profileLoadBlocked.value = !!result.blocked
     isFollowing.value = profileUser.value?.isFollowing || false
   }
   if (isMyProfile.value && currentPlan.value === 'pro') {
@@ -304,6 +323,53 @@ const loadProfile = async () => {
     await loadProfilePins(uname, true)
   } else {
     profilePins.value = []
+  }
+}
+
+const reportProfileOpen = ref(false)
+const reportProfileSubmitting = ref(false)
+const blockProfilePending = ref(false)
+
+const isTargetBlocked = computed(() => {
+  const u = profileUser.value?.username
+  if (!u || !currentUser.value?.blockedUsernames?.length) return false
+  return currentUser.value.blockedUsernames.includes(u)
+})
+
+async function handleSubmitProfileReport(payload: { category: string; details: string }) {
+  const u = profileUser.value?.username
+  if (!u) return
+  reportProfileSubmitting.value = true
+  try {
+    await reportProfile(u, payload)
+    reportProfileOpen.value = false
+    await showAlert(t('moderation.reportSent'), { variant: 'success' })
+  } catch {
+    await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+  } finally {
+    reportProfileSubmitting.value = false
+  }
+}
+
+async function handleBlockProfile() {
+  const u = profileUser.value?.username
+  if (!u || !currentUser.value) return
+  const ok = await showConfirm({
+    title: t('profile.block.confirmTitle'),
+    message: t('profile.block.confirmBody'),
+    variant: 'danger',
+  })
+  if (!ok) return
+  blockProfilePending.value = true
+  try {
+    await blockUser(u)
+    await fetchCurrentUser({ silent: true })
+    await showAlert(t('profile.block.done'), { variant: 'success' })
+    void router.push('/')
+  } catch {
+    await showAlert(t('profile.block.error'), { variant: 'danger', title: t('modal.errorTitle') })
+  } finally {
+    blockProfilePending.value = false
   }
 }
 
@@ -923,6 +989,26 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         >
           <span class="material-symbols-outlined text-neutral-600">share</span>
         </button>
+        <template v-if="currentUser && !isMyProfile && profileUser">
+          <button
+            type="button"
+            class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition"
+            :title="t('moderation.report')"
+            @click="reportProfileOpen = true"
+          >
+            <span class="material-symbols-outlined text-neutral-600">flag</span>
+          </button>
+          <button
+            v-if="!isTargetBlocked"
+            type="button"
+            class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-red-50 transition text-red-700"
+            :title="t('profile.block')"
+            :disabled="blockProfilePending"
+            @click="handleBlockProfile"
+          >
+            <span class="material-symbols-outlined text-red-600">block</span>
+          </button>
+        </template>
       </div>
     </section>
 
@@ -1357,6 +1443,12 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       :message="t('profile.boards.inviteSearchMessage')"
       :input-placeholder="t('profile.boards.invitePlaceholder')"
       @pick="onCollaboratorInvitePick"
+    />
+
+    <ReportContentModal
+      v-model="reportProfileOpen"
+      :context-label="profileUser ? `@${profileUser.username} · ${profileUser.displayName}` : ''"
+      @submit="handleSubmitProfileReport"
     />
   </div>
 

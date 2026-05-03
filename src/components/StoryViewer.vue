@@ -9,6 +9,7 @@ import { useAppModal } from '../composables/useAppModal'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
 import StorySegmentedProgressBar from './StorySegmentedProgressBar.vue'
 import StoryLikersModal from './StoryLikersModal.vue'
+import ReportContentModal from './ReportContentModal.vue'
 import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/useModeration'
 import {
   PIN_MEDIA_ANTI_LEAK_CLASS,
@@ -250,6 +251,8 @@ function openStoryLikersModal() {
   storyLikersOpen.value = true
 }
 
+const reportStoryOpen = ref(false)
+
 async function handleReportStory() {
   const pin = current.value
   if (!pin) return
@@ -261,8 +264,15 @@ async function handleReportStory() {
     await showAlert(t('moderation.reportOwnDisabled'), { variant: 'info' })
     return
   }
+  reportStoryOpen.value = true
+}
+
+async function handleSubmitStoryReport(payload: { category: string; details: string }) {
+  const pin = current.value
+  if (!pin) return
   try {
-    await reportPin(pin.slug)
+    await reportPin(pin.slug, payload)
+    reportStoryOpen.value = false
     await showAlert(t('moderation.reportSent'), { variant: 'success' })
   } catch {
     await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
@@ -637,6 +647,12 @@ onUnmounted(() => {
       </div>
     </div>
   </Teleport>
+
+  <ReportContentModal
+    v-model="reportStoryOpen"
+    :context-label="current?.title ?? ''"
+    @submit="handleSubmitStoryReport"
+  />
 
   <StoryLikersModal
     v-model="storyLikersOpen"
