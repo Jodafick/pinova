@@ -483,7 +483,11 @@ const submitPin = async () => {
       resultPin = await addPin(formData)
     }
     const destSlug = resultPin?.slug || editSlug.value
-    router.push(destSlug ? `/pin/${destSlug}` : '/')
+    if (isStory.value && destSlug) {
+      router.push({ path: '/', query: { story: destSlug } })
+    } else {
+      router.push(destSlug ? `/pin/${destSlug}` : '/')
+    }
   } catch (err: unknown) {
     console.error('Erreur lors de la publication:', err)
     const ax = err as { response?: { data?: Record<string, unknown> } }

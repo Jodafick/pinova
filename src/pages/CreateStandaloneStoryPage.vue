@@ -226,7 +226,7 @@ async function submit() {
       router.push('/')
       return
     }
-    router.push(`/pin/${encodeURIComponent(slug)}`)
+    router.push({ path: '/', query: { story: slug } })
   } catch (err: unknown) {
     const lines = formatDrfErrorMessages(err)
     await showAlert(lines.length ? lines.join('\n') : t('story.standalone.error'), {
