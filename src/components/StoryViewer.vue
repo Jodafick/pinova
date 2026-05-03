@@ -16,6 +16,7 @@ import {
   pinMediaAntiLeakImgBindings,
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
+import { avatarBgStyle, avatarBgTailwindClass } from '../utils/avatarBackground'
 
 const props = defineProps<{
   modelValue: boolean
@@ -261,6 +262,20 @@ const storyAuthorInitials = computed(() => {
   return pin.user.trim().slice(0, 2).toUpperCase()
 })
 
+const storyAuthorAvatarTw = computed(() => {
+  const p = current.value
+  if (!p) return DEFAULT_AVATAR_COLOR_CLASS
+  if (p.userAvatarUrl?.trim()) return 'bg-neutral-900'
+  return avatarBgTailwindClass(p.userAvatarColor, DEFAULT_AVATAR_COLOR_CLASS)
+})
+
+const storyAuthorAvatarStyle = computed(() => {
+  const p = current.value
+  if (!p) return {}
+  if (p.userAvatarUrl?.trim()) return {}
+  return avatarBgStyle(p.userAvatarColor ?? null)
+})
+
 /** Stories : uniquement le propriétaire voit le compteur (liste des j’aime au clic). */
 const isOwnerViewingStory = computed(() => {
   const pin = current.value
@@ -483,11 +498,8 @@ onUnmounted(() => {
           >
             <span
               class="relative h-9 w-9 shrink-0 rounded-full overflow-hidden ring-2 ring-white/35 shadow-md flex items-center justify-center text-white"
-              :class="
-                current?.userAvatarUrl
-                  ? 'bg-neutral-900'
-                  : current?.userAvatarColor || DEFAULT_AVATAR_COLOR_CLASS
-              "
+              :class="storyAuthorAvatarTw"
+              :style="storyAuthorAvatarStyle"
             >
               <img
                 v-if="current?.userAvatarUrl"

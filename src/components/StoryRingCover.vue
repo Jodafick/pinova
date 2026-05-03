@@ -1,18 +1,26 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import {
   PIN_MEDIA_ANTI_LEAK_CLASS,
   pinMediaAntiLeakImgBindings,
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
+import { DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { displayInitials } from '../utils/displayInitials'
+import { avatarBgStyle, avatarBgTailwindClass } from '../utils/avatarBackground'
 
-defineProps<{
+const props = defineProps<{
   coverUrl: string
   displayName?: string
   username?: string
   avatarUrl?: string
   avatarColor?: string
 }>()
+
+const initialsBgClass = computed(() =>
+  avatarBgTailwindClass(props.avatarColor ?? null, DEFAULT_AVATAR_COLOR_CLASS),
+)
+const initialsBgStyle = computed(() => avatarBgStyle(props.avatarColor ?? null))
 
 function isVideoCover(url: string) {
   const u = url.trim()
@@ -77,7 +85,8 @@ function onVideoPosterMeta(ev: Event) {
   <div
     v-else
     class="w-full h-full rounded-full flex items-center justify-center text-[11px] font-bold text-white leading-none px-1 text-center"
-    :class="avatarColor || 'bg-neutral-400'"
+    :class="initialsBgClass"
+    :style="initialsBgStyle"
   >
     {{ displayInitials((displayName || username || '').trim()) }}
   </div>

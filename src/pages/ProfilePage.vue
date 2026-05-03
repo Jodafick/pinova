@@ -10,6 +10,7 @@ import UserListSkeleton from '../components/UserListSkeleton.vue'
 import CreatorStatsSkeleton from '../components/CreatorStatsSkeleton.vue'
 import StoryViewer from '../components/StoryViewer.vue'
 import StoryRingCover from '../components/StoryRingCover.vue'
+import AvatarDisc from '../components/AvatarDisc.vue'
 import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import ReportContentModal from '../components/ReportContentModal.vue'
 import { useI18n } from '../i18n'
@@ -969,14 +970,16 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           </span>
         </span>
       </button>
-      <div
+      <AvatarDisc
         v-else
-        class="w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold text-white shadow-lg mb-4 overflow-hidden avatar-shadow"
-        :class="profileUser.avatarColor"
+        :color="profileUser.avatarColor"
+        frame-class="w-28 h-28 text-4xl shadow-lg mb-4"
+        text-class="text-white"
+        :has-image="!!profileUser.avatarUrl"
       >
         <img v-if="profileUser.avatarUrl" :src="profileUser.avatarUrl" class="w-full h-full object-cover rounded-full" />
         <span v-else class="avatar-text">{{ displayInitials(profileUser.displayName) }}</span>
-      </div>
+      </AvatarDisc>
 
       <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-1">
         <span v-if="profileUser.subscription?.plan === 'pro'" class="material-symbols-outlined text-amber-500 text-base align-middle mr-1">verified</span>
@@ -1403,10 +1406,15 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               class="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-50 text-left"
               @click="showFollowersModal = false; showFollowingModal = false; router.push(`/profile/${item.username}`)"
             >
-              <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center" :class="item.avatar_color || DEFAULT_AVATAR_COLOR_CLASS">
+              <AvatarDisc
+                :color="item.avatar_color || DEFAULT_AVATAR_COLOR_CLASS"
+                frame-class="w-9 h-9 text-xs"
+                text-class="text-white"
+                :has-image="!!item.avatar"
+              >
                 <img v-if="item.avatar" :src="item.avatar" class="w-full h-full object-cover" />
-                <span v-else class="text-white text-xs font-bold avatar-text">{{ displayInitials(item.display_name) }}</span>
-              </div>
+                <span v-else class="avatar-text">{{ displayInitials(item.display_name) }}</span>
+              </AvatarDisc>
               <div class="min-w-0">
                 <p class="text-sm text-neutral-900 truncate flex items-center gap-1">
                   <span v-if="item.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>

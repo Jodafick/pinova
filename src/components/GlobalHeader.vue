@@ -4,10 +4,13 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
+import { fetchHeaderSearch, type HeaderSearchUser } from '../composables/useHeaderSearch'
+import type { Pin } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api'
 import { subscribeNotificationRefreshFromApiActivity } from '../notificationRefresh'
 import LanguageSwitcher from './LanguageSwitcher.vue'
+import AvatarDisc from './AvatarDisc.vue'
 import { displayInitials } from '../utils/displayInitials'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
@@ -19,7 +22,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { currentUser, isAuthenticated, logout } = useAuth()
-const { pins, trackSearchInteraction } = usePins()
+const { trackSearchInteraction } = usePins()
 
 const langSwitcherRef = ref<LangSwitcherInstance | null>(null)
 
@@ -33,20 +36,23 @@ let searchTrackTimer: ReturnType<typeof setTimeout> | null = null
 window.addEventListener('online', () => (isOffline.value = false))
 window.addEventListener('offline', () => (isOffline.value = true))
 
-const searchResults = computed(() => {
-  if (!searchQuery.value.trim()) return []
-  const q = searchQuery.value.toLowerCase()
-  return pins.value.filter((p) => p.title.toLowerCase().includes(q)).slice(0, 5)
-})
+const searchPins = ref<Pin[]>([])
+const searchUsers = ref<HeaderSearchUser[]>([])
+const searchRecommended = ref<Pin[]>([])
+const searchRemoteLoading = ref(false)
+let headerSearchDebounce: ReturnType<typeof setTimeout> | null = null
 
-const showSearchPopover = computed(
-  () => showSearchResults.value && searchResults.value.length > 0,
+const hasSearchAnyResults = computed(
+  () =>
+    searchPins.value.length > 0 ||
+    searchUsers.value.length > 0 ||
+    searchRecommended.value.length > 0,
 )
 
 const searchAnchorRef = ref<HTMLElement | null>(null)
 const searchFloatingRef = ref<HTMLElement | null>(null)
 const { floatingStyles: searchFloatingStyles } = useAnchoredDropdown(searchAnchorRef, searchFloatingRef, {
-  open: showSearchPopover,
+  open: showSearchResults,
   placement: 'bottom-start',
   strategy: 'fixed',
   matchReferenceWidth: true,
@@ -66,6 +72,39 @@ const { floatingStyles: userFloatingStyles } = useAnchoredDropdown(userAnchorRef
   open: showUserMenu,
   placement: 'bottom-end',
   strategy: 'fixed',
+})
+
+async function runHeaderSearch() {
+  searchRemoteLoading.value = true
+  try {
+    const r = await fetchHeaderSearch(searchQuery.value, 8)
+    searchPins.value = r.pins
+    searchUsers.value = r.users
+    searchRecommended.value = r.recommendedPins
+  } catch {
+    searchPins.value = []
+    searchUsers.value = []
+    searchRecommended.value = []
+  } finally {
+    searchRemoteLoading.value = false
+  }
+}
+
+function scheduleHeaderSearch(delayMs: number) {
+  if (headerSearchDebounce) clearTimeout(headerSearchDebounce)
+  headerSearchDebounce = setTimeout(() => {
+    headerSearchDebounce = null
+    void runHeaderSearch()
+  }, delayMs)
+}
+
+watch(showSearchResults, (open) => {
+  if (open) scheduleHeaderSearch(80)
+})
+
+watch(searchQuery, () => {
+  if (!showSearchResults.value) return
+  scheduleHeaderSearch(280)
 })
 
 usePointerOutsideDismiss(() => [
@@ -183,10 +222,9 @@ const handleNotificationClick = async (notification: any) => {
 }
 
 const handleSearch = () => {
-  if (searchQuery.value.trim()) {
-    showSearchResults.value = false
-    router.push('/')
-  }
+  const q = searchQuery.value.trim()
+  showSearchResults.value = false
+  router.push(q ? { path: '/explore', query: { q } } : { path: '/explore' })
 }
 
 const handleLogout = () => {
@@ -328,27 +366,138 @@ onUnmounted(() => {
 
     <Teleport to="body">
       <div
-        v-if="showSearchPopover"
+        v-if="showSearchResults"
         ref="searchFloatingRef"
-        class="bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
-        role="listbox"
+        class="bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden max-h-[min(70vh,28rem)] flex flex-col"
+        role="dialog"
+        :aria-label="t('header.search.results')"
         :style="{ ...searchFloatingStyles, ...popoverZIndex }"
       >
-        <div class="p-2">
-          <p class="px-3 py-1.5 text-xs font-medium text-neutral-400">{{ t('header.search.results') }}</p>
-          <router-link
-            v-for="pin in searchResults"
-            :key="pin.id"
-            :to="`/pin/${pin.slug}`"
-            class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 transition"
-            @click="showSearchResults = false"
+        <div class="p-2 overflow-y-auto flex-1 min-h-0">
+          <div v-if="searchRemoteLoading" class="px-3 py-6 flex justify-center">
+            <span class="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+          <template v-else>
+            <p
+              v-if="hasSearchAnyResults"
+              class="px-3 py-1.5 text-xs font-medium text-neutral-400"
+            >
+              {{ t('header.search.results') }}
+            </p>
+
+            <template v-if="searchPins.length">
+              <p class="px-3 py-1 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide">
+                {{ t('header.search.sectionPins') }}
+              </p>
+              <router-link
+                v-for="pin in searchPins"
+                :key="'p-' + pin.id"
+                :to="`/pin/${encodeURIComponent(pin.slug)}`"
+                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 transition"
+                @click="showSearchResults = false"
+              >
+                <div class="w-10 h-10 rounded-lg bg-neutral-100 shrink-0 overflow-hidden">
+                  <img
+                    v-if="pin.imageUrl"
+                    :src="pin.imageUrl"
+                    :alt="pin.title"
+                    class="w-full h-full object-cover"
+                  />
+                  <div
+                    v-else
+                    class="w-full h-full flex items-center justify-center text-[10px] font-bold text-neutral-400"
+                  >
+                    Pin
+                  </div>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-neutral-800 truncate">{{ pin.title }}</p>
+                  <p class="text-xs text-neutral-400 truncate">@{{ pin.username }} · {{ pin.topicDisplay || pin.topic }}</p>
+                </div>
+              </router-link>
+            </template>
+
+            <template v-if="searchUsers.length">
+              <p class="px-3 py-1 mt-1 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide">
+                {{ t('header.search.sectionUsers') }}
+              </p>
+              <router-link
+                v-for="u in searchUsers"
+                :key="'u-' + u.username"
+                :to="`/profile/${encodeURIComponent(u.username)}`"
+                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 transition"
+                @click="showSearchResults = false"
+              >
+                <AvatarDisc
+                  :color="u.avatarColor"
+                  frame-class="w-10 h-10 text-xs"
+                  text-class="text-white"
+                  :has-image="!!u.avatarUrl"
+                >
+                  <img v-if="u.avatarUrl" :src="u.avatarUrl" alt="" class="w-full h-full object-cover" />
+                  <span v-else>{{ displayInitials(u.displayName) }}</span>
+                </AvatarDisc>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-neutral-800 truncate">{{ u.displayName }}</p>
+                  <p class="text-xs text-neutral-400">@{{ u.username }}</p>
+                </div>
+              </router-link>
+            </template>
+
+            <template v-if="searchRecommended.length">
+              <p class="px-3 py-1 mt-1 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide">
+                {{ t('header.search.sectionForYou') }}
+              </p>
+              <router-link
+                v-for="pin in searchRecommended"
+                :key="'r-' + pin.id"
+                :to="`/pin/${encodeURIComponent(pin.slug)}`"
+                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 transition"
+                @click="showSearchResults = false"
+              >
+                <div class="w-10 h-10 rounded-lg bg-neutral-100 shrink-0 overflow-hidden">
+                  <img
+                    v-if="pin.imageUrl"
+                    :src="pin.imageUrl"
+                    :alt="pin.title"
+                    class="w-full h-full object-cover"
+                  />
+                  <div
+                    v-else
+                    class="w-full h-full flex items-center justify-center text-[10px] font-bold text-neutral-400"
+                  >
+                    Pin
+                  </div>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-neutral-800 truncate">{{ pin.title }}</p>
+                  <p class="text-xs text-pink-600/90">{{ t('header.search.forYouBadge') }}</p>
+                </div>
+              </router-link>
+            </template>
+
+            <p
+              v-if="!hasSearchAnyResults && searchQuery.trim().length > 0"
+              class="px-3 py-6 text-sm text-neutral-500 text-center"
+            >
+              {{ t('header.search.empty') }}
+            </p>
+            <p
+              v-if="!hasSearchAnyResults && !searchQuery.trim() && !isAuthenticated"
+              class="px-3 py-5 text-sm text-neutral-500 text-center"
+            >
+              {{ t('header.search.typeToSearch') }}
+            </p>
+          </template>
+        </div>
+        <div class="border-t border-neutral-100 p-2 shrink-0">
+          <button
+            type="button"
+            class="w-full py-2 text-center text-sm font-semibold text-pink-600 hover:text-pink-700"
+            @click="handleSearch"
           >
-            <img :src="pin.imageUrl" :alt="pin.title" class="w-10 h-10 rounded-lg object-cover" />
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-neutral-800 truncate">{{ pin.title }}</p>
-              <p class="text-xs text-neutral-400">{{ pin.topic }}</p>
-            </div>
-          </router-link>
+            {{ t('header.search.openExplore') }}
+          </button>
         </div>
       </div>
     </Teleport>
@@ -383,18 +532,21 @@ onUnmounted(() => {
             :aria-expanded="showUserMenu"
             @click.stop="toggleUserMenuPanel()"
           >
-            <div
-              class="w-full h-full flex items-center justify-center rounded-full text-xs sm:text-sm font-bold overflow-hidden"
-              :class="currentUser?.avatarUrl ? 'bg-neutral-100' : currentUser?.avatarColor || DEFAULT_AVATAR_COLOR_CLASS"
+            <AvatarDisc
+              v-if="currentUser"
+              :color="currentUser.avatarColor || DEFAULT_AVATAR_COLOR_CLASS"
+              frame-class="w-full h-full text-xs sm:text-sm"
+              text-class="text-white drop-shadow-sm"
+              :has-image="!!currentUser.avatarUrl"
             >
               <img
-                v-if="currentUser?.avatarUrl"
+                v-if="currentUser.avatarUrl"
                 :src="currentUser.avatarUrl"
                 alt=""
                 class="w-full h-full object-cover rounded-full"
               />
-              <span v-else class="text-white drop-shadow-sm">{{ userInitials }}</span>
-            </div>
+              <span v-else>{{ userInitials }}</span>
+            </AvatarDisc>
           </button>
         </div>
 
@@ -429,13 +581,11 @@ onUnmounted(() => {
                 :class="{ 'bg-blue-50/30': !notification.is_read }"
                 @click="handleNotificationClick(notification)"
               >
-                <div
-                  class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold overflow-hidden avatar-shadow ring-1 ring-neutral-100"
-                  :class="
-                    notification.sender_avatar_url
-                      ? 'bg-neutral-100'
-                      : notification.sender_avatar_color || DEFAULT_AVATAR_COLOR_CLASS
-                  "
+                <AvatarDisc
+                  :color="notification.sender_avatar_color || DEFAULT_AVATAR_COLOR_CLASS"
+                  frame-class="w-10 h-10 text-[10px] ring-1 ring-neutral-100"
+                  text-class="text-white leading-none"
+                  :has-image="!!notification.sender_avatar_url"
                 >
                   <img
                     v-if="notification.sender_avatar_url"
@@ -443,8 +593,8 @@ onUnmounted(() => {
                     alt=""
                     class="w-full h-full object-cover"
                   />
-                  <span v-else class="text-white leading-none">{{ displayInitials(notification.sender_username) }}</span>
-                </div>
+                  <span v-else>{{ displayInitials(notification.sender_username) }}</span>
+                </AvatarDisc>
                 <div class="flex-1">
                   <p
                     v-if="notification.title"
@@ -470,18 +620,21 @@ onUnmounted(() => {
             :style="{ ...userFloatingStyles, ...popoverZIndex }"
           >
             <div class="px-4 py-4 border-b border-neutral-100 flex gap-3">
-              <div
-                class="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-pink-100 flex items-center justify-center text-sm font-bold"
-                :class="currentUser?.avatarUrl ? 'bg-neutral-100' : currentUser?.avatarColor || DEFAULT_AVATAR_COLOR_CLASS"
+              <AvatarDisc
+                v-if="currentUser"
+                :color="currentUser.avatarColor || DEFAULT_AVATAR_COLOR_CLASS"
+                frame-class="w-12 h-12 text-sm ring-2 ring-pink-100"
+                text-class="text-white"
+                :has-image="!!currentUser.avatarUrl"
               >
                 <img
-                  v-if="currentUser?.avatarUrl"
+                  v-if="currentUser.avatarUrl"
                   :src="currentUser.avatarUrl"
                   alt=""
                   class="w-full h-full object-cover"
                 />
-                <span v-else class="text-white">{{ userInitials }}</span>
-              </div>
+                <span v-else>{{ userInitials }}</span>
+              </AvatarDisc>
               <div class="min-w-0 flex-1">
                 <p class="font-semibold text-neutral-900 text-sm flex items-center gap-1.5">
                   <span

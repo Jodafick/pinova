@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { displayInitials } from '../utils/displayInitials'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
+import AvatarDisc from './AvatarDisc.vue'
 import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/useModeration'
 import { useDataSaver } from '../composables/useDataSaver'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
@@ -342,19 +343,11 @@ onUnmounted(() => {
           >
             {{ t('pin.scheduledBadge') }}
           </div>
-          <div
-            v-if="cell.pin.isStory"
-            class="absolute z-10 px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-bold shadow"
-            :class="cell.pin.scheduledPublishAt ? 'top-2 right-2' : 'top-2 left-2'"
-          >
-            {{ t('pin.storyBadge') }}
-          </div>
-
           <button
             v-if="viewerOwnsPin(cell.pin)"
             type="button"
             class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/55 text-white shadow-md backdrop-blur-[1px] transition-opacity duration-200 hover:bg-black/65 opacity-100 md:opacity-0 md:group-hover:opacity-100"
-            :class="cell.pin.scheduledPublishAt || cell.pin.isStory ? 'top-10 left-3' : 'top-3 left-3'"
+            :class="cell.pin.scheduledPublishAt ? 'top-10 left-3' : 'top-3 left-3'"
             :aria-expanded="gridOwnerMenuSlug === cell.pin.slug"
             aria-haspopup="menu"
             :aria-label="t('pin.ownerMenu.more')"
@@ -411,13 +404,15 @@ onUnmounted(() => {
             @click.stop
             :aria-label="t('pin.openAuthorProfile', { name: cell.pin.user })"
           >
-            <div
-              class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 overflow-hidden avatar-shadow"
-              :class="cell.pin.userAvatarColor"
+            <AvatarDisc
+              :color="cell.pin.userAvatarColor"
+              frame-class="w-7 h-7 text-[10px]"
+              text-class="text-white text-[10px]"
+              :has-image="!!cell.pin.userAvatarUrl"
             >
               <img v-if="cell.pin.userAvatarUrl" :src="cell.pin.userAvatarUrl" class="w-full h-full object-cover" />
               <span v-else class="avatar-text">{{ displayInitials(cell.pin.user) }}</span>
-            </div>
+            </AvatarDisc>
             <span class="text-xs text-neutral-600 truncate font-medium">{{ cell.pin.user }}</span>
           </router-link>
 

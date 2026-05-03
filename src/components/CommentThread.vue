@@ -6,6 +6,7 @@ import {
   ref,
 } from 'vue'
 import RichCommentInput from './RichCommentInput.vue'
+import AvatarDisc from './AvatarDisc.vue'
 import { useI18n } from '../i18n'
 import { formatCommentRelativeTime } from '../utils/formatCommentRelativeTime'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
@@ -236,9 +237,11 @@ function menuDelete() {
       class="flex gap-3 rounded-xl transition-all duration-300"
       :class="comment.id === props.highlightedCommentId ? 'bg-pink-50 ring-2 ring-pink-200 p-2' : ''"
     >
-      <div
-        class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden"
-        :class="comment.avatarUrl ? 'bg-neutral-100' : comment.avatarColor"
+      <AvatarDisc
+        :color="comment.avatarColor"
+        frame-class="w-9 h-9 text-sm"
+        text-class="text-white"
+        :has-image="!!comment.avatarUrl"
       >
         <img
           v-if="comment.avatarUrl"
@@ -247,7 +250,7 @@ function menuDelete() {
           class="w-full h-full object-cover"
         />
         <span v-else>{{ comment.user[0] }}</span>
-      </div>
+      </AvatarDisc>
 
       <div class="flex-1 min-w-0">
         <div class="bg-neutral-100 rounded-2xl px-4 pt-2.5 pb-2">
@@ -329,13 +332,15 @@ function menuDelete() {
             class="flex gap-3 rounded-xl transition-all duration-300"
             :class="reply.id === props.highlightedCommentId ? 'bg-pink-50 ring-2 ring-pink-200 p-2' : ''"
           >
-            <div
-              class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden"
-              :class="reply.avatarUrl ? 'bg-neutral-100' : reply.avatarColor"
+            <AvatarDisc
+              :color="reply.avatarColor"
+              frame-class="w-7 h-7 text-xs"
+              text-class="text-white"
+              :has-image="!!reply.avatarUrl"
             >
               <img v-if="reply.avatarUrl" :src="reply.avatarUrl" alt="" class="w-full h-full object-cover" />
               <span v-else>{{ reply.user[0] }}</span>
-            </div>
+            </AvatarDisc>
             <div class="flex-1 min-w-0">
               <div class="bg-neutral-100 rounded-2xl px-3 pt-2 pb-1.5">
                 <div class="flex items-start justify-between gap-2 mb-0.5">

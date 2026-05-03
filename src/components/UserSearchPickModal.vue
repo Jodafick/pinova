@@ -3,6 +3,7 @@ import { ref, watch, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../i18n'
 import { fetchMentionUsersPage, type SuggestUserRow } from '../composables/useUserSuggestSearch'
 import { displayInitials } from '../utils/displayInitials'
+import AvatarDisc from './AvatarDisc.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -228,13 +229,15 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               @click="pickUser(user.username)"
               @mouseenter="selectedIndex = idx"
             >
-              <div
-                class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden shrink-0 avatar-shadow"
-                :class="user.avatarUrl ? 'bg-neutral-100' : user.avatarColor"
+              <AvatarDisc
+                :color="user.avatarColor"
+                frame-class="w-10 h-10 text-xs"
+                text-class="text-white"
+                :has-image="!!user.avatarUrl"
               >
                 <img v-if="user.avatarUrl" :src="user.avatarUrl" alt="" class="w-full h-full object-cover" />
                 <span v-else class="avatar-text">{{ displayInitials(user.name) }}</span>
-              </div>
+              </AvatarDisc>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-neutral-900 truncate">{{ user.name }}</p>
                 <p class="text-xs text-neutral-500 truncate">@{{ user.username }}</p>

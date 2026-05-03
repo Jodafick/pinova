@@ -10,6 +10,7 @@ import { useDataSaver } from '../composables/useDataSaver'
 import BillingInvoicesSkeleton from '../components/BillingInvoicesSkeleton.vue'
 import BillingReceiptPdfModal from '../components/BillingReceiptPdfModal.vue'
 import UserSearchPickModal from '../components/UserSearchPickModal.vue'
+import AvatarDisc from '../components/AvatarDisc.vue'
 import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
@@ -1041,14 +1042,16 @@ watch(
         <div class="p-6 space-y-5">
           <!-- Avatar -->
           <div class="flex items-center gap-5">
-            <div
+            <AvatarDisc
               v-if="currentUser"
-              class="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold text-white shrink-0 overflow-hidden"
-              :class="currentUser.avatarColor"
+              :color="currentUser.avatarColor"
+              frame-class="w-20 h-20 text-3xl shrink-0"
+              text-class="text-white"
+              :has-image="!!avatarPreview"
             >
               <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" />
               <span v-else class="text-center leading-none px-1">{{ displayInitials(displayName) }}</span>
-            </div>
+            </AvatarDisc>
             <div>
               <input 
                 ref="fileInput"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import api from '../api'
@@ -9,6 +9,7 @@ import { useI18n } from '../i18n'
 
 const { t, currentLang } = useI18n()
 
+const route = useRoute()
 const router = useRouter()
 const { pins, loading, fetchDiscoverPins, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
 const { toggleSavePin } = useAuth()
@@ -29,6 +30,11 @@ const categorySearch = ref('')
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 
 const displayPins = computed(() => pins.value)
+
+const exploreTextQuery = computed(() => {
+  const raw = route.query.q
+  return typeof raw === 'string' && raw.trim() ? raw.trim() : null
+})
 
 const loadCategories = async (query = '') => {
   categoriesLoading.value = true
@@ -51,14 +57,14 @@ const handleScroll = () => {
 
   if (scrollTop + clientHeight >= scrollHeight - 160) {
     if (hasNextPage.value && !isFetchingNextPage.value && !loading.value) {
-      void fetchDiscoverPins(false, selectedCategory.value)
+      void fetchDiscoverPins(false, selectedCategory.value, exploreTextQuery.value)
     }
   }
 }
 
 onMounted(async () => {
   await loadCategories('')
-  await fetchDiscoverPins(true)
+  await fetchDiscoverPins(true, null, exploreTextQuery.value)
   window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
@@ -78,12 +84,16 @@ watch(categorySearch, (value) => {
 })
 
 watch(selectedCategory, async (topic) => {
-  await fetchDiscoverPins(true, topic)
+  await fetchDiscoverPins(true, topic, exploreTextQuery.value)
+})
+
+watch(exploreTextQuery, async () => {
+  await fetchDiscoverPins(true, selectedCategory.value, exploreTextQuery.value)
 })
 
 watch(currentLang, async () => {
   await loadCategories(categorySearch.value.trim())
-  await fetchDiscoverPins(true, selectedCategory.value)
+  await fetchDiscoverPins(true, selectedCategory.value, exploreTextQuery.value)
 })
 
 const handleToggleSave = async (slug: string) => {
@@ -104,6 +114,10 @@ const handleToggleSave = async (slug: string) => {
 const openPin = (slug: string) => {
   router.push(`/pin/${slug}`)
 }
+
+function clearExploreSearch() {
+  router.replace({ path: '/explore', query: {} })
+}
 </script>
 
 <template>
@@ -114,6 +128,20 @@ const openPin = (slug: string) => {
       <p class="text-base text-neutral-500 max-w-lg">
         {{ t('explore.subtitle') }}
       </p>
+      <div
+        v-if="exploreTextQuery"
+        class="mt-4 inline-flex flex-wrap items-center gap-2 rounded-full bg-pink-50 border border-pink-100 px-4 py-2 text-sm text-pink-900"
+      >
+        <span class="material-symbols-outlined text-base text-pink-600">search</span>
+        <span>{{ t('explore.searchActive', { q: exploreTextQuery }) }}</span>
+        <button
+          type="button"
+          class="ml-1 text-xs font-semibold text-pink-700 hover:underline"
+          @click="clearExploreSearch"
+        >
+          {{ t('explore.clearSearch') }}
+        </button>
+      </div>
     </section>
 
     <!-- Categories grid -->

@@ -243,9 +243,13 @@ export function usePins() {
     }
   }
 
-  async function fetchDiscoverPins(reset = false, topic?: string | null) {
+  async function fetchDiscoverPins(reset = false, topic?: string | null, textQuery?: string | null) {
     try {
-      await loadPinCollection('pins/discover/', reset, topic ? { topic } : {})
+      const extra: Record<string, string> = {}
+      if (topic) extra.topic = topic
+      const tq = (textQuery ?? '').trim()
+      if (tq) extra.q = tq
+      await loadPinCollection('pins/discover/', reset, extra)
     } catch (err) {
       console.warn('Error fetching discover pins, fallback to public pins')
       await fetchPins(reset, topic)

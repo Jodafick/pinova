@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
+import AvatarDisc from '../components/AvatarDisc.vue'
 import { useI18n } from '../i18n'
 import api from '../api'
 
@@ -115,10 +116,15 @@ const followSuggestedUser = async (username: string) => {
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div v-for="suggestion in suggestions" :key="suggestion.username" class="border border-neutral-200 rounded-xl p-3 flex items-center justify-between gap-3">
             <button class="flex items-center gap-3 min-w-0" @click="router.push(`/profile/${suggestion.username}`)">
-              <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center" :class="suggestion.avatar_color || DEFAULT_AVATAR_COLOR_CLASS">
+              <AvatarDisc
+                :color="suggestion.avatar_color || DEFAULT_AVATAR_COLOR_CLASS"
+                frame-class="w-9 h-9 text-xs"
+                text-class="text-white"
+                :has-image="!!suggestion.avatar"
+              >
                 <img v-if="suggestion.avatar" :src="suggestion.avatar" class="w-full h-full object-cover" />
-                <span v-else class="text-white text-xs font-bold">{{ suggestion.display_name?.slice(0, 1) }}</span>
-              </div>
+                <span v-else class="font-bold">{{ suggestion.display_name?.slice(0, 1) }}</span>
+              </AvatarDisc>
               <div class="min-w-0">
                 <p class="text-sm font-medium text-neutral-800 truncate flex items-center gap-1">
                   <span v-if="suggestion.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>

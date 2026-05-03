@@ -11,6 +11,7 @@ import {
 } from '../utils/compressCommentAttachment'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
+import AvatarDisc from './AvatarDisc.vue'
 
 const { t } = useI18n()
 const { currentUser } = useAuth()
@@ -431,13 +432,15 @@ defineExpose({ setReply })
             class="w-full flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 transition text-left"
             @click="insertMention(user.username)"
           >
-            <div
-              class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden shrink-0 avatar-shadow"
-              :class="user.avatarUrl ? 'bg-neutral-100' : user.avatarColor"
+            <AvatarDisc
+              :color="user.avatarColor"
+              frame-class="w-8 h-8 text-xs"
+              text-class="text-white"
+              :has-image="!!user.avatarUrl"
             >
               <img v-if="user.avatarUrl" :src="user.avatarUrl" alt="" class="w-full h-full object-cover" />
               <span v-else class="avatar-text leading-none">{{ displayInitials(user.name) }}</span>
-            </div>
+            </AvatarDisc>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold text-neutral-800 truncate">{{ user.name }}</p>
               <p class="text-xs text-neutral-500 truncate">@{{ user.username }}</p>

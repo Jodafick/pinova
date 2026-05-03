@@ -20,6 +20,7 @@ import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
 import StoryLikersModal from '../components/StoryLikersModal.vue'
 import ReportContentModal from '../components/ReportContentModal.vue'
+import AvatarDisc from '../components/AvatarDisc.vue'
 import { useDataSaver } from '../composables/useDataSaver'
 import { shareUrlWithFallback } from '../utils/shareFallback'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
@@ -1010,13 +1011,6 @@ async function deletePinFromMenu() {
             <div class="flex items-start gap-2 mb-3 flex-wrap">
               <h1 id="pin-detail-title" class="text-2xl sm:text-3xl font-bold text-neutral-950 flex-1 min-w-[12rem]">{{ pin.title }}</h1>
               <span
-                v-if="pin.isStory"
-                class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0 bg-violet-100 text-violet-800"
-              >
-                <span class="material-symbols-outlined text-xs">auto_stories</span>
-                {{ t('pin.storyBadge') }}
-              </span>
-              <span
                 v-if="pinVisibility !== 'public'"
                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0"
                 :class="pinVisibility === 'private' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'"
@@ -1063,13 +1057,15 @@ async function deletePinFromMenu() {
                 :to="`/profile/${pin.username}`"
                 class="flex items-center gap-3 hover:bg-neutral-50 p-2 rounded-xl transition-colors"
               >
-                <div
-                  class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm overflow-hidden avatar-shadow"
-                  :class="pin.userAvatarColor"
+                <AvatarDisc
+                  :color="pin.userAvatarColor"
+                  frame-class="w-10 h-10 text-sm shadow-sm"
+                  text-class="text-white"
+                  :has-image="!!pin.userAvatarUrl"
                 >
                   <img v-if="pin.userAvatarUrl" :src="pin.userAvatarUrl" class="w-full h-full object-cover" />
                   <span v-else class="avatar-text">{{ displayInitials(pin.user) }}</span>
-                </div>
+                </AvatarDisc>
                 <div>
                   <p class="text-sm font-bold text-neutral-900">{{ pin.user }}</p>
                   <p class="text-xs text-neutral-500">{{ t('pin.followers', { count: formatCount(pin.authorFollowersCount ?? 0) }) }}</p>
@@ -1229,10 +1225,12 @@ async function deletePinFromMenu() {
                 v-if="!isAuthenticated || viewerCanComment"
                 class="flex items-start gap-3 pt-3 border-t border-neutral-100 w-full min-w-0"
               >
-                <div
+                <AvatarDisc
                   v-if="currentUser"
-                  class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-1 overflow-hidden"
-                  :class="currentUser.avatarUrl ? 'bg-neutral-100' : currentUser.avatarColor"
+                  :color="currentUser.avatarColor"
+                  frame-class="w-9 h-9 text-xs mt-1"
+                  text-class="text-white"
+                  :has-image="!!currentUser.avatarUrl"
                 >
                   <img
                     v-if="currentUser.avatarUrl"
@@ -1241,7 +1239,7 @@ async function deletePinFromMenu() {
                     class="w-full h-full object-cover"
                   />
                   <span v-else>{{ currentUser.displayName[0] }}</span>
-                </div>
+                </AvatarDisc>
                 <div class="flex-1 min-w-0 w-full">
                   <RichCommentInput :submitting="submittingComment" @submit="handleRichSubmit" />
                 </div>

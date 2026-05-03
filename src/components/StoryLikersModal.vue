@@ -5,6 +5,7 @@ import { usePins } from '../composables/usePins'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { displayInitials } from '../utils/displayInitials'
+import AvatarDisc from './AvatarDisc.vue'
 import type { PinLikerEntry } from '../types'
 
 const props = defineProps<{
@@ -98,9 +99,11 @@ function close() {
                 class="flex items-center gap-3 py-3 px-1 hover:bg-neutral-50 rounded-xl transition"
                 @click="close"
               >
-                <span
-                  class="relative h-10 w-10 shrink-0 rounded-full overflow-hidden ring-2 ring-neutral-100 flex items-center justify-center text-xs font-bold text-white"
-                  :class="row.avatar_url ? 'bg-neutral-900' : (row.avatar_color || DEFAULT_AVATAR_COLOR_CLASS)"
+                <AvatarDisc
+                  :color="row.avatar_url ? undefined : (row.avatar_color || DEFAULT_AVATAR_COLOR_CLASS)"
+                  frame-class="relative h-10 w-10 text-xs ring-2 ring-neutral-100 shrink-0"
+                  text-class="text-white"
+                  :has-image="!!row.avatar_url"
                 >
                   <img
                     v-if="row.avatar_url"
@@ -110,7 +113,7 @@ function close() {
                     draggable="false"
                   />
                   <span v-else>{{ displayInitials(row.display_name) }}</span>
-                </span>
+                </AvatarDisc>
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-semibold text-neutral-900 truncate">{{ row.display_name }}</p>
                   <p class="text-xs text-neutral-500 truncate">@{{ row.username }}</p>
