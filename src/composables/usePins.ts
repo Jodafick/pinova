@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import type { Pin } from '../types'
+import type { Pin, PinLikersResponse } from '../types'
 import api from '../api'
 import { API_BASE_URL } from '../env'
 import { useI18n } from '../i18n'
@@ -66,11 +66,16 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     })),
     scheduledPublishAt: djangoPin.scheduled_publish_at || null,
     createdAt: djangoPin.created_at,
-    liked: djangoPin.is_liked || false,
+    liked:
+      djangoPin.is_liked === true ||
+      djangoPin.is_liked === 1 ||
+      djangoPin.isLiked === true,
     saved: djangoPin.is_saved || false,
     isFollowing: author.is_following || false,
     authorFollowersCount: typeof author.followers_count === 'number' ? author.followers_count : 0,
     isStory: !!djangoPin.is_story,
+    /** Story Plus/Pro sans pin en grille après 24 h (purge serveur). */
+    storyEphemeral: !!djangoPin.story_ephemeral,
     storyExpiresAt: djangoPin.story_expires_at ?? undefined,
     mediaSensitiveBlur: !!djangoPin.media_sensitive_blur,
   }
@@ -184,6 +189,10 @@ export function usePins() {
   async function moderatePinComment(pinSlug: string, commentId: number, hidden: boolean) {
     const response = await api.post(`pins/${pinSlug}/comments/${commentId}/moderate/`, { hidden })
     return response.data
+  }
+
+  async function deletePinComment(pinSlug: string, commentId: number) {
+    await api.delete(`pins/${pinSlug}/comments/${commentId}/`)
   }
 
   async function reportPin(pinSlug: string, reason = '') {
@@ -527,6 +536,11 @@ export function usePins() {
     }
   }
 
+  async function fetchPinLikers(pinSlug: string): Promise<PinLikersResponse> {
+    const res = await api.get(`pins/${encodeURIComponent(pinSlug)}/likes/`)
+    return res.data as PinLikersResponse
+  }
+
   return {
     pins,
     topics,
@@ -538,6 +552,7 @@ export function usePins() {
     fetchPinBySlug,
     patchPinCommentsPolicy,
     moderatePinComment,
+    deletePinComment,
     reportPin,
     reportComment,
     fetchRecommendations,
@@ -568,6 +583,7 @@ export function usePins() {
     savePrivateTags,
     trackPinView,
     trackSearchInteraction,
+    fetchPinLikers,
     formatCount,
   }
 }

@@ -18,8 +18,16 @@ import {
 } from '../composables/useModeration'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
+import StoryLikersModal from '../components/StoryLikersModal.vue'
 import { useDataSaver } from '../composables/useDataSaver'
 import { shareUrlWithFallback } from '../utils/shareFallback'
+import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
+import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
+import {
+  PIN_MEDIA_ANTI_LEAK_CLASS,
+  pinMediaAntiLeakImgBindings,
+  pinMediaAntiLeakVideoBindings,
+} from '../composables/mediaAntiLeak'
 
 const { t } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
@@ -35,6 +43,7 @@ const {
   fetchPinBySlug,
   patchPinCommentsPolicy,
   moderatePinComment,
+  deletePinComment,
   formatCount,
   toggleLike,
   toggleFollow,
@@ -71,7 +80,12 @@ const detailImageFetchPriority = computed(() => (isLowDataMode.value ? 'low' : '
 
 const pinSlug = computed(() => route.params.slug as string)
 const pin = computed(() => getPin(pinSlug.value))
-const isPinOwner = computed(() => !!(currentUser.value && pin.value && currentUser.value.username === pin.value.username))
+
+function usernamesMatch(a?: string | null, b?: string | null) {
+  return (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
+}
+
+const isPinOwner = computed(() => !!(currentUser.value && pin.value && usernamesMatch(currentUser.value.username, pin.value.username)))
 const viewerCanComment = computed(() => {
   const p = pin.value
   if (!p) return false
@@ -92,6 +106,32 @@ const downloadingPin = ref(false)
 const commentsPolicySaving = ref(false)
 const pinDetailLoading = ref(true)
 const pinDetailNotFound = ref(false)
+const storyLikersOpen = ref(false)
+
+const pinOwnerMenuOpen = ref(false)
+const pinOwnerMenuTriggerRef = ref<HTMLElement | null>(null)
+const pinOwnerMenuPanelRef = ref<HTMLElement | null>(null)
+
+const { floatingStyles: pinOwnerMenuFloatingStyles } = useAnchoredDropdown(
+  pinOwnerMenuTriggerRef,
+  pinOwnerMenuPanelRef,
+  {
+    open: pinOwnerMenuOpen,
+    placement: 'bottom-start',
+    strategy: 'fixed',
+    offsetPx: 8,
+  },
+)
+
+usePointerOutsideDismiss(() => [
+  {
+    isOpen: pinOwnerMenuOpen,
+    getRoots: () => [pinOwnerMenuTriggerRef.value, pinOwnerMenuPanelRef.value],
+    close: () => {
+      pinOwnerMenuOpen.value = false
+    },
+  },
+])
 
 let resolvePinGeneration = 0
 
@@ -151,6 +191,7 @@ onMounted(async () => {
 })
 
 watch(pinSlug, async () => {
+  pinOwnerMenuOpen.value = false
   await resolvePinDetail()
 })
 
@@ -166,13 +207,14 @@ const handleLike = async () => {
     router.push('/login')
     return
   }
-  if (pin.value) {
-    likingPin.value = true
-    try {
-      await toggleLike(pin.value.slug)
-    } finally {
-      likingPin.value = false
-    }
+  const p = pin.value
+  if (!p) return
+  if (p.isStory && isPinOwner.value) return
+  likingPin.value = true
+  try {
+    await toggleLike(p.slug)
+  } finally {
+    likingPin.value = false
   }
 }
 
@@ -281,7 +323,12 @@ const mapComment = (comment: any): UiComment => {
     translatedText: comment.translated_text || '',
     gif: comment.gif_url || null,
     media: comment.media || null,
-    createdAt: new Date(comment.created_at).toLocaleString(),
+    createdAt:
+      typeof comment.created_at === 'string'
+        ? comment.created_at
+        : comment.created_at != null
+          ? new Date(comment.created_at).toISOString()
+          : '',
     likes: comment.likes_count || 0,
     liked: !!comment.is_liked,
     translated: false,
@@ -609,6 +656,25 @@ const handleReportComment = async (commentId: number) => {
   }
 }
 
+const handleDeleteComment = async (commentId: number) => {
+  if (!pin.value || !isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  const ok = await showConfirm({
+    title: t('comment.delete.confirmTitle'),
+    message: t('comment.delete.confirmBody'),
+    variant: 'danger',
+  })
+  if (!ok) return
+  try {
+    await deletePinComment(pin.value.slug, commentId)
+    await loadComments(true)
+  } catch {
+    await showAlert(t('comment.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
+  }
+}
+
 const handleShare = async () => {
   if (!pin.value) return
   const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -636,18 +702,35 @@ const handleDownload = async () => {
   }
   if (!pin.value) return
   downloadingPin.value = true
+  let tab: Window | null = null
+  try {
+    tab = window.open('about:blank', '_blank', 'noopener,noreferrer')
+  } catch {
+    tab = null
+  }
   try {
     const plan = currentUser.value?.subscription?.plan || 'free'
     const quality = plan === 'pro' ? 'hd' : 'standard'
     const result = await getPinDownload(pin.value.slug, quality)
+    const url = result.download_url as string
+    if (tab && !tab.closed) {
+      tab.location.href = url
+      return
+    }
     const link = document.createElement('a')
-    link.href = result.download_url
+    link.href = url
     link.download = `${pin.value.slug}.jpg`
     link.target = '_blank'
+    link.rel = 'noopener noreferrer'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   } catch (err) {
+    try {
+      tab?.close()
+    } catch {
+      /* ignore */
+    }
     console.error('Erreur téléchargement pin', err)
     await showAlert(t('pin.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
   } finally {
@@ -680,6 +763,21 @@ const confirmDeletePin = async () => {
   } catch {
     await showAlert(t('pin.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
   }
+}
+
+function togglePinOwnerMenu() {
+  pinOwnerMenuOpen.value = !pinOwnerMenuOpen.value
+}
+
+function goEditPinFromMenu() {
+  pinOwnerMenuOpen.value = false
+  const slug = pin.value?.slug
+  if (slug) router.push(`/pin/${slug}/edit`)
+}
+
+async function deletePinFromMenu() {
+  pinOwnerMenuOpen.value = false
+  await confirmDeletePin()
 }
 </script>
 
@@ -748,12 +846,13 @@ const confirmDeletePin = async () => {
                   :alt="pin.title ? `${pin.title} — ${pin.user}` : t('feed.pinImageFallback', { user: pin.user })"
                   :fetchpriority="detailImageFetchPriority"
                   decoding="async"
-                  class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
-                  draggable="false"
+                  :class="[
+                    PIN_MEDIA_ANTI_LEAK_CLASS,
+                    'w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
+                  ]"
                   @load="onDetailImageLoad"
                   @dblclick.prevent="handleLike"
-                  @contextmenu.prevent
-                  @dragstart.prevent
+                  v-bind="pinMediaAntiLeakImgBindings()"
                 />
               </PinSensitiveMedia>
               <PinSensitiveMedia
@@ -768,10 +867,13 @@ const confirmDeletePin = async () => {
                   controls
                   playsinline
                   :preload="detailVideoPreload"
-                  class="w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100"
+                  :class="[
+                    PIN_MEDIA_ANTI_LEAK_CLASS,
+                    'w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
+                  ]"
                   @loadedmetadata="onDetailVideoLoadedMetadata"
                   @dblclick.prevent="handleLike"
-                  @contextmenu.prevent
+                  v-bind="pinMediaAntiLeakVideoBindings(true)"
                 />
               </PinSensitiveMedia>
             </div>
@@ -782,24 +884,23 @@ const confirmDeletePin = async () => {
             <!-- Actions bar -->
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center gap-2 flex-wrap">
-                <router-link
-                  v-if="isPinOwner && pin.slug"
-                  :to="`/pin/${pin.slug}/edit`"
-                  class="inline-flex h-10 w-10 rounded-full hover:bg-neutral-100 items-center justify-center text-neutral-700 shrink-0"
-                  :aria-label="t('pin.a11y.edit')"
-                >
-                  <span class="material-symbols-outlined text-xl" aria-hidden="true">edit</span>
-                </router-link>
+                <div v-if="isPinOwner && pin.slug" class="relative shrink-0">
+                  <button
+                    ref="pinOwnerMenuTriggerRef"
+                    type="button"
+                    class="inline-flex h-10 w-10 rounded-full hover:bg-neutral-100 items-center justify-center text-neutral-700 transition"
+                    :aria-label="t('pin.ownerMenu.more')"
+                    :aria-expanded="pinOwnerMenuOpen"
+                    aria-haspopup="menu"
+                    @click.stop.prevent="togglePinOwnerMenu"
+                  >
+                    <span class="material-symbols-outlined text-[22px] leading-none translate-y-px" aria-hidden="true">
+                      more_horiz
+                    </span>
+                  </button>
+                </div>
                 <button
-                  v-if="isPinOwner"
-                  type="button"
-                  class="inline-flex h-10 w-10 rounded-full hover:bg-red-50 text-neutral-700 hover:text-red-700 items-center justify-center shrink-0 transition"
-                  :aria-label="t('pin.a11y.delete')"
-                  @click="confirmDeletePin"
-                >
-                  <span class="material-symbols-outlined text-xl" aria-hidden="true">delete</span>
-                </button>
-                <button
+                  v-if="!(pin.isStory && isPinOwner)"
                   type="button"
                   class="w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="pin.liked ? 'bg-pink-50 text-pink-700' : 'hover:bg-neutral-100 text-neutral-700'"
@@ -965,7 +1066,20 @@ const confirmDeletePin = async () => {
                 {{ formatCount(pin.stats.saves) }}
                 <span class="material-symbols-outlined text-lg" :class="{ 'fill-1 text-neutral-600': pin.saved }">bookmark</span>
               </span>
-              <span class="flex items-center gap-1.5">
+              <button
+                v-if="pin.isStory && isPinOwner"
+                type="button"
+                class="flex items-center gap-1.5 rounded-lg px-1 -mx-1 py-0.5 text-sm text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
+                :aria-label="t('story.likers.openListAria', { count: pin.stats.reactions })"
+                @click="storyLikersOpen = true"
+              >
+                {{ formatCount(pin.stats.reactions) }}
+                <span class="material-symbols-outlined text-lg fill-1 text-pink-500" aria-hidden="true">favorite</span>
+              </button>
+              <span
+                v-else-if="!pin.isStory"
+                class="flex items-center gap-1.5"
+              >
                 {{ formatCount(pin.stats.reactions) }}
                 <span class="material-symbols-outlined text-lg fill-1" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
               </span>
@@ -1059,6 +1173,7 @@ const confirmDeletePin = async () => {
                   @load-more-replies="handleLoadMoreReplies"
                   @moderate-comment="handleModerateComment"
                   @report-comment="handleReportComment"
+                  @delete-comment="handleDeleteComment"
                 />
                 <div v-if="commentsHasNext" class="mt-3 text-center">
                   <button
@@ -1106,5 +1221,40 @@ const confirmDeletePin = async () => {
         />
       </section>
     </main>
+
+    <StoryLikersModal
+      v-model="storyLikersOpen"
+      :pin-slug="storyLikersOpen ? (pin?.slug ?? null) : null"
+    />
+
+    <Teleport to="body">
+      <div
+        v-if="pinOwnerMenuOpen && isPinOwner && pin?.slug"
+        ref="pinOwnerMenuPanelRef"
+        role="menu"
+        class="fixed z-[120] w-[min(240px,calc(100vw-1rem))] rounded-2xl border border-neutral-200 bg-white shadow-2xl py-1.5"
+        :style="pinOwnerMenuFloatingStyles"
+        @pointerdown.stop
+      >
+        <button
+          type="button"
+          role="menuitem"
+          class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-50 flex items-center gap-2"
+          @click="goEditPinFromMenu"
+        >
+          <span class="material-symbols-outlined text-lg text-neutral-500" aria-hidden="true">edit</span>
+          {{ t('pin.ownerMenu.edit') }}
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          class="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
+          @click="deletePinFromMenu"
+        >
+          <span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
+          {{ t('pin.ownerMenu.delete') }}
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>

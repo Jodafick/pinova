@@ -15,7 +15,7 @@ defineProps<{
 
 <template>
   <div
-    class="flex gap-1"
+    class="flex gap-1.5 px-1"
     role="progressbar"
     :aria-valuemin="0"
     :aria-valuemax="100"
@@ -25,13 +25,13 @@ defineProps<{
     <div
       v-for="si in segmentCount"
       :key="si"
-      class="h-0.5 flex-1 min-w-0 rounded-full bg-white/15"
+      class="h-1.5 flex-1 min-w-0 rounded-full bg-white/25"
     >
-      <div v-if="si - 1 < currentIndex" class="h-full w-full bg-white rounded-full" />
+      <div v-if="si - 1 < currentIndex" class="h-full w-full rounded-full bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.45)]" />
       <div
         v-else-if="si - 1 === currentIndex"
         :key="`${si - 1}-${animationKey}`"
-        class="story-segment-active h-full bg-white rounded-full"
+        class="story-segment-active h-full rounded-full bg-gradient-to-r from-pink-300 to-pink-500 shadow-[0_0_10px_rgba(244,114,182,0.5)]"
         :style="{ animationDuration: `${activeDurationMs}ms` }"
       />
     </div>

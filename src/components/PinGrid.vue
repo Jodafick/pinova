@@ -9,11 +9,20 @@ import { displayInitials } from '../utils/displayInitials'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
 import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/useModeration'
 import { useDataSaver } from '../composables/useDataSaver'
+import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
+import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
+import { useAppModal } from '../composables/useAppModal'
+import {
+  PIN_MEDIA_ANTI_LEAK_CLASS,
+  pinMediaAntiLeakImgBindings,
+  pinMediaAntiLeakVideoBindings,
+} from '../composables/mediaAntiLeak'
 
-const { formatCount, isPinSavePending, toggleLike } = usePins()
+const { formatCount, isPinSavePending, toggleLike, deletePin } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
 const router = useRouter()
 const { t } = useI18n()
+const { showConfirm, showAlert } = useAppModal()
 const {
   gridImageFetchPriority,
   gridImageSizes,
@@ -54,6 +63,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'toggle-save', slug: string): void
   (e: 'open-pin', slug: string): void
+  (e: 'pin-deleted', slug: string): void
 }>()
 
 const columnCount = ref(2)
@@ -100,6 +110,36 @@ const gridBusy = computed(
     (props.loadingInitial && props.pins.length === 0) || props.loadingMore,
 )
 
+/** Menu ⋯ propriétaire (modifier / supprimer) */
+const gridOwnerMenuSlug = ref<string | null>(null)
+const gridOwnerMenuAnchorRef = ref<HTMLElement | null>(null)
+const gridOwnerMenuFloatingRef = ref<HTMLElement | null>(null)
+const gridOwnerMenuOpen = computed(() => gridOwnerMenuSlug.value !== null)
+
+function closeGridOwnerMenu() {
+  gridOwnerMenuSlug.value = null
+  gridOwnerMenuAnchorRef.value = null
+}
+
+const { floatingStyles: gridOwnerMenuFloatingStyles } = useAnchoredDropdown(
+  gridOwnerMenuAnchorRef,
+  gridOwnerMenuFloatingRef,
+  {
+    open: gridOwnerMenuOpen,
+    placement: 'bottom-end',
+    strategy: 'fixed',
+    offsetPx: 8,
+  },
+)
+
+usePointerOutsideDismiss(() => [
+  {
+    isOpen: gridOwnerMenuOpen,
+    getRoots: () => [gridOwnerMenuAnchorRef.value, gridOwnerMenuFloatingRef.value],
+    close: closeGridOwnerMenu,
+  },
+])
+
 const markMediaLoaded = (pinId: number) => {
   loadedImages.value[pinId] = true
 }
@@ -118,6 +158,7 @@ async function doubleTapLike(pin: Pin) {
     router.push('/login')
     return
   }
+  if (pin.isStory && usernamesMatch(currentUser.value?.username, pin.username)) return
   await toggleLike(pin.slug)
 }
 
@@ -154,6 +195,55 @@ function onCardKeydown(pin: Pin, ev: KeyboardEvent) {
   if (ev.key === 'Enter' || ev.key === ' ') {
     ev.preventDefault()
     emit('open-pin', pin.slug)
+  }
+}
+
+function usernamesMatch(a?: string | null, b?: string | null) {
+  return (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
+}
+
+/** Compteur j’aime : toujours pour les pins classiques ; pour les stories, seulement l’auteur connecté. */
+function showPinReactionStats(pin: Pin) {
+  if (!pin.isStory) return true
+  if (!isAuthenticated.value) return false
+  return usernamesMatch(currentUser.value?.username, pin.username)
+}
+
+function viewerOwnsPin(pin: Pin): boolean {
+  return isAuthenticated.value && usernamesMatch(currentUser.value?.username, pin.username)
+}
+
+function toggleGridOwnerMenu(pin: Pin, ev: MouseEvent) {
+  if (!viewerOwnsPin(pin)) return
+  ev.stopPropagation()
+  const target = ev.currentTarget instanceof HTMLElement ? ev.currentTarget : null
+  if (!target) return
+  if (gridOwnerMenuSlug.value === pin.slug) {
+    closeGridOwnerMenu()
+    return
+  }
+  gridOwnerMenuAnchorRef.value = target
+  gridOwnerMenuSlug.value = pin.slug
+}
+
+function goGridOwnerEdit(slug: string) {
+  closeGridOwnerMenu()
+  router.push(`/pin/${slug}/edit`)
+}
+
+async function confirmDeleteGridOwnedPin(slug: string) {
+  closeGridOwnerMenu()
+  const ok = await showConfirm({
+    title: t('pin.delete.confirmTitle'),
+    message: t('pin.delete.confirmBody'),
+    variant: 'danger',
+  })
+  if (!ok) return
+  try {
+    await deletePin(slug)
+    emit('pin-deleted', slug)
+  } catch {
+    await showAlert(t('pin.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
   }
 }
 
@@ -213,13 +303,14 @@ onUnmounted(() => {
               :sizes="gridImageSizes"
               :fetchpriority="gridImageFetchPriority"
               decoding="async"
-              class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none"
-              draggable="false"
-              :class="isMediaLoaded(cell.pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
+              :class="[
+                PIN_MEDIA_ANTI_LEAK_CLASS,
+                'w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none',
+                isMediaLoaded(cell.pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover',
+              ]"
               loading="lazy"
               @load="markMediaLoaded(cell.pin.id)"
-              @contextmenu.prevent
-              @dragstart.prevent
+              v-bind="pinMediaAntiLeakImgBindings()"
             />
           </PinSensitiveMedia>
           <PinSensitiveMedia
@@ -234,10 +325,14 @@ onUnmounted(() => {
               muted
               playsinline
               :preload="storyVideoPreload"
-              class="w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none max-h-[480px]"
-              :class="isMediaLoaded(cell.pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover'"
+              :class="[
+                PIN_MEDIA_ANTI_LEAK_CLASS,
+                'w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none max-h-[480px]',
+                isMediaLoaded(cell.pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover',
+              ]"
               @loadedmetadata="markMediaLoaded(cell.pin.id)"
               @error="markMediaLoaded(cell.pin.id)"
+              v-bind="pinMediaAntiLeakVideoBindings(false)"
             />
           </PinSensitiveMedia>
 
@@ -254,6 +349,21 @@ onUnmounted(() => {
           >
             {{ t('pin.storyBadge') }}
           </div>
+
+          <button
+            v-if="viewerOwnsPin(cell.pin)"
+            type="button"
+            class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/55 text-white shadow-md backdrop-blur-[1px] transition-opacity duration-200 hover:bg-black/65 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+            :class="cell.pin.scheduledPublishAt || cell.pin.isStory ? 'top-10 left-3' : 'top-3 left-3'"
+            :aria-expanded="gridOwnerMenuSlug === cell.pin.slug"
+            aria-haspopup="menu"
+            :aria-label="t('pin.ownerMenu.more')"
+            @click="toggleGridOwnerMenu(cell.pin, $event)"
+          >
+            <span class="material-symbols-outlined text-[22px] leading-none translate-y-px pointer-events-none" aria-hidden="true">
+              more_horiz
+            </span>
+          </button>
 
           <!-- Dark overlay on hover (sous les boutons, au-dessus du média) -->
           <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 z-[5] pointer-events-none"></div>
@@ -316,7 +426,7 @@ onUnmounted(() => {
               {{ formatCount(cell.pin.stats.saves) }}
               <span class="material-symbols-outlined text-xs" :class="{ 'fill-1 text-neutral-600': cell.pin.saved }">bookmark</span>
             </span>
-            <span v-if="cell.pin.stats.reactions > 0" class="flex items-center gap-0.5">
+            <span v-if="showPinReactionStats(cell.pin)" class="flex items-center gap-0.5">
               {{ formatCount(cell.pin.stats.reactions) }}
               <span class="material-symbols-outlined text-xs fill-1" :class="cell.pin.liked ? 'text-pink-600' : 'text-neutral-600'">favorite</span>
             </span>
@@ -361,5 +471,35 @@ onUnmounted(() => {
       </template>
     </div>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="gridOwnerMenuSlug"
+        ref="gridOwnerMenuFloatingRef"
+        role="menu"
+        class="fixed w-[min(240px,calc(100vw-1rem))] rounded-2xl border border-neutral-200 bg-white py-1.5 shadow-2xl"
+        :style="{ ...gridOwnerMenuFloatingStyles, zIndex: 130 }"
+        @pointerdown.stop
+      >
+        <button
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-50"
+          @click="gridOwnerMenuSlug ? goGridOwnerEdit(gridOwnerMenuSlug) : null"
+        >
+          <span class="material-symbols-outlined text-lg text-neutral-500" aria-hidden="true">edit</span>
+          {{ t('pin.ownerMenu.edit') }}
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
+          @click="gridOwnerMenuSlug ? confirmDeleteGridOwnedPin(gridOwnerMenuSlug) : null"
+        >
+          <span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
+          {{ t('pin.ownerMenu.delete') }}
+        </button>
+      </div>
+    </Teleport>
   </section>
 </template>

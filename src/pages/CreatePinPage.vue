@@ -6,6 +6,7 @@ import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PrivateTags from '../components/PrivateTags.vue'
+import CreatePinEditSkeleton from '../components/CreatePinEditSkeleton.vue'
 import api from '../api'
 import {
   moderationScanText,
@@ -15,6 +16,8 @@ import {
   hasRequiredBirthDateForMediaPublish,
 } from '../composables/useModeration'
 import { formatDrfErrorMessages, drfErrorTouchesFields } from '../utils/apiValidationErrors'
+import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
+import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 
 /** Champs affichés uniquement à l’étape 1 (texte / catégorie / tags publics). Pas les tags privés (étape 2). */
 const CREATE_PIN_STEP_1_FIELD_KEYS = new Set([
@@ -79,6 +82,26 @@ type TopicOption = { name: string; originalName: string; icon?: string; color?: 
 const dynamicTopics = ref<TopicOption[]>([])
 const boardsLoading = ref(false)
 const showCategoryDropdown = ref(false)
+const categoryAnchorRef = ref<HTMLElement | null>(null)
+const categoryFloatingRef = ref<HTMLElement | null>(null)
+
+const { floatingStyles: categoryFloatingStyles } = useAnchoredDropdown(categoryAnchorRef, categoryFloatingRef, {
+  open: showCategoryDropdown,
+  placement: 'bottom-start',
+  strategy: 'fixed',
+  matchReferenceWidth: true,
+})
+
+usePointerOutsideDismiss(() => [
+  {
+    isOpen: showCategoryDropdown,
+    getRoots: () => [categoryAnchorRef.value, categoryFloatingRef.value],
+    close: () => {
+      showCategoryDropdown.value = false
+    },
+  },
+])
+
 const categorySearch = ref('')
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -499,16 +522,7 @@ const selectCategory = (selected: TopicOption) => {
 
 <template>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-    <div
-      v-if="loadingEdit"
-      class="flex flex-col items-center justify-center py-24 gap-4 text-neutral-600"
-    >
-      <svg class="animate-spin h-10 w-10 text-pink-600 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-        <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
-        <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-      </svg>
-      <span class="text-sm font-medium">{{ t('common.loading') }}</span>
-    </div>
+    <CreatePinEditSkeleton v-if="loadingEdit" />
     <template v-else>
     <div
       v-if="needsBirthDateForMedia"
@@ -725,7 +739,7 @@ const selectCategory = (selected: TopicOption) => {
 
           <div class="relative z-40 isolate">
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.category') }}</label>
-            <div class="relative">
+            <div ref="categoryAnchorRef" class="relative">
               <input
                 v-model="categorySearch"
                 type="text"
@@ -736,13 +750,20 @@ const selectCategory = (selected: TopicOption) => {
               <button
                 type="button"
                 class="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full hover:bg-neutral-100 flex items-center justify-center"
+                aria-haspopup="listbox"
+                :aria-expanded="showCategoryDropdown"
                 @click="showCategoryDropdown = !showCategoryDropdown"
               >
                 <span class="material-symbols-outlined text-neutral-500">expand_more</span>
               </button>
+            </div>
+            <Teleport to="body">
               <div
                 v-if="showCategoryDropdown"
-                class="absolute z-[60] mt-2 w-full bg-white border border-neutral-200 rounded-xl shadow-lg max-h-56 overflow-y-auto"
+                ref="categoryFloatingRef"
+                class="bg-white border border-neutral-200 rounded-xl shadow-lg max-h-56 overflow-y-auto"
+                role="listbox"
+                :style="{ ...categoryFloatingStyles, zIndex: 140 }"
               >
                 <button
                   v-for="topicItem in filteredTopics"
@@ -763,7 +784,7 @@ const selectCategory = (selected: TopicOption) => {
                   + {{ categorySearch.trim() }}
                 </button>
               </div>
-            </div>
+            </Teleport>
           </div>
 
           <div>

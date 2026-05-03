@@ -7,6 +7,7 @@ import StoryViewer from './StoryViewer.vue'
 import { useI18n } from '../i18n'
 import { API_BASE_URL } from '../env'
 import { displayInitials } from '../utils/displayInitials'
+import { PIN_MEDIA_ANTI_LEAK_CLASS, pinMediaAntiLeakImgBindings } from '../composables/mediaAntiLeak'
 
 const { t } = useI18n()
 
@@ -91,7 +92,10 @@ function coverIsVideo(url: string) {
 }
 
 function openAt(groupIndex: number) {
-  viewerPins.value = groups.value.slice(groupIndex).flatMap((g) => g.pins)
+  const g = groups.value[groupIndex]
+  if (!g?.pins?.length) return
+  /* Une barre par auteur uniquement ; ne pas concaténer les autres comptes. */
+  viewerPins.value = [...g.pins]
   viewerOpen.value = true
 }
 
@@ -179,9 +183,11 @@ onUnmounted(() => {
                 v-if="ringCover(g) && !coverIsVideo(ringCover(g))"
                 :src="ringCover(g)"
                 :alt="g.display_name"
-                class="w-full h-full rounded-full object-cover bg-neutral-100 pointer-events-none select-none"
-                draggable="false"
-                @contextmenu.prevent
+                :class="[
+                  PIN_MEDIA_ANTI_LEAK_CLASS,
+                  'w-full h-full rounded-full object-cover bg-neutral-100 pointer-events-none select-none',
+                ]"
+                v-bind="pinMediaAntiLeakImgBindings()"
               />
               <div
                 v-else

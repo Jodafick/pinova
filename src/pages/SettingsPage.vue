@@ -12,6 +12,7 @@ import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
+import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
 
 const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-profile', icon: 'person', labelKey: 'settings.nav.profile' },
@@ -80,9 +81,11 @@ const privacySaved = ref(false)
 const digestWeekly = ref(true)
 const digestSaving = ref(false)
 const digestSaved = ref(false)
-const sensitiveBlurByDefault = ref(true)
-const sensitiveBlurSaving = ref(false)
-const sensitiveBlurSaved = ref(false)
+type SensitiveMediaViewerPref = 'blur' | 'show' | 'hide'
+
+const sensitiveMediaViewerPref = ref<SensitiveMediaViewerPref>('blur')
+const sensitiveMediaPrefsSaving = ref(false)
+const sensitiveMediaPrefsSaved = ref(false)
 const subscriptionActionPending = ref(false)
 const subscriptionActionMessage = ref('')
 const billingInvoices = ref<
@@ -156,6 +159,28 @@ const scheduledAccountDeletionLabel = computed(() => {
 })
 
 const currentPlan = ref<'free' | 'plus' | 'pro'>('free')
+
+const isVerifiedAdultForSensitiveSettings = computed(() => isVerifiedAdultFromBirthDate(currentUser.value?.birthDate))
+
+const canShowUnblurredSensitiveOption = computed(() => currentPlan.value === 'plus' || currentPlan.value === 'pro')
+
+function syncSensitiveMediaFormFromUser() {
+  const u = currentUser.value
+  if (!u || !isVerifiedAdultForSensitiveSettings.value) {
+    sensitiveMediaViewerPref.value = 'blur'
+    return
+  }
+  if (u.subscription?.hideSensitivePins) {
+    sensitiveMediaViewerPref.value = 'hide'
+    return
+  }
+  const paid = u.subscription?.plan === 'plus' || u.subscription?.plan === 'pro'
+  if (u.subscription?.sensitiveMediaBlurByDefault === false && paid) {
+    sensitiveMediaViewerPref.value = 'show'
+  } else {
+    sensitiveMediaViewerPref.value = 'blur'
+  }
+}
 
 const subscriptionRenewalLabel = computed(() => {
   const raw = currentUser.value?.subscription?.renewalAt
@@ -296,7 +321,6 @@ onMounted(() => {
     privateProfile.value = currentUser.value.privateProfile ?? false
     discoverableProfile.value = currentUser.value.discoverableProfile ?? true
     digestWeekly.value = currentUser.value.subscription?.digestCreatorWeekly ?? true
-    sensitiveBlurByDefault.value = currentUser.value.subscription?.sensitiveMediaBlurByDefault ?? true
   }
   api.get('subscription/currencies/')
     .then((response) => {
@@ -321,13 +345,11 @@ watch(
     [
       currentUser.value?.subscription?.plan,
       currentUser.value?.subscription?.sensitiveMediaBlurByDefault,
+      currentUser.value?.subscription?.hideSensitivePins,
+      currentUser.value?.birthDate,
     ] as const,
-  ([plan, pref]) => {
-    if (plan !== 'plus' && plan !== 'pro') {
-      sensitiveBlurByDefault.value = true
-      return
-    }
-    sensitiveBlurByDefault.value = pref ?? true
+  () => {
+    syncSensitiveMediaFormFromUser()
   },
   { immediate: true },
 )
@@ -619,17 +641,27 @@ const persistDigestWeekly = async () => {
   }
 }
 
-const persistSensitiveBlurDefault = async () => {
-  if (currentPlan.value !== 'plus' && currentPlan.value !== 'pro') return
-  sensitiveBlurSaving.value = true
+const persistSensitiveMediaPreferences = async () => {
+  if (!currentUser.value || !isVerifiedAdultForSensitiveSettings.value) return
+  if (sensitiveMediaViewerPref.value === 'show' && !canShowUnblurredSensitiveOption.value) {
+    await showAlert(t('settings.access.sensitiveMedia.needPlus'), { variant: 'warning' })
+    syncSensitiveMediaFormFromUser()
+    return
+  }
+  sensitiveMediaPrefsSaving.value = true
   try {
-    await updateProfile({ sensitiveMediaBlurByDefault: sensitiveBlurByDefault.value })
-    sensitiveBlurSaved.value = true
-    setTimeout(() => (sensitiveBlurSaved.value = false), 2500)
+    const hide = sensitiveMediaViewerPref.value === 'hide'
+    const blur = sensitiveMediaViewerPref.value !== 'show'
+    await updateProfile({
+      hideSensitivePins: hide,
+      sensitiveMediaBlurByDefault: hide ? true : blur,
+    })
+    sensitiveMediaPrefsSaved.value = true
+    setTimeout(() => (sensitiveMediaPrefsSaved.value = false), 2500)
   } catch {
     void 0
   } finally {
-    sensitiveBlurSaving.value = false
+    sensitiveMediaPrefsSaving.value = false
   }
 }
 
@@ -1243,29 +1275,54 @@ watch(
             <p class="text-[11px] text-neutral-600 mt-2">{{ t('settings.access.dataSaver.hint', { active: isLowDataMode ? t('settings.access.dataSaver.yes') : t('settings.access.dataSaver.no') }) }}</p>
           </div>
 
-          <div v-if="currentPlan === 'plus' || currentPlan === 'pro'" class="pt-2 border-t border-neutral-100">
-            <label class="flex items-center justify-between py-2 cursor-pointer">
-              <div>
-                <p class="text-sm font-medium text-neutral-800">{{ t('settings.access.sensitiveBlur.title') }}</p>
-                <p class="text-xs text-neutral-600">{{ t('settings.access.sensitiveBlur.desc') }}</p>
-              </div>
-              <div class="relative">
-                <input v-model="sensitiveBlurByDefault" type="checkbox" class="sr-only peer" />
-                <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
-                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
-              </div>
-            </label>
+          <div v-if="isVerifiedAdultForSensitiveSettings" class="pt-2 border-t border-neutral-100 space-y-3">
+            <div>
+              <p class="text-sm font-medium text-neutral-800">{{ t('settings.access.sensitiveMedia.title') }}</p>
+              <p class="text-xs text-neutral-600 mt-0.5">{{ t('settings.access.sensitiveMedia.subtitle') }}</p>
+            </div>
+            <fieldset class="space-y-2">
+              <legend class="sr-only">{{ t('settings.access.sensitiveMedia.title') }}</legend>
+              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'blur' ? 'border-pink-400 bg-pink-50/50' : 'border-neutral-200 hover:bg-neutral-50'">
+                <input v-model="sensitiveMediaViewerPref" type="radio" value="blur" class="mt-1" />
+                <span>
+                  <span class="text-sm font-medium text-neutral-900">{{ t('settings.access.sensitiveMedia.optionBlur') }}</span>
+                  <span class="block text-xs text-neutral-600 mt-0.5">{{ t('settings.access.sensitiveMedia.optionBlurDesc') }}</span>
+                </span>
+              </label>
+              <label
+                class="flex gap-3 p-3 rounded-xl border transition"
+                :class="[
+                  !canShowUnblurredSensitiveOption ? 'opacity-55 cursor-not-allowed' : 'cursor-pointer',
+                  sensitiveMediaViewerPref === 'show' ? 'border-pink-400 bg-pink-50/50' : 'border-neutral-200',
+                  canShowUnblurredSensitiveOption ? 'hover:bg-neutral-50' : '',
+                ]"
+              >
+                <input v-model="sensitiveMediaViewerPref" type="radio" value="show" class="mt-1 shrink-0" :disabled="!canShowUnblurredSensitiveOption" />
+                <span>
+                  <span class="text-sm font-medium text-neutral-900">{{ t('settings.access.sensitiveMedia.optionShow') }}</span>
+                  <span class="block text-xs text-neutral-600 mt-0.5">{{ t('settings.access.sensitiveMedia.optionShowDesc') }}</span>
+                  <span v-if="!canShowUnblurredSensitiveOption" class="block text-[11px] text-amber-800 mt-1">{{ t('settings.access.sensitiveMedia.optionShowBadge') }}</span>
+                </span>
+              </label>
+              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'hide' ? 'border-pink-400 bg-pink-50/50' : 'border-neutral-200 hover:bg-neutral-50'">
+                <input v-model="sensitiveMediaViewerPref" type="radio" value="hide" class="mt-1" />
+                <span>
+                  <span class="text-sm font-medium text-neutral-900">{{ t('settings.access.sensitiveMedia.optionHide') }}</span>
+                  <span class="block text-xs text-neutral-600 mt-0.5">{{ t('settings.access.sensitiveMedia.optionHideDesc') }}</span>
+                </span>
+              </label>
+            </fieldset>
             <div class="flex justify-end mt-2">
               <button
                 type="button"
                 class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
-                :disabled="sensitiveBlurSaving"
-                @click="persistSensitiveBlurDefault"
+                :disabled="sensitiveMediaPrefsSaving"
+                @click="persistSensitiveMediaPreferences"
               >
-                {{ sensitiveBlurSaving ? t('settings.access.sensitiveBlur.saving') : t('settings.access.sensitiveBlur.save') }}
+                {{ sensitiveMediaPrefsSaving ? t('settings.access.sensitiveMedia.saving') : t('settings.access.sensitiveMedia.save') }}
               </button>
             </div>
-            <p v-if="sensitiveBlurSaved" class="text-xs text-emerald-700 mt-2">{{ t('settings.access.sensitiveBlur.saved') }}</p>
+            <p v-if="sensitiveMediaPrefsSaved" class="text-xs text-emerald-700">{{ t('settings.access.sensitiveMedia.saved') }}</p>
           </div>
 
           <div v-if="currentPlan === 'pro'" class="pt-2 border-t border-neutral-100">

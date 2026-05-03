@@ -97,6 +97,11 @@ async function onToggleSave(slug: string) {
   }
 }
 
+function onPinDeletedFromGrid(slug: string) {
+  boardPins.value = boardPins.value.filter((p) => p.slug !== slug)
+  organizePins.value = organizePins.value.filter((p) => p.slug !== slug)
+}
+
 async function openOrganize() {
   if (!viewerCanManage.value || !currentUser.value) return
   organizeModalOpen.value = true
@@ -359,7 +364,7 @@ watch([boardId, () => route.query.share], loadBoard)
         </div>
       </div>
 
-      <PinGrid v-if="boardPins.length" :pins="boardPins" @open-pin="openPin" @toggle-save="onToggleSave" />
+      <PinGrid v-if="boardPins.length" :pins="boardPins" @open-pin="openPin" @toggle-save="onToggleSave" @pin-deleted="onPinDeletedFromGrid" />
       <p v-else class="text-neutral-500 text-center py-16">{{ t('board.empty') }}</p>
     </template>
 

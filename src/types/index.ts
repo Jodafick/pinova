@@ -46,10 +46,25 @@ export type Pin = {
   scheduledPublishAt?: string | null
   /** Story 24h (badge filtre actif / archivé pour l'auteur) */
   isStory?: boolean
+  /** Plus/Pro : story publiée via standalone ; supprimée en base après 24 h (pas d'archive pin). */
+  storyEphemeral?: boolean
   storyExpiresAt?: string
   createdAt: string
   /** Pin publié avec politique « contenu sensible » (flou par défaut pour les adultes). */
   mediaSensitiveBlur?: boolean
+}
+
+export type PinLikerEntry = {
+  username: string
+  display_name: string
+  avatar_url: string
+  avatar_color: string
+  liked_at: string
+}
+
+export type PinLikersResponse = {
+  count: number
+  likers: PinLikerEntry[]
 }
 
 export type User = {
@@ -100,6 +115,8 @@ export type User = {
     activeBillingCycle?: 'monthly' | 'yearly' | null
     /** Plus/Pro — flouter les médias marqués sensibles par défaut (client) */
     sensitiveMediaBlurByDefault?: boolean
+    /** Majeur vérifié — masquer totalement les pins sensibles d'autrui */
+    hideSensitivePins?: boolean
   }
   boards?: {
     id: number

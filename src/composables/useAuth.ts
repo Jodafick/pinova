@@ -32,9 +32,10 @@ const defaultUser: User = {
     trialEligible: false,
     trialConsumedAt: null,
     digestCreatorWeekly: true,
-      activeBillingCycle: null,
-      sensitiveMediaBlurByDefault: true,
-    },
+    activeBillingCycle: null,
+    sensitiveMediaBlurByDefault: true,
+    hideSensitivePins: false,
+  },
   birthDate: null,
 }
 
@@ -106,6 +107,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
         djangoUser.subscription?.sensitive_media_blur_by_default !== undefined
           ? !!djangoUser.subscription.sensitive_media_blur_by_default
           : true,
+      hideSensitivePins: !!djangoUser.subscription?.hide_sensitive_pins,
       accountScheduledDeletionAt:
         djangoUser.subscription?.account_scheduled_deletion_at ?? null,
       seatBundle: djangoUser.subscription?.seat_bundle ?? 'solo',
@@ -212,7 +214,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean, hideSensitivePins?: boolean }) {
     try {
       const formData = new FormData()
       if (data.displayName) formData.append('display_name', data.displayName)
@@ -239,6 +241,10 @@ export function useAuth() {
 
       if (data.sensitiveMediaBlurByDefault !== undefined) {
         formData.append('sensitive_media_blur_by_default', data.sensitiveMediaBlurByDefault ? 'true' : 'false')
+      }
+
+      if (data.hideSensitivePins !== undefined) {
+        formData.append('hide_sensitive_pins', data.hideSensitivePins ? 'true' : 'false')
       }
 
       const response = await api.patch('me/', formData, {

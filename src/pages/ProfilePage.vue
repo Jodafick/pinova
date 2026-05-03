@@ -15,6 +15,10 @@ import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
 import { displayInitials } from '../utils/displayInitials'
 import { shareUrlWithFallback } from '../utils/shareFallback'
+import {
+  PIN_MEDIA_ANTI_LEAK_CLASS,
+  pinMediaAntiLeakImgBindings,
+} from '../composables/mediaAntiLeak'
 
 const PROFILE_PINS_PAGE_SIZE = 24
 
@@ -533,6 +537,11 @@ const openPin = (slug: string) => {
   router.push(`/pin/${slug}`)
 }
 
+function onPinDeletedFromGrid(slug: string) {
+  profilePins.value = profilePins.value.filter((p) => p.slug !== slug)
+  savedPinsList.value = savedPinsList.value.filter((p) => p.slug !== slug)
+}
+
 const openFollowersModal = async () => {
   if (!profileUser.value) return
   showFollowersModal.value = true
@@ -1007,9 +1016,8 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
                 :key="pi"
                 :src="src"
                 alt=""
-                class="w-full h-full object-cover bg-neutral-100 min-h-0"
-                draggable="false"
-                @contextmenu.prevent
+                :class="[PIN_MEDIA_ANTI_LEAK_CLASS, 'w-full h-full object-cover bg-neutral-100 min-h-0']"
+                v-bind="pinMediaAntiLeakImgBindings()"
               />
             </template>
             <div
@@ -1290,6 +1298,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       :loading-more="profileGridLoadingMore"
       @toggle-save="handleToggleSave"
       @open-pin="openPin"
+      @pin-deleted="onPinDeletedFromGrid"
     />
 
     <div v-else-if="displayPins.length === 0" class="flex flex-col items-center justify-center py-16 text-center">

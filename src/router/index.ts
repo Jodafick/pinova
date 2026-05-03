@@ -50,6 +50,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/story/create',
+      name: 'create-standalone-story',
+      component: () => import('../pages/CreateStandaloneStoryPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/profile/:username/board/:boardId',
       name: 'board',
       component: () => import('../pages/BoardPage.vue'),

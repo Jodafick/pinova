@@ -63,3 +63,15 @@
 .avatar-text {
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
+
+/**
+ * Réduit (sans abolir) enregistrement / glisser / menu contextuel sur médias pin.
+ * iOS peut toujours proposer capture écran ou partage système — compléter côté serveur (URL signées, filigrane).
+ */
+.pin-media-antileak {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: manipulation;
+}

@@ -8,7 +8,13 @@ import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
 import StorySegmentedProgressBar from './StorySegmentedProgressBar.vue'
+import StoryLikersModal from './StoryLikersModal.vue'
 import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/useModeration'
+import {
+  PIN_MEDIA_ANTI_LEAK_CLASS,
+  pinMediaAntiLeakImgBindings,
+  pinMediaAntiLeakVideoBindings,
+} from '../composables/mediaAntiLeak'
 
 const props = defineProps<{
   modelValue: boolean
@@ -47,6 +53,7 @@ const MAX_VIDEO_MS = 120_000
 const index = ref(0)
 const heartBurst = ref(false)
 const expandedDesc = ref(false)
+const storyLikersOpen = ref(false)
 /** État like / reactions — props.story ≠ store `pins`; toggleLike ne met pas à jour le viewer. */
 const storyLikedBySlug = ref<Record<string, boolean>>({})
 const storyReactionsBySlug = ref<Record<string, number>>({})
@@ -146,8 +153,22 @@ watch(
   },
 )
 
+watch(
+  () => props.pins,
+  () => {
+    if (props.modelValue && props.pins.length > 0) syncStoryEngagementFromProps()
+  },
+  { deep: true },
+)
+
 watch(index, () => {
   if (props.modelValue) restartCurrentSegment()
+})
+
+watch(storyLikersOpen, (open) => {
+  if (!props.modelValue || props.pins.length === 0) return
+  if (open) clearAdvance()
+  else restartCurrentSegment()
 })
 
 const current = computed(() => props.pins[index.value])
@@ -192,13 +213,18 @@ const storyAuthorInitials = computed(() => {
   return pin.user.trim().slice(0, 2).toUpperCase()
 })
 
-/** L'auteur de la story voit le compteur de likes ; les autres non. */
-const showLikeCountForStory = computed(() => {
+/** Stories : uniquement le propriétaire voit le compteur (liste des j’aime au clic). */
+const isOwnerViewingStory = computed(() => {
   const pin = current.value
-  const u = currentUser.value
+  const u = currentUser.value?.username
   if (!pin || !u) return false
-  return pin.username === u.username
+  return pin.username.trim().toLowerCase() === u.trim().toLowerCase()
 })
+
+function openStoryLikersModal() {
+  if (!isOwnerViewingStory.value || !current.value?.slug) return
+  storyLikersOpen.value = true
+}
 
 async function handleReportStory() {
   const pin = current.value
@@ -271,6 +297,7 @@ async function doLike() {
     router.push('/login')
     return
   }
+  if (isOwnerViewingStory.value) return
   heartBurst.value = true
   window.setTimeout(() => {
     heartBurst.value = false
@@ -332,15 +359,26 @@ function openPinPage() {
 
 function onKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return
-  if (e.key === 'Escape') close()
-  else if (e.key === 'ArrowRight') goNext()
+  if (e.key === 'Escape') {
+    if (storyLikersOpen.value) {
+      storyLikersOpen.value = false
+      return
+    }
+    close()
+  } else if (e.key === 'ArrowRight') goNext()
   else if (e.key === 'ArrowLeft') goPrev()
+}
+
+function handleStoryDblLike() {
+  if (isOwnerViewingStory.value) return
+  void doLike()
 }
 
 let lastTap = 0
 function onCenterTap() {
   const pin = current.value
   if (!pin || !isAuthenticated.value) return
+  if (isOwnerViewingStory.value) return
   const now = Date.now()
   if (now - lastTap < 340) {
     lastTap = 0
@@ -440,7 +478,7 @@ onUnmounted(() => {
         <div
           class="absolute inset-y-0 left-[28%] right-[28%] z-25 flex items-center justify-center"
           @click.stop="onCenterTap"
-          @dblclick.stop.prevent="doLike"
+          @dblclick.stop.prevent="handleStoryDblLike"
         />
 
         <div class="relative flex-1 flex items-center justify-center px-3 pb-28 pt-14 sm:px-8">
@@ -458,13 +496,16 @@ onUnmounted(() => {
               <video
                 :key="`${current.slug}-video`"
                 :src="current.storyVideoUrl"
-                class="w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block"
+                :class="[
+                  PIN_MEDIA_ANTI_LEAK_CLASS,
+                  'w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block',
+                ]"
                 playsinline
                 muted
                 autoplay
                 @loadedmetadata="onStoryVideoLoadedMetadata"
                 @ended="onStoryVideoEnded"
-                @contextmenu.prevent
+                v-bind="pinMediaAntiLeakVideoBindings(false)"
               />
             </PinSensitiveMedia>
             <PinSensitiveMedia
@@ -477,10 +518,11 @@ onUnmounted(() => {
               <img
                 :src="current.imageUrl"
                 :alt="current.title"
-                class="w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block"
-                draggable="false"
-                @contextmenu.prevent
-                @dragstart.prevent
+                :class="[
+                  PIN_MEDIA_ANTI_LEAK_CLASS,
+                  'w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block',
+                ]"
+                v-bind="pinMediaAntiLeakImgBindings()"
               />
             </PinSensitiveMedia>
 
@@ -510,18 +552,26 @@ onUnmounted(() => {
             </div>
 
             <button
+              v-if="!isOwnerViewingStory"
               type="button"
-              class="absolute top-3 right-3 z-40 flex items-center gap-1 rounded-full bg-black/45 backdrop-blur-md px-3 py-2 text-white border border-white/15 hover:bg-black/55 transition"
+              class="absolute top-3 right-3 z-40 flex items-center justify-center rounded-full bg-black/45 backdrop-blur-md w-11 h-11 text-white border border-white/15 hover:bg-black/55 transition"
+              :title="t('pin.doubleTapLikeHint')"
               @click.stop="doLike"
             >
               <span
                 class="material-symbols-outlined text-[26px] transition-colors"
                 :class="currentStoryLiked ? 'story-ms-heart-on text-pink-400' : 'text-white'"
               >favorite</span>
-              <span
-                v-if="showLikeCountForStory"
-                class="text-xs font-semibold tabular-nums min-w-[1.25rem]"
-              >{{ currentStoryReactions }}</span>
+            </button>
+            <button
+              v-else
+              type="button"
+              class="absolute top-3 right-3 z-40 flex items-center gap-2 rounded-full bg-black/45 backdrop-blur-md px-3 py-2 text-white border border-white/15 hover:bg-black/55 transition cursor-pointer"
+              :aria-label="t('story.likers.title', { count: currentStoryReactions })"
+              @click.stop="openStoryLikersModal"
+            >
+              <span class="material-symbols-outlined text-[24px] story-ms-heart-on text-pink-300">favorite</span>
+              <span class="text-xs font-semibold tabular-nums min-w-[1.25rem]">{{ currentStoryReactions }}</span>
             </button>
 
             <transition name="fade">
@@ -540,7 +590,7 @@ onUnmounted(() => {
 
       <div class="absolute bottom-6 inset-x-0 z-40 flex justify-center px-4 pointer-events-none">
         <button
-          v-if="current?.slug"
+          v-if="current?.slug && !current?.storyEphemeral"
           type="button"
           class="pointer-events-auto px-5 py-2.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-xs font-semibold hover:bg-white/25 transition"
           @click="openPinPage"
@@ -550,6 +600,11 @@ onUnmounted(() => {
       </div>
     </div>
   </Teleport>
+
+  <StoryLikersModal
+    v-model="storyLikersOpen"
+    :pin-slug="storyLikersOpen ? (current?.slug ?? null) : null"
+  />
 </template>
 
 <style scoped>

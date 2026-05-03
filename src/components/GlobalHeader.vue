@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
@@ -8,6 +9,10 @@ import api from '../api'
 import { subscribeNotificationRefreshFromApiActivity } from '../notificationRefresh'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 import { displayInitials } from '../utils/displayInitials'
+import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
+import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
+
+type LangSwitcherInstance = ComponentPublicInstance & { close?: () => void }
 
 const { t } = useI18n()
 
@@ -15,6 +20,8 @@ const route = useRoute()
 const router = useRouter()
 const { currentUser, isAuthenticated, logout } = useAuth()
 const { pins, trackSearchInteraction } = usePins()
+
+const langSwitcherRef = ref<LangSwitcherInstance | null>(null)
 
 const searchQuery = ref('')
 const showUserMenu = ref(false)
@@ -29,8 +36,61 @@ window.addEventListener('offline', () => (isOffline.value = true))
 const searchResults = computed(() => {
   if (!searchQuery.value.trim()) return []
   const q = searchQuery.value.toLowerCase()
-  return pins.value.filter(p => p.title.toLowerCase().includes(q)).slice(0, 5)
+  return pins.value.filter((p) => p.title.toLowerCase().includes(q)).slice(0, 5)
 })
+
+const showSearchPopover = computed(
+  () => showSearchResults.value && searchResults.value.length > 0,
+)
+
+const searchAnchorRef = ref<HTMLElement | null>(null)
+const searchFloatingRef = ref<HTMLElement | null>(null)
+const { floatingStyles: searchFloatingStyles } = useAnchoredDropdown(searchAnchorRef, searchFloatingRef, {
+  open: showSearchPopover,
+  placement: 'bottom-start',
+  strategy: 'fixed',
+  matchReferenceWidth: true,
+})
+
+const notifAnchorRef = ref<HTMLElement | null>(null)
+const notifFloatingRef = ref<HTMLElement | null>(null)
+const { floatingStyles: notifFloatingStyles } = useAnchoredDropdown(notifAnchorRef, notifFloatingRef, {
+  open: showNotifications,
+  placement: 'bottom-end',
+  strategy: 'fixed',
+})
+
+const userAnchorRef = ref<HTMLElement | null>(null)
+const userFloatingRef = ref<HTMLElement | null>(null)
+const { floatingStyles: userFloatingStyles } = useAnchoredDropdown(userAnchorRef, userFloatingRef, {
+  open: showUserMenu,
+  placement: 'bottom-end',
+  strategy: 'fixed',
+})
+
+usePointerOutsideDismiss(() => [
+  {
+    isOpen: showSearchResults,
+    getRoots: () => [searchAnchorRef.value, searchFloatingRef.value],
+    close: () => {
+      showSearchResults.value = false
+    },
+  },
+  {
+    isOpen: showNotifications,
+    getRoots: () => [notifAnchorRef.value, notifFloatingRef.value],
+    close: () => {
+      showNotifications.value = false
+    },
+  },
+  {
+    isOpen: showUserMenu,
+    getRoots: () => [userAnchorRef.value, userFloatingRef.value],
+    close: () => {
+      showUserMenu.value = false
+    },
+  },
+])
 
 const currentRoute = computed(() => route.name as string)
 
@@ -83,7 +143,7 @@ const fetchNotifications = async () => {
 const markAllAsRead = async () => {
   try {
     await api.post('notifications/mark_all_as_read/')
-    notifications.value.forEach(n => n.is_read = true)
+    notifications.value.forEach((n) => (n.is_read = true))
   } catch (err) {
     console.error('Error marking all as read:', err)
   }
@@ -105,7 +165,6 @@ const handleNotificationClick = async (notification: any) => {
     }
     router.push({ path: `/pin/${notification.pin_slug}`, query })
   } else if (notification.pin_id) {
-    // Fallback legacy notifications lacking slug.
     router.push('/')
   } else if (notification.action_url) {
     router.push(String(notification.action_url))
@@ -137,7 +196,37 @@ const closeDropdowns = () => {
   showUserMenu.value = false
   showNotifications.value = false
   showSearchResults.value = false
+  langSwitcherRef.value?.close?.()
 }
+
+function onLangPopoverOpen(opened: boolean) {
+  if (!opened) return
+  showUserMenu.value = false
+  showNotifications.value = false
+  showSearchResults.value = false
+}
+
+function onSearchFocus() {
+  langSwitcherRef.value?.close?.()
+  showUserMenu.value = false
+  showNotifications.value = false
+  showSearchResults.value = true
+}
+
+function toggleNotificationsPanel() {
+  langSwitcherRef.value?.close?.()
+  showUserMenu.value = false
+  showNotifications.value = !showNotifications.value
+}
+
+function toggleUserMenuPanel() {
+  langSwitcherRef.value?.close?.()
+  showNotifications.value = false
+  showUserMenu.value = !showUserMenu.value
+}
+
+/** Au-dessus du header sticky (z-30). */
+const popoverZIndex = { zIndex: 115 }
 
 let unsubscribeNotifications: (() => void) | null = null
 
@@ -164,13 +253,6 @@ onUnmounted(() => {
   <header
     class="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-2 border-b border-neutral-100 bg-white/95 backdrop-blur-md sticky top-0 z-30"
   >
-    <!-- Click overlay to close dropdowns -->
-    <div
-      v-if="showUserMenu || showNotifications || showSearchResults"
-      class="fixed inset-0 z-20"
-      @click="closeDropdowns"
-    ></div>
-
     <!-- Logo -->
     <router-link
       to="/"
@@ -187,14 +269,13 @@ onUnmounted(() => {
         :key="item.name"
         :to="item.to"
         class="px-4 py-2 rounded-full text-sm font-semibold transition-colors relative"
-        :class="currentRoute === item.name
-          ? 'bg-neutral-900 text-white'
-          : 'text-neutral-700 hover:bg-neutral-100'"
+        :class="
+          currentRoute === item.name ? 'bg-neutral-900 text-white' : 'text-neutral-700 hover:bg-neutral-100'
+        "
       >
         {{ item.label }}
       </router-link>
-      
-      <!-- Offline Badge -->
+
       <div
         v-if="isOffline"
         class="ml-4 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1 animate-pulse"
@@ -205,12 +286,15 @@ onUnmounted(() => {
     </nav>
 
     <!-- Search bar -->
-    <div class="flex-1 relative min-w-0 z-30">
+    <div class="flex-1 relative min-w-0">
       <div
+        ref="searchAnchorRef"
         class="flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all overflow-hidden"
-        :class="showSearchResults
-          ? 'bg-white ring-2 ring-pink-500 shadow-lg'
-          : 'bg-neutral-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-pink-500 focus-within:shadow-lg'"
+        :class="
+          showSearchResults
+            ? 'bg-white ring-2 ring-pink-500 shadow-lg'
+            : 'bg-neutral-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-pink-500 focus-within:shadow-lg'
+        "
       >
         <span class="material-symbols-outlined text-lg text-neutral-400">search</span>
         <input
@@ -218,22 +302,27 @@ onUnmounted(() => {
           type="text"
           :placeholder="t('header.search.placeholder')"
           class="bg-transparent outline-none flex-1 text-sm"
-          @focus="showSearchResults = true"
+          @focus="onSearchFocus"
           @keyup.enter="handleSearch"
         />
         <button
           v-if="searchQuery"
+          type="button"
           class="w-6 h-6 rounded-full hover:bg-neutral-100 flex items-center justify-center"
           @click="searchQuery = ''"
         >
           <span class="material-symbols-outlined text-sm text-neutral-400">close</span>
         </button>
       </div>
+    </div>
 
-      <!-- Search dropdown -->
+    <Teleport to="body">
       <div
-        v-if="showSearchResults && searchResults.length > 0"
-        class="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+        v-if="showSearchPopover"
+        ref="searchFloatingRef"
+        class="bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+        role="listbox"
+        :style="{ ...searchFloatingStyles, ...popoverZIndex }"
       >
         <div class="p-2">
           <p class="px-3 py-1.5 text-xs font-medium text-neutral-400">{{ t('header.search.results') }}</p>
@@ -252,33 +341,65 @@ onUnmounted(() => {
           </router-link>
         </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- Droite : langue, notifications, profil -->
     <div class="flex items-center gap-1 sm:gap-2 shrink-0">
       <template v-if="isAuthenticated">
-        <LanguageSwitcher />
+        <LanguageSwitcher ref="langSwitcherRef" @popover-open-change="onLangPopoverOpen" />
 
         <!-- Notifications -->
-        <div class="relative z-30">
+        <div ref="notifAnchorRef">
           <button
             type="button"
             class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 text-neutral-600 transition relative"
-            @click.stop="showNotifications = !showNotifications; showUserMenu = false"
+            @click.stop="toggleNotificationsPanel()"
           >
             <span class="material-symbols-outlined text-xl">notifications</span>
-            <span v-if="notifications.some(n => !n.is_read)" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white"></span>
+            <span
+              v-if="notifications.some((n) => !n.is_read)"
+              class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white"
+            ></span>
           </button>
+        </div>
 
-          <!-- Notifications dropdown -->
+        <!-- Photo profil = menu utilisateur -->
+        <div ref="userAnchorRef">
+          <button
+            type="button"
+            class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full transition ring-2 ring-pink-500 hover:ring-pink-600 hover:scale-[1.02] shadow-md overflow-hidden focus:outline-none focus:ring-offset-2 focus:ring-offset-white focus:ring-pink-500"
+            :aria-label="t('header.user.myProfile')"
+            aria-haspopup="menu"
+            :aria-expanded="showUserMenu"
+            @click.stop="toggleUserMenuPanel()"
+          >
+            <div
+              class="w-full h-full flex items-center justify-center rounded-full text-xs sm:text-sm font-bold overflow-hidden"
+              :class="currentUser?.avatarUrl ? 'bg-neutral-100' : currentUser?.avatarColor || DEFAULT_AVATAR_COLOR_CLASS"
+            >
+              <img
+                v-if="currentUser?.avatarUrl"
+                :src="currentUser.avatarUrl"
+                alt=""
+                class="w-full h-full object-cover rounded-full"
+              />
+              <span v-else class="text-white drop-shadow-sm">{{ userInitials }}</span>
+            </div>
+          </button>
+        </div>
+
+        <Teleport to="body">
           <div
             v-if="showNotifications"
-            class="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+            ref="notifFloatingRef"
+            class="w-80 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+            role="menu"
+            :style="{ ...notifFloatingStyles, ...popoverZIndex }"
           >
             <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
               <h3 class="font-semibold text-neutral-900">{{ t('header.notifications') }}</h3>
               <button
-                v-if="notifications.some(n => !n.is_read)"
+                v-if="notifications.some((n) => !n.is_read)"
                 type="button"
                 class="text-xs text-pink-600 font-medium hover:underline"
                 @click="markAllAsRead"
@@ -300,7 +421,11 @@ onUnmounted(() => {
               >
                 <div
                   class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold overflow-hidden avatar-shadow ring-1 ring-neutral-100"
-                  :class="notification.sender_avatar_url ? 'bg-neutral-100' : (notification.sender_avatar_color || DEFAULT_AVATAR_COLOR_CLASS)"
+                  :class="
+                    notification.sender_avatar_url
+                      ? 'bg-neutral-100'
+                      : notification.sender_avatar_color || DEFAULT_AVATAR_COLOR_CLASS
+                  "
                 >
                   <img
                     v-if="notification.sender_avatar_url"
@@ -311,7 +436,10 @@ onUnmounted(() => {
                   <span v-else class="text-white leading-none">{{ displayInitials(notification.sender_username) }}</span>
                 </div>
                 <div class="flex-1">
-                  <p v-if="notification.title" class="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 mb-0.5">
+                  <p
+                    v-if="notification.title"
+                    class="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 mb-0.5"
+                  >
                     {{ notification.title }}
                   </p>
                   <p class="text-sm text-neutral-800 leading-snug">{{ notification.message }}</p>
@@ -321,40 +449,20 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-        </div>
+        </Teleport>
 
-        <!-- Photo profil = menu utilisateur -->
-        <div class="relative z-30">
-          <button
-            type="button"
-            class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full transition ring-2 ring-pink-500 hover:ring-pink-600 hover:scale-[1.02] shadow-md overflow-hidden focus:outline-none focus:ring-offset-2 focus:ring-offset-white focus:ring-pink-500"
-            :aria-label="t('header.user.myProfile')"
-            @click.stop="showUserMenu = !showUserMenu; showNotifications = false"
-          >
-            <div
-              class="w-full h-full flex items-center justify-center rounded-full text-xs sm:text-sm font-bold overflow-hidden"
-              :class="currentUser?.avatarUrl ? 'bg-neutral-100' : (currentUser?.avatarColor || DEFAULT_AVATAR_COLOR_CLASS)"
-            >
-              <img
-                v-if="currentUser?.avatarUrl"
-                :src="currentUser.avatarUrl"
-                alt=""
-                class="w-full h-full object-cover rounded-full"
-              />
-              <span v-else class="text-white drop-shadow-sm">{{ userInitials }}</span>
-            </div>
-          </button>
-
-          <!-- User dropdown -->
+        <Teleport to="body">
           <div
             v-if="showUserMenu"
-            class="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+            ref="userFloatingRef"
+            class="w-64 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+            role="menu"
+            :style="{ ...userFloatingStyles, ...popoverZIndex }"
           >
-            <!-- User info -->
             <div class="px-4 py-4 border-b border-neutral-100 flex gap-3">
               <div
                 class="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-pink-100 flex items-center justify-center text-sm font-bold"
-                :class="currentUser?.avatarUrl ? 'bg-neutral-100' : (currentUser?.avatarColor || DEFAULT_AVATAR_COLOR_CLASS)"
+                :class="currentUser?.avatarUrl ? 'bg-neutral-100' : currentUser?.avatarColor || DEFAULT_AVATAR_COLOR_CLASS"
               >
                 <img
                   v-if="currentUser?.avatarUrl"
@@ -366,7 +474,12 @@ onUnmounted(() => {
               </div>
               <div class="min-w-0 flex-1">
                 <p class="font-semibold text-neutral-900 text-sm flex items-center gap-1.5">
-                  <span v-if="currentPlan === 'pro'" class="material-symbols-outlined text-amber-500 text-base shrink-0">verified</span>
+                  <span
+                    v-if="currentPlan === 'pro'"
+                    class="material-symbols-outlined text-amber-500 text-base shrink-0"
+                  >
+                    verified
+                  </span>
                   <span class="truncate">{{ currentUser?.displayName }}</span>
                 </p>
                 <p class="text-xs text-neutral-500 truncate">@{{ currentUser?.username }}</p>
@@ -382,6 +495,15 @@ onUnmounted(() => {
               >
                 <span class="material-symbols-outlined text-lg">person</span>
                 {{ t('header.user.myProfile') }}
+              </router-link>
+              <router-link
+                v-if="currentPlan === 'plus' || currentPlan === 'pro'"
+                to="/story/create"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-pink-50 transition text-sm text-pink-700 md:hidden font-medium"
+                @click="showUserMenu = false"
+              >
+                <span class="material-symbols-outlined text-lg">auto_stories</span>
+                {{ t('story.standalone.navShort') }}
               </router-link>
               <router-link
                 to="/create"
@@ -441,11 +563,13 @@ onUnmounted(() => {
                 {{ t('nav.premium') }}
                 <span
                   class="ml-auto text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold"
-                  :class="currentPlan === 'pro'
-                    ? 'bg-amber-100 text-amber-700'
-                    : currentPlan === 'plus'
-                      ? 'bg-pink-100 text-pink-700'
-                      : 'bg-neutral-100 text-neutral-600'"
+                  :class="
+                    currentPlan === 'pro'
+                      ? 'bg-amber-100 text-amber-700'
+                      : currentPlan === 'plus'
+                        ? 'bg-pink-100 text-pink-700'
+                        : 'bg-neutral-100 text-neutral-600'
+                  "
                 >
                   {{ currentPlanLabel }}
                 </span>
@@ -454,6 +578,7 @@ onUnmounted(() => {
 
             <div class="border-t border-neutral-100 py-1">
               <button
+                type="button"
                 class="flex items-center gap-3 px-4 py-2.5 w-full hover:bg-neutral-50 transition text-sm text-pink-600"
                 @click="handleLogout"
               >
@@ -462,11 +587,11 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
-        </div>
+        </Teleport>
       </template>
 
       <template v-else>
-        <LanguageSwitcher />
+        <LanguageSwitcher ref="langSwitcherRef" @popover-open-change="onLangPopoverOpen" />
         <div class="flex items-center gap-2">
           <router-link
             to="/login"

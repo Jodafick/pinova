@@ -265,7 +265,6 @@ const plans = computed(() => [
       { label: t('premium.feature.collabInviteFlow'), included: true },
       { label: t('premium.feature.privateBoardLinks'), included: true },
       { label: t('premium.feature.scheduledPublish'), included: true },
-      { label: t('premium.feature.aiTranslate'), included: true },
       { label: t('premium.feature.download'), included: true },
     ],
   },

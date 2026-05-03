@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@floating-ui/vue": "^1.1.11",
+    "@giphy/js-fetch-api": "^5.8.0",
     "@tensorflow/tfjs": "^4.22.0",
     "axios": "^1.14.0",
     "emoji-picker-element": "^1.29.1",

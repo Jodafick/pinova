@@ -105,13 +105,23 @@ const openPin = (slug: string) => {
             {{ t('home.subtitle') }}
           </p>
         </div>
-        <router-link
-          to="/create"
-          class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold shadow-sm hover:bg-pink-700 hover:shadow-md transition-all"
-        >
-          <span class="material-symbols-outlined text-lg">add</span>
-          {{ t('home.createPin') }}
-        </router-link>
+        <div class="hidden sm:flex items-center gap-2 shrink-0">
+          <router-link
+            v-if="currentUser?.subscription?.plan === 'plus' || currentUser?.subscription?.plan === 'pro'"
+            to="/story/create"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-pink-200 bg-white text-pink-700 text-sm font-semibold shadow-sm hover:bg-pink-50 transition-all"
+          >
+            <span class="material-symbols-outlined text-lg">auto_stories</span>
+            {{ t('story.standalone.navShort') }}
+          </router-link>
+          <router-link
+            to="/create"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold shadow-sm hover:bg-pink-700 hover:shadow-md transition-all"
+          >
+            <span class="material-symbols-outlined text-lg">add</span>
+            {{ t('home.createPin') }}
+          </router-link>
+        </div>
       </div>
     </section>
 
@@ -151,7 +161,15 @@ const openPin = (slug: string) => {
       </p>
     </div>
 
-    <!-- Floating create button mobile -->
+    <!-- Floating shortcuts mobile -->
+    <router-link
+      v-if="currentUser?.subscription?.plan === 'plus' || currentUser?.subscription?.plan === 'pro'"
+      to="/story/create"
+      class="sm:hidden fixed bottom-24 right-6 w-12 h-12 rounded-full bg-white border-2 border-pink-400 text-pink-600 flex items-center justify-center shadow-lg hover:bg-pink-50 hover:scale-105 transition-all z-10"
+      :aria-label="t('story.standalone.title')"
+    >
+      <span class="material-symbols-outlined text-2xl">auto_stories</span>
+    </router-link>
     <router-link
       to="/create"
       class="sm:hidden fixed bottom-6 right-6 w-14 h-14 rounded-full bg-pink-600 text-white flex items-center justify-center shadow-xl hover:bg-pink-700 hover:scale-105 transition-all z-10"

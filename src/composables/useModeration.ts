@@ -185,7 +185,8 @@ export function viewerCanRevealSensitiveMedia(isAuthenticated: boolean, birthDat
 
 /**
  * Flou par défaut sur les médias marqués sensibles (côté client).
- * Plus/Pro peuvent désactiver via le profil ; mineurs / non connectés : toujours flouté.
+ * Plus/Pro peuvent désactiver le flou via le profil ; mineurs / non connectés : toujours flouté.
+ * Si l’API masque déjà les pins sensibles (`hide_sensitive_pins`), ils n’atteignent pas le client.
  */
 export function sensitiveMediaBlurredByDefault(
   isAuthenticated: boolean,

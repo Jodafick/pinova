@@ -49,6 +49,10 @@ const openPin = (slug: string) => {
   router.push(`/pin/${slug}`)
 }
 
+function onPinDeletedFromGrid(slug: string) {
+  followingPins.value = followingPins.value.filter((p) => p.slug !== slug)
+}
+
 onMounted(async () => {
   await loadFollowingFeed()
 })
@@ -77,6 +81,7 @@ const followSuggestedUser = async (username: string) => {
       :loading-more="isFetchingNextPage && displayPins.length > 0"
       @toggle-save="handleToggleSave"
       @open-pin="openPin"
+      @pin-deleted="onPinDeletedFromGrid"
     />
 
     <div v-else-if="displayPins.length === 0" class="rounded-2xl border border-neutral-200 bg-white p-8 text-center">
