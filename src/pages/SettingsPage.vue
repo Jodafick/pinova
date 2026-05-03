@@ -957,6 +957,8 @@ watch(
     <div class="space-y-8">
       <!-- Profile section -->
       <section id="settings-profile" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.profile.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.profile.subtitle') }}</p>
         </div>
 
@@ -1080,6 +1082,8 @@ watch(
 
       <!-- Notifications preferences -->
       <section id="settings-notifications" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.notifications.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.notifications.subtitle') }}</p>
         </div>
         <div class="p-6 space-y-4">
@@ -1150,6 +1154,8 @@ watch(
 
       <!-- Privacy -->
       <section id="settings-privacy" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.privacy.title') }}</h2>
         </div>
         <div class="p-6 space-y-4">
           <label class="flex items-center justify-between py-2 cursor-pointer">
@@ -1189,6 +1195,8 @@ watch(
 
       <!-- Accessibilité & données -->
       <section id="settings-access" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.access.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.access.subtitle') }}</p>
         </div>
         <div class="p-6 space-y-4">
@@ -1278,6 +1286,9 @@ watch(
 
       <!-- Ads preferences -->
       <section id="settings-ads" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.ads.title') }}</h2>
             <p class="text-xs text-neutral-500 mt-0.5">{{ adSectionHint() }}</p>
           </div>
           <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
@@ -1326,6 +1337,9 @@ watch(
       </section>
 
       <section id="settings-tips" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.tips.title') }}</h2>
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.tips.subtitle') }}</p>
           </div>
           <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
@@ -1527,6 +1541,9 @@ watch(
       </section>
 
       <section id="settings-subscription" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.subscription.title') }}</h2>
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
             <router-link to="/billing" class="inline-flex mt-2 text-xs font-semibold text-pink-600 hover:underline">
               {{ t('settings.subscription.viewBillingPage') }} →
@@ -1644,6 +1661,8 @@ watch(
       </section>
 
       <section id="settings-support" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100">
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.support.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.support.subtitle') }}</p>
         </div>
         <div class="p-6 space-y-3">
@@ -1684,6 +1703,9 @@ watch(
 
       <!-- Password section -->
       <section id="settings-password" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.password.title') }}</h2>
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.password.subtitle') }}</p>
           </div>
           <div v-if="passwordSaved" class="text-green-600 flex items-center gap-1 text-xs font-bold animate-fade-in">
@@ -1745,6 +1767,8 @@ watch(
 
       <!-- Danger zone -->
       <section id="settings-danger" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-pink-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-pink-100">
+          <h2 class="text-lg font-semibold text-pink-600">{{ t('settings.danger.title') }}</h2>
         </div>
         <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-50">
           <div>
