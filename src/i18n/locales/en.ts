@@ -130,6 +130,7 @@ export const en: Record<string, string> = {
   'moderation.reportSent': 'Thanks — your report was submitted.',
   'moderation.reportError': 'Could not submit the report.',
   'moderation.reportOwnDisabled': 'You cannot report your own content.',
+  'moderation.reportAlready': 'You have already reported this content.',
 
   'report.title': 'Report',
   'report.categoryLabel': 'Reason',
@@ -149,6 +150,10 @@ export const en: Record<string, string> = {
   'report.category.other': 'Other',
 
   'profile.block': 'Block',
+  'profile.moreAriaLabel': 'More actions on this profile',
+  'profile.moreReport': 'Report profile',
+  'profile.moreBlock': 'Block this account',
+  'profile.moreAlreadyReported': 'Profile already reported',
   'profile.block.confirmTitle': 'Block this account?',
   'profile.block.confirmBody':
     'You will no longer see their pins, stories, or comments, and they will not see yours. Mutual follow is removed.',

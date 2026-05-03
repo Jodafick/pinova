@@ -124,6 +124,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     blockedUsernames: Array.isArray(djangoUser.blocked_usernames)
       ? djangoUser.blocked_usernames.map((x: unknown) => String(x))
       : [],
+    viewerHasReportedProfile: !!djangoUser.viewer_has_reported_profile,
   }
 }
 

@@ -30,6 +30,8 @@ type CommentModel = {
   repliesCount?: number
   contentMasked?: boolean
   hiddenByOwner?: boolean
+  moderationHidden?: boolean
+  viewerHasReported?: boolean
 }
 
 const props = withDefaults(
@@ -157,6 +159,7 @@ function showReport(comment: Comment) {
     !!props.viewerUsername
     && !usernamesMatch(props.viewerUsername, comment.username)
     && !comment.contentMasked
+    && !comment.viewerHasReported
   )
 }
 

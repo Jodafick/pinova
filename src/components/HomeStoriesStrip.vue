@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api'
 import { mapDjangoPinToFrontend } from '../composables/usePins'
@@ -8,6 +8,12 @@ import StoryViewer from './StoryViewer.vue'
 import { useI18n } from '../i18n'
 import { API_BASE_URL } from '../env'
 import StoryRingCover from './StoryRingCover.vue'
+import {
+  initialStoryIndexForUser,
+  isStoryRingAllCaughtUp,
+  upsertStoryRingSession,
+} from '../utils/storyRingProgress'
+import type { StorySessionEndPayload } from '../utils/storyRingProgress'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -38,6 +44,27 @@ const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
 
 const SCROLL_STEP = 280
+
+/** Réactivité pour re-trier le bandeau après fermeture du viewer (localStorage). */
+const storyProgressTick = ref(0)
+
+const displayGroups = computed(() => {
+  void storyProgressTick.value
+  const raw = groups.value
+  const caught = (g: StoryRingGroupUi) => isStoryRingAllCaughtUp(g.username, g.pins)
+  return [...raw.filter((g) => !caught(g)), ...raw.filter((g) => caught(g))]
+})
+
+function ringOuterClass(g: StoryRingGroupUi) {
+  return isStoryRingAllCaughtUp(g.username, g.pins)
+    ? 'w-20 h-20 rounded-full p-[3px] bg-neutral-300'
+    : 'w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500'
+}
+
+function onStripStorySessionEnd(payload: StorySessionEndPayload) {
+  upsertStoryRingSession(payload)
+  storyProgressTick.value++
+}
 
 async function load() {
   loading.value = true
@@ -121,6 +148,7 @@ function openStoryFromSlugIfPossible() {
     viewerPins.value = [...found.pins]
     viewerInitialIndex.value = pinIdx
     viewerOpen.value = true
+    // Nettoyer l'URL immédiatement pour éviter une réouverture au prochain montage/watch
     void router.replace({ path: '/', query: nextQuery })
     return
   }
@@ -139,11 +167,11 @@ function openStoryFromSlugIfPossible() {
 }
 
 function openAt(groupIndex: number) {
-  const g = groups.value[groupIndex]
+  const g = displayGroups.value[groupIndex]
   if (!g?.pins?.length) return
   /* Une barre par auteur uniquement ; ne pas concaténer les autres comptes. */
   viewerPins.value = [...g.pins]
-  viewerInitialIndex.value = 0
+  viewerInitialIndex.value = initialStoryIndexForUser(g.username, g.pins)
   viewerOpen.value = true
 }
 
@@ -232,13 +260,13 @@ onUnmounted(() => {
         @scroll.passive="syncScrollMetrics"
       >
         <button
-          v-for="(g, i) in groups"
+          v-for="(g, i) in displayGroups"
           :key="g.username || `g-${i}`"
           type="button"
           class="snap-start shrink-0 flex flex-col items-center gap-2 w-[84px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 rounded-xl py-1"
           @click="openAt(i)"
         >
-          <div class="w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500">
+          <div :class="ringOuterClass(g)">
             <div class="w-full h-full rounded-full overflow-hidden bg-white p-[2px]">
               <StoryRingCover
                 :cover-url="ringCoverUrl(g)"
@@ -286,5 +314,6 @@ onUnmounted(() => {
     v-model="viewerOpen"
     :pins="viewerPins"
     :initial-index="viewerInitialIndex"
+    @session-end="onStripStorySessionEnd"
   />
 </template>

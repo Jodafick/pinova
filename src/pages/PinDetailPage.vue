@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePins, getFullMediaUrl } from '../composables/usePins'
+import { usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { displayInitials } from '../utils/displayInitials'
 import PinGrid from '../components/PinGrid.vue'
@@ -279,6 +279,7 @@ type UiComment = {
   contentMasked?: boolean
   hiddenByOwner?: boolean
   moderationHidden?: boolean
+  viewerHasReported?: boolean
 }
 
 const richComments = ref<UiComment[]>([])
@@ -337,6 +338,7 @@ const mapComment = (comment: any): UiComment => {
     contentMasked: !!comment.content_masked,
     hiddenByOwner: !!comment.hidden_by_owner,
     moderationHidden: !!comment.moderation_hidden,
+    viewerHasReported: !!comment.viewer_has_reported,
     replies: repliesPayload.map(mapComment),
     repliesNextPage: comment.replies_next_page || comment.replies?.next_page || null,
     repliesCount: comment.replies_count || repliesPayload.length,
@@ -646,6 +648,10 @@ const handleReportPin = async () => {
     await showAlert(t('moderation.reportOwnDisabled'), { variant: 'info' })
     return
   }
+  if (pin.value.viewerHasReported) {
+    await showAlert(t('moderation.reportAlready'), { variant: 'info' })
+    return
+  }
   reportTarget.value = 'pin'
   reportCommentId.value = null
   reportModalOpen.value = true
@@ -666,13 +672,25 @@ async function handleSubmitReport(payload: { category: string; details: string }
   try {
     if (reportTarget.value === 'pin') {
       await reportPin(pin.value.slug, payload)
+      await fetchPinBySlug(pin.value.slug)
     } else if (reportCommentId.value != null) {
       await reportComment(reportCommentId.value, payload)
+      await loadComments(true)
     }
     reportModalOpen.value = false
     await showAlert(t('moderation.reportSent'), { variant: 'success' })
-  } catch {
-    await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+  } catch (e) {
+    if (isAlreadyReportedError(e)) {
+      if (reportTarget.value === 'pin') {
+        await fetchPinBySlug(pin.value.slug)
+      } else {
+        await loadComments(true)
+      }
+      reportModalOpen.value = false
+      await showAlert(t('moderation.reportAlready'), { variant: 'info' })
+    } else {
+      await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+    }
   }
 }
 
@@ -951,7 +969,7 @@ async function deletePinFromMenu() {
                   <span v-else class="material-symbols-outlined" aria-hidden="true">download</span>
                 </button>
                 <button
-                  v-if="isAuthenticated && !isPinOwner"
+                  v-if="isAuthenticated && !isPinOwner && !pin.viewerHasReported"
                   type="button"
                   class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-700 transition"
                   :aria-label="t('moderation.report')"

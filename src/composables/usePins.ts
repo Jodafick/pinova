@@ -78,7 +78,13 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     storyEphemeral: !!djangoPin.story_ephemeral,
     storyExpiresAt: djangoPin.story_expires_at ?? undefined,
     mediaSensitiveBlur: !!djangoPin.media_sensitive_blur,
+    viewerHasReported: !!djangoPin.viewer_has_reported,
   }
+}
+
+export function isAlreadyReportedError(err: unknown): boolean {
+  const ax = err as { response?: { status?: number; data?: { error?: string } } }
+  return ax.response?.status === 409 || ax.response?.data?.error === 'already_reported'
 }
 
 export function usePins() {

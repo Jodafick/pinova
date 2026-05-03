@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
-import { usePins, mapDjangoPinToFrontend } from '../composables/usePins'
+import { usePins, mapDjangoPinToFrontend, isAlreadyReportedError } from '../composables/usePins'
 import type { User, Pin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
 import ProfileHeaderSkeleton from '../components/ProfileHeaderSkeleton.vue'
@@ -21,6 +21,14 @@ import {
   PIN_MEDIA_ANTI_LEAK_CLASS,
   pinMediaAntiLeakImgBindings,
 } from '../composables/mediaAntiLeak'
+import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
+import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
+import {
+  initialStoryIndexForUser,
+  isStoryRingAllCaughtUp,
+  upsertStoryRingSession,
+} from '../utils/storyRingProgress'
+import type { StorySessionEndPayload } from '../utils/storyRingProgress'
 
 const PROFILE_PINS_PAGE_SIZE = 24
 
@@ -330,6 +338,29 @@ const reportProfileOpen = ref(false)
 const reportProfileSubmitting = ref(false)
 const blockProfilePending = ref(false)
 
+const profileMoreMenuOpen = ref(false)
+const profileMoreMenuTriggerRef = ref<HTMLElement | null>(null)
+const profileMoreMenuPanelRef = ref<HTMLElement | null>(null)
+const { floatingStyles: profileMoreMenuFloatingStyles } = useAnchoredDropdown(
+  profileMoreMenuTriggerRef,
+  profileMoreMenuPanelRef,
+  {
+    open: profileMoreMenuOpen,
+    placement: 'bottom-end',
+    strategy: 'fixed',
+    offsetPx: 8,
+  },
+)
+usePointerOutsideDismiss(() => [
+  {
+    isOpen: profileMoreMenuOpen,
+    getRoots: () => [profileMoreMenuTriggerRef.value, profileMoreMenuPanelRef.value],
+    close: () => {
+      profileMoreMenuOpen.value = false
+    },
+  },
+])
+
 const isTargetBlocked = computed(() => {
   const u = profileUser.value?.username
   if (!u || !currentUser.value?.blockedUsernames?.length) return false
@@ -343,15 +374,26 @@ async function handleSubmitProfileReport(payload: { category: string; details: s
   try {
     await reportProfile(u, payload)
     reportProfileOpen.value = false
+    if (profileUser.value) {
+      profileUser.value = { ...profileUser.value, viewerHasReportedProfile: true }
+    }
     await showAlert(t('moderation.reportSent'), { variant: 'success' })
-  } catch {
-    await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+  } catch (e) {
+    if (isAlreadyReportedError(e)) {
+      if (profileUser.value) {
+        profileUser.value = { ...profileUser.value, viewerHasReportedProfile: true }
+      }
+      await showAlert(t('moderation.reportAlready'), { variant: 'info' })
+    } else {
+      await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+    }
   } finally {
     reportProfileSubmitting.value = false
   }
 }
 
 async function handleBlockProfile() {
+  profileMoreMenuOpen.value = false
   const u = profileUser.value?.username
   if (!u || !currentUser.value) return
   const ok = await showConfirm({
@@ -691,6 +733,20 @@ const boardSuggestions = ref<BoardSuggestions | null>(null)
 const activeStories = ref<Pin[]>([])
 const storyViewerOpen = ref(false)
 const storyViewerInitialIndex = ref(0)
+const profileStoryProgressTick = ref(0)
+
+const profileStoryRingAllCaughtUp = computed(() => {
+  void profileStoryProgressTick.value
+  const u = profileUser.value?.username
+  const list = activeStories.value
+  if (!u || !list.length) return false
+  return isStoryRingAllCaughtUp(u, list)
+})
+
+function onProfileStorySessionEnd(payload: StorySessionEndPayload) {
+  upsertStoryRingSession(payload)
+  profileStoryProgressTick.value++
+}
 
 /** Dernier segment story (liste API chronologique) : vignette vidéo ou image plutôt que l’avatar. */
 const profileStoryRingCoverUrl = computed(() => {
@@ -703,8 +759,11 @@ const profileStoryRingCoverUrl = computed(() => {
   return (last.storyVideoUrl || '').trim()
 })
 
-function openStoryViewer(index: number) {
-  storyViewerInitialIndex.value = index
+function openStoryViewer() {
+  const u = profileUser.value?.username
+  const list = activeStories.value
+  if (!u || !list.length) return
+  storyViewerInitialIndex.value = initialStoryIndexForUser(u, list)
   storyViewerOpen.value = true
 }
 
@@ -886,10 +945,16 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         type="button"
         class="relative mb-4 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
         :aria-label="t('profile.stories.openRing')"
-        @click="openStoryViewer(0)"
+        @click="openStoryViewer()"
       >
         <span
+          v-if="!profileStoryRingAllCaughtUp"
           class="absolute -inset-1 rounded-full bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500 p-[3px]"
+          aria-hidden="true"
+        />
+        <span
+          v-else
+          class="absolute -inset-1 rounded-full bg-neutral-300 p-[3px]"
           aria-hidden="true"
         />
         <span class="relative flex rounded-full bg-white p-[2px]">
@@ -989,26 +1054,18 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         >
           <span class="material-symbols-outlined text-neutral-600">share</span>
         </button>
-        <template v-if="currentUser && !isMyProfile && profileUser">
+        <div v-if="currentUser && !isMyProfile && profileUser" class="relative flex items-center">
           <button
+            ref="profileMoreMenuTriggerRef"
             type="button"
-            class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition"
-            :title="t('moderation.report')"
-            @click="reportProfileOpen = true"
+            class="w-9 h-9 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition"
+            :aria-expanded="profileMoreMenuOpen"
+            :aria-label="t('profile.moreAriaLabel')"
+            @click.stop="profileMoreMenuOpen = !profileMoreMenuOpen"
           >
-            <span class="material-symbols-outlined text-neutral-600">flag</span>
+            <span class="material-symbols-outlined text-[22px]">more_horiz</span>
           </button>
-          <button
-            v-if="!isTargetBlocked"
-            type="button"
-            class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-red-50 transition text-red-700"
-            :title="t('profile.block')"
-            :disabled="blockProfilePending"
-            @click="handleBlockProfile"
-          >
-            <span class="material-symbols-outlined text-red-600">block</span>
-          </button>
-        </template>
+        </div>
       </div>
     </section>
 
@@ -1435,7 +1492,42 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       v-model="storyViewerOpen"
       :pins="activeStories"
       :initial-index="storyViewerInitialIndex"
+      @session-end="onProfileStorySessionEnd"
     />
+
+    <Teleport to="body">
+      <div
+        v-if="profileMoreMenuOpen && profileUser"
+        ref="profileMoreMenuPanelRef"
+        role="menu"
+        class="fixed z-[120] w-[min(220px,calc(100vw-1rem))] rounded-xl border border-neutral-200 bg-white shadow-xl py-1"
+        :style="profileMoreMenuFloatingStyles"
+        @pointerdown.stop
+      >
+        <button
+          v-if="!profileUser.viewerHasReportedProfile"
+          type="button"
+          role="menuitem"
+          class="w-full px-3 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+          @click="profileMoreMenuOpen = false; reportProfileOpen = true"
+        >
+          {{ t('profile.moreReport') }}
+        </button>
+        <div v-else class="px-3 py-2 text-xs text-neutral-500">
+          {{ t('profile.moreAlreadyReported') }}
+        </div>
+        <button
+          v-if="!isTargetBlocked"
+          type="button"
+          role="menuitem"
+          class="w-full px-3 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+          :disabled="blockProfilePending"
+          @click="handleBlockProfile"
+        >
+          {{ t('profile.moreBlock') }}
+        </button>
+      </div>
+    </Teleport>
 
     <UserSearchPickModal
       v-model="collaboratorInviteOpen"

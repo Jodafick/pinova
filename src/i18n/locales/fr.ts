@@ -128,6 +128,7 @@ export const fr: Record<string, string> = {
   'moderation.reportSent': 'Merci, votre signalement a été enregistré.',
   'moderation.reportError': 'Impossible d’envoyer le signalement.',
   'moderation.reportOwnDisabled': 'Vous ne pouvez pas signaler votre propre contenu.',
+  'moderation.reportAlready': 'Vous avez déjà signalé ce contenu.',
 
   'report.title': 'Signaler',
   'report.categoryLabel': 'Motif',
@@ -147,6 +148,10 @@ export const fr: Record<string, string> = {
   'report.category.other': 'Autre',
 
   'profile.block': 'Bloquer',
+  'profile.moreAriaLabel': 'Autres actions sur ce profil',
+  'profile.moreReport': 'Signaler le profil',
+  'profile.moreBlock': 'Bloquer ce compte',
+  'profile.moreAlreadyReported': 'Profil déjà signalé',
   'profile.block.confirmTitle': 'Bloquer ce compte ?',
   'profile.block.confirmBody':
     'Vous ne verrez plus ses pins, stories et commentaires, et il ne verra plus les vôtres. Vous ne pourrez plus vous suivre mutuellement.',

@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Pin } from '../types'
-import { usePins } from '../composables/usePins'
+import { usePins, isAlreadyReportedError } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
@@ -25,7 +25,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
+  (
+    e: 'session-end',
+    payload: { username: string; pinSlugs: string[]; resumeIndex: number; allCaughtUp: boolean },
+  ): void
 }>()
+
+/** Fermeture après le dernier segment (lecture terminée) vs fermeture manuelle. */
+const closingSessionReason = ref<'completed_all' | null>(null)
 
 const router = useRouter()
 const { toggleLike, reportPin } = usePins()
@@ -142,15 +149,31 @@ function syncStoryEngagementFromProps() {
 
 watch(
   () => props.modelValue,
-  (open) => {
+  (open, prevOpen) => {
     if (open && props.pins.length > 0) {
+      closingSessionReason.value = null
       storySoundOn.value = false
       syncStoryEngagementFromProps()
       const maxIdx = props.pins.length - 1
       index.value = Math.min(Math.max(0, props.initialIndex ?? 0), maxIdx)
+      // Force le redémarrage du segment même si l'index n'a pas changé (cas 0 -> 0)
       restartCurrentSegment()
     } else {
       clearAdvance()
+    }
+    if (prevOpen && !open && props.pins.length > 0) {
+      const username = props.pins[0]?.username?.trim() ?? ''
+      if (username) {
+        const pinSlugs = props.pins.map((p) => p.slug)
+        const allCaughtUp = closingSessionReason.value === 'completed_all'
+        emit('session-end', {
+          username,
+          pinSlugs,
+          resumeIndex: allCaughtUp ? 0 : index.value,
+          allCaughtUp,
+        })
+      }
+      closingSessionReason.value = null
     }
   },
 )
@@ -274,8 +297,13 @@ async function handleSubmitStoryReport(payload: { category: string; details: str
     await reportPin(pin.slug, payload)
     reportStoryOpen.value = false
     await showAlert(t('moderation.reportSent'), { variant: 'success' })
-  } catch {
-    await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+  } catch (e) {
+    if (isAlreadyReportedError(e)) {
+      reportStoryOpen.value = false
+      await showAlert(t('moderation.reportAlready'), { variant: 'info' })
+    } else {
+      await showAlert(t('moderation.reportError'), { variant: 'danger', title: t('modal.errorTitle') })
+    }
   }
 }
 
@@ -290,6 +318,7 @@ function goNext() {
     index.value++
     return
   }
+  closingSessionReason.value = 'completed_all'
   close()
 }
 

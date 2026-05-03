@@ -52,6 +52,8 @@ export type Pin = {
   createdAt: string
   /** Pin publié avec politique « contenu sensible » (flou par défaut pour les adultes). */
   mediaSensitiveBlur?: boolean
+  /** Le visiteur connecté a déjà signalé ce pin (API `viewer_has_reported`). */
+  viewerHasReported?: boolean
 }
 
 export type PinLikerEntry = {
@@ -137,6 +139,8 @@ export type User = {
   pinsCount?: number
   /** Comptes que j’ai bloqués (API `blocked_usernames`). */
   blockedUsernames?: string[]
+  /** Profil consulté : le visiteur connecté a déjà signalé ce compte (API `viewer_has_reported_profile`). */
+  viewerHasReportedProfile?: boolean
 }
 
 export type Notification = {
