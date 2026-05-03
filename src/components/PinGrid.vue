@@ -243,27 +243,27 @@ onUnmounted(() => {
 
           <div
             v-if="cell.pin.scheduledPublishAt"
-            class="absolute top-2 left-2 z-[45] px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow"
+            class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow"
           >
             {{ t('pin.scheduledBadge') }}
           </div>
           <div
             v-if="cell.pin.isStory"
-            class="absolute z-[45] px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-bold shadow"
+            class="absolute z-10 px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-bold shadow"
             :class="cell.pin.scheduledPublishAt ? 'top-2 right-2' : 'top-2 left-2'"
           >
             {{ t('pin.storyBadge') }}
           </div>
 
-          <!-- Dark overlay on hover -->
-          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 z-[40] pointer-events-none"></div>
+          <!-- Dark overlay on hover (sous les boutons, au-dessus du média) -->
+          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 z-[5] pointer-events-none"></div>
 
           <!-- Save button -->
           <button
             v-if="isAuthenticated"
             type="button"
             :aria-pressed="cell.pin.saved"
-            class="absolute top-3 right-3 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 shadow-lg z-[45]"
+            class="absolute top-3 right-3 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 shadow-lg z-10"
             :class="cell.pin.saved ? 'bg-neutral-950 text-white' : 'bg-pink-700 text-white hover:bg-pink-800'"
             :disabled="isSavePending(cell.pin.slug)"
             @click.stop="emit('toggle-save', cell.pin.slug)"
@@ -273,7 +273,7 @@ onUnmounted(() => {
           </button>
 
           <!-- Bottom actions on hover -->
-          <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-[45]">
+          <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
             <!-- Link badge -->
             <a
               v-if="cell.pin.link"

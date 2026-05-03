@@ -137,9 +137,7 @@ type SeatHubResp =
 const seatHubLoading = ref(false)
 const seatHub = ref<SeatHubResp | null>(null)
 const seatBusy = ref(false)
-const seatInviteUsername = ref('')
 const seatInviteSearchOpen = ref(false)
-const seatInviteTokens = ref<Record<string, string>>({})
 
 const accountDeletionBusy = ref(false)
 
@@ -340,10 +338,6 @@ const loadSeatHub = async () => {
   try {
     const res = await api.get('subscription/seats/')
     seatHub.value = res.data as SeatHubResp
-    const inc = seatHub.value.incoming_invitations || []
-    for (const row of inc) {
-      if (seatInviteTokens.value[row.id] === undefined) seatInviteTokens.value[row.id] = ''
-    }
   } catch {
     seatHub.value = null
   } finally {
@@ -351,17 +345,15 @@ const loadSeatHub = async () => {
   }
 }
 
-const sendSeatInvite = async (usernameOverride?: string) => {
-  const uname = (usernameOverride ?? seatInviteUsername.value).trim().replace(/^@/, '')
+const sendSeatInvite = async (username: string) => {
+  const uname = username.trim().replace(/^@/, '')
   if (uname.length < 2 || seatBusy.value) return
   seatBusy.value = true
   try {
-    const res = await api.post('subscription/seats/invites/', { username: uname })
-    seatInviteUsername.value = ''
-    const tok = String(res.data?.invite_token || '')
-    await showAlert(tok ? `${t('settings.seats.inviteTokenExplain')}:\n\n${tok}` : t('settings.seats.error'), {
-      title: tok ? t('settings.seats.inviteCreatedTitle') : t('modal.errorTitle'),
-      variant: tok ? 'success' : 'danger',
+    await api.post('subscription/seats/invites/', { username: uname })
+    await showAlert(t('settings.seats.inviteSentOk'), {
+      title: t('settings.seats.inviteCreatedTitle'),
+      variant: 'success',
     })
     await loadSeatHub()
     await fetchCurrentUser({ silent: true })
@@ -404,15 +396,10 @@ const removeSeatMember = async (username: string) => {
 }
 
 const respondSeatInvite = async (id: string, action: 'accept' | 'decline') => {
-  const token = (seatInviteTokens.value[id] || '').trim()
-  if (!token) {
-    await showAlert(t('settings.seats.error'), { variant: 'danger' })
-    return
-  }
   if (seatBusy.value) return
   seatBusy.value = true
   try {
-    await api.post(`subscription/seats/invites/${encodeURIComponent(id)}/`, { action, token })
+    await api.post(`subscription/seats/invites/${encodeURIComponent(id)}/`, { action })
     await loadSeatHub()
     await fetchCurrentUser({ silent: true })
   } catch {
@@ -779,6 +766,30 @@ const loadSupportTickets = async () => {
   } catch {
     supportTickets.value = []
   }
+}
+
+function supportTicketStatusLabel(status: unknown): string {
+  const s = String(status || '').toLowerCase()
+  const key =
+    s === 'open'
+      ? 'settings.support.status.open'
+      : s === 'in_progress'
+        ? 'settings.support.status.inProgress'
+        : s === 'resolved'
+          ? 'settings.support.status.resolved'
+          : null
+  return key ? t(key) : String(status ?? '')
+}
+
+function supportTicketPriorityLabel(priority: unknown): string {
+  const p = String(priority || '').toLowerCase()
+  const key =
+    p === 'normal'
+      ? 'settings.support.priority.normal'
+      : p === 'priority'
+        ? 'settings.support.priority.priority'
+        : null
+  return key ? t(key) : String(priority ?? '')
 }
 
 const submitSupportTicket = async () => {
@@ -1402,13 +1413,6 @@ watch(
                   {{ row.owner_display_name || row.owner_username }}
                   <span class="text-neutral-400">(@{{ row.owner_username }})</span>
                 </p>
-                <input
-                  v-model="seatInviteTokens[row.id]"
-                  type="password"
-                  autocomplete="new-password"
-                  :placeholder="t('settings.seats.tokenPlaceholder')"
-                  class="w-full px-3 py-2 rounded-lg border border-neutral-200 text-xs"
-                />
                 <div class="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -1464,26 +1468,6 @@ watch(
                   <span class="material-symbols-outlined text-lg" aria-hidden="true">person_search</span>
                   {{ t('settings.seats.inviteSearchMember') }}
                 </button>
-                <p class="text-[11px] text-neutral-500">{{ t('settings.seats.inviteOrManualHint') }}</p>
-                <div class="flex flex-wrap gap-2 items-end">
-                  <div class="min-w-[140px] flex-1">
-                    <label class="block text-[11px] font-medium text-neutral-600 mb-1">{{ t('settings.seats.inviteLabel') }}</label>
-                    <input
-                      v-model="seatInviteUsername"
-                      type="text"
-                      :placeholder="t('settings.seats.invitePlaceholder')"
-                      class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    class="px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold disabled:opacity-50"
-                    :disabled="seatBusy"
-                    @click="sendSeatInvite()"
-                  >
-                    {{ t('settings.seats.sendInvite') }}
-                  </button>
-                </div>
               </div>
               <p v-if="seatHub.members?.length" class="text-xs font-semibold text-neutral-800 pt-2">{{ t('settings.seats.members') }}</p>
               <ul v-if="seatHub.members?.length" class="space-y-1">
@@ -1695,7 +1679,9 @@ watch(
               class="rounded-xl border border-neutral-200 px-3 py-2"
             >
               <p class="text-xs font-semibold text-neutral-800">{{ ticket.subject }}</p>
-              <p class="text-[11px] text-neutral-500">{{ ticket.status }} · {{ ticket.priority }}</p>
+              <p class="text-[11px] text-neutral-500">
+                {{ supportTicketStatusLabel(ticket.status) }} · {{ supportTicketPriorityLabel(ticket.priority) }}
+              </p>
             </div>
           </div>
         </div>
