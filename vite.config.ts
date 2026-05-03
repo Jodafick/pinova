@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { API_BASE_URL } from './src/env'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -34,20 +33,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,vue}'],
         globIgnores: ['**/assets/group*-shard*.js'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            urlPattern: new RegExp(`^${API_BASE_URL.replace(/\//g, '\\/')}/api/(pins|me|profiles)/.*`, 'i'),
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 Week for profile/pins metadata
-              },
-              networkTimeoutSeconds: 10,
-            },
-          }
-        ]
+        // Pas de runtime cache des réponses API (données souvent authentifiées).
       }
     })
   ],

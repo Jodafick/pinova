@@ -9,6 +9,7 @@ import RichCommentInput from './RichCommentInput.vue'
 import AvatarDisc from './AvatarDisc.vue'
 import { useI18n } from '../i18n'
 import { formatCommentRelativeTime } from '../utils/formatCommentRelativeTime'
+import { escapeHtml } from '../utils/escapeHtml'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 
@@ -147,8 +148,13 @@ onUnmounted(() => {
 
 const replyingTo = ref<number | null>(null)
 
+/** Texte échappé puis mentions @user (aligné backend : lettres, chiffres, _, .). */
 const renderRichText = (str: string) => {
-  return str.replace(/@(\w+)/g, '<span class="text-pink-600 font-semibold">@$1</span>')
+  const safe = escapeHtml(str)
+  return safe.replace(
+    /@([A-Za-z0-9_.]+)/g,
+    '<span class="text-pink-600 font-semibold">@$1</span>',
+  )
 }
 
 function canReply(comment: Comment) {

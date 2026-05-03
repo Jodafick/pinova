@@ -4,16 +4,20 @@ import App from './App.vue'
 import router from './router'
 import GoogleSignInPlugin from 'vue3-google-signin'
 import { useAuth } from './composables/useAuth'
+import { proactiveRefreshIfStale } from './api'
+import { GOOGLE_CLIENT_ID } from './env'
 
 const app = createApp(App)
 
 app.use(GoogleSignInPlugin, {
-  clientId: '274683910451-u52eib3lr7t5qehu23bhnafn85ovaub3.apps.googleusercontent.com',
+  clientId: GOOGLE_CLIENT_ID,
 })
 
-// Restaurer la session utilisateur au démarrage de l'application
+// Session : refresh proactif si JWT court expiré, puis profil utilisateur
 const { fetchCurrentUser } = useAuth()
-fetchCurrentUser().then(() => {
-  app.use(router)
-  app.mount('#app')
-})
+void proactiveRefreshIfStale()
+  .then(() => fetchCurrentUser())
+  .then(() => {
+    app.use(router)
+    app.mount('#app')
+  })

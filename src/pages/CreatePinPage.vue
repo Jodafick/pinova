@@ -16,6 +16,7 @@ import {
   hasRequiredBirthDateForMediaPublish,
 } from '../composables/useModeration'
 import { formatDrfErrorMessages, drfErrorTouchesFields } from '../utils/apiValidationErrors'
+import { escapeHtml } from '../utils/escapeHtml'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 
@@ -72,6 +73,10 @@ const selectedBoardIds = ref<number[]>([])
 const myBoards = ref<{ id: number; name: string; is_private?: boolean }[]>([])
 
 const currentPlan = computed<'free' | 'plus' | 'pro'>(() => currentUser.value?.subscription?.plan || 'free')
+
+const createNoTrackingSafeHtml = computed(() =>
+  escapeHtml(t('create.noTracking')).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'),
+)
 
 const canSchedulePublish = computed(() => currentPlan.value === 'pro')
 const scheduledPublishLocal = ref('')
@@ -905,7 +910,7 @@ const selectCategory = (selected: TopicOption) => {
             <div class="flex items-start gap-3 text-sm text-neutral-500 bg-blue-50/40 border border-blue-100 rounded-xl px-4 py-3">
               <span class="material-symbols-outlined text-lg text-blue-600">shield</span>
               <p class="text-xs leading-relaxed">
-                <span v-html="t('create.noTracking').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')"></span>
+                <span v-html="createNoTrackingSafeHtml"></span>
                 <router-link to="/premium" class="text-blue-600 font-semibold hover:underline ml-1">{{ t('create.noTracking.learnMore') }}</router-link>
               </p>
             </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from '../i18n'
-import { GOOGLE_SIGN_IN_SCOPES } from '../env'
+import { GOOGLE_CLIENT_ID, GOOGLE_SIGN_IN_SCOPES } from '../env'
 
 const { t } = useI18n()
 const loading = ref(false)
@@ -51,7 +51,7 @@ onMounted(() => {
 const handleGoogleClick = () => {
   loading.value = true
   // Google OAuth URL for Implicit Flow (Redirect)
-  const clientId = '274683910451-u52eib3lr7t5qehu23bhnafn85ovaub3.apps.googleusercontent.com'
+  const clientId = GOOGLE_CLIENT_ID
   const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
   const scope = encodeURIComponent(GOOGLE_SIGN_IN_SCOPES)
   const responseType = 'token'

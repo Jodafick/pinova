@@ -5,6 +5,23 @@ import { scheduleNotificationRefreshFromApi } from './notificationRefresh';
 
 export const AUTH_INVALIDATED_EVENT = 'pinova-auth-invalidated'
 
+const REFRESH_LEEWAY_SEC = 120
+
+function decodeJwtExp(token: string): number | null {
+  try {
+    const parts = token.split('.')
+    const payload = parts[1]
+    if (parts.length !== 3 || !payload) return null
+    let b64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const pad = b64.length % 4
+    if (pad) b64 += '='.repeat(4 - pad)
+    const json = JSON.parse(atob(b64)) as { exp?: number }
+    return typeof json.exp === 'number' ? json.exp : null
+  } catch {
+    return null
+  }
+}
+
 /** Ne pas boucler ni surcharger au chargement liste / marquage notifications. */
 function shouldRefreshNotificationsAfterResponse(config: InternalAxiosRequestConfig) {
   const url = String(config.url || '')
@@ -27,6 +44,42 @@ function clearStoredTokens() {
   window.localStorage.removeItem('pinova_refresh_token')
   delete api.defaults.headers.common.Authorization
   window.dispatchEvent(new Event(AUTH_INVALIDATED_EVENT))
+}
+
+/**
+ * Avant le premier `me/`, rafraîchit l’accès si le JWT est absent, expiré ou proche de l’expiration.
+ * Utilise une requête axios « nue » pour éviter une boucle avec l’intercepteur 401.
+ */
+export async function proactiveRefreshIfStale(): Promise<void> {
+  if (typeof window === 'undefined') return
+  const refresh = window.localStorage.getItem('pinova_refresh_token')
+  if (!refresh) return
+
+  const access = window.localStorage.getItem('pinova_token')
+  const now = Math.floor(Date.now() / 1000)
+  const exp = access ? decodeJwtExp(access) : null
+  if (access && exp !== null && exp > now + REFRESH_LEEWAY_SEC) return
+
+  try {
+    const { data } = await axios.post<{ access?: string; refresh?: string }>(
+      `${API_URL}auth/token/refresh/`,
+      { refresh },
+      { headers: { 'Content-Type': 'application/json' } },
+    )
+    const newAccess = data?.access
+    const newRefresh = data?.refresh
+    if (!newAccess) {
+      clearStoredTokens()
+      return
+    }
+    window.localStorage.setItem('pinova_token', newAccess)
+    if (newRefresh) {
+      window.localStorage.setItem('pinova_refresh_token', newRefresh)
+    }
+    api.defaults.headers.common.Authorization = `Bearer ${newAccess}`
+  } catch {
+    clearStoredTokens()
+  }
 }
 
 api.interceptors.request.use((config) => {

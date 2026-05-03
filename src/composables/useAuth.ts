@@ -278,6 +278,10 @@ export function useAuth() {
       }
       if (response.data?.refresh && typeof window !== 'undefined') {
         window.localStorage.setItem('pinova_refresh_token', response.data.refresh)
+      } else if (typeof window !== 'undefined' && response.data?.access) {
+        console.warn(
+          '[Pinova auth] Pas de refresh_token dans la réponse login — session courte uniquement ; vérifiez le backend (dj-rest-auth + SIMPLE_JWT).',
+        )
       }
       if (response.data?.user) {
         currentUser.value = mapDjangoUserToFrontend(response.data.user)
@@ -357,6 +361,10 @@ export function useAuth() {
       }
       if (response.data?.refresh && typeof window !== 'undefined') {
         window.localStorage.setItem('pinova_refresh_token', response.data.refresh)
+      } else if (typeof window !== 'undefined' && response.data?.access) {
+        console.warn(
+          '[Pinova auth] Pas de refresh_token dans la réponse connexion sociale — vérifiez le backend.',
+        )
       }
       if (response.data?.user) {
         currentUser.value = mapDjangoUserToFrontend(response.data.user)
