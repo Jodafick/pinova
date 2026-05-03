@@ -4,16 +4,8 @@ function localeTag(lang: LangCode): string {
   const map: Record<LangCode, string> = {
     fr: 'fr-FR',
     en: 'en-US',
-    es: 'es-ES',
-    de: 'de-DE',
-    it: 'it-IT',
-    pt: 'pt-PT',
-    ar: 'ar-SA',
-    ja: 'ja-JP',
-    zh: 'zh-CN',
-    fon: 'fr-BJ',
   }
-  return map[lang] || 'en-US'
+  return map[lang] ?? 'en-US'
 }
 
 type TFn = (key: string, vars?: Record<string, string | number>) => string
