@@ -296,6 +296,8 @@ onUnmounted(() => {
             :sensitive="!!cell.pin.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
             :blur-by-default="blurSensitiveByDefault"
+            :media-url="cell.pin.imageUrl"
+            media-type="image"
             wrapper-class="w-full"
           >
             <img
@@ -319,6 +321,8 @@ onUnmounted(() => {
             :sensitive="!!cell.pin.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
             :blur-by-default="blurSensitiveByDefault"
+            :media-url="cell.pin.storyVideoUrl"
+            media-type="video"
             wrapper-class="w-full"
           >
             <video

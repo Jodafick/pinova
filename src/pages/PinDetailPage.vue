@@ -878,6 +878,8 @@ async function deletePinFromMenu() {
                 :sensitive="!!pin.mediaSensitiveBlur"
                 :viewer-can-reveal="viewerCanRevealSensitive"
                 :blur-by-default="blurSensitiveByDefault"
+                :media-url="pin.imageUrl"
+                media-type="image"
                 wrapper-class="w-full flex justify-center"
               >
                 <img
@@ -899,6 +901,8 @@ async function deletePinFromMenu() {
                 :sensitive="!!pin.mediaSensitiveBlur"
                 :viewer-can-reveal="viewerCanRevealSensitive"
                 :blur-by-default="blurSensitiveByDefault"
+                :media-url="pin.storyVideoUrl"
+                media-type="video"
                 wrapper-class="w-full flex justify-center"
               >
                 <video

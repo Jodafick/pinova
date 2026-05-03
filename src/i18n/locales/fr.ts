@@ -132,6 +132,7 @@ export const fr: Record<string, string> = {
   'moderation.scanningMediaShort': 'Analyse…',
   'moderation.textInappropriate': 'Ce contenu semble inapproprié. Merci de modifier votre texte.',
   'moderation.imageSensitiveBlocked': 'Cette image semble contenir du contenu sensible ou interdit.',
+  'moderation.blockedByClient': 'Contenu bloqué par vérification de sécurité locale.',
   'moderation.imageSensitiveWarn': 'Cette image peut être sensible. Vérifiez qu’elle respecte les règles de la communauté avant de continuer.',
   'moderation.sensitiveOverlay': 'Contenu sensible',
   'moderation.revealContent': 'Voir le contenu',

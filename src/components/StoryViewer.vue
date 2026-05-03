@@ -576,6 +576,8 @@ onUnmounted(() => {
               :sensitive="!!current.mediaSensitiveBlur"
               :viewer-can-reveal="viewerCanRevealSensitive"
               :blur-by-default="blurSensitiveByDefault"
+              :media-url="current.storyVideoUrl"
+              media-type="video"
               wrapper-class="w-full"
             >
               <video
@@ -599,6 +601,8 @@ onUnmounted(() => {
               :sensitive="!!current.mediaSensitiveBlur"
               :viewer-can-reveal="viewerCanRevealSensitive"
               :blur-by-default="blurSensitiveByDefault"
+              :media-url="current.imageUrl"
+              media-type="image"
               wrapper-class="w-full"
             >
               <img
