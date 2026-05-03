@@ -183,7 +183,6 @@ const pickMediaFile = async (event: Event) => {
   const file = input.files?.[0]
   if (!file) return
   if (!canUsePremiumCommentMedia.value) {
-    void showAlert(t('comment.media.upgradeRequired'), { variant: 'warning' })
     input.value = ''
     return
   }
@@ -255,10 +254,7 @@ function openMentionPicker() {
 }
 
 function triggerMediaFileDialog() {
-  if (!canUsePremiumCommentMedia.value) {
-    void showAlert(t('comment.media.upgradeRequired'), { variant: 'warning' })
-    return
-  }
+  if (!canUsePremiumCommentMedia.value) return
   if (mediaCompressing.value) return
   mediaInputEl.value?.click()
 }
@@ -346,10 +342,15 @@ defineExpose({ setReply })
         <div class="hidden md:flex items-center gap-0.5 shrink-0">
           <button
             type="button"
-            class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
-            :class="{ 'opacity-40 pointer-events-none': !canUsePremiumCommentMedia || mediaCompressing }"
-            :title="canUsePremiumCommentMedia ? t('comment.media.title') : t('comment.media.upgradeRequired')"
-            :disabled="mediaCompressing"
+            class="w-8 h-8 rounded-full flex items-center justify-center transition"
+            :class="
+              canUsePremiumCommentMedia && !mediaCompressing
+                ? 'hover:bg-neutral-200 text-neutral-500'
+                : 'opacity-40 cursor-not-allowed text-neutral-400'
+            "
+            :title="canUsePremiumCommentMedia ? t('comment.media.title') : t('comment.media.premiumHint')"
+            :aria-label="canUsePremiumCommentMedia ? t('comment.media.title') : t('comment.media.premiumHint')"
+            :disabled="!canUsePremiumCommentMedia || mediaCompressing"
             @click="triggerMediaFileDialog"
           >
             <span class="material-symbols-outlined text-lg">add_photo_alternate</span>
@@ -384,9 +385,15 @@ defineExpose({ setReply })
 
         <button
           type="button"
-          class="md:hidden w-8 h-8 shrink-0 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition disabled:opacity-40"
-          :disabled="submitting || mediaCompressing"
-          :title="canUsePremiumCommentMedia ? t('comment.media.title') : t('comment.media.upgradeRequired')"
+          class="md:hidden w-8 h-8 shrink-0 rounded-full flex items-center justify-center transition"
+          :class="
+            canUsePremiumCommentMedia && !mediaCompressing && !submitting
+              ? 'hover:bg-neutral-200 text-neutral-500'
+              : 'opacity-40 cursor-not-allowed text-neutral-400'
+          "
+          :disabled="submitting || mediaCompressing || !canUsePremiumCommentMedia"
+          :title="canUsePremiumCommentMedia ? t('comment.media.title') : t('comment.media.premiumHint')"
+          :aria-label="canUsePremiumCommentMedia ? t('comment.media.title') : t('comment.media.premiumHint')"
           @click="triggerMediaFileDialog"
         >
           <span class="material-symbols-outlined text-xl">add_photo_alternate</span>

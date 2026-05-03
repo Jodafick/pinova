@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -31,27 +31,54 @@ const filteredPins = computed(() => {
   })
 })
 
-const handleScroll = () => {
-  const root = document.scrollingElement ?? document.documentElement
-  const scrollTop = root.scrollTop
-  const scrollHeight = root.scrollHeight
-  const clientHeight = root.clientHeight
+const loadMoreSentinel = ref<HTMLElement | null>(null)
+let loadMoreObserver: IntersectionObserver | null = null
 
-  if (scrollTop + clientHeight >= scrollHeight - 160) {
-    if (hasNextPage.value && !isFetchingNextPage.value && !loading.value) {
-      void fetchHomeFeed(false, activeTopic.value)
-    }
-  }
+/** Même condition d’affichage que PinGrid : nécessaire pour monter le sentinel. */
+const feedScrollActive = computed(
+  () =>
+    filteredPins.value.length > 0 ||
+    (loading.value && filteredPins.value.length === 0) ||
+    (isFetchingNextPage.value && filteredPins.value.length > 0),
+)
+
+function disconnectLoadMoreObserver() {
+  loadMoreObserver?.disconnect()
+  loadMoreObserver = null
+}
+
+function connectLoadMoreObserver() {
+  disconnectLoadMoreObserver()
+  if (!feedScrollActive.value || !hasNextPage.value) return
+  const el = loadMoreSentinel.value
+  if (!el) return
+  loadMoreObserver = new IntersectionObserver(
+    (entries) => {
+      if (!entries[0]?.isIntersecting) return
+      if (hasNextPage.value && !isFetchingNextPage.value && !loading.value) {
+        void fetchHomeFeed(false, activeTopic.value)
+      }
+    },
+    { root: null, rootMargin: '480px', threshold: 0 },
+  )
+  loadMoreObserver.observe(el)
 }
 
 onMounted(() => {
   void fetchHomeFeed(true, activeTopic.value)
-  window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
+  disconnectLoadMoreObserver()
 })
+
+watch(
+  () => [feedScrollActive.value, hasNextPage.value, filteredPins.value.length, activeTopic.value],
+  () => {
+    nextTick(() => connectLoadMoreObserver())
+  },
+  { flush: 'post', immediate: true },
+)
 
 const selectTopic = (topic: string | null) => {
   activeTopic.value = topic
@@ -142,15 +169,19 @@ const openPin = (slug: string) => {
 
     <TopicScroller :topics="topics" :active-topic="activeTopic" @select="selectTopic" />
 
-    <PinGrid
+    <template
       v-if="filteredPins.length > 0 || (loading && filteredPins.length === 0) || (isFetchingNextPage && filteredPins.length > 0)"
-      class="mt-4"
-      :pins="filteredPins"
-      :loading-initial="loading && filteredPins.length === 0"
-      :loading-more="isFetchingNextPage && filteredPins.length > 0"
-      @toggle-save="handleToggleSave"
-      @open-pin="openPin"
-    />
+    >
+      <PinGrid
+        class="mt-4"
+        :pins="filteredPins"
+        :loading-initial="loading && filteredPins.length === 0"
+        :loading-more="isFetchingNextPage && filteredPins.length > 0"
+        @toggle-save="handleToggleSave"
+        @open-pin="openPin"
+      />
+      <div ref="loadMoreSentinel" class="h-1 w-full shrink-0" aria-hidden="true" />
+    </template>
 
     <!-- Empty state -->
     <div v-else-if="filteredPins.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
