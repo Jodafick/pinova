@@ -25,7 +25,7 @@ defineProps<{
     <div
       v-for="si in segmentCount"
       :key="si"
-      class="h-0.5 flex-1 min-w-0 rounded-full bg-white/15 overflow-hidden"
+      class="h-0.5 flex-1 min-w-0 rounded-full bg-white/15"
     >
       <div v-if="si - 1 < currentIndex" class="h-full w-full bg-white rounded-full" />
       <div
@@ -40,17 +40,15 @@ defineProps<{
 
 <style scoped>
 .story-segment-active {
-  width: 0%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
   animation-name: story-segment-fill;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
 }
 @keyframes story-segment-fill {
-  from {
-    width: 0%;
-  }
-  to {
-    width: 100%;
-  }
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 </style>
