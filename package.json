@@ -11,10 +11,8 @@
   },
   "dependencies": {
     "@floating-ui/vue": "^1.1.11",
-    "@giphy/js-fetch-api": "^5.8.0",
     "@tensorflow/tfjs": "^4.22.0",
     "axios": "^1.14.0",
-    "emoji-picker-element": "^1.29.1",
     "glin-profanity": "^3.3.0",
     "nsfwjs": "^4.3.0",
     "vue": "^3.5.25",

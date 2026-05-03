@@ -1187,7 +1187,10 @@ async function deletePinFromMenu() {
               </div>
 
               <!-- Add comment (rich) -->
-              <div v-if="!isAuthenticated || viewerCanComment" class="flex items-start gap-3 pt-3 border-t border-neutral-100">
+              <div
+                v-if="!isAuthenticated || viewerCanComment"
+                class="flex items-start gap-3 pt-3 border-t border-neutral-100 w-full min-w-0"
+              >
                 <div
                   v-if="currentUser"
                   class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-1 overflow-hidden"
@@ -1201,7 +1204,7 @@ async function deletePinFromMenu() {
                   />
                   <span v-else>{{ currentUser.displayName[0] }}</span>
                 </div>
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 w-full">
                   <RichCommentInput :submitting="submittingComment" @submit="handleRichSubmit" />
                 </div>
               </div>

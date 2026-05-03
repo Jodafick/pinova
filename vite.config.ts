@@ -7,13 +7,7 @@ import { API_BASE_URL } from './src/env'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    vue({
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag) => tag === 'emoji-picker',
-        },
-      },
-    }),
+    vue(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',

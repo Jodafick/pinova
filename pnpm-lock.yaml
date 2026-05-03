@@ -11,18 +11,12 @@ importers:
       '@floating-ui/vue':
         specifier: ^1.1.11
         version: 1.1.11(vue@3.5.32(typescript@5.9.3))
-      '@giphy/js-fetch-api':
-        specifier: ^5.8.0
-        version: 5.8.0
       '@tensorflow/tfjs':
         specifier: ^4.22.0
         version: 4.22.0(seedrandom@3.0.5)
       axios:
         specifier: ^1.14.0
         version: 1.15.0
-      emoji-picker-element:
-        specifier: ^1.29.1
-        version: 1.29.1
       glin-profanity:
         specifier: ^3.3.0
         version: 3.3.0(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))
@@ -726,15 +720,6 @@ packages:
   '@floating-ui/vue@1.1.11':
     resolution: {integrity: sha512-HzHKCNVxnGS35r9fCHBc3+uCnjw9IWIlCPL683cGgM9Kgj2BiAl8x1mS7vtvP6F9S/e/q4O6MApwSHj8hNLGfw==}
 
-  '@giphy/js-fetch-api@5.8.0':
-    resolution: {integrity: sha512-DWdNauYaBSLPeAe/O+uzXtPIoUvmSnYV8Q49p+cPjEQ7Ncj1mDg1fuSKyl0OmPxCm6fzGJ4kuJjsWzyWn9ubbA==}
-
-  '@giphy/js-types@5.1.0':
-    resolution: {integrity: sha512-BZYCDtYNRR7cUWkbDLB4wmm3qmWMsVCQdUiBNOfmZ3yAazCgygKJoDI/5Rq4CK5MBaOc5LVdF8viC2WtoBdaPA==}
-
-  '@giphy/js-util@5.2.0':
-    resolution: {integrity: sha512-Qt7pGh2cqiNmXLeWAgb459wK8+BuMLtIxTfg4ZksnPHPsLthiHT9hhzs2QhqUh7Pp/HOq+Cbv2etGDfnq+xiKA==}
-
   '@isaacs/cliui@9.0.0':
     resolution: {integrity: sha512-AokJm4tuBHillT+FpMtxQ60n8ObyXBatq7jD2/JA9dxbDDokKQm8KMht5ibGzLVU9IJDIKK4TPKgMHEYMn3lMg==}
     engines: {node: '>=18'}
@@ -1379,9 +1364,6 @@ packages:
 
   electron-to-chromium@1.5.334:
     resolution: {integrity: sha512-mgjZAz7Jyx1SRCwEpy9wefDS7GvNPazLthHg8eQMJ76wBdGQQDW33TCrUTvQ4wzpmOrv2zrFoD3oNufMdyMpog==}
-
-  emoji-picker-element@1.29.1:
-    resolution: {integrity: sha512-TOiHzu9Dqib3x4MwcAi3wi3RdyT4SoeB4b15AvH1ks4SBwTl7DeebhZ0d3x6dNi4XfNU7IGRZ7NBQllj0RqwrQ==}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -2273,11 +2255,6 @@ packages:
     hasBin: true
     peerDependencies:
       browserslist: '>= 4.21.0'
-
-  uuid@9.0.1:
-    resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
-    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
-    hasBin: true
 
   vite-plugin-pwa@1.2.0:
     resolution: {integrity: sha512-a2xld+SJshT9Lgcv8Ji4+srFJL4k/1bVbd1x06JIkvecpQkwkvCncD1+gSzcdm3s+owWLpMJerG3aN5jupJEVw==}
@@ -3212,18 +3189,6 @@ snapshots:
       - '@vue/composition-api'
       - vue
 
-  '@giphy/js-fetch-api@5.8.0':
-    dependencies:
-      '@giphy/js-types': 5.1.0
-      '@giphy/js-util': 5.2.0
-
-  '@giphy/js-types@5.1.0': {}
-
-  '@giphy/js-util@5.2.0':
-    dependencies:
-      '@giphy/js-types': 5.1.0
-      uuid: 9.0.1
-
   '@isaacs/cliui@9.0.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -3850,8 +3815,6 @@ snapshots:
       jake: 10.9.4
 
   electron-to-chromium@1.5.334: {}
-
-  emoji-picker-element@1.29.1: {}
 
   emoji-regex@8.0.0: {}
 
@@ -4792,8 +4755,6 @@ snapshots:
       browserslist: 4.28.2
       escalade: 3.2.0
       picocolors: 1.1.1
-
-  uuid@9.0.1: {}
 
   vite-plugin-pwa@1.2.0(vite@5.4.21(@types/node@24.12.2)(lightningcss@1.29.2)(terser@5.46.1))(workbox-build@7.4.0)(workbox-window@7.4.0):
     dependencies:

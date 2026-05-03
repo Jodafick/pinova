@@ -118,6 +118,7 @@ export const fon: Record<string, string> = {
   'comment.gif.search': 'Ba GIF...',
   'comment.mention.title': 'Yí nyikɔ @',
   'comment.emoji.title': 'Emoji',
+  'comment.emoji.nativeHint': 'Yi clavier lɛ e alǒ emoji sisan lɛ',
   'comment.mention.list': 'Yí mɛ ɖokpó nyikɔ',
   'comment.reply': 'Yí gbe',
   'comment.translate': 'Tinmɛ',

@@ -116,6 +116,7 @@ export const pt: Record<string, string> = {
   'comment.gif.search': 'Procurar um GIF...',
   'comment.mention.title': 'Mencionar @',
   'comment.emoji.title': 'Emoji',
+  'comment.emoji.nativeHint': 'Abra o teclado para usar emojis do sistema',
   'comment.mention.list': 'Mencionar um utilizador',
   'comment.reply': 'Responder',
   'comment.translate': 'Traduzir',

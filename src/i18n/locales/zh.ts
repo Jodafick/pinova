@@ -116,6 +116,7 @@ export const zh: Record<string, string> = {
   'comment.gif.search': '搜索 GIF...',
   'comment.mention.title': '提及 @',
   'comment.emoji.title': '表情',
+  'comment.emoji.nativeHint': '打开键盘使用系统表情',
   'comment.mention.list': '提及用户',
   'comment.reply': '回复',
   'comment.translate': '翻译',

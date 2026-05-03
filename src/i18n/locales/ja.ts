@@ -116,6 +116,7 @@ export const ja: Record<string, string> = {
   'comment.gif.search': 'GIF を検索...',
   'comment.mention.title': 'メンション @',
   'comment.emoji.title': '絵文字',
+  'comment.emoji.nativeHint': 'キーボードでシステム絵文字を入力',
   'comment.mention.list': 'ユーザーをメンション',
   'comment.reply': '返信',
   'comment.translate': '翻訳',

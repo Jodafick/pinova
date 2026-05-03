@@ -9,6 +9,7 @@ import ProfileHeaderSkeleton from '../components/ProfileHeaderSkeleton.vue'
 import UserListSkeleton from '../components/UserListSkeleton.vue'
 import CreatorStatsSkeleton from '../components/CreatorStatsSkeleton.vue'
 import StoryViewer from '../components/StoryViewer.vue'
+import StoryRingCover from '../components/StoryRingCover.vue'
 import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
@@ -625,6 +626,17 @@ const activeStories = ref<Pin[]>([])
 const storyViewerOpen = ref(false)
 const storyViewerInitialIndex = ref(0)
 
+/** Dernier segment story (liste API chronologique) : vignette vidéo ou image plutôt que l’avatar. */
+const profileStoryRingCoverUrl = computed(() => {
+  const list = activeStories.value
+  if (!list.length) return ''
+  const last = list[list.length - 1]
+  if (!last) return ''
+  const img = (last.imageUrl || '').trim()
+  if (img) return img
+  return (last.storyVideoUrl || '').trim()
+})
+
 function openStoryViewer(index: number) {
   storyViewerInitialIndex.value = index
   storyViewerOpen.value = true
@@ -815,16 +827,14 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           aria-hidden="true"
         />
         <span class="relative flex rounded-full bg-white p-[2px]">
-          <span
-            class="w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold text-white shadow-inner overflow-hidden avatar-shadow"
-            :class="profileUser.avatarColor"
-          >
-            <img
-              v-if="profileUser.avatarUrl"
-              :src="profileUser.avatarUrl"
-              class="w-full h-full object-cover"
+          <span class="w-28 h-28 rounded-full overflow-hidden shadow-inner avatar-shadow shrink-0 block">
+            <StoryRingCover
+              :cover-url="profileStoryRingCoverUrl"
+              :display-name="profileUser.displayName"
+              :username="profileUser.username"
+              :avatar-url="profileUser.avatarUrl ?? ''"
+              :avatar-color="profileUser.avatarColor"
             />
-            <span v-else class="avatar-text">{{ displayInitials(profileUser.displayName) }}</span>
           </span>
         </span>
       </button>

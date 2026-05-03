@@ -192,11 +192,12 @@ export const en: Record<string, string> = {
   'pin.doubleTapLikeHint': 'Double-click the image to like.',
   'pin.privateTags.readonlyTitle': 'Private tags',
   'story.viewPin': 'View pin',
+  'story.sound.unmute': 'Unmute',
+  'story.sound.mute': 'Mute',
   'story.description.more': 'Show more',
   'story.description.less': 'Show less',
   'story.standalone.title': 'Ephemeral story (Plus / Pro)',
-  'story.standalone.subtitle':
-    'Publish without adding a pin to your grid — the story is fully removed after 24 hours.',
+  'story.standalone.subtitle': 'Publish without adding a pin to your grid.',
   'story.standalone.media': 'Photo or video',
   'story.standalone.pickImage': 'Pick image',
   'story.standalone.pickVideo': 'Pick video',
@@ -206,8 +207,7 @@ export const en: Record<string, string> = {
   'story.standalone.sensitiveBlur':
     'Mark as sensitive media (blur for viewers with that preference).',
   'story.standalone.publish': 'Publish story',
-  'story.standalone.success':
-    'Story published — it will be permanently deleted after 24 hours.',
+  'story.standalone.success': 'Story published.',
   'story.standalone.error': 'Could not publish.',
   'story.standalone.needMedia': 'Add an image or a short video.',
   'story.standalone.needPlus': 'Plus or Pro is required for ephemeral standalone stories.',
@@ -260,6 +260,7 @@ export const en: Record<string, string> = {
     'Could not shrink this file enough. Pick a lighter image (max 5 MB).',
   'comment.mention.title': 'Mention @',
   'comment.emoji.title': 'Emojis',
+  'comment.emoji.nativeHint': 'Show the keyboard to use system emojis',
   'comment.mention.list': 'Mention a user',
   'userSuggest.relation.mutual': 'Mutual follow',
   'userSuggest.relation.following': 'Following',

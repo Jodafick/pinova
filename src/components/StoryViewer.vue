@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Pin } from '../types'
 import { usePins } from '../composables/usePins'
@@ -61,6 +61,22 @@ const storyReactionsBySlug = ref<Record<string, number>>({})
 const progressAnimKey = ref(0)
 /** Durée du segment courant (barre + auto-suivant). */
 const slideDurationMs = ref(DEFAULT_IMAGE_MS)
+
+const storyVideoEl = ref<HTMLVideoElement | null>(null)
+/** Autoplay : départ en muted (politiques navigateurs) ; clic sur le bouton active le son jusqu’à fermeture du viewer. */
+const storySoundOn = ref(false)
+
+function syncStoryVideoMute(el?: HTMLVideoElement | null) {
+  const v = el ?? storyVideoEl.value
+  if (!v) return
+  v.muted = !storySoundOn.value
+}
+
+function toggleStorySound() {
+  storySoundOn.value = !storySoundOn.value
+  syncStoryVideoMute()
+  void storyVideoEl.value?.play()?.catch(() => {})
+}
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
 /** Incrémenté à chaque segment pour ignorer timeouts / événements obsolètes */
@@ -127,6 +143,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open && props.pins.length > 0) {
+      storySoundOn.value = false
       syncStoryEngagementFromProps()
       const maxIdx = props.pins.length - 1
       index.value = Math.min(Math.max(0, props.initialIndex ?? 0), maxIdx)
@@ -172,6 +189,13 @@ watch(storyLikersOpen, (open) => {
 })
 
 const current = computed(() => props.pins[index.value])
+
+watch(
+  () => current.value?.slug,
+  () => {
+    void nextTick(() => syncStoryVideoMute())
+  },
+)
 
 const currentStoryLiked = computed(() => {
   const p = current.value
@@ -281,6 +305,7 @@ function onStoryVideoLoadedMetadata(e: Event) {
     if (playbackId !== segmentPlaybackId.value) return
     goNext()
   }, ms + slackMs)
+  syncStoryVideoMute(v)
 }
 
 /** Fin lecture vidéo : prioritaire sur le timer avec marge. */
@@ -301,7 +326,7 @@ async function doLike() {
   heartBurst.value = true
   window.setTimeout(() => {
     heartBurst.value = false
-  }, 900)
+  }, 980)
 
   const slug = pin.slug
   const prevLikedStored = storyLikedBySlug.value[slug]
@@ -443,6 +468,15 @@ onUnmounted(() => {
 
       <div class="absolute top-safe right-3 z-50 flex flex-col items-end gap-2 pt-safe">
         <button
+          v-if="current?.storyVideoUrl"
+          type="button"
+          class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"
+          :title="storySoundOn ? t('story.sound.mute') : t('story.sound.unmute')"
+          @click.stop="toggleStorySound"
+        >
+          <span class="material-symbols-outlined text-[22px]">{{ storySoundOn ? 'volume_up' : 'volume_off' }}</span>
+        </button>
+        <button
           v-if="isAuthenticated && current?.username !== currentUser?.username"
           type="button"
           class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"
@@ -494,6 +528,7 @@ onUnmounted(() => {
               wrapper-class="w-full"
             >
               <video
+                ref="storyVideoEl"
                 :key="`${current.slug}-video`"
                 :src="current.storyVideoUrl"
                 :class="[
@@ -501,7 +536,7 @@ onUnmounted(() => {
                   'w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block',
                 ]"
                 playsinline
-                muted
+                :muted="!storySoundOn"
                 autoplay
                 @loadedmetadata="onStoryVideoLoadedMetadata"
                 @ended="onStoryVideoEnded"
@@ -577,9 +612,11 @@ onUnmounted(() => {
             <transition name="fade">
               <div
                 v-if="heartBurst"
-                class="pointer-events-none absolute inset-0 flex items-center justify-center"
+                class="pointer-events-none absolute inset-0 flex items-center justify-center z-[45]"
               >
-                <span class="material-symbols-outlined story-ms-heart-on text-pink-300 text-[100px] drop-shadow-2xl animate-pulse">
+                <span
+                  class="material-symbols-outlined story-ms-heart-on text-pink-300 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]"
+                >
                   favorite
                 </span>
               </div>
@@ -618,6 +655,38 @@ onUnmounted(() => {
 }
 .story-ms-heart-on {
   font-variation-settings: 'FILL' 1, 'wght' 600;
+}
+
+/** Cœur like / double-tap : bien plus visible qu’à l’écran précédent. */
+.story-heart-burst {
+  font-size: clamp(7rem, 38vw, 15rem);
+  line-height: 1;
+  animation: story-heart-burst-pop 0.88s cubic-bezier(0.2, 0.88, 0.34, 1.02) forwards;
+}
+
+@keyframes story-heart-burst-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.28);
+    filter: blur(4px);
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1.14);
+    filter: blur(0);
+  }
+  48% {
+    transform: scale(0.9);
+  }
+  74% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+    filter: blur(1px);
+  }
 }
 
 .pt-safe {

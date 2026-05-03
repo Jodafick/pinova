@@ -75,3 +75,29 @@
   -webkit-user-drag: none;
   touch-action: manipulation;
 }
+
+/*
+ * Safari iOS agrandit la page au focus tant que la police réelle du champ est < 16px,
+ * et le dézoom après blur peut rester faux. Forcer au moins 16px sur mobile / tactiles.
+ */
+@media screen and (max-width: 1024px), (pointer: coarse) {
+  textarea,
+  select,
+  input:where(
+    :not([type]),
+    [type='text'],
+    [type='search'],
+    [type='email'],
+    [type='password'],
+    [type='tel'],
+    [type='url'],
+    [type='number'],
+    [type='date'],
+    [type='time'],
+    [type='datetime-local'],
+    [type='month'],
+    [type='week']
+  ) {
+    font-size: max(16px, 1em) !important;
+  }
+}

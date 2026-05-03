@@ -158,7 +158,17 @@ const handleNotificationClick = async (notification: any) => {
       console.error('Error marking notification as read:', err)
     }
   }
-  if (notification.pin_slug) {
+
+  const meta = notification.metadata && typeof notification.metadata === 'object' ? notification.metadata : {}
+  const isStoryPin = Boolean(meta.is_story && notification.pin_slug)
+
+  if (isStoryPin && notification.pin_slug) {
+    const query: Record<string, string> = { story: String(notification.pin_slug) }
+    if (notification.comment_id) {
+      query.commentId = String(notification.comment_id)
+    }
+    router.push({ path: '/', query })
+  } else if (notification.pin_slug) {
     const query: Record<string, string> = {}
     if (notification.comment_id) {
       query.commentId = String(notification.comment_id)

@@ -7,5 +7,3 @@ export const GOOGLE_SIGN_IN_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
 ].join(' ')
-
-/** GIF commentaires : facultatif, fichier `.env` → `VITE_GIPHY_API_KEY` (Giphy). */

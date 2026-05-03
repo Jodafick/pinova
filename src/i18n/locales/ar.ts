@@ -116,6 +116,7 @@ export const ar: Record<string, string> = {
   'comment.gif.search': 'ابحث عن GIF...',
   'comment.mention.title': 'أشِر إلى @',
   'comment.emoji.title': 'إيموجي',
+  'comment.emoji.nativeHint': 'افتح لوحة المفاتيح لاستخدام إيموجي النظام',
   'comment.mention.list': 'الإشارة إلى مستخدم',
   'comment.reply': 'رد',
   'comment.translate': 'ترجمة',
