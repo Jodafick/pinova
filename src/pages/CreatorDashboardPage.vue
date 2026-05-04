@@ -471,21 +471,21 @@ onMounted(async () => {
                       class="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-rose-100 shadow-sm tabular-nums text-rose-800"
                     >
                       <span class="material-symbols-outlined text-[16px] text-rose-500" aria-hidden="true">favorite</span>
-                      {{ t('creator.weekLikes', { n: p.likes_week }) }}
+                      {{ t('creator.weekLikes', { n: p.likes_week ?? 0 }) }}
                     </span>
                     <span
                       v-if="(p.saves_week ?? 0) > 0"
                       class="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-teal-100 shadow-sm tabular-nums text-teal-900"
                     >
                       <span class="material-symbols-outlined text-[16px] text-teal-600" aria-hidden="true">bookmark</span>
-                      {{ t('creator.weekSaves', { n: p.saves_week }) }}
+                      {{ t('creator.weekSaves', { n: p.saves_week ?? 0 }) }}
                     </span>
                     <span
                       v-if="(p.comments_week ?? 0) > 0"
                       class="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-amber-100 shadow-sm tabular-nums text-amber-950"
                     >
                       <span class="material-symbols-outlined text-[16px] text-amber-600" aria-hidden="true">chat_bubble</span>
-                      {{ t('creator.weekComments', { n: p.comments_week }) }}
+                      {{ t('creator.weekComments', { n: p.comments_week ?? 0 }) }}
                     </span>
                   </p>
                 </div>
