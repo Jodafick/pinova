@@ -8,7 +8,7 @@ import { fetchHeaderSearch, type HeaderSearchUser } from '../composables/useHead
 import type { Pin } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api'
-import { subscribeNotificationRefreshFromApiActivity } from '../notificationRefresh'
+import { subscribeUnreadCountFromHeader } from '../notificationRefresh'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 import AvatarDisc from './AvatarDisc.vue'
 import { displayInitials } from '../utils/displayInitials'
@@ -168,14 +168,44 @@ watch(searchQuery, (value) => {
 })
 
 const notifications = ref<any[]>([])
+const notifPage = ref(1)
+const notifHasMore = ref(false)
+const notifLoadingMore = ref(false)
+const unreadCount = ref(0)
 
-const fetchNotifications = async () => {
+const fetchNotifications = async (reset = true) => {
   if (!isAuthenticated.value) return
+  const page = reset ? 1 : notifPage.value + 1
   try {
-    const response = await api.get('notifications/')
-    notifications.value = response.data.results || response.data
+    const response = await api.get('notifications/', { params: { page, page_size: 20 } })
+    const data = response.data
+    if (Array.isArray(data)) {
+      notifications.value = data
+      notifHasMore.value = false
+      notifPage.value = 1
+    } else {
+      const chunk = data?.results ?? []
+      if (reset) {
+        notifications.value = chunk
+        notifPage.value = 1
+      } else {
+        notifications.value = [...notifications.value, ...chunk]
+        notifPage.value = page
+      }
+      notifHasMore.value = !!data?.next
+    }
   } catch (err) {
     console.error('Error fetching notifications:', err)
+  }
+}
+
+const loadMoreNotifications = async () => {
+  if (!notifHasMore.value || notifLoadingMore.value) return
+  notifLoadingMore.value = true
+  try {
+    await fetchNotifications(false)
+  } finally {
+    notifLoadingMore.value = false
   }
 }
 
@@ -183,6 +213,7 @@ const markAllAsRead = async () => {
   try {
     await api.post('notifications/mark_all_as_read/')
     notifications.value.forEach((n) => (n.is_read = true))
+    unreadCount.value = 0
   } catch (err) {
     console.error('Error marking all as read:', err)
   }
@@ -193,6 +224,7 @@ const handleNotificationClick = async (notification: any) => {
     try {
       await api.post(`notifications/${notification.id}/mark_as_read/`)
       notification.is_read = true
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
     } catch (err) {
       console.error('Error marking notification as read:', err)
     }
@@ -278,10 +310,24 @@ const popoverZIndex = { zIndex: 115 }
 
 let unsubscribeNotifications: (() => void) | null = null
 
+watch(showNotifications, (open) => {
+  if (open && isAuthenticated.value) {
+    void fetchNotifications(true)
+  }
+})
+
+watch(isAuthenticated, (v) => {
+  if (!v) {
+    notifications.value = []
+    notifHasMore.value = false
+    notifPage.value = 1
+    unreadCount.value = 0
+  }
+})
+
 onMounted(() => {
-  fetchNotifications()
-  unsubscribeNotifications = subscribeNotificationRefreshFromApiActivity(() => {
-    void fetchNotifications()
+  unsubscribeNotifications = subscribeUnreadCountFromHeader((n) => {
+    unreadCount.value = n
   })
   if (typeof window !== 'undefined') {
     window.addEventListener('message', handleWorkerMessage)
@@ -516,7 +562,7 @@ onUnmounted(() => {
           >
             <span class="material-symbols-outlined text-xl">notifications</span>
             <span
-              v-if="notifications.some((n) => !n.is_read)"
+              v-if="unreadCount > 0"
               class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white"
             ></span>
           </button>
@@ -561,7 +607,7 @@ onUnmounted(() => {
             <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
               <h3 class="font-semibold text-neutral-900">{{ t('header.notifications') }}</h3>
               <button
-                v-if="notifications.some((n) => !n.is_read)"
+                v-if="unreadCount > 0"
                 type="button"
                 class="text-xs text-pink-600 font-medium hover:underline"
                 @click="markAllAsRead"
@@ -607,6 +653,16 @@ onUnmounted(() => {
                 </div>
                 <div v-if="!notification.is_read" class="w-2 h-2 rounded-full bg-pink-600 mt-2"></div>
               </div>
+            </div>
+            <div v-if="notifHasMore" class="border-t border-neutral-100 p-2">
+              <button
+                type="button"
+                class="w-full py-2 text-center text-sm font-semibold text-pink-600 hover:text-pink-700 disabled:opacity-50"
+                :disabled="notifLoadingMore"
+                @click="loadMoreNotifications"
+              >
+                {{ t('header.notifications.loadMore') }}
+              </button>
             </div>
           </div>
         </Teleport>

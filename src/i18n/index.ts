@@ -69,9 +69,9 @@ export const useI18n = () => {
   }
 
   const t = (key: string, vars?: Record<string, string | number>) => {
-    const enDict = dictionaries.en as Record<string, string>
-    const dict = (dictionaries[currentLang.value] ?? enDict) as Record<string, string>
-    let str = dict[key] ?? enDict[key] ?? key
+    const dict = dictionaries[currentLang.value] || dictionaries.en
+    const fallback = dictionaries.en
+    let str = dict[key] ?? fallback[key] ?? key
     if (vars) {
       for (const [k, v] of Object.entries(vars)) {
         str = str.replace(new RegExp(`{${k}}`, 'g'), String(v))

@@ -1,7 +1,9 @@
 import axios from 'axios';
-import type { InternalAxiosRequestConfig } from 'axios';
 import { API_URL } from './env';
-import { scheduleNotificationRefreshFromApi } from './notificationRefresh';
+import {
+  applyUnreadCountFromResponseHeader,
+  UNREAD_NOTIFICATION_RESPONSE_HEADER,
+} from './notificationRefresh';
 
 export const AUTH_INVALIDATED_EVENT = 'pinova-auth-invalidated'
 
@@ -22,12 +24,21 @@ function decodeJwtExp(token: string): number | null {
   }
 }
 
-/** Ne pas boucler ni surcharger au chargement liste / marquage notifications. */
-function shouldRefreshNotificationsAfterResponse(config: InternalAxiosRequestConfig) {
-  const url = String(config.url || '')
-  if (!url || url.includes('notifications/')) return false
-  if (typeof window === 'undefined' || !window.localStorage.getItem('pinova_token')) return false
-  return true
+function readUnreadCountHeader(headers: unknown): string | undefined {
+  if (!headers || typeof headers !== 'object') return undefined
+  if (typeof (headers as { get?: (key: string) => unknown }).get === 'function') {
+    const g = (headers as { get: (key: string) => unknown }).get.bind(headers) as (
+      key: string,
+    ) => unknown
+    const v =
+      g(UNREAD_NOTIFICATION_RESPONSE_HEADER) ??
+      g('X-Pinova-Unread-Notifications')
+    return typeof v === 'string' ? v : undefined
+  }
+  const h = headers as Record<string, string>
+  return (
+    h[UNREAD_NOTIFICATION_RESPONSE_HEADER] ?? h['X-Pinova-Unread-Notifications'] ?? undefined
+  )
 }
 
 const api = axios.create({
@@ -95,9 +106,8 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => {
-    if (response.config && shouldRefreshNotificationsAfterResponse(response.config)) {
-      scheduleNotificationRefreshFromApi()
-    }
+    const hc = readUnreadCountHeader(response.headers)
+    applyUnreadCountFromResponseHeader(hc)
     return response
   },
   async (error) => {

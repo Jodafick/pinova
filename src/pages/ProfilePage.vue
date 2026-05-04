@@ -306,7 +306,7 @@ const loadProfile = async () => {
   if (isMyProfile.value && currentPlan.value === 'pro') {
     creatorStatsLoading.value = true
     try {
-      creatorStats.value = await fetchCreatorStats()
+      creatorStats.value = await fetchCreatorStats({ totalsOnly: true })
     } catch (err) {
       console.error('Erreur chargement statistiques créateur:', err)
       creatorStats.value = null

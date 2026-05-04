@@ -3,6 +3,15 @@ import type { Pin, PinLikersResponse } from '../types'
 import api from '../api'
 import { API_BASE_URL } from '../env'
 import { useI18n } from '../i18n'
+import {
+  feedFirstPageCacheKey,
+  getCachedFeedFirstPage,
+  setCachedFeedFirstPage,
+  getCachedPinDetail,
+  setCachedPinDetail,
+  invalidatePinDetailClientCache,
+  clearFeedFirstPageClientCache,
+} from '../pinClientCache'
 import { DEFAULT_AVATAR_COLOR_CLASS } from './useAuth'
 
 const pins = ref<Pin[]>([])
@@ -123,21 +132,45 @@ export function usePins() {
     endpoint: string,
     reset = false,
     extraParams: Record<string, string | number | null | undefined> = {},
+    opts?: { bypassCache?: boolean },
   ) => {
+    const lang = currentLang.value
+    const feedKey = feedFirstPageCacheKey(endpoint, lang, extraParams)
+
     if (reset) {
       currentPage.value = 1
       hasNextPage.value = true
       pins.value = []
     }
+
+    if (
+      reset &&
+      currentPage.value === 1 &&
+      !opts?.bypassCache &&
+      hasNextPage.value
+    ) {
+      const cached = getCachedFeedFirstPage(feedKey)
+      if (cached) {
+        pins.value = cached.pins.slice()
+        currentPage.value = 2
+        hasNextPage.value = cached.hasNextPage
+        loading.value = false
+        isFetchingNextPage.value = false
+        error.value = null
+        return
+      }
+    }
+
     if (!hasNextPage.value || loading.value || isFetchingNextPage.value) return
     loading.value = currentPage.value === 1
     isFetchingNextPage.value = currentPage.value > 1
     error.value = null
+    const pageAtStart = currentPage.value
     try {
       const response = await api.get(endpoint, {
         params: {
           page: currentPage.value,
-          lang: currentLang.value,
+          lang,
           ...extraParams,
         },
       })
@@ -148,6 +181,9 @@ export function usePins() {
         pins.value = [...pins.value, ...newPins]
         currentPage.value += 1
         hasNextPage.value = !!next
+        if (pageAtStart === 1) {
+          setCachedFeedFirstPage(feedKey, pins.value.slice(), !!next)
+        }
       } else {
         hasNextPage.value = false
       }
@@ -160,19 +196,36 @@ export function usePins() {
     }
   }
 
-  async function fetchPins(reset = false, topic?: string | null) {
+  async function fetchPins(
+    reset = false,
+    topic?: string | null,
+    opts?: { bypassCache?: boolean },
+  ) {
     try {
-      await loadPinCollection('pins/', reset, topic ? { topic } : {})
+      await loadPinCollection('pins/', reset, topic ? { topic } : {}, opts)
     } catch (err) {
       console.warn('❌ Erreur lors de la récupération des pins.')
     }
   }
 
-  async function fetchPinBySlug(slug: string) {
+  async function fetchPinBySlug(slug: string, options?: { force?: boolean }) {
+    if (!options?.force) {
+      const hit = getCachedPinDetail(slug)
+      if (hit) {
+        const idx = pins.value.findIndex((p) => p.slug === slug)
+        if (idx >= 0) {
+          pins.value[idx] = { ...pins.value[idx], ...hit }
+        } else {
+          pins.value.push(hit)
+        }
+        return hit
+      }
+    }
     const response = await api.get(`pins/${slug}/`, {
       params: { lang: currentLang.value },
     })
     const mapped = mapDjangoPinToFrontend(response.data)
+    setCachedPinDetail(slug, mapped)
     const idx = pins.value.findIndex((p) => p.slug === slug)
     if (idx >= 0) {
       pins.value[idx] = { ...pins.value[idx], ...mapped }
@@ -185,6 +238,8 @@ export function usePins() {
   async function patchPinCommentsPolicy(slug: string, commentsPolicy: 'open' | 'followers_only' | 'closed') {
     const response = await api.patch(`pins/${slug}/`, { comments_policy: commentsPolicy })
     const mapped = mapDjangoPinToFrontend(response.data)
+    invalidatePinDetailClientCache(slug)
+    setCachedPinDetail(slug, mapped)
     const idx = pins.value.findIndex((p) => p.slug === slug)
     if (idx >= 0) {
       pins.value[idx] = { ...pins.value[idx], ...mapped }
@@ -225,40 +280,49 @@ export function usePins() {
     await api.delete(`blocks/${blockId}/`)
   }
 
-  async function fetchRecommendations(reset = false) {
+  async function fetchRecommendations(reset = false, opts?: { bypassCache?: boolean }) {
     try {
-      await loadPinCollection('pins/recommendations/', reset)
+      await loadPinCollection('pins/recommendations/', reset, {}, opts)
     } catch (err) {
       console.warn('Error fetching recommendations, falling back to all pins')
-      await fetchPins(reset)
+      await fetchPins(reset, null, opts)
     }
   }
 
-  async function fetchHomeFeed(reset = false, topic?: string | null) {
+  async function fetchHomeFeed(
+    reset = false,
+    topic?: string | null,
+    opts?: { bypassCache?: boolean },
+  ) {
     try {
-      await loadPinCollection('pins/home-feed/', reset, topic ? { topic } : {})
+      await loadPinCollection('pins/home-feed/', reset, topic ? { topic } : {}, opts)
     } catch (err) {
       console.warn('Error fetching home feed, fallback to recommendations')
-      await fetchRecommendations(reset)
+      await fetchRecommendations(reset, opts)
     }
   }
 
-  async function fetchDiscoverPins(reset = false, topic?: string | null, textQuery?: string | null) {
+  async function fetchDiscoverPins(
+    reset = false,
+    topic?: string | null,
+    textQuery?: string | null,
+    opts?: { bypassCache?: boolean },
+  ) {
     try {
       const extra: Record<string, string> = {}
       if (topic) extra.topic = topic
       const tq = (textQuery ?? '').trim()
       if (tq) extra.q = tq
-      await loadPinCollection('pins/discover/', reset, extra)
+      await loadPinCollection('pins/discover/', reset, extra, opts)
     } catch (err) {
       console.warn('Error fetching discover pins, fallback to public pins')
-      await fetchPins(reset, topic)
+      await fetchPins(reset, topic, opts)
     }
   }
 
-  async function fetchFollowingPins(reset = false) {
+  async function fetchFollowingPins(reset = false, opts?: { bypassCache?: boolean }) {
     try {
-      await loadPinCollection('pins/following/', reset)
+      await loadPinCollection('pins/following/', reset, {}, opts)
     } catch (err) {
       console.warn('Error fetching following pins')
       if (reset) {
@@ -283,6 +347,7 @@ export function usePins() {
         pin.liked = response.data.status === 'liked'
         pin.stats.reactions = response.data.likes_count
       }
+      invalidatePinDetailClientCache(pinSlug)
       return response.data
     } catch (err) {
       if (pin) {
@@ -412,8 +477,16 @@ export function usePins() {
     return response.data
   }
 
-  async function fetchCreatorStats(params?: { top_page?: number; top_page_size?: number }) {
-    const response = await api.get('pins/creator-stats/', { params })
+  async function fetchCreatorStats(
+    params?: { top_page?: number; top_page_size?: number; totalsOnly?: boolean },
+  ) {
+    const { totalsOnly, ...rest } = params || {}
+    const response = await api.get('pins/creator-stats/', {
+      params: {
+        ...rest,
+        ...(totalsOnly ? { totals_only: true } : {}),
+      },
+    })
     return response.data
   }
 
@@ -443,6 +516,8 @@ export function usePins() {
       })
       const newPin = mapDjangoPinToFrontend(response.data)
       pins.value.unshift(newPin)
+      clearFeedFirstPageClientCache()
+      setCachedPinDetail(newPin.slug, newPin)
       return newPin
     } catch (err) {
       console.error('Erreur lors de l\'ajout du pin:', err)
@@ -461,12 +536,15 @@ export function usePins() {
         },
       })
       const mapped = mapDjangoPinToFrontend(response.data)
+      invalidatePinDetailClientCache(slug)
+      clearFeedFirstPageClientCache()
       const idx = pins.value.findIndex((p) => p.slug === slug)
       if (idx >= 0) {
         pins.value[idx] = mapped
       } else {
         pins.value.push(mapped)
       }
+      setCachedPinDetail(mapped.slug, mapped)
       return mapped
     } catch (err) {
       console.error('Erreur lors de la mise à jour du pin:', err)
@@ -479,6 +557,8 @@ export function usePins() {
   async function deletePin(slug: string) {
     await api.delete(`pins/${slug}/`)
     pins.value = pins.value.filter((p) => p.slug !== slug)
+    invalidatePinDetailClientCache(slug)
+    clearFeedFirstPageClientCache()
   }
 
   function getPin(slug: string): Pin | undefined {
@@ -500,6 +580,7 @@ export function usePins() {
         pin.saved = response.data.status === 'saved'
         pin.stats.saves = response.data.saves_count
       }
+      invalidatePinDetailClientCache(slug)
       return response.data
     } catch (err) {
       if (pin) {

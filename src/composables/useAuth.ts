@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import type { User } from '../types'
 import api, { AUTH_INVALIDATED_EVENT } from '../api'
+import { clearPinClientCaches } from '../pinClientCache'
 import { devLog } from '../devLog'
 import { API_BASE_URL } from '../env'
 
@@ -145,6 +146,7 @@ export function useAuth() {
       window.localStorage.removeItem('pinova_refresh_token')
     }
     currentUser.value = null
+    clearPinClientCaches()
   }
 
   function applyAccessToken(token: string | null) {

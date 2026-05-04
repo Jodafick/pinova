@@ -26,11 +26,11 @@ export function useDoubleVerification() {
     type: 'image' | 'video',
     opts?: ModerationScanMediaOptions,
   ): Promise<ModerationImageResult> {
-    if (!url) return { level: 'ok' as const }
+    if (!url) return { level: 'ok' }
     if (scanCache.has(url)) return scanCache.get(url)!
     if (activeScans.has(url)) return activeScans.get(url)!
 
-    const scanPromise = (async (): Promise<ModerationImageResult> => {
+    const scanPromise = (async () => {
       try {
         const response = await fetch(url)
         const blob = await response.blob()
@@ -47,7 +47,7 @@ export function useDoubleVerification() {
         return result
       } catch (err) {
         console.error('❌ Erreur lors de la double vérification du média:', url, err)
-        return { level: 'ok' as const }
+        return { level: 'ok' } // En cas d'échec du scan, on laisse passer (ou on pourrait bloquer par défaut)
       } finally {
         activeScans.delete(url)
       }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import { useRouter } from 'vue-router'
 import CreatorDashboardSkeleton from '../components/CreatorDashboardSkeleton.vue'
 import { useAuth } from '../composables/useAuth'
@@ -17,10 +18,30 @@ const creatorTotals = ref<Record<string, number> | null>(null)
 const topAllTime = ref<
   { id: number; slug: string; title: string; likes: number; saves: number; views: number }[]
 >([])
+type PeriodEngagement = {
+  likes_period: number
+  saves_period: number
+  comments_period: number
+  distinct_viewers_period: number
+}
+
 const weeklyPins = ref<
-  { id: number; slug: string; title: string; views_week: number; thumbnail_url: string | null }[]
+  {
+    id: number
+    slug: string
+    title: string
+    views_week: number
+    likes_week?: number
+    saves_week?: number
+    comments_week?: number
+    thumbnail_url: string | null
+  }[]
 >([])
-const weeklyMeta = ref<{ total_view_events_period: number; period_days: number } | null>(null)
+const weeklyMeta = ref<{
+  total_view_events_period: number
+  period_days: number
+  period_engagement?: PeriodEngagement | null
+} | null>(null)
 const topPinsHasMore = ref(false)
 const weeklyPinsHasMore = ref(false)
 const topPinsLoadingMore = ref(false)
@@ -112,6 +133,32 @@ const kpis = computed(() =>
   }),
 )
 
+const periodSummaryLine = computed(() => {
+  const pe = weeklyMeta.value?.period_engagement
+  const days = weeklyMeta.value?.period_days ?? 7
+  const screens = weeklyMeta.value?.total_view_events_period ?? 0
+  if (!pe) return ''
+  return t('creator.periodSummary', {
+    days,
+    viewers: pe.distinct_viewers_period,
+    likes: pe.likes_period,
+    saves: pe.saves_period,
+    comments: pe.comments_period,
+    screens,
+  })
+})
+
+function kpiTarget(key: TotalKey): RouteLocationRaw {
+  const u = currentUser.value?.username
+  if (key === 'pins') {
+    return u ? { path: `/profile/${encodeURIComponent(u)}` } : { path: '/login' }
+  }
+  if (key === 'views') {
+    return { path: '/creator', hash: '#fenetre' }
+  }
+  return { path: '/creator', hash: '#top-classement' }
+}
+
 function rankAccent(idx: number) {
   if (idx === 0) {
     return 'bg-gradient-to-br from-amber-200/95 via-amber-100 to-yellow-50 text-amber-950 ring-2 ring-amber-400/85 shadow-sm'
@@ -147,6 +194,7 @@ const load = async () => {
     weeklyMeta.value = {
       total_view_events_period: weekly?.total_view_events_period ?? 0,
       period_days: weekly?.period_days ?? 7,
+      period_engagement: weekly?.period_engagement ?? null,
     }
     topPinsHasMore.value = !!all?.top_pins_pagination?.has_next
     weeklyPinsHasMore.value = !!weekly?.pagination?.has_next
@@ -315,7 +363,7 @@ onMounted(async () => {
           </button>
         </div>
 
-        <section aria-labelledby="creator-totals-heading" class="mb-10 sm:mb-12">
+        <section id="totaux" aria-labelledby="creator-totals-heading" class="mb-10 sm:mb-12 scroll-mt-28">
           <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 sm:mb-6">
             <h2 id="creator-totals-heading" class="text-xl sm:text-2xl font-bold tracking-tight text-neutral-950">
               {{ t('creator.sectionTotals') }}
@@ -323,10 +371,11 @@ onMounted(async () => {
             <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500">{{ t('creator.badge') }}</span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
-            <div
+            <router-link
               v-for="item in kpis"
               :key="item.key"
-              class="group rounded-2xl border p-4 sm:p-5 flex gap-3 sm:flex-col sm:items-stretch lg:flex-row lg:items-center lg:gap-4 ring-4 transition-[box-shadow] hover:shadow-md bg-gradient-to-br"
+              :to="kpiTarget(item.key)"
+              class="group rounded-2xl border p-4 sm:p-5 flex gap-3 sm:flex-col sm:items-stretch lg:flex-row lg:items-center lg:gap-4 ring-4 transition-[box-shadow,transform] hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br no-underline text-inherit focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
               :class="[item.border, item.ring, item.subtle]"
             >
               <span
@@ -343,11 +392,14 @@ onMounted(async () => {
                   {{ item.formatted }}
                 </p>
               </div>
-            </div>
+            </router-link>
           </div>
         </section>
 
-        <section class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem] border border-neutral-200/80 bg-white/92 backdrop-blur-sm shadow-xl shadow-neutral-950/[0.04] ring-1 ring-black/[0.03] overflow-hidden">
+        <section
+          id="fenetre"
+          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem] border border-neutral-200/80 bg-white/92 backdrop-blur-sm shadow-xl shadow-neutral-950/[0.04] ring-1 ring-black/[0.03] overflow-hidden scroll-mt-28"
+        >
           <div class="border-b border-neutral-100 px-5 py-5 sm:px-7 sm:py-7 bg-gradient-to-br from-neutral-50/98 to-white">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
               <div class="min-w-0 flex-1">
@@ -356,7 +408,16 @@ onMounted(async () => {
                 </h2>
                 <p class="text-sm text-neutral-600 leading-relaxed max-w-prose">{{ t('creator.weeklyExplain') }}</p>
               </div>
-              <p v-if="weeklyMeta" class="text-xs font-medium text-neutral-600 shrink-0 py-2 px-3 rounded-xl bg-neutral-900/[0.04] border border-neutral-200/60 self-start">
+              <p
+                v-if="weeklyMeta && periodSummaryLine"
+                class="text-xs font-medium text-neutral-600 shrink-0 py-2 px-3 rounded-xl bg-neutral-900/[0.04] border border-neutral-200/60 self-start max-w-xl leading-snug"
+              >
+                {{ periodSummaryLine }}
+              </p>
+              <p
+                v-else-if="weeklyMeta"
+                class="text-xs font-medium text-neutral-600 shrink-0 py-2 px-3 rounded-xl bg-neutral-900/[0.04] border border-neutral-200/60 self-start"
+              >
                 {{
                   t('creator.weeklyEvents', {
                     count: weeklyMeta.total_view_events_period,
@@ -405,6 +466,27 @@ onMounted(async () => {
                       <span class="material-symbols-outlined text-[16px] text-sky-600" aria-hidden="true">visibility</span>
                       {{ t('creator.viewsThisWeek', { count: p.views_week }) }}
                     </span>
+                    <span
+                      v-if="(p.likes_week ?? 0) > 0"
+                      class="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-rose-100 shadow-sm tabular-nums text-rose-800"
+                    >
+                      <span class="material-symbols-outlined text-[16px] text-rose-500" aria-hidden="true">favorite</span>
+                      {{ t('creator.weekLikes', { n: p.likes_week }) }}
+                    </span>
+                    <span
+                      v-if="(p.saves_week ?? 0) > 0"
+                      class="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-teal-100 shadow-sm tabular-nums text-teal-900"
+                    >
+                      <span class="material-symbols-outlined text-[16px] text-teal-600" aria-hidden="true">bookmark</span>
+                      {{ t('creator.weekSaves', { n: p.saves_week }) }}
+                    </span>
+                    <span
+                      v-if="(p.comments_week ?? 0) > 0"
+                      class="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-amber-100 shadow-sm tabular-nums text-amber-950"
+                    >
+                      <span class="material-symbols-outlined text-[16px] text-amber-600" aria-hidden="true">chat_bubble</span>
+                      {{ t('creator.weekComments', { n: p.comments_week }) }}
+                    </span>
                   </p>
                 </div>
               </li>
@@ -432,8 +514,9 @@ onMounted(async () => {
 
         <section
           v-if="topAllTime.length"
+          id="top-classement"
           aria-labelledby="creator-top-heading"
-          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem] border border-neutral-200/80 bg-white/95 shadow-lg shadow-neutral-950/[0.03] overflow-hidden"
+          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem] border border-neutral-200/80 bg-white/95 shadow-lg shadow-neutral-950/[0.03] overflow-hidden scroll-mt-28"
         >
           <div class="px-5 py-5 sm:px-7 sm:py-6 border-b border-neutral-100 bg-gradient-to-r from-neutral-50 to-white">
             <h2 id="creator-top-heading" class="text-lg sm:text-xl font-bold text-neutral-950">
@@ -467,6 +550,10 @@ onMounted(async () => {
                 <span class="inline-flex items-center gap-1 text-neutral-600">
                   <span class="material-symbols-outlined text-[18px] text-rose-500" aria-hidden="true">favorite</span>
                   {{ formatStat(p.likes) }}
+                </span>
+                <span class="inline-flex items-center gap-1 text-neutral-600">
+                  <span class="material-symbols-outlined text-[18px] text-teal-600" aria-hidden="true">bookmark</span>
+                  {{ formatStat(p.saves) }}
                 </span>
               </div>
             </li>

@@ -1,30 +1,27 @@
 /**
- * Rafraîchissement du badge / liste notifications côté client : pas de polling séparé,
- * on déclenche après l’activité API normale de l’utilisateur (intercepteur axios + debounce).
+ * Badge non lues : le backend envoie `X-Pinova-Unread-Notifications` sur les réponses API
+ * (intercepteur axios → `applyUnreadCountFromResponseHeader`).
+ * Plus besoin d’une requête `unread_count/` à chaque navigation.
  */
-const listeners = new Set<() => void>()
-const DEBOUNCE_MS = 420
-let timer: ReturnType<typeof setTimeout> | null = null
+const unreadHeaderListeners = new Set<(n: number) => void>()
 
-export function subscribeNotificationRefreshFromApiActivity(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+/** Nom d’en-tête (minuscules pour axios dans le navigateur). */
+export const UNREAD_NOTIFICATION_RESPONSE_HEADER = 'x-pinova-unread-notifications'
+
+export function subscribeUnreadCountFromHeader(listener: (count: number) => void): () => void {
+  unreadHeaderListeners.add(listener)
+  return () => unreadHeaderListeners.delete(listener)
 }
 
-function flush() {
-  timer = null
-  for (const fn of [...listeners]) {
+export function applyUnreadCountFromResponseHeader(raw: string | null | undefined): void {
+  if (raw === undefined || raw === null || raw === '') return
+  const n = parseInt(String(raw), 10)
+  if (!Number.isFinite(n) || n < 0) return
+  for (const fn of [...unreadHeaderListeners]) {
     try {
-      fn()
+      fn(n)
     } catch {
-      /* évite une erreur liste dans intercepteur axios */
+      /* ne pas casser l’intercepteur */
     }
   }
-}
-
-/** Depuis axios : réponses 2xx seulement, hors endpoints notifications/*. */
-export function scheduleNotificationRefreshFromApi(): void {
-  if (listeners.size === 0) return
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(flush, DEBOUNCE_MS)
 }
