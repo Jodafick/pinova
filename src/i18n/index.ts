@@ -29,7 +29,7 @@ export const languages: { code: LangCode; label: string; flag: string; rtl?: boo
   */
 ]
 
-const dictionaries: Record<string, Record<string, string>> = {
+const dictionaries: Record<LangCode, Record<string, string>> = {
   fr,
   en,
   /*
