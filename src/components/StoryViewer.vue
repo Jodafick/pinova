@@ -36,7 +36,7 @@ const emit = defineEmits<{
 const closingSessionReason = ref<'completed_all' | null>(null)
 
 const router = useRouter()
-const { toggleLike, reportPin } = usePins()
+const { toggleLike, reportPin, trackPinView } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
 const { t } = useI18n()
 const { showAlert } = useAppModal()
@@ -219,6 +219,17 @@ watch(
   () => current.value?.slug,
   () => {
     void nextTick(() => syncStoryVideoMute())
+  },
+)
+
+/** Enregistrement vues (PinViewEvent) — aligné fiche pin / mobile. */
+watch(
+  () =>
+    props.modelValue && current.value?.slug && isAuthenticated.value
+      ? `${current.value.slug}`
+      : '',
+  (slug) => {
+    if (slug) void trackPinView(slug)
   },
 )
 
