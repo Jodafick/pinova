@@ -35,6 +35,7 @@ type StoryRingGroupUi = {
 
 const groups = ref<StoryRingGroupUi[]>([])
 const loading = ref(true)
+const refreshingStories = ref(false)
 const viewerOpen = ref(false)
 const viewerPins = ref<Pin[]>([])
 const viewerInitialIndex = ref(0)
@@ -57,8 +58,18 @@ const displayGroups = computed(() => {
 
 function ringOuterClass(g: StoryRingGroupUi) {
   return isStoryRingAllCaughtUp(g.username, g.pins)
-    ? 'w-20 h-20 rounded-full p-[3px] bg-neutral-300'
-    : 'w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500'
+    ? 'w-20 h-20 rounded-full p-[3px] bg-neutral-300 ring-1 ring-neutral-200/80'
+    : 'w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500 shadow-[0_0_12px_rgba(236,72,153,0.25)]'
+}
+
+function ringRowDimmed(g: StoryRingGroupUi) {
+  return isStoryRingAllCaughtUp(g.username, g.pins) ? 'opacity-70' : ''
+}
+
+function ringLabelClass(g: StoryRingGroupUi) {
+  return isStoryRingAllCaughtUp(g.username, g.pins)
+    ? 'text-[11px] font-medium text-neutral-400 truncate max-w-[84px] text-center leading-tight px-0.5'
+    : 'text-[11px] font-medium text-neutral-600 truncate max-w-[84px] text-center leading-tight px-0.5'
 }
 
 function onStripStorySessionEnd(payload: StorySessionEndPayload) {
@@ -66,8 +77,10 @@ function onStripStorySessionEnd(payload: StorySessionEndPayload) {
   storyProgressTick.value++
 }
 
-async function load() {
-  loading.value = true
+async function load(opts?: { soft?: boolean }) {
+  const soft = !!opts?.soft
+  if (soft) refreshingStories.value = true
+  else loading.value = true
   try {
     const res = await api.get('pins/active-stories/')
     const rawGroups = res.data.groups
@@ -100,6 +113,7 @@ async function load() {
     groups.value = []
   } finally {
     loading.value = false
+    refreshingStories.value = false
     await nextTick()
     syncScrollMetrics()
   }
@@ -240,6 +254,18 @@ onUnmounted(() => {
   <section v-if="!loading && groups.length > 0" class="mb-6 sm:mb-8">
     <div class="flex items-center justify-between gap-2 mb-3 px-0.5">
       <h2 class="text-sm font-semibold text-neutral-800">{{ t('home.stories.title') }}</h2>
+      <button
+        type="button"
+        class="shrink-0 w-9 h-9 rounded-full border border-neutral-200 bg-white text-pink-600 hover:bg-neutral-50 disabled:opacity-50 flex items-center justify-center transition"
+        :disabled="refreshingStories"
+        :aria-label="t('home.stories.reload')"
+        @click="load({ soft: true })"
+      >
+        <span
+          class="material-symbols-outlined text-[22px]"
+          :class="refreshingStories ? 'animate-spin' : ''"
+        >refresh</span>
+      </button>
     </div>
 
     <div class="relative flex items-center gap-1 sm:gap-2">
@@ -263,7 +289,8 @@ onUnmounted(() => {
           v-for="(g, i) in displayGroups"
           :key="g.username || `g-${i}`"
           type="button"
-          class="snap-start shrink-0 flex flex-col items-center gap-2 w-[84px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 rounded-xl py-1"
+          class="snap-start shrink-0 flex flex-col items-center gap-2 w-[84px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 rounded-xl py-1 transition-opacity"
+          :class="ringRowDimmed(g)"
           @click="openAt(i)"
         >
           <div :class="ringOuterClass(g)">
@@ -277,7 +304,7 @@ onUnmounted(() => {
               />
             </div>
           </div>
-          <span class="text-[11px] font-medium text-neutral-600 truncate max-w-[84px] text-center leading-tight px-0.5">
+          <span :class="ringLabelClass(g)">
             {{ g.display_name || g.username }}
           </span>
         </button>

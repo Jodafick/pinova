@@ -16,12 +16,14 @@ const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const error = ref('')
+const suggestGoogleForEmail = ref(false)
 const loading = ref(false)
 const showPassword = ref(false)
 const acceptTerms = ref(false)
 
 const handleRegister = async () => {
   error.value = ''
+  suggestGoogleForEmail.value = false
   if (!displayName.value || !email.value || !password.value) {
     error.value = t('register.error.empty')
     return

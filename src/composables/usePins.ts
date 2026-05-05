@@ -40,12 +40,21 @@ export function getFullMediaUrl(url: string | null): string {
 // Mapper pour convertir les données Django vers le format attendu par le Frontend
 export function mapDjangoPinToFrontend(djangoPin: any): Pin {
   const author = djangoPin.author_profile || {}
+  const isStory = !!djangoPin.is_story
+  const storyDisplayRaw =
+    isStory && djangoPin.story_display_image_url ? String(djangoPin.story_display_image_url).trim() : ''
+  const mainImageRaw = djangoPin.image ? String(djangoPin.image).trim() : ''
+  const imageUrl = storyDisplayRaw
+    ? getFullMediaUrl(storyDisplayRaw)
+    : mainImageRaw
+      ? getFullMediaUrl(mainImageRaw)
+      : ''
   return {
     id: djangoPin.id,
     slug: djangoPin.slug,
     title: djangoPin.title,
     description: djangoPin.description,
-    imageUrl: djangoPin.image ? getFullMediaUrl(djangoPin.image) : '',
+    imageUrl,
     storyVideoUrl: djangoPin.story_video_url ? getFullMediaUrl(djangoPin.story_video_url) : '',
     user: author.display_name || author.username || 'Inconnu',
     username: author.username || 'inconnu',
