@@ -5,6 +5,7 @@ import { useAuth } from '../composables/useAuth'
 import { useTokenClient } from 'vue3-google-signin'
 import { GOOGLE_SIGN_IN_SCOPES } from '../env'
 import { useI18n } from '../i18n'
+import { EMAIL_DELIVERY_UNAVAILABLE_CODE } from '../constants/authErrors'
 
 const router = useRouter()
 const { register, socialLogin } = useAuth()
@@ -47,7 +48,10 @@ const handleRegister = async () => {
   loading.value = false
 
   if (!result.success) {
-    error.value = result.error || t('register.error.generic')
+    suggestGoogleForEmail.value = result.code === EMAIL_DELIVERY_UNAVAILABLE_CODE
+    error.value = suggestGoogleForEmail.value
+      ? t('auth.emailDeliveryBlocked.message')
+      : result.error || t('register.error.generic')
     return
   }
   // Rediriger vers la page OTP après inscription
@@ -220,11 +224,19 @@ const { login: googleLogin } = useTokenClient({
           <div class="flex-1 h-px bg-neutral-200"></div>
         </div>
 
+        <p
+          v-if="suggestGoogleForEmail"
+          class="mb-4 rounded-2xl border border-pink-100 bg-pink-50/80 px-4 py-3 text-center text-sm font-medium text-neutral-800"
+        >
+          {{ t('auth.emailDeliveryBlocked.googleHint') }}
+        </p>
+
         <div class="flex justify-center">
           <button
             type="button"
             @click="googleLogin()"
             class="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl border border-neutral-200 bg-white hover:bg-neutral-50 transition-all text-sm font-bold text-neutral-700 w-full"
+            :class="suggestGoogleForEmail ? 'ring-2 ring-pink-400 ring-offset-2' : ''"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" />
             {{ t('login.googleCta') }}

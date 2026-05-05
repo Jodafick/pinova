@@ -426,10 +426,8 @@ export function usePins() {
     payload: FormData | { text: string; gif?: string | null; parentId?: number | null },
   ) {
     try {
-      const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData
-      const response = await api.post(`pins/${pinSlug}/comments/`, payload, isFormData ? {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      } : undefined)
+      /** Ne pas fixer `Content-Type` à la main sur FormData : axios ajoute le boundary requis ; sinon `parentId` / médias sont ignorés côté Django. */
+      const response = await api.post(`pins/${pinSlug}/comments/`, payload)
       const pin = pins.value.find(p => p.slug === pinSlug)
       if (pin) {
         pin.stats.reactions += 0 // On pourrait mettre à jour le count ici si on l'avait séparément

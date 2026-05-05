@@ -94,6 +94,18 @@ export async function proactiveRefreshIfStale(): Promise<void> {
 }
 
 api.interceptors.request.use((config) => {
+  /** FormData + `Content-Type: application/json` (défaut axios) = pas de boundary multipart → champs ignorés (ex. `parentId`). */
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    const h = config.headers
+    if (h && typeof (h as { delete?: (key: string) => void }).delete === 'function') {
+      ;(h as { delete: (key: string) => void }).delete('Content-Type')
+      ;(h as { delete: (key: string) => void }).delete('content-type')
+    } else if (h && typeof h === 'object') {
+      delete (h as Record<string, unknown>)['Content-Type']
+      delete (h as Record<string, unknown>)['content-type']
+    }
+  }
+
   const existingAuth = config.headers?.Authorization
   if (existingAuth) return config
 

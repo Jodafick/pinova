@@ -685,6 +685,12 @@ export const fr: Record<string, string> = {
   'register.error.acceptTerms': 'Veuillez accepter les conditions d\'utilisation.',
   'register.error.generic': 'Erreur lors de l\'inscription.',
 
+  // Envoi e-mail indisponible — message volontairement simple pour l’utilisateur.
+  'auth.emailDeliveryBlocked.message':
+    'Nous ne pouvons pas vous envoyer le code par e-mail pour le moment. Vous pouvez vous connecter ou créer un compte avec Google à la place, sans attendre de code.',
+  'auth.emailDeliveryBlocked.googleHint':
+    'Utilisez le bouton « Continuer avec Google » ci-dessous : connexion ou inscription sans code par e-mail.',
+
   // Forgot password
   'forgot.title': 'Mot de passe oublié ?',
   'forgot.subtitle': 'Pas de panique, ça arrive ! Entrez votre email pour recevoir un lien de réinitialisation.',

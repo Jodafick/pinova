@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import type { User } from '../types'
 import api, { AUTH_INVALIDATED_EVENT } from '../api'
+import { readApiErrorCode } from '../constants/authErrors'
 import { clearPinClientCaches } from '../pinClientCache'
 import { devLog } from '../devLog'
 import { API_BASE_URL } from '../env'
@@ -315,11 +316,22 @@ export function useAuth() {
       }
       await api.post('auth/registration/', payload)
       // Ne pas stocker le token immédiatement car l'email doit être vérifié via OTP
-      return { success: true }
+      return { success: true as const }
     } catch (err: any) {
       console.error('Register error:', err)
-      const errorMsg = Object.values(err.response?.data || {}).flat()[0] as string
-      return { success: false, error: errorMsg || 'Erreur lors de la création du compte.' }
+      const body = err.response?.data
+      const code = readApiErrorCode(body)
+      const nfe = body?.non_field_errors
+      const fromNonField = Array.isArray(nfe) && typeof nfe[0] === 'string' ? nfe[0] : ''
+      const errorMsg =
+        fromNonField ||
+        (Object.values(body || {}).flat()[0] as string) ||
+        'Erreur lors de la création du compte.'
+      return {
+        success: false as const,
+        error: errorMsg,
+        code,
+      }
     }
   }
 

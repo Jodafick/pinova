@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api'
 import { useI18n } from '../i18n'
+import { EMAIL_DELIVERY_UNAVAILABLE_CODE, readApiErrorCode } from '../constants/authErrors'
 import { useAppModal } from '../composables/useAppModal'
 
 const route = useRoute()
@@ -13,6 +14,7 @@ const { showAlert } = useAppModal()
 const email = ref(route.query.email as string || '')
 const otp = ref('')
 const error = ref('')
+const suggestGoogleForEmail = ref(false)
 const loading = ref(false)
 const success = ref(false)
 
@@ -50,12 +52,18 @@ const handleResend = async () => {
 
   loading.value = true
   error.value = ''
+  suggestGoogleForEmail.value = false
 
   try {
     await api.post('resend-otp/', { email: email.value })
     await showAlert(t('otp.resent'), { variant: 'success' })
   } catch (err: any) {
-    error.value = err.response?.data?.error || t('otp.error.resend')
+    const body = err.response?.data
+    const code = readApiErrorCode(body)
+    suggestGoogleForEmail.value = code === EMAIL_DELIVERY_UNAVAILABLE_CODE
+    error.value = suggestGoogleForEmail.value
+      ? t('auth.emailDeliveryBlocked.message')
+      : err.response?.data?.error || t('otp.error.resend')
   } finally {
     loading.value = false
   }
@@ -114,6 +122,20 @@ onMounted(() => {
           {{ t('otp.notReceived') }}
           <button @click="handleResend" type="button" class="text-pink-600 font-bold hover:underline" :disabled="loading">{{ t('otp.resend') }}</button>
         </p>
+
+        <div
+          v-if="suggestGoogleForEmail"
+          class="mt-6 rounded-2xl border border-pink-100 bg-pink-50/80 p-4 text-center text-sm text-neutral-800"
+        >
+          <p class="font-medium">{{ t('auth.emailDeliveryBlocked.googleHint') }}</p>
+          <router-link
+            to="/login"
+            class="mt-3 inline-flex items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="" />
+            {{ t('login.googleCta') }}
+          </router-link>
+        </div>
       </form>
 
       <div class="mt-8 text-center">

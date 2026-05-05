@@ -105,6 +105,17 @@ function findCommentById(nodes: Comment[], id: number): Comment | null {
   return null
 }
 
+/** Racine du fil (commentaire `parent=null` côté API) sous laquelle afficher le composer de réponse. */
+function findRootThreadForTargetId(nodes: Comment[], targetId: number): Comment | null {
+  for (const c of nodes) {
+    if (c.id === targetId) return c
+    if (c.replies?.length && findCommentById(c.replies, targetId)) {
+      return c
+    }
+  }
+  return null
+}
+
 const floatingMenuComment = computed(() => {
   const id = menuOpenCommentId.value
   return id === null ? null : findCommentById(props.comments, id)
@@ -146,7 +157,20 @@ onUnmounted(() => {
   }
 })
 
+/** Id du commentaire auquel on répond (valeur de `parentId` à l’envoi). */
 const replyingTo = ref<number | null>(null)
+
+const replyComposerRoot = computed(() => {
+  const id = replyingTo.value
+  if (id == null) return null
+  return findRootThreadForTargetId(props.comments, id)
+})
+
+const replyTargetUsername = computed(() => {
+  const id = replyingTo.value
+  if (id == null) return ''
+  return findCommentById(props.comments, id)?.username ?? ''
+})
 
 /** Texte échappé puis mentions @user (aligné backend : lettres, chiffres, _, .). */
 const renderRichText = (str: string) => {
@@ -190,11 +214,15 @@ const toggleReply = (commentId: number) => {
   replyingTo.value = replyingTo.value === commentId ? null : commentId
 }
 
-const handleSubmitReply = (
-  commentId: number,
-  payload: { text: string; gif?: string | null; mediaFile?: File | null; replyTo?: string | null },
-) => {
-  emit('add', { ...payload, parentId: commentId })
+const handleSubmitReply = (payload: {
+  text: string
+  gif?: string | null
+  mediaFile?: File | null
+  replyTo?: string | null
+}) => {
+  const parentId = replyingTo.value
+  if (parentId == null) return
+  emit('add', { ...payload, parentId })
   replyingTo.value = null
 }
 
@@ -320,10 +348,13 @@ function menuDelete() {
           <span v-else aria-hidden="true" class="w-px h-px overflow-hidden">{{ ' ' }}</span>
         </div>
 
-        <div v-if="replyingTo === comment.id && props.viewerCanComment && !comment.contentMasked" class="mt-3">
+        <div
+          v-if="replyComposerRoot && replyComposerRoot.id === comment.id && props.viewerCanComment && !comment.contentMasked"
+          class="mt-3"
+        >
           <RichCommentInput
-            :placeholder="t('comment.replyTo.placeholder', { user: comment.username })"
-            @submit="handleSubmitReply(comment.id, $event)"
+            :placeholder="t('comment.replyTo.placeholder', { user: replyTargetUsername })"
+            @submit="handleSubmitReply($event)"
           />
         </div>
 

@@ -666,6 +666,11 @@ export const en: Record<string, string> = {
   'register.error.acceptTerms': 'Please accept the terms of service.',
   'register.error.generic': 'Sign-up error.',
 
+  'auth.emailDeliveryBlocked.message':
+    'We can’t send you an email code right now. You can sign in or sign up with Google instead—no email code needed.',
+  'auth.emailDeliveryBlocked.googleHint':
+    'Use “Continue with Google” below to sign in or create an account without an email code.',
+
   'forgot.title': 'Forgot password?',
   'forgot.subtitle': 'Don\'t worry, it happens! Enter your email to receive a reset link.',
   'forgot.success.title': 'Email sent!',
