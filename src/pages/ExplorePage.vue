@@ -6,6 +6,7 @@ import { useAuth } from '../composables/useAuth'
 import api from '../api'
 import PinGrid from '../components/PinGrid.vue'
 import { useI18n } from '../i18n'
+import { fetchHeaderSearch, type HeaderSearchBoard } from '../composables/useHeaderSearch'
 
 const { t, currentLang } = useI18n()
 
@@ -27,7 +28,11 @@ const categories = ref<TopicCategory[]>([])
 const categoriesLoading = ref(false)
 const selectedCategory = ref<string | null>(null)
 const categorySearch = ref('')
+const categoryVisibleCount = ref(10)
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
+const pageSearchInput = ref('')
+const boards = ref<HeaderSearchBoard[]>([])
+const boardsLoading = ref(false)
 
 const displayPins = computed(() => pins.value)
 
@@ -35,6 +40,9 @@ const exploreTextQuery = computed(() => {
   const raw = route.query.q
   return typeof raw === 'string' && raw.trim() ? raw.trim() : null
 })
+
+const visibleCategories = computed(() => categories.value.slice(0, categoryVisibleCount.value))
+const canShowMoreCategories = computed(() => categories.value.length > categoryVisibleCount.value)
 
 const loadCategories = async (query = '') => {
   categoriesLoading.value = true
@@ -46,6 +54,19 @@ const loadCategories = async (query = '') => {
     categories.value = []
   } finally {
     categoriesLoading.value = false
+  }
+}
+
+const loadBoards = async (query = '') => {
+  boardsLoading.value = true
+  try {
+    const result = await fetchHeaderSearch(query, 8)
+    boards.value = result.boards
+  } catch (err) {
+    console.error('Erreur lors du chargement des tableaux:', err)
+    boards.value = []
+  } finally {
+    boardsLoading.value = false
   }
 }
 
@@ -63,7 +84,9 @@ const handleScroll = () => {
 }
 
 onMounted(async () => {
+  pageSearchInput.value = exploreTextQuery.value ?? ''
   await loadCategories('')
+  await loadBoards(exploreTextQuery.value ?? '')
   await fetchDiscoverPins(true, null, exploreTextQuery.value)
   window.addEventListener('scroll', handleScroll, { passive: true })
 })
@@ -88,11 +111,14 @@ watch(selectedCategory, async (topic) => {
 })
 
 watch(exploreTextQuery, async () => {
+  pageSearchInput.value = exploreTextQuery.value ?? ''
+  await loadBoards(exploreTextQuery.value ?? '')
   await fetchDiscoverPins(true, selectedCategory.value, exploreTextQuery.value)
 })
 
 watch(currentLang, async () => {
   await loadCategories(categorySearch.value.trim())
+  await loadBoards(exploreTextQuery.value ?? '')
   await fetchDiscoverPins(true, selectedCategory.value, exploreTextQuery.value)
 })
 
@@ -116,18 +142,40 @@ const openPin = (slug: string) => {
 }
 
 function clearExploreSearch() {
+  pageSearchInput.value = ''
   router.replace({ path: '/explore', query: {} })
+}
+
+function submitPageSearch() {
+  const q = pageSearchInput.value.trim()
+  router.replace(q ? { path: '/explore', query: { q } } : { path: '/explore', query: {} })
 }
 </script>
 
 <template>
-  <div class="px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8">
-    <!-- Hero section -->
-    <section class="mb-10">
+  <div class="px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8 space-y-9">
+    <section class="rounded-3xl border border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/80 backdrop-blur-sm p-5 sm:p-7">
       <h1 class="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('explore.title') }}</h1>
-      <p class="text-base text-neutral-500 dark:text-neutral-400 max-w-lg">
+      <p class="text-base text-neutral-500 dark:text-neutral-400 max-w-2xl">
         {{ t('explore.subtitle') }}
       </p>
+      <div class="mt-5 flex items-center gap-3 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-950 px-4 py-3">
+        <span class="material-symbols-outlined text-lg text-neutral-400 dark:text-neutral-500">search</span>
+        <input
+          v-model="pageSearchInput"
+          type="text"
+          :placeholder="t('header.search.placeholder')"
+          class="flex-1 bg-transparent text-sm text-neutral-900 dark:text-neutral-100 outline-none"
+          @keyup.enter="submitPageSearch"
+        />
+        <button
+          type="button"
+          class="px-4 py-1.5 rounded-full bg-pink-600 hover:bg-pink-700 text-white text-sm font-semibold transition"
+          @click="submitPageSearch"
+        >
+          {{ t('common.search') }}
+        </button>
+      </div>
       <div
         v-if="exploreTextQuery"
         class="mt-4 inline-flex flex-wrap items-center gap-2 rounded-full bg-pink-50 dark:bg-pink-950/40 border border-pink-100 dark:border-pink-900/60 px-4 py-2 text-sm text-pink-900 dark:text-pink-200"
@@ -144,8 +192,7 @@ function clearExploreSearch() {
       </div>
     </section>
 
-    <!-- Categories grid -->
-    <section class="mb-10">
+    <section>
       <div class="flex items-center justify-between gap-3 mb-4">
         <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('explore.byCategory') }}</h2>
         <div class="w-full max-w-xs">
@@ -166,7 +213,7 @@ function clearExploreSearch() {
       </div>
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <button
-          v-for="category in categories"
+          v-for="category in visibleCategories"
           :key="category.originalName || category.name"
           class="relative overflow-hidden rounded-2xl p-5 text-left text-white transition-all hover:scale-[1.02] hover:shadow-lg"
           :class="[
@@ -184,10 +231,44 @@ function clearExploreSearch() {
           </p>
         </button>
       </div>
+      <div v-if="canShowMoreCategories" class="mt-4 flex justify-center">
+        <button
+          type="button"
+          class="px-5 py-2 rounded-full border border-pink-300 dark:border-pink-700 text-sm font-semibold text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-950/30 transition"
+          @click="categoryVisibleCount += 10"
+        >
+          {{ t('explore.showMoreCategories') }}
+        </button>
+      </div>
     </section>
 
-    <!-- Selected category pins -->
-    <section v-if="selectedCategory" class="mb-10">
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('header.search.sectionBoards') }}</h2>
+      </div>
+      <div v-if="boardsLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div v-for="i in 4" :key="i" class="rounded-2xl h-44 bg-neutral-100 dark:bg-neutral-800 animate-pulse"></div>
+      </div>
+      <div v-else-if="boards.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <router-link
+          v-for="board in boards"
+          :key="`explore-board-${board.id}`"
+          :to="`/profile/${encodeURIComponent(board.ownerUsername)}/board/${board.id}`"
+          class="group rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden hover:shadow-lg transition"
+        >
+          <div class="h-28 bg-neutral-100 dark:bg-neutral-800">
+            <img v-if="board.coverImageUrl" :src="board.coverImageUrl" :alt="board.name" class="w-full h-full object-cover group-hover:scale-105 transition" />
+          </div>
+          <div class="p-3">
+            <p class="font-semibold text-neutral-900 dark:text-neutral-100 truncate">{{ board.name }}</p>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate">@{{ board.ownerUsername }}</p>
+            <p class="text-xs text-pink-600 dark:text-pink-300 mt-1">{{ t('header.search.boardPinsCount', { count: board.pinCount }) }}</p>
+          </div>
+        </router-link>
+      </div>
+    </section>
+
+    <section v-if="selectedCategory">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ selectedCategory }}</h2>
         <button
@@ -209,7 +290,6 @@ function clearExploreSearch() {
       />
     </section>
 
-    <!-- Trending section -->
     <section v-if="!selectedCategory">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('explore.trending') }}</h2>

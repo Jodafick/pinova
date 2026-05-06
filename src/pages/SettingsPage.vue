@@ -1036,7 +1036,7 @@ watch(
 
     <div class="space-y-8">
       <!-- Profile section -->
-      <section id="settings-profile" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+      <section id="settings-profile" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.profile.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.profile.subtitle') }}</p>
@@ -1163,7 +1163,7 @@ watch(
       </section>
 
       <!-- Notifications preferences -->
-      <section id="settings-notifications" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+      <section id="settings-notifications" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.notifications.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.notifications.subtitle') }}</p>
@@ -1235,7 +1235,7 @@ watch(
       </section>
 
       <!-- Privacy -->
-      <section id="settings-privacy" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+      <section id="settings-privacy" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.privacy.title') }}</h2>
         </div>
@@ -1465,7 +1465,7 @@ watch(
       </section>
 
       <!-- Ads preferences -->
-      <section id="settings-ads" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+      <section id="settings-ads" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.ads.title') }}</h2>
@@ -1516,7 +1516,7 @@ watch(
         </div>
       </section>
 
-      <section id="settings-tips" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+      <section id="settings-tips" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.tips.title') }}</h2>
@@ -1693,7 +1693,7 @@ watch(
         </div>
       </section>
 
-      <section id="settings-subscription" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+      <section id="settings-subscription" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0">
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.subscription.title') }}</h2>
@@ -1813,7 +1813,7 @@ watch(
         </div>
       </section>
 
-      <section id="settings-support" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+      <section id="settings-support" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.support.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.support.subtitle') }}</p>
@@ -1857,7 +1857,7 @@ watch(
       </section>
 
       <!-- Password section -->
-      <section id="settings-password" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+      <section id="settings-password" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.password.title') }}</h2>

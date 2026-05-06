@@ -490,21 +490,21 @@ onMounted(async () => {
                 v-if="item.key === 'pins' && currentUser?.username"
                 :to="{ path: `/profile/${encodeURIComponent(currentUser.username)}` }"
                 class="group rounded-2xl border p-4 sm:p-5 min-h-[9.5rem]
-                       flex flex-col items-start gap-4
+                       flex flex-col items-center text-center gap-3
                        ring-4 transition-all duration-200
                        hover:shadow-lg hover:-translate-y-0.5
                        bg-gradient-to-br no-underline text-inherit
                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
               >
-                <div class="flex items-center justify-start w-full">
+                <div class="flex items-center justify-center w-full">
                   <span
-                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
+                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
                     :class="[item.iconWrap, item.darkIconWrap]"
                     aria-hidden="true"
                   >{{ item.icon }}</span>
                 </div>
-                <div class="min-w-0 flex-1 w-full">
+                <div class="min-w-0 flex-1 w-full flex flex-col items-center">
                   <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
                              text-neutral-500 dark:text-neutral-400 mb-1">
                     {{ item.label }}
@@ -521,19 +521,19 @@ onMounted(async () => {
                 v-else-if="item.key === 'pins'"
                 type="button"
                 class="group rounded-2xl border p-4 sm:p-5 min-h-[9.5rem]
-                       flex flex-col items-start gap-4
+                       flex flex-col items-center text-center gap-3
                        ring-4 bg-gradient-to-br text-left text-inherit opacity-50 cursor-not-allowed"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
                 disabled
               >
-                <div class="flex items-center justify-start w-full">
+                <div class="flex items-center justify-center w-full">
                   <span
-                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
+                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
                     :class="[item.iconWrap, item.darkIconWrap]"
                     aria-hidden="true"
                   >{{ item.icon }}</span>
                 </div>
-                <div class="min-w-0 flex-1 w-full">
+                <div class="min-w-0 flex-1 w-full flex flex-col items-center">
                   <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
                              text-neutral-500 dark:text-neutral-400 mb-1">
                     {{ item.label }}
@@ -550,7 +550,7 @@ onMounted(async () => {
                 v-else
                 type="button"
                 class="group rounded-2xl border p-4 sm:p-5 min-h-[9.5rem]
-                       flex flex-col items-start gap-4
+                       flex flex-col items-center text-center gap-3
                        ring-4 transition-all duration-200
                        hover:shadow-lg hover:-translate-y-0.5
                        bg-gradient-to-br text-left text-inherit
@@ -559,14 +559,14 @@ onMounted(async () => {
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
                 @click="openAudiencePanel(item.key)"
               >
-                <div class="flex items-center justify-start w-full">
+                <div class="flex items-center justify-center w-full">
                   <span
-                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
+                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
                     :class="[item.iconWrap, item.darkIconWrap]"
                     aria-hidden="true"
                   >{{ item.icon }}</span>
                 </div>
-                <div class="min-w-0 flex-1 w-full">
+                <div class="min-w-0 flex-1 w-full flex flex-col items-center">
                   <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
                              text-neutral-500 dark:text-neutral-400 mb-1">
                     {{ item.label }}
@@ -575,7 +575,7 @@ onMounted(async () => {
                              text-neutral-950 dark:text-neutral-50 tracking-tight">
                     {{ item.formatted }}
                   </p>
-                  <p class="mt-1 text-[10px] sm:text-[11px] font-semibold" :class="item.accent">
+                  <p class="mt-1 text-[10px] sm:text-[11px] font-semibold text-center" :class="item.accent">
                     {{ t('creator.audience.cta') }}
                   </p>
                 </div>

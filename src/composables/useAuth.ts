@@ -49,6 +49,9 @@ const inMemoryAccessToken = ref<string | null>(
   typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null,
 )
 let hasAuthInvalidationListener = false
+const CURRENT_USER_CACHE_TTL_MS = 60_000
+let currentUserLastFetchAt = 0
+let currentUserFetchPromise: Promise<void> | null = null
 
 /** Réponse brute `GET me/` pour réhydrater la session hors ligne / avant le premier round-trip. */
 const PINOVA_ME_PAYLOAD_KEY = 'pinova_me_payload_v1'
@@ -81,6 +84,7 @@ function hydrateCurrentUserFromMeCacheWhenTokenPresent() {
     const parsed = JSON.parse(raw)
     if (parsed && typeof parsed === 'object' && parsed.username != null) {
       currentUser.value = mapDjangoUserToFrontend(parsed)
+      currentUserLastFetchAt = Date.now()
     }
   } catch {
     /* JSON invalide */
@@ -181,6 +185,8 @@ export type FetchUserProfileResult = {
 
 export function useAuth() {
   function clearAuthState() {
+    currentUserFetchPromise = null
+    currentUserLastFetchAt = 0
     inMemoryAccessToken.value = null
     delete api.defaults.headers.common.Authorization
     if (typeof window !== 'undefined') {
@@ -216,29 +222,47 @@ export function useAuth() {
     api.defaults.headers.common.Authorization = `Bearer ${inMemoryAccessToken.value}`
   }
 
-  async function fetchCurrentUser(opts?: { silent?: boolean }) {
+  async function fetchCurrentUser(opts?: { silent?: boolean; force?: boolean }) {
     const silent = !!opts?.silent
+    const force = !!opts?.force
+    if (
+      !force &&
+      currentUser.value &&
+      currentUserLastFetchAt > 0 &&
+      Date.now() - currentUserLastFetchAt < CURRENT_USER_CACHE_TTL_MS
+    ) {
+      return
+    }
+    if (currentUserFetchPromise) {
+      await currentUserFetchPromise
+      return
+    }
     if (!silent) {
       isInitializing.value = true
     }
-    devLog('📡 Fetching user from API...')
-    try {
-      const response = await api.get('me/')
-      if (response.data) {
-        devLog('✅ User received:', response.data.username)
-        currentUser.value = mapDjangoUserToFrontend(response.data)
-        persistMePayloadFromApi(response.data)
+    currentUserFetchPromise = (async () => {
+      devLog('📡 Fetching user from API...')
+      try {
+        const response = await api.get('me/')
+        if (response.data) {
+          devLog('✅ User received:', response.data.username)
+          currentUser.value = mapDjangoUserToFrontend(response.data)
+          persistMePayloadFromApi(response.data)
+          currentUserLastFetchAt = Date.now()
+        }
+      } catch (err) {
+        if (!currentUser.value) {
+          currentUser.value = null
+        }
+        console.warn('❌ Session absente ou expirée.')
+      } finally {
+        if (!silent) {
+          isInitializing.value = false
+        }
+        currentUserFetchPromise = null
       }
-    } catch (err) {
-      if (!currentUser.value) {
-        currentUser.value = null
-      }
-      console.warn('❌ Session absente ou expirée.')
-    } finally {
-      if (!silent) {
-        isInitializing.value = false
-      }
-    }
+    })()
+    await currentUserFetchPromise
   }
 
   async function fetchUserProfile(
@@ -309,6 +333,7 @@ export function useAuth() {
       if (response.data) {
         currentUser.value = mapDjangoUserToFrontend(response.data)
         persistMePayloadFromApi(response.data)
+        currentUserLastFetchAt = Date.now()
       }
       return response.data
     } catch (err) {
@@ -332,6 +357,7 @@ export function useAuth() {
       }
       if (response.data?.user) {
         currentUser.value = mapDjangoUserToFrontend(response.data.user)
+        currentUserLastFetchAt = Date.now()
       }
       
       // Get full user profile after login
@@ -426,6 +452,7 @@ export function useAuth() {
       }
       if (response.data?.user) {
         currentUser.value = mapDjangoUserToFrontend(response.data.user)
+        currentUserLastFetchAt = Date.now()
       }
       await fetchCurrentUser()
       return { 

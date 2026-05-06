@@ -4,7 +4,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
-import { fetchHeaderSearch, type HeaderSearchUser } from '../composables/useHeaderSearch'
+import { fetchHeaderSearch, type HeaderSearchUser, type HeaderSearchBoard } from '../composables/useHeaderSearch'
 import type { Pin } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api'
@@ -38,6 +38,7 @@ window.addEventListener('offline', () => (isOffline.value = true))
 
 const searchPins = ref<Pin[]>([])
 const searchUsers = ref<HeaderSearchUser[]>([])
+const searchBoards = ref<HeaderSearchBoard[]>([])
 const searchRecommended = ref<Pin[]>([])
 const searchRemoteLoading = ref(false)
 let headerSearchDebounce: ReturnType<typeof setTimeout> | null = null
@@ -46,6 +47,7 @@ const hasSearchAnyResults = computed(
   () =>
     searchPins.value.length > 0 ||
     searchUsers.value.length > 0 ||
+    searchBoards.value.length > 0 ||
     searchRecommended.value.length > 0,
 )
 
@@ -80,10 +82,12 @@ async function runHeaderSearch() {
     const r = await fetchHeaderSearch(searchQuery.value, 8)
     searchPins.value = r.pins
     searchUsers.value = r.users
+    searchBoards.value = r.boards
     searchRecommended.value = r.recommendedPins
   } catch {
     searchPins.value = []
     searchUsers.value = []
+    searchBoards.value = []
     searchRecommended.value = []
   } finally {
     searchRemoteLoading.value = false
@@ -492,6 +496,40 @@ onUnmounted(() => {
               </router-link>
             </template>
 
+            <template v-if="searchBoards.length">
+              <p class="px-3 py-1 mt-1 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide">
+                {{ t('header.search.sectionBoards') }}
+              </p>
+              <router-link
+                v-for="board in searchBoards"
+                :key="'b-' + board.id"
+                :to="`/profile/${encodeURIComponent(board.ownerUsername)}/board/${board.id}`"
+                class="app-menu-item flex items-center gap-3 px-3 py-2 rounded-xl transition"
+                @click="showSearchResults = false"
+              >
+                <div class="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 shrink-0 overflow-hidden">
+                  <img
+                    v-if="board.coverImageUrl"
+                    :src="board.coverImageUrl"
+                    :alt="board.name"
+                    class="w-full h-full object-cover"
+                  />
+                  <div
+                    v-else
+                    class="w-full h-full flex items-center justify-center text-[10px] font-bold text-neutral-400"
+                  >
+                    Board
+                  </div>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ board.name }}</p>
+                  <p class="text-xs text-neutral-400 truncate">
+                    @{{ board.ownerUsername }} · {{ t('header.search.boardPinsCount', { count: board.pinCount }) }}
+                  </p>
+                </div>
+              </router-link>
+            </template>
+
             <template v-if="searchRecommended.length">
               <p class="px-3 py-1 mt-1 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide">
                 {{ t('header.search.sectionForYou') }}
@@ -565,7 +603,7 @@ onUnmounted(() => {
             <span class="material-symbols-outlined text-xl">notifications</span>
             <span
               v-if="unreadCount > 0"
-              class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white"
+              class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white dark:border-neutral-900 ring-1 ring-pink-200/70 dark:ring-pink-500/40"
             ></span>
           </button>
         </div>
@@ -611,7 +649,7 @@ onUnmounted(() => {
               <button
                 v-if="unreadCount > 0"
                 type="button"
-                class="text-xs text-pink-600 font-medium hover:underline"
+                class="text-xs text-pink-600 dark:text-pink-300 font-medium hover:underline"
                 @click="markAllAsRead"
               >
                 {{ t('header.notifications.markAllRead') }}
@@ -626,12 +664,12 @@ onUnmounted(() => {
                 v-for="notification in notifications"
                 :key="notification.id"
                 class="app-menu-item p-4 transition flex items-start gap-3 border-b border-neutral-100/70 dark:border-neutral-700/70 last:border-0 cursor-pointer"
-                :class="{ 'bg-blue-50/30': !notification.is_read }"
+                :class="{ 'bg-blue-50/40 dark:bg-blue-950/25 ring-1 ring-blue-200/45 dark:ring-blue-800/45': !notification.is_read }"
                 @click="handleNotificationClick(notification)"
               >
                 <AvatarDisc
                   :color="notification.sender_avatar_color || DEFAULT_AVATAR_COLOR_CLASS"
-                  frame-class="w-10 h-10 text-[10px] ring-1 ring-neutral-100"
+                  frame-class="w-10 h-10 text-[10px] ring-1 ring-neutral-100 dark:ring-neutral-700/80"
                   text-class="text-white leading-none"
                   :has-image="!!notification.sender_avatar_url"
                 >
@@ -653,7 +691,7 @@ onUnmounted(() => {
                   <p class="text-sm text-neutral-800 dark:text-neutral-100 leading-snug">{{ notification.message }}</p>
                   <p class="text-xs text-neutral-400 mt-1">@{{ notification.sender_username }}</p>
                 </div>
-                <div v-if="!notification.is_read" class="w-2 h-2 rounded-full bg-pink-600 mt-2"></div>
+                <div v-if="!notification.is_read" class="w-2 h-2 rounded-full bg-pink-600 dark:bg-pink-400 mt-2"></div>
               </div>
             </div>
             <div v-if="notifHasMore" class="border-t border-neutral-200/70 dark:border-neutral-700/80 p-2">

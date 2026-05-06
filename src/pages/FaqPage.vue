@@ -35,24 +35,24 @@ function cardVisual(slug: string) {
   if (slug === 'privacy') {
     return {
       icon: 'privacy_tip' as const,
-      ring: 'ring-emerald-200/80',
-      iconBg: 'bg-emerald-500/15 text-emerald-700',
-      gradient: 'from-emerald-50/90 via-white to-sky-50/50',
+      ring: 'ring-emerald-200/80 dark:ring-emerald-500/35',
+      iconBg: 'bg-emerald-500/15 dark:bg-emerald-500/22 text-emerald-700 dark:text-emerald-300',
+      gradient: 'from-emerald-50/90 via-white to-sky-50/50 dark:from-emerald-950/25 dark:via-neutral-900 dark:to-sky-950/20',
     }
   }
   if (slug === 'contact') {
     return {
       icon: 'mail' as const,
-      ring: 'ring-pink-200/80',
-      iconBg: 'bg-pink-500/15 text-pink-700',
-      gradient: 'from-pink-50/90 via-white to-neutral-50/80',
+      ring: 'ring-pink-200/80 dark:ring-pink-500/35',
+      iconBg: 'bg-pink-500/15 dark:bg-pink-500/22 text-pink-700 dark:text-pink-300',
+      gradient: 'from-pink-50/90 via-white to-neutral-50/80 dark:from-pink-950/25 dark:via-neutral-900 dark:to-neutral-900',
     }
   }
   return {
     icon: 'contract' as const,
-    ring: 'ring-violet-200/80',
-    iconBg: 'bg-violet-500/15 text-violet-700',
-    gradient: 'from-violet-50/90 via-white to-amber-50/40',
+    ring: 'ring-violet-200/80 dark:ring-violet-500/35',
+    iconBg: 'bg-violet-500/15 dark:bg-violet-500/22 text-violet-700 dark:text-violet-300',
+    gradient: 'from-violet-50/90 via-white to-amber-50/40 dark:from-violet-950/25 dark:via-neutral-900 dark:to-amber-950/15',
   }
 }
 
@@ -154,18 +154,18 @@ watch(currentLang, load, { immediate: true })
           >
             <div class="flex items-start gap-3 mb-3">
               <div
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-black/[0.05]"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-black/[0.05] dark:ring-white/[0.08]"
                 :class="cardVisual(card.slug).iconBg"
               >
                 <span class="material-symbols-outlined text-[22px]">{{ cardVisual(card.slug).icon }}</span>
               </div>
               <div class="min-w-0 flex-1">
-                <h3 class="font-bold text-neutral-900 dark:text-neutral-100 text-sm leading-snug group-hover:text-pink-700 transition-colors">
+                <h3 class="font-bold text-neutral-900 dark:text-neutral-100 text-sm leading-snug group-hover:text-pink-700 dark:group-hover:text-pink-300 transition-colors">
                   {{ card.title }}
                 </h3>
               </div>
               <span
-                class="material-symbols-outlined text-neutral-300 group-hover:text-pink-500 text-xl shrink-0"
+                class="material-symbols-outlined text-neutral-300 dark:text-neutral-600 group-hover:text-pink-500 dark:group-hover:text-pink-300 text-xl shrink-0"
                 aria-hidden="true"
               >
                 chevron_right
@@ -176,7 +176,7 @@ watch(currentLang, load, { immediate: true })
             </p>
             <p
               v-if="card.slug === 'contact' && card.contact_email"
-              class="mt-3 text-[11px] font-semibold text-pink-700 truncate"
+              class="mt-3 text-[11px] font-semibold text-pink-700 dark:text-pink-300 truncate"
             >
               {{ card.contact_email }}
             </p>

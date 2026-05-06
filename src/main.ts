@@ -9,6 +9,7 @@ import GoogleSignInPlugin from 'vue3-google-signin'
 import { useAuth } from './composables/useAuth'
 import { proactiveRefreshIfStale } from './api'
 import { GOOGLE_CLIENT_ID } from './env'
+import { startSyncEngine } from './offline/syncEngine'
 
 const app = createApp(App)
 
@@ -21,6 +22,7 @@ const { fetchCurrentUser } = useAuth()
 void proactiveRefreshIfStale()
   .then(() => fetchCurrentUser())
   .then(() => {
+    startSyncEngine()
     app.use(router)
     app.mount('#app')
   })
