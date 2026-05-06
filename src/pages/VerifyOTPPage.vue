@@ -77,14 +77,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-neutral-50 px-6 py-12">
-    <div class="w-full max-w-md bg-white p-10 rounded-[40px] shadow-sm border border-neutral-100">
+  <div class="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-6 py-12">
+    <div class="w-full max-w-md bg-white dark:bg-neutral-900 p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800">
       <div class="text-center mb-10">
         <div class="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
           <span class="material-symbols-outlined text-pink-600 text-3xl">verified_user</span>
         </div>
-        <h2 class="text-3xl font-extrabold text-neutral-900 mb-2">{{ t('otp.title') }}</h2>
-        <p class="text-neutral-500">{{ t('otp.subtitle') }} <strong>{{ email }}</strong></p>
+        <h2 class="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('otp.title') }}</h2>
+        <p class="text-neutral-500 dark:text-neutral-400">{{ t('otp.subtitle') }} <strong>{{ email }}</strong></p>
       </div>
 
       <div v-if="success" class="bg-green-50 border border-green-100 text-green-700 p-4 rounded-2xl text-center mb-6">
@@ -99,13 +99,13 @@ onMounted(() => {
         </div>
 
         <div>
-          <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('otp.label') }}</label>
+          <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('otp.label') }}</label>
           <input
             v-model="otp"
             type="text"
             maxlength="6"
             placeholder="000000"
-            class="w-full text-center tracking-[0.5em] text-2xl font-bold py-4 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+            class="w-full text-center tracking-[0.5em] text-2xl font-bold py-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
           />
         </div>
 
@@ -118,19 +118,19 @@ onMounted(() => {
           {{ loading ? t('otp.submitting') : t('otp.submit') }}
         </button>
 
-        <p class="text-center text-sm text-neutral-500">
+        <p class="text-center text-sm text-neutral-500 dark:text-neutral-400">
           {{ t('otp.notReceived') }}
           <button @click="handleResend" type="button" class="text-pink-600 font-bold hover:underline" :disabled="loading">{{ t('otp.resend') }}</button>
         </p>
 
         <div
           v-if="suggestGoogleForEmail"
-          class="mt-6 rounded-2xl border border-pink-100 bg-pink-50/80 p-4 text-center text-sm text-neutral-800"
+          class="mt-6 rounded-2xl border border-pink-100 dark:border-pink-900 bg-pink-50/80 dark:bg-pink-950/40 p-4 text-center text-sm text-neutral-800 dark:text-neutral-200"
         >
           <p class="font-medium">{{ t('auth.emailDeliveryBlocked.googleHint') }}</p>
           <router-link
             to="/login"
-            class="mt-3 inline-flex items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
+            class="mt-3 inline-flex items-center justify-center gap-2 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm font-bold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="" />
             {{ t('login.googleCta') }}
@@ -139,7 +139,7 @@ onMounted(() => {
       </form>
 
       <div class="mt-8 text-center">
-        <router-link to="/login" class="text-neutral-500 hover:text-neutral-900 text-sm font-medium flex items-center justify-center gap-2">
+        <router-link to="/login" class="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 text-sm font-medium flex items-center justify-center gap-2">
           <span class="material-symbols-outlined text-lg">arrow_back</span>
           {{ t('otp.back') }}
         </router-link>

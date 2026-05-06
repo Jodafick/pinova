@@ -988,7 +988,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         <span v-else class="avatar-text">{{ displayInitials(profileUser.displayName) }}</span>
       </AvatarDisc>
 
-      <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-1">
+      <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
         <span v-if="profileUser.subscription?.plan === 'pro'" class="material-symbols-outlined text-amber-500 text-base align-middle mr-1">verified</span>
         {{ profileUser.displayName }}
       </h1>
@@ -1080,11 +1080,11 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     </section>
 
     <section class="mb-10" v-if="boards.length > 0 || isMyProfile">
-      <h2 class="text-lg font-semibold text-neutral-900 mb-4">{{ t('profile.boards') }}</h2>
+      <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">{{ t('profile.boards') }}</h2>
 
       <div
         v-if="isMyProfile && boardSuggestions && (boardSuggestions.new_board_hints?.length || boardSuggestions.existing_boards?.length)"
-        class="mb-4 rounded-2xl border border-neutral-100 bg-white p-4"
+        class="mb-4 rounded-2xl border border-neutral-100 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4"
       >
         <p class="text-xs font-semibold text-neutral-800 mb-2">{{ t('profile.boards.suggestionsTitle') }}</p>
         <div v-if="boardSuggestions.new_board_hints?.length" class="mb-3">
@@ -1127,7 +1127,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           <li
             v-for="inv in pendingBoardInvites"
             :key="inv.id"
-            class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white border border-neutral-100 px-3 py-2"
+            class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-700 px-3 py-2"
           >
             <div class="min-w-0">
               <p class="text-sm font-medium text-neutral-900 truncate">{{ inv.board_name }}</p>
@@ -1253,9 +1253,9 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
     <!-- Réorganiser pins du board -->
     <div v-if="organizeBoardId !== null" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
-      <div class="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
-        <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-          <h3 class="text-lg font-bold text-neutral-900">{{ t('profile.boards.organizeTitle') }}</h3>
+      <div class="bg-white dark:bg-neutral-900 rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+        <div class="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
+          <h3 class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ t('profile.boards.organizeTitle') }}</h3>
           <button type="button" class="text-neutral-500 hover:text-neutral-800" @click="closeOrganizeBoard">
             <span class="material-symbols-outlined">close</span>
           </button>
@@ -1343,8 +1343,8 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
     <!-- Create Board Modal -->
     <div v-if="showCreateBoard" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
-      <div class="bg-white rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl">
-        <h3 class="text-xl font-bold text-neutral-900 mb-6">{{ t('profile.boards.modal.title') }}</h3>
+      <div class="bg-white dark:bg-neutral-900 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl">
+        <h3 class="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">{{ t('profile.boards.modal.title') }}</h3>
         <div class="space-y-5">
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('profile.boards.modal.name') }}</label>
@@ -1390,9 +1390,9 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     </div>
 
     <div v-if="showFollowersModal || showFollowingModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50">
-      <div class="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
-        <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-          <h3 class="font-semibold text-neutral-900">
+      <div class="bg-white dark:bg-neutral-900 rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
+          <h3 class="font-semibold text-neutral-900 dark:text-neutral-100">
             {{ showFollowersModal ? t('profile.followers') : t('profile.following') }}
           </h3>
           <button class="text-neutral-500 hover:text-neutral-700" @click="showFollowersModal = false; showFollowingModal = false">
@@ -1436,7 +1436,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     </div>
 
     <!-- Tabs -->
-    <div class="flex items-center justify-center gap-1 mb-6 border-b border-neutral-100">
+    <div class="flex items-center justify-center gap-1 mb-6 border-b border-neutral-100 dark:border-neutral-800">
       <button
         class="px-6 py-3 text-sm font-semibold transition-colors border-b-2"
         :class="activeTab === 'created'
@@ -1515,7 +1515,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         v-if="profileMoreMenuOpen && profileUser"
         ref="profileMoreMenuPanelRef"
         role="menu"
-        class="fixed z-[120] w-[min(220px,calc(100vw-1rem))] rounded-xl border border-neutral-200 bg-white shadow-xl py-1"
+        class="fixed z-[120] w-[min(220px,calc(100vw-1rem))] rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl py-1"
         :style="profileMoreMenuFloatingStyles"
         @pointerdown.stop
       >
@@ -1561,7 +1561,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
   <div v-else class="max-w-md mx-auto px-6 py-20 text-center space-y-4">
     <span class="material-symbols-outlined text-6xl text-neutral-300">person_off</span>
-    <h1 class="text-xl font-bold text-neutral-900">{{ profileUnavailableTitle }}</h1>
+    <h1 class="text-xl font-bold text-neutral-900 dark:text-neutral-100">{{ profileUnavailableTitle }}</h1>
     <p class="text-sm text-neutral-600 leading-relaxed">{{ profileUnavailableDesc }}</p>
     <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
       <router-link

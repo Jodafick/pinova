@@ -284,17 +284,17 @@ defineExpose({ setReply })
   <div ref="rootEl" class="relative w-full min-w-0">
     <div
       v-if="replyingTo"
-      class="flex items-center justify-between px-3 py-1.5 mb-2 bg-pink-50 rounded-lg text-xs"
+      class="flex items-center justify-between px-3 py-1.5 mb-2 bg-pink-50 dark:bg-pink-950/30 rounded-lg text-xs"
     >
-      <span class="text-neutral-600">
+      <span class="text-neutral-600 dark:text-neutral-300">
         {{ t('comment.replyTo') }} <span class="text-pink-600 font-semibold">@{{ replyingTo }}</span>
       </span>
-      <button type="button" class="text-neutral-400 hover:text-neutral-700" @click="cancelReply">
+      <button type="button" class="text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200" @click="cancelReply">
         <span class="material-symbols-outlined text-base">close</span>
       </button>
     </div>
 
-    <div v-if="mediaCompressing" class="mb-2 flex items-center gap-2 text-xs text-neutral-500">
+    <div v-if="mediaCompressing" class="mb-2 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
       <span class="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin shrink-0" />
       {{ t('common.loading') }}
     </div>
@@ -302,7 +302,7 @@ defineExpose({ setReply })
       <img :src="selectedMediaPreview" class="max-h-32 rounded-lg" alt="" />
       <button
         type="button"
-        class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-neutral-900 text-white flex items-center justify-center shadow"
+        class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-neutral-900 dark:bg-neutral-700 text-white flex items-center justify-center shadow"
         @click="removeMedia"
       >
         <span class="material-symbols-outlined text-sm">close</span>
@@ -321,7 +321,7 @@ defineExpose({ setReply })
       />
 
       <div
-        class="w-full rounded-2xl bg-neutral-100 px-3 py-2 focus-within:ring-2 focus-within:ring-pink-500 focus-within:bg-white transition"
+        class="w-full rounded-2xl bg-neutral-100 dark:bg-neutral-800 px-3 py-2 focus-within:ring-2 focus-within:ring-pink-500 focus-within:bg-white dark:focus-within:bg-neutral-900 transition"
       >
         <input
           ref="inputEl"
@@ -329,7 +329,7 @@ defineExpose({ setReply })
           type="text"
           enterkeyhint="send"
           :placeholder="placeholder || t('comment.placeholder')"
-          class="w-full min-w-0 bg-transparent outline-none text-sm py-1.5"
+          class="w-full min-w-0 bg-transparent outline-none text-sm py-1.5 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
           @input="handleInput"
           @keyup.enter="submit"
         />
@@ -418,11 +418,11 @@ defineExpose({ setReply })
       <div
         v-if="showMentionList"
         ref="mentionPanelEl"
-        class="w-[min(100vw-2rem,20rem)] max-w-[20rem] bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden flex flex-col max-h-[60vh]"
+        class="w-[min(100vw-2rem,20rem)] max-w-[20rem] bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-100 dark:border-neutral-700 overflow-hidden flex flex-col max-h-[60vh]"
         role="listbox"
         :style="{ ...mentionPopoverStyles, ...popLayerStyle }"
       >
-        <div class="px-4 py-2 text-[11px] uppercase tracking-wider text-neutral-400 font-semibold border-b border-neutral-100">
+        <div class="px-4 py-2 text-[11px] uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-semibold border-b border-neutral-100 dark:border-neutral-700">
           {{ t('comment.mention.list') }}
         </div>
         <div class="max-h-60 overflow-y-auto py-1" @scroll="handleMentionListScroll">
@@ -436,7 +436,7 @@ defineExpose({ setReply })
             v-for="user in suggestedUsers"
             :key="user.username"
             type="button"
-            class="w-full flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 transition text-left"
+            class="w-full flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-left"
             @click="insertMention(user.username)"
           >
             <AvatarDisc
@@ -449,8 +449,8 @@ defineExpose({ setReply })
               <span v-else class="avatar-text leading-none">{{ displayInitials(user.name) }}</span>
             </AvatarDisc>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-neutral-800 truncate">{{ user.name }}</p>
-              <p class="text-xs text-neutral-500 truncate">@{{ user.username }}</p>
+              <p class="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">{{ user.name }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">@{{ user.username }}</p>
               <p
                 v-if="relationMentionLabel(user.relation)"
                 class="text-[10px] font-semibold text-pink-600 truncate"

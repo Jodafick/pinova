@@ -283,13 +283,13 @@ onUnmounted(() => {
         <!-- Image container : hauteur naturelle après chargement -->
         <div
           data-pin-media
-          class="relative overflow-hidden rounded-3xl bg-neutral-100/90 min-h-[140px]"
+          class="relative overflow-hidden rounded-3xl bg-neutral-100/90 dark:bg-neutral-800 min-h-[140px]"
           @click.stop="onPinMediaTap(cell.pin)"
           @dblclick.stop.prevent="onPinMediaDblClick(cell.pin)"
         >
           <div
             v-if="!isMediaLoaded(cell.pin.id)"
-            class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200"
+            class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200 dark:from-neutral-800 dark:via-neutral-700 dark:to-neutral-800"
           ></div>
           <PinSensitiveMedia
             v-if="cell.pin.imageUrl"
@@ -397,8 +397,8 @@ onUnmounted(() => {
         </div>
 
         <!-- Pin info below image -->
-        <div class="px-3 pt-3 pb-3.5 bg-gradient-to-b from-white to-neutral-50/40">
-          <p v-if="cell.pin.title" class="text-sm font-semibold leading-snug line-clamp-2 text-neutral-950 tracking-tight">
+        <div class="px-3 pt-3 pb-3.5 bg-gradient-to-b from-white to-neutral-50/40 dark:from-neutral-900 dark:to-neutral-900">
+          <p v-if="cell.pin.title" class="text-sm font-semibold leading-snug line-clamp-2 text-neutral-950 dark:text-neutral-100 tracking-tight">
             {{ cell.pin.title }}
           </p>
 
@@ -417,10 +417,10 @@ onUnmounted(() => {
               <img v-if="cell.pin.userAvatarUrl" :src="cell.pin.userAvatarUrl" class="w-full h-full object-cover" />
               <span v-else class="avatar-text">{{ displayInitials(cell.pin.user) }}</span>
             </AvatarDisc>
-            <span class="text-xs text-neutral-600 truncate font-medium">{{ cell.pin.user }}</span>
+            <span class="text-xs text-neutral-600 dark:text-neutral-300 truncate font-medium">{{ cell.pin.user }}</span>
           </router-link>
 
-          <div class="mt-1 flex items-center gap-3 text-[11px] text-neutral-700">
+          <div class="mt-1 flex items-center gap-3 text-[11px] text-neutral-700 dark:text-neutral-300">
             <span v-if="cell.pin.stats.saves > 0" class="flex items-center gap-0.5">
               {{ formatCount(cell.pin.stats.saves) }}
               <span class="material-symbols-outlined text-xs" :class="{ 'fill-1 text-neutral-600': cell.pin.saved }">bookmark</span>

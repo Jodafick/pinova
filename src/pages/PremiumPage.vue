@@ -489,20 +489,20 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-neutral-900 dark:text-neutral-100">
     <!-- Hero -->
     <div class="text-center mb-12">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 text-pink-600 text-xs font-semibold mb-4">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 text-xs font-semibold mb-4">
         <span class="material-symbols-outlined text-sm">block</span>
         {{ t('premium.adFree') }}
       </div>
-      <h1 class="text-4xl sm:text-5xl font-bold text-neutral-900 mb-3">
+      <h1 class="text-4xl sm:text-5xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">
         {{ t('premium.title') }} <span class="text-pink-600">{{ t('premium.titleHighlight') }}</span>
       </h1>
-      <p class="text-base sm:text-lg text-neutral-500 max-w-2xl mx-auto">
+      <p class="text-base sm:text-lg text-neutral-500 dark:text-neutral-400 max-w-2xl mx-auto">
         {{ t('premium.tagline') }}
       </p>
-      <p class="text-xs text-neutral-500 max-w-2xl mx-auto mt-3">
+      <p class="text-xs text-neutral-500 dark:text-neutral-400 max-w-2xl mx-auto mt-3">
         {{ t('premium.b2bLine') }}
       </p>
 
@@ -516,14 +516,14 @@ onUnmounted(() => {
 
       <!-- Billing toggle -->
       <div
-        class="inline-flex items-center bg-neutral-100 rounded-full p-1 mt-8"
+        class="inline-flex items-center bg-neutral-100 dark:bg-neutral-800 rounded-full p-1 mt-8"
         :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''"
       >
         <button
           class="px-5 py-2 rounded-full text-sm font-semibold transition"
           type="button"
           :disabled="isSeatMember"
-          :class="billingCycle === 'monthly' ? 'bg-white shadow text-neutral-900' : 'text-neutral-500'"
+          :class="billingCycle === 'monthly' ? 'bg-white dark:bg-neutral-900 shadow text-neutral-900 dark:text-neutral-100' : 'text-neutral-500 dark:text-neutral-400'"
           @click="billingCycle = 'monthly'"
         >
           {{ t('premium.cycle.monthly') }}
@@ -532,7 +532,7 @@ onUnmounted(() => {
           class="px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2"
           type="button"
           :disabled="isSeatMember"
-          :class="billingCycle === 'yearly' ? 'bg-white shadow text-neutral-900' : 'text-neutral-500'"
+          :class="billingCycle === 'yearly' ? 'bg-white dark:bg-neutral-900 shadow text-neutral-900 dark:text-neutral-100' : 'text-neutral-500 dark:text-neutral-400'"
           @click="billingCycle = 'yearly'"
         >
           {{ t('premium.cycle.yearly') }}
@@ -544,12 +544,12 @@ onUnmounted(() => {
       </div>
 
       <div class="mt-6 space-y-2">
-        <p class="text-xs font-semibold text-neutral-600">{{ t('premium.bundle.title') }}</p>
+        <p class="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{{ t('premium.bundle.title') }}</p>
         <div class="inline-flex flex-wrap justify-center gap-2" :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''">
           <button
             type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold border transition"
-            :class="seatBundle === 'solo' ? 'border-pink-500 bg-pink-50 text-pink-800' : 'border-neutral-200 text-neutral-600'"
+            :class="seatBundle === 'solo' ? 'border-pink-500 bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-300' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
             :disabled="isSeatMember"
             @click="seatBundle = 'solo'"
           >
@@ -558,7 +558,7 @@ onUnmounted(() => {
           <button
             type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold border transition"
-            :class="seatBundle === 'family' ? 'border-pink-500 bg-pink-50 text-pink-800' : 'border-neutral-200 text-neutral-600'"
+            :class="seatBundle === 'family' ? 'border-pink-500 bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-300' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
             :disabled="isSeatMember"
             @click="seatBundle = 'family'"
           >
@@ -567,14 +567,14 @@ onUnmounted(() => {
           <button
             type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold border transition"
-            :class="seatBundle === 'team' ? 'border-pink-500 bg-pink-50 text-pink-800' : 'border-neutral-200 text-neutral-600'"
+            :class="seatBundle === 'team' ? 'border-pink-500 bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-300' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
             :disabled="isSeatMember"
             @click="seatBundle = 'team'"
           >
             {{ t('premium.bundle.team') }}
           </button>
         </div>
-        <p class="text-[11px] text-neutral-400 max-w-lg mx-auto leading-relaxed">
+        <p class="text-[11px] text-neutral-400 dark:text-neutral-500 max-w-lg mx-auto leading-relaxed">
           {{
             seatBundle === 'family'
               ? t('premium.bundle.familyDesc', { n: seatInviteLimits.family })
@@ -587,10 +587,10 @@ onUnmounted(() => {
 
       <div
         v-if="showTrialCta"
-        class="mt-10 max-w-lg mx-auto rounded-2xl border border-pink-200 bg-gradient-to-br from-pink-50 to-white p-5 text-left shadow-sm"
+        class="mt-10 max-w-lg mx-auto rounded-2xl border border-pink-200 dark:border-pink-900/60 bg-gradient-to-br from-pink-50 to-white dark:from-neutral-900 dark:to-neutral-900 p-5 text-left shadow-sm"
       >
-        <p class="text-sm font-bold text-neutral-900">{{ t('premium.trial.title') }}</p>
-        <p class="text-xs text-neutral-600 mt-1">{{ t('premium.trial.sub') }}</p>
+        <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trial.title') }}</p>
+        <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{{ t('premium.trial.sub') }}</p>
         <button
           type="button"
           class="mt-4 w-full sm:w-auto px-5 py-2.5 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 disabled:opacity-50"

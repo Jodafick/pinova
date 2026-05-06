@@ -269,7 +269,7 @@ function menuDelete() {
       :id="`comment-${comment.id}`"
       :key="comment.id"
       class="flex gap-3 rounded-xl transition-all duration-300"
-      :class="comment.id === props.highlightedCommentId ? 'bg-pink-50 ring-2 ring-pink-200 p-2' : ''"
+      :class="comment.id === props.highlightedCommentId ? 'bg-pink-50 dark:bg-pink-950/30 ring-2 ring-pink-200 dark:ring-pink-800 p-2' : ''"
     >
       <AvatarDisc
         :color="comment.avatarColor"
@@ -287,10 +287,10 @@ function menuDelete() {
       </AvatarDisc>
 
       <div class="flex-1 min-w-0">
-        <div class="bg-neutral-100 rounded-2xl px-4 pt-2.5 pb-2">
+        <div class="bg-neutral-100 dark:bg-neutral-800 rounded-2xl px-4 pt-2.5 pb-2">
           <div class="flex items-start justify-between gap-2 mb-1">
             <div class="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <span class="text-sm font-semibold text-neutral-900">{{ comment.user }}</span>
+              <span class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{{ comment.user }}</span>
               <span class="text-xs text-neutral-400">@{{ comment.username }}</span>
             </div>
             <div v-if="hasOverflowMenu(comment)" class="relative shrink-0 -mr-1 -mt-1">
@@ -317,7 +317,7 @@ function menuDelete() {
           </p>
           <p
             v-else-if="comment.text || comment.translatedText"
-            class="text-sm text-neutral-700 leading-snug break-words pr-1"
+          class="text-sm text-neutral-700 dark:text-neutral-300 leading-snug break-words pr-1"
             v-html="renderRichText(comment.translated && comment.translatedText ? comment.translatedText : comment.text)"
           />
           <img v-if="!comment.contentMasked && comment.gif" :src="comment.gif" class="mt-2 max-h-40 rounded-lg" alt="" />
@@ -331,7 +331,7 @@ function menuDelete() {
           </div>
         </div>
 
-        <div class="mt-1.5 px-2 flex items-center justify-between gap-3 text-xs text-neutral-500">
+        <div class="mt-1.5 px-2 flex items-center justify-between gap-3 text-xs text-neutral-500 dark:text-neutral-400">
           <span class="tabular-nums shrink-0">{{ formatCommentWhen(comment.createdAt) }}</span>
           <button
             v-if="!comment.contentMasked"
@@ -360,14 +360,14 @@ function menuDelete() {
 
         <div
           v-if="comment.replies && comment.replies.length"
-          class="mt-3 pl-4 border-l-2 border-neutral-100 space-y-3"
+          class="mt-3 pl-4 border-l-2 border-neutral-100 dark:border-neutral-700 space-y-3"
         >
           <div
             v-for="reply in comment.replies"
             :id="`comment-${reply.id}`"
             :key="reply.id"
             class="flex gap-3 rounded-xl transition-all duration-300"
-            :class="reply.id === props.highlightedCommentId ? 'bg-pink-50 ring-2 ring-pink-200 p-2' : ''"
+            :class="reply.id === props.highlightedCommentId ? 'bg-pink-50 dark:bg-pink-950/30 ring-2 ring-pink-200 dark:ring-pink-800 p-2' : ''"
           >
             <AvatarDisc
               :color="reply.avatarColor"
@@ -379,10 +379,10 @@ function menuDelete() {
               <span v-else>{{ reply.user[0] }}</span>
             </AvatarDisc>
             <div class="flex-1 min-w-0">
-              <div class="bg-neutral-100 rounded-2xl px-3 pt-2 pb-1.5">
+              <div class="bg-neutral-100 dark:bg-neutral-800 rounded-2xl px-3 pt-2 pb-1.5">
                 <div class="flex items-start justify-between gap-2 mb-0.5">
                   <div class="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span class="text-xs font-semibold text-neutral-900">{{ reply.user }}</span>
+                    <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-100">{{ reply.user }}</span>
                     <span class="text-[10px] text-neutral-400">@{{ reply.username }}</span>
                   </div>
                   <div v-if="hasOverflowMenu(reply)" class="relative shrink-0 -mr-0.5 -mt-0.5">
@@ -409,7 +409,7 @@ function menuDelete() {
                 </p>
                 <p
                   v-else
-                  class="text-sm text-neutral-700 leading-snug break-words pr-0.5"
+                  class="text-sm text-neutral-700 dark:text-neutral-300 leading-snug break-words pr-0.5"
                   v-html="renderRichText(reply.translated && reply.translatedText ? reply.translatedText : reply.text)"
                 />
                 <img v-if="!reply.contentMasked && reply.gif" :src="reply.gif" class="mt-2 max-h-32 rounded-lg" alt="" />
@@ -423,7 +423,7 @@ function menuDelete() {
                 </div>
               </div>
 
-              <div class="mt-1.5 px-2 flex items-center justify-between gap-3 text-[11px] text-neutral-500">
+              <div class="mt-1.5 px-2 flex items-center justify-between gap-3 text-[11px] text-neutral-500 dark:text-neutral-400">
                 <span class="tabular-nums shrink-0">{{ formatCommentWhen(reply.createdAt) }}</span>
                 <button
                   v-if="!reply.contentMasked"
@@ -460,7 +460,7 @@ function menuDelete() {
         ref="floatingMenuPanelEl"
         role="menu"
         data-comment-menu-panel
-        class="fixed z-[220] rounded-2xl border border-neutral-200 bg-white shadow-2xl py-1.5 w-[min(240px,calc(100vw-1rem))]"
+        class="fixed z-[220] rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl py-1.5 w-[min(240px,calc(100vw-1rem))]"
         :style="{ ...commentMenuFloatingStyles, zIndex: 220 }"
         @pointerdown.stop
       >
@@ -469,7 +469,7 @@ function menuDelete() {
             v-if="props.viewerCanComment && !floatingMenuComment.contentMasked"
             type="button"
             role="menuitem"
-            class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-50 flex items-center gap-2"
+            class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
             @click="menuReply"
           >
             <span class="material-symbols-outlined text-lg text-neutral-500">reply</span>
@@ -479,7 +479,7 @@ function menuDelete() {
             v-if="props.canTranslate && !floatingMenuComment.contentMasked"
             type="button"
             role="menuitem"
-            class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-50 flex items-center gap-2"
+            class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
             @click="menuTranslate"
           >
             <span class="material-symbols-outlined text-lg text-neutral-500">translate</span>
@@ -493,7 +493,7 @@ function menuDelete() {
             v-if="props.isPinOwner"
             type="button"
             role="menuitem"
-            class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-50 flex items-center gap-2"
+            class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
             @click="menuModerateToggle"
           >
             <span class="material-symbols-outlined text-lg text-neutral-500">{{
@@ -507,7 +507,7 @@ function menuDelete() {
             v-if="floatingMenuComment && showReport(floatingMenuComment)"
             type="button"
             role="menuitem"
-            class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-50 flex items-center gap-2"
+            class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
             @click="menuReport"
           >
             <span class="material-symbols-outlined text-lg text-amber-600">flag</span>

@@ -3,7 +3,7 @@
     <li
       v-for="i in 6"
       :key="i"
-      class="rounded-2xl border border-neutral-100 bg-gradient-to-b from-neutral-50/90 to-neutral-100/60 p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+      class="rounded-2xl border border-neutral-100 dark:border-neutral-700 bg-gradient-to-b from-neutral-50/90 to-neutral-100/60 dark:from-neutral-900 dark:to-neutral-800 p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
     >
       <div class="space-y-2.5 flex-1 min-w-0">
         <div class="flex flex-wrap gap-2">

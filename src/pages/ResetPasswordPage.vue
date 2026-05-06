@@ -45,11 +45,11 @@ const handleResetPassword = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-neutral-50 px-6 py-12">
-    <div class="w-full max-w-md bg-white p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100">
+  <div class="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-6 py-12">
+    <div class="w-full max-w-md bg-white dark:bg-neutral-900 p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800">
       <div class="text-center mb-8">
-        <h2 class="text-3xl font-extrabold text-neutral-900 mb-2">{{ t('reset.title') }}</h2>
-        <p class="text-neutral-500">{{ t('reset.subtitle') }}</p>
+        <h2 class="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('reset.title') }}</h2>
+        <p class="text-neutral-500 dark:text-neutral-400">{{ t('reset.subtitle') }}</p>
       </div>
 
       <div v-if="success" class="bg-green-50 border border-green-100 rounded-2xl p-6 text-center animate-fade-in">
@@ -65,18 +65,18 @@ const handleResetPassword = async () => {
         </div>
 
         <div>
-          <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('reset.newPassword') }}</label>
+          <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('reset.newPassword') }}</label>
           <div class="relative group">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">lock</span>
             <input
               v-model="password"
               :type="showPassword ? 'text' : 'password'"
               placeholder="••••••••"
-              class="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+              class="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
             />
             <button
               type="button"
-              class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+              class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
               @click="showPassword = !showPassword"
             >
               <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
@@ -85,14 +85,14 @@ const handleResetPassword = async () => {
         </div>
 
         <div>
-          <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('reset.confirmPassword') }}</label>
+          <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('reset.confirmPassword') }}</label>
           <div class="relative group">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">verified_user</span>
             <input
               v-model="confirmPassword"
               type="password"
               placeholder="••••••••"
-              class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+              class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
             />
           </div>
         </div>

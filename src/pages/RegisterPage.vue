@@ -79,7 +79,7 @@ const { login: googleLogin } = useTokenClient({
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-white">
+  <div class="min-h-screen flex bg-white dark:bg-neutral-950">
     <!-- Left side - hero -->
     <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-br from-pink-500/90 via-pink-500/80 to-pink-600/90 z-10"></div>
@@ -105,19 +105,19 @@ const { login: googleLogin } = useTokenClient({
     </div>
 
     <!-- Right side - form -->
-    <div class="flex-1 flex items-center justify-center px-6 py-12 bg-neutral-50/30">
-      <div class="w-full max-w-lg bg-white p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100">
+    <div class="flex-1 flex items-center justify-center px-6 py-12 bg-neutral-50/30 dark:bg-neutral-900/30">
+      <div class="w-full max-w-lg bg-white dark:bg-neutral-900 p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800">
         <!-- Mobile logo -->
         <div class="lg:hidden flex items-center justify-center gap-2 mb-10">
           <div class="w-10 h-10 rounded-full bg-pink-600 flex items-center justify-center overflow-hidden shadow-sm">
             <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          <span class="text-2xl font-bold text-neutral-900">Pinova</span>
+          <span class="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Pinova</span>
         </div>
 
         <div class="text-center mb-10">
-          <h2 class="text-3xl font-extrabold text-neutral-900 mb-2">{{ t('register.title') }}</h2>
-          <p class="text-neutral-500">{{ t('register.subtitle') }}</p>
+          <h2 class="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('register.title') }}</h2>
+          <p class="text-neutral-500 dark:text-neutral-400">{{ t('register.subtitle') }}</p>
         </div>
 
         <form @submit.prevent="handleRegister" class="space-y-5">
@@ -131,44 +131,44 @@ const { login: googleLogin } = useTokenClient({
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('register.fullName') }}</label>
+              <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('register.fullName') }}</label>
               <div class="relative group">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">person</span>
                 <input
                   v-model="displayName"
                   type="text"
                   :placeholder="t('register.fullName.placeholder')"
-                  class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                  class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                 />
               </div>
             </div>
             <div>
-              <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('login.email') }}</label>
+              <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('login.email') }}</label>
               <div class="relative group">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">mail</span>
                 <input
                   v-model="email"
                   type="email"
                   :placeholder="t('register.email.placeholder')"
-                  class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                  class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                 />
               </div>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('login.password') }}</label>
+            <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('login.password') }}</label>
             <div class="relative group">
               <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">lock</span>
               <input
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 :placeholder="t('register.password.placeholder')"
-                class="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                class="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
               />
               <button
                 type="button"
-                class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
                 @click="showPassword = !showPassword"
               >
                 <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
@@ -177,14 +177,14 @@ const { login: googleLogin } = useTokenClient({
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-neutral-700 mb-2 ml-1">{{ t('register.confirmPassword') }}</label>
+            <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('register.confirmPassword') }}</label>
             <div class="relative group">
               <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">verified_user</span>
               <input
                 v-model="confirmPassword"
                 type="password"
                 :placeholder="t('register.confirmPassword.placeholder')"
-                class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
               />
             </div>
           </div>
@@ -198,7 +198,7 @@ const { login: googleLogin } = useTokenClient({
               />
               <span class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none material-symbols-outlined text-sm font-bold">check</span>
             </div>
-            <span class="text-sm text-neutral-500 font-medium select-none">
+            <span class="text-sm text-neutral-500 dark:text-neutral-400 font-medium select-none">
               {{ t('register.acceptTerms.before') }}
               <router-link to="/legal/terms" class="text-pink-600 font-bold hover:underline" tabindex="0" @click.stop>
                 {{ t('register.acceptTerms.terms') }}
@@ -220,15 +220,15 @@ const { login: googleLogin } = useTokenClient({
           </button>
         </form>
 
-        <div class="my-8 flex items-center gap-4 text-neutral-400">
-          <div class="flex-1 h-px bg-neutral-200"></div>
+        <div class="my-8 flex items-center gap-4 text-neutral-400 dark:text-neutral-500">
+          <div class="flex-1 h-px bg-neutral-200 dark:bg-neutral-700"></div>
           <span class="text-xs font-bold uppercase tracking-wider">{{ t('register.divider') }}</span>
-          <div class="flex-1 h-px bg-neutral-200"></div>
+          <div class="flex-1 h-px bg-neutral-200 dark:bg-neutral-700"></div>
         </div>
 
         <p
           v-if="suggestGoogleForEmail"
-          class="mb-4 rounded-2xl border border-pink-100 bg-pink-50/80 px-4 py-3 text-center text-sm font-medium text-neutral-800"
+          class="mb-4 rounded-2xl border border-pink-100 dark:border-pink-900 bg-pink-50/80 dark:bg-pink-950/40 px-4 py-3 text-center text-sm font-medium text-neutral-800 dark:text-neutral-200"
         >
           {{ t('auth.emailDeliveryBlocked.googleHint') }}
         </p>
@@ -237,7 +237,7 @@ const { login: googleLogin } = useTokenClient({
           <button
             type="button"
             @click="googleLogin()"
-            class="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl border border-neutral-200 bg-white hover:bg-neutral-50 transition-all text-sm font-bold text-neutral-700 w-full"
+            class="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all text-sm font-bold text-neutral-700 dark:text-neutral-200 w-full"
             :class="suggestGoogleForEmail ? 'ring-2 ring-pink-400 ring-offset-2' : ''"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" />
@@ -245,7 +245,7 @@ const { login: googleLogin } = useTokenClient({
           </button>
         </div>
 
-        <p class="mt-10 text-center text-sm text-neutral-500 font-medium">
+        <p class="mt-10 text-center text-sm text-neutral-500 dark:text-neutral-400 font-medium">
           {{ t('register.haveAccount') }}
           <router-link to="/login" class="text-pink-600 font-bold hover:underline">{{ t('register.signIn') }}</router-link>
         </p>

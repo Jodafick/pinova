@@ -124,13 +124,13 @@ function clearExploreSearch() {
   <div class="px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8">
     <!-- Hero section -->
     <section class="mb-10">
-      <h1 class="text-3xl sm:text-4xl font-bold text-neutral-900 mb-2">{{ t('explore.title') }}</h1>
-      <p class="text-base text-neutral-500 max-w-lg">
+      <h1 class="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('explore.title') }}</h1>
+      <p class="text-base text-neutral-500 dark:text-neutral-400 max-w-lg">
         {{ t('explore.subtitle') }}
       </p>
       <div
         v-if="exploreTextQuery"
-        class="mt-4 inline-flex flex-wrap items-center gap-2 rounded-full bg-pink-50 border border-pink-100 px-4 py-2 text-sm text-pink-900"
+        class="mt-4 inline-flex flex-wrap items-center gap-2 rounded-full bg-pink-50 dark:bg-pink-950/40 border border-pink-100 dark:border-pink-900/60 px-4 py-2 text-sm text-pink-900 dark:text-pink-200"
       >
         <span class="material-symbols-outlined text-base text-pink-600">search</span>
         <span>{{ t('explore.searchActive', { q: exploreTextQuery }) }}</span>
@@ -147,13 +147,13 @@ function clearExploreSearch() {
     <!-- Categories grid -->
     <section class="mb-10">
       <div class="flex items-center justify-between gap-3 mb-4">
-        <h2 class="text-lg font-semibold text-neutral-900">{{ t('explore.byCategory') }}</h2>
+        <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('explore.byCategory') }}</h2>
         <div class="w-full max-w-xs">
           <input
             v-model="categorySearch"
             type="text"
             :placeholder="t('explore.categorySearch.placeholder')"
-            class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+            class="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
       </div>
@@ -161,7 +161,7 @@ function clearExploreSearch() {
         <div
           v-for="i in 10"
           :key="i"
-          class="rounded-2xl h-28 bg-neutral-100 animate-pulse"
+          class="rounded-2xl h-28 bg-neutral-100 dark:bg-neutral-800 animate-pulse"
         ></div>
       </div>
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -189,9 +189,9 @@ function clearExploreSearch() {
     <!-- Selected category pins -->
     <section v-if="selectedCategory" class="mb-10">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-neutral-900">{{ selectedCategory }}</h2>
+        <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ selectedCategory }}</h2>
         <button
-          class="text-sm text-neutral-500 hover:text-neutral-700 flex items-center gap-1"
+          class="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center gap-1"
           @click="selectedCategory = null"
         >
           <span class="material-symbols-outlined text-base">close</span>
@@ -212,7 +212,7 @@ function clearExploreSearch() {
     <!-- Trending section -->
     <section v-if="!selectedCategory">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-neutral-900">{{ t('explore.trending') }}</h2>
+        <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('explore.trending') }}</h2>
         <span class="flex items-center gap-1 text-sm text-pink-600 font-medium">
           <span class="material-symbols-outlined text-lg">trending_up</span>
           {{ t('explore.popular') }}

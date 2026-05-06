@@ -319,7 +319,7 @@ onMounted(async () => {
 
 <template>
   <main
-    class="min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-8rem)] bg-gradient-to-b from-violet-50/45 via-white to-neutral-50/90"
+    class="min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-8rem)] bg-gradient-to-b from-violet-50/45 via-white to-neutral-50/90 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
   >
     <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-10 lg:py-12">
       <!-- Chargement : squelette tableau de bord -->
@@ -396,7 +396,7 @@ onMounted(async () => {
 
         <div
           v-if="errorMsg"
-          class="mb-10 rounded-2xl border border-rose-200/90 bg-rose-50/90 px-5 py-6 sm:px-7 sm:py-7 text-center shadow-sm"
+          class="mb-10 rounded-2xl border border-rose-200/90 bg-rose-50/90 dark:border-rose-900/60 dark:bg-rose-950/30 px-5 py-6 sm:px-7 sm:py-7 text-center shadow-sm"
           role="alert"
         >
           <span class="material-symbols-outlined text-rose-500 text-[40px] mb-3 inline-block" aria-hidden="true"
@@ -415,10 +415,10 @@ onMounted(async () => {
 
         <section id="totaux" aria-labelledby="creator-totals-heading" class="mb-10 sm:mb-12 scroll-mt-28">
           <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 sm:mb-6">
-            <h2 id="creator-totals-heading" class="text-xl sm:text-2xl font-bold tracking-tight text-neutral-950">
+            <h2 id="creator-totals-heading" class="text-xl sm:text-2xl font-bold tracking-tight text-neutral-950 dark:text-neutral-100">
               {{ t('creator.sectionTotals') }}
             </h2>
-            <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500">{{ t('creator.badge') }}</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{{ t('creator.badge') }}</span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
             <template v-for="item in kpis" :key="item.key">
@@ -502,25 +502,25 @@ onMounted(async () => {
 
         <section
           id="fenetre"
-          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem] border border-neutral-200/80 bg-white/92 backdrop-blur-sm shadow-xl shadow-neutral-950/[0.04] ring-1 ring-black/[0.03] overflow-hidden scroll-mt-28"
+          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem] border border-neutral-200/80 dark:border-neutral-700/80 bg-white/92 dark:bg-neutral-900/92 backdrop-blur-sm shadow-xl shadow-neutral-950/[0.04] ring-1 ring-black/[0.03] dark:ring-white/[0.05] overflow-hidden scroll-mt-28"
         >
-          <div class="border-b border-neutral-100 px-5 py-5 sm:px-7 sm:py-7 bg-gradient-to-br from-neutral-50/98 to-white">
+          <div class="border-b border-neutral-100 dark:border-neutral-800 px-5 py-5 sm:px-7 sm:py-7 bg-gradient-to-br from-neutral-50/98 to-white dark:from-neutral-900 dark:to-neutral-900">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
               <div class="min-w-0 flex-1">
-                <h2 id="creator-week-heading" class="text-lg sm:text-xl font-bold text-neutral-950 mb-3">
+                <h2 id="creator-week-heading" class="text-lg sm:text-xl font-bold text-neutral-950 dark:text-neutral-100 mb-3">
                   {{ t('creator.sectionWeekly') }}
                 </h2>
-                <p class="text-sm text-neutral-600 leading-relaxed max-w-prose">{{ t('creator.weeklyExplain') }}</p>
+                <p class="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed max-w-prose">{{ t('creator.weeklyExplain') }}</p>
               </div>
               <p
                 v-if="weeklyMeta && periodSummaryLine"
-                class="text-xs font-medium text-neutral-600 shrink-0 py-2 px-3 rounded-xl bg-neutral-900/[0.04] border border-neutral-200/60 self-start max-w-xl leading-snug"
+                class="text-xs font-medium text-neutral-600 dark:text-neutral-300 shrink-0 py-2 px-3 rounded-xl bg-neutral-900/[0.04] dark:bg-neutral-700/40 border border-neutral-200/60 dark:border-neutral-700 self-start max-w-xl leading-snug"
               >
                 {{ periodSummaryLine }}
               </p>
               <p
                 v-else-if="weeklyMeta"
-                class="text-xs font-medium text-neutral-600 shrink-0 py-2 px-3 rounded-xl bg-neutral-900/[0.04] border border-neutral-200/60 self-start"
+                class="text-xs font-medium text-neutral-600 dark:text-neutral-300 shrink-0 py-2 px-3 rounded-xl bg-neutral-900/[0.04] dark:bg-neutral-700/40 border border-neutral-200/60 dark:border-neutral-700 self-start"
               >
                 {{
                   t('creator.weeklyEvents', {
@@ -620,14 +620,14 @@ onMounted(async () => {
           v-if="topAllTime.length"
           id="top-classement"
           aria-labelledby="creator-top-heading"
-          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem] border border-neutral-200/80 bg-white/95 shadow-lg shadow-neutral-950/[0.03] overflow-hidden scroll-mt-28"
+          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem] border border-neutral-200/80 dark:border-neutral-700/80 bg-white/95 dark:bg-neutral-900/95 shadow-lg shadow-neutral-950/[0.03] overflow-hidden scroll-mt-28"
         >
-          <div class="px-5 py-5 sm:px-7 sm:py-6 border-b border-neutral-100 bg-gradient-to-r from-neutral-50 to-white">
-            <h2 id="creator-top-heading" class="text-lg sm:text-xl font-bold text-neutral-950">
+          <div class="px-5 py-5 sm:px-7 sm:py-6 border-b border-neutral-100 dark:border-neutral-800 bg-gradient-to-r from-neutral-50 to-white dark:from-neutral-900 dark:to-neutral-900">
+            <h2 id="creator-top-heading" class="text-lg sm:text-xl font-bold text-neutral-950 dark:text-neutral-100">
               {{ t('creator.sectionTopAll') }}
             </h2>
           </div>
-          <ul class="divide-y divide-neutral-100">
+          <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
             <li
               v-for="(p, idx) in topAllTime"
               :key="p.id"
@@ -662,7 +662,7 @@ onMounted(async () => {
               </div>
             </li>
           </ul>
-          <div v-if="topPinsHasMore" class="px-5 py-4 sm:px-7 border-t border-neutral-100 flex justify-center bg-neutral-50/40">
+          <div v-if="topPinsHasMore" class="px-5 py-4 sm:px-7 border-t border-neutral-100 dark:border-neutral-800 flex justify-center bg-neutral-50/40 dark:bg-neutral-900/60">
             <button
               type="button"
               class="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm hover:border-pink-200 hover:bg-pink-50/50 disabled:opacity-50"

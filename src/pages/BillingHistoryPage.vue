@@ -139,12 +139,12 @@ onMounted(async () => {
 
 <template>
   <div
-    class="min-h-[70vh] bg-gradient-to-b from-neutral-50 via-white to-[#fdf8fb] selection:bg-pink-100 selection:text-pink-900"
+    class="min-h-[70vh] bg-gradient-to-b from-neutral-50 via-white to-[#fdf8fb] dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 selection:bg-pink-100 selection:text-pink-900"
   >
     <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-14 pb-16">
       <button
         type="button"
-        class="group mb-8 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white/80 px-3.5 py-2 text-sm font-medium text-neutral-600 shadow-sm backdrop-blur-sm transition hover:border-pink-200 hover:bg-pink-50/60 hover:text-pink-900"
+        class="group mb-8 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 dark:border-neutral-700 bg-white/80 dark:bg-neutral-900/80 px-3.5 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-300 shadow-sm backdrop-blur-sm transition hover:border-pink-200 hover:bg-pink-50/60 dark:hover:bg-neutral-800 hover:text-pink-900 dark:hover:text-pink-200"
         @click="router.push('/settings')"
       >
         <span
@@ -156,7 +156,7 @@ onMounted(async () => {
       </button>
 
       <header
-        class="relative overflow-hidden rounded-3xl border border-pink-100/80 bg-gradient-to-br from-white via-white to-pink-50/40 px-6 sm:px-10 py-8 sm:py-10 shadow-[0_1px_0_0_rgba(0,0,0,0.04),0_12px_40px_-18px_rgba(225,29,119,0.18)] mb-8"
+        class="relative overflow-hidden rounded-3xl border border-pink-100/80 dark:border-pink-900/40 bg-gradient-to-br from-white via-white to-pink-50/40 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-900 px-6 sm:px-10 py-8 sm:py-10 shadow-[0_1px_0_0_rgba(0,0,0,0.04),0_12px_40px_-18px_rgba(225,29,119,0.18)] mb-8"
       >
         <div
           class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-pink-400/10 blur-2xl"
@@ -178,17 +178,17 @@ onMounted(async () => {
               <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-pink-600">
                 {{ t('billing.title') }}
               </p>
-              <h1 class="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
+              <h1 class="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                 {{ t('settings.subscription.billingHistory') }}
               </h1>
-              <p class="mt-2 max-w-lg text-sm leading-relaxed text-neutral-600">
+              <p class="mt-2 max-w-lg text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
                 {{ t('billing.subtitle') }}
               </p>
             </div>
           </div>
           <div
             v-if="!loading && invoiceCountLabel"
-            class="shrink-0 self-start rounded-full border border-pink-100 bg-white/90 px-4 py-2 text-center text-xs font-semibold text-pink-800 shadow-sm"
+            class="shrink-0 self-start rounded-full border border-pink-100 dark:border-pink-900/50 bg-white/90 dark:bg-neutral-900 px-4 py-2 text-center text-xs font-semibold text-pink-800 dark:text-pink-200 shadow-sm"
           >
             {{ invoiceCountLabel }}
           </div>
@@ -196,7 +196,7 @@ onMounted(async () => {
       </header>
 
       <section
-        class="rounded-3xl border border-neutral-100/90 bg-white/90 p-5 sm:p-8 shadow-[0_1px_0_0_rgba(0,0,0,0.03),0_20px_50px_-24px_rgba(0,0,0,0.12)] backdrop-blur-sm"
+        class="rounded-3xl border border-neutral-100/90 dark:border-neutral-700 bg-white/90 dark:bg-neutral-900/90 p-5 sm:p-8 shadow-[0_1px_0_0_rgba(0,0,0,0.03),0_20px_50px_-24px_rgba(0,0,0,0.12)] backdrop-blur-sm"
       >
         <div v-if="loading" aria-busy="true">
           <span class="sr-only">{{ t('settings.subscription.billingLoading') }}</span>
@@ -215,7 +215,7 @@ onMounted(async () => {
 
           <div
             v-if="!billingInvoices.length"
-            class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-16 text-center"
+            class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-900/50 px-6 py-16 text-center"
           >
             <span
               class="material-symbols-outlined mb-4 text-5xl text-neutral-300"
@@ -223,8 +223,8 @@ onMounted(async () => {
             >
               payments
             </span>
-            <p class="text-sm font-semibold text-neutral-700">{{ t('settings.subscription.billingEmpty') }}</p>
-            <p class="mt-2 max-w-xs text-xs leading-relaxed text-neutral-500">
+            <p class="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{{ t('settings.subscription.billingEmpty') }}</p>
+            <p class="mt-2 max-w-xs text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
               {{ t('billing.subtitle') }}
             </p>
           </div>
@@ -233,7 +233,7 @@ onMounted(async () => {
             <li
               v-for="inv in billingInvoices"
               :key="inv.id"
-              class="group rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/40 p-4 shadow-sm transition hover:border-pink-100/90 hover:shadow-md"
+              class="group rounded-2xl border border-neutral-100 dark:border-neutral-700 bg-gradient-to-b from-white to-neutral-50/40 dark:from-neutral-900 dark:to-neutral-900 p-4 shadow-sm transition hover:border-pink-100/90 hover:shadow-md"
             >
               <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0 flex-1 space-y-2">
