@@ -178,17 +178,21 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         class="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
         role="presentation"
       >
-        <div class="absolute inset-0 bg-neutral-950/45 backdrop-blur-[2px]" aria-hidden="true" @click="backdropClick" />
         <div
-          class="relative w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/[0.06] overflow-hidden flex flex-col max-h-[min(90vh,520px)]"
+          class="absolute inset-0 bg-[radial-gradient(circle_at_30%_10%,rgba(251,207,232,0.22),transparent_45%)] bg-neutral-950/55 backdrop-blur-md"
+          aria-hidden="true"
+          @click="backdropClick"
+        />
+        <div
+          class="relative w-full max-w-md lux-alert-panel overflow-hidden flex flex-col max-h-[min(90vh,520px)]"
           role="dialog"
           aria-modal="true"
           @click.stop
         >
-          <div class="px-5 pt-5 pb-3 border-b border-neutral-100 shrink-0">
-            <h2 class="text-base font-semibold text-neutral-900">{{ title }}</h2>
+          <div class="px-5 pt-6 pb-4 border-b border-neutral-200/70 shrink-0 bg-white/30">
+            <h2 class="text-base font-bold text-neutral-900 tracking-tight">{{ title }}</h2>
             <p class="text-sm text-neutral-600 mt-1 leading-relaxed">{{ message }}</p>
-            <div class="mt-3 flex items-center gap-2 rounded-xl border border-neutral-200 px-3 py-2 bg-neutral-50 focus-within:ring-2 focus-within:ring-pink-500">
+            <div class="mt-3 flex items-center gap-2 rounded-2xl border border-neutral-200/90 px-3 py-2.5 bg-white/80 shadow-inner focus-within:ring-2 focus-within:ring-pink-300/60 focus-within:border-pink-200 transition">
               <span class="material-symbols-outlined text-neutral-400 text-xl" aria-hidden="true">person_search</span>
               <input
                 ref="inputRef"
@@ -224,8 +228,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               type="button"
               role="option"
               :data-row-index="idx"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition"
-              :class="idx === selectedIndex ? 'bg-pink-50 ring-1 ring-pink-200' : 'hover:bg-neutral-50'"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition border border-transparent"
+              :class="idx === selectedIndex ? 'bg-gradient-to-r from-pink-50/95 to-white ring-1 ring-pink-200/90 shadow-sm' : 'hover:bg-white/90 hover:ring-1 hover:ring-neutral-200/70'"
               @click="pickUser(user.username)"
               @mouseenter="selectedIndex = idx"
             >
@@ -251,12 +255,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
             </div>
           </div>
 
-          <div class="px-5 py-3 border-t border-neutral-100 shrink-0 flex justify-end gap-2">
-            <button
-              type="button"
-              class="px-4 py-2 rounded-xl text-sm font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200"
-              @click="close"
-            >
+          <div class="px-5 py-4 border-t border-neutral-200/70 shrink-0 flex justify-end gap-2 bg-white/25">
+            <button type="button" class="lux-btn-secondary" @click="close">
               {{ t('common.cancel') }}
             </button>
           </div>

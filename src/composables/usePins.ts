@@ -497,6 +497,21 @@ export function usePins() {
     return response.data
   }
 
+  async function fetchCreatorEngagement(params: {
+    action: 'likes' | 'saves' | 'comments' | 'views'
+    days?: number
+    limit?: number
+  }) {
+    const response = await api.get('pins/creator-engagement/', {
+      params: {
+        action: params.action,
+        days: params.days ?? 30,
+        limit: params.limit ?? 30,
+      },
+    })
+    return response.data
+  }
+
   async function fetchProvenance(pinSlug: string) {
     const response = await api.get(`pins/${pinSlug}/provenance/`)
     return response.data
@@ -701,6 +716,7 @@ export function usePins() {
     getPinDownload,
     fetchCreatorStats,
     fetchCreatorWeeklyStats,
+    fetchCreatorEngagement,
     fetchProvenance,
     fetchPrivateTags,
     savePrivateTags,

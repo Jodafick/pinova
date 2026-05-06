@@ -65,11 +65,11 @@ const isAuthPage = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
+  <div class="min-h-screen flex flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-200">
     <!-- Full screen loading while initializing -->
-    <div v-if="isInitializing" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
-      <div class="w-12 h-12 rounded-full border-4 border-pink-100 border-t-pink-600 animate-spin mb-4"></div>
-      <p class="text-neutral-500 font-medium">{{ t('app.loading') }}</p>
+    <div v-if="isInitializing" class="fixed inset-0 z-50 bg-white dark:bg-neutral-950 flex flex-col items-center justify-center">
+      <div class="w-12 h-12 rounded-full border-4 border-pink-100 dark:border-pink-900 border-t-pink-600 animate-spin mb-4"></div>
+      <p class="text-neutral-500 dark:text-neutral-400 font-medium">{{ t('app.loading') }}</p>
     </div>
 
     <GlobalHeader v-if="!isAuthPage && !isInitializing" />
@@ -81,26 +81,27 @@ const isAuthPage = computed(() => {
     <AppAlertModal />
 
     <!-- Footer -->
-    <footer v-if="!isInitializing && !(route.meta as any).guest" class="border-t border-neutral-100 bg-white py-6 px-6 sm:px-10">
+    <footer v-if="!isInitializing && !(route.meta as any).guest" class="border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-6 px-6 sm:px-10 transition-colors">
       <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-2">
           <div class="w-6 h-6 rounded-full bg-pink-600 flex items-center justify-center overflow-hidden">
             <img src="./assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          <span class="text-sm font-semibold text-neutral-700">Pinova</span>
+          <span class="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Pinova</span>
         </div>
 
-        <nav class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-neutral-500">
-          <router-link v-if="isAuthenticated" to="/" class="hover:text-neutral-700 transition">{{ t('nav.home') }}</router-link>
-          <router-link to="/explore" class="hover:text-neutral-700 transition">{{ t('nav.explore') }}</router-link>
-          <router-link v-if="isAuthenticated" to="/profile" class="hover:text-neutral-700 transition">{{ t('nav.profile') }}</router-link>
-          <router-link v-if="isAuthenticated" to="/settings" class="hover:text-neutral-700 transition">{{ t('nav.settings') }}</router-link>
-          <router-link to="/legal/privacy" class="hover:text-neutral-700 transition">{{ t('app.footer.privacy') }}</router-link>
-          <router-link to="/legal/terms" class="hover:text-neutral-700 transition">{{ t('app.footer.terms') }}</router-link>
-          <router-link to="/contact" class="hover:text-neutral-700 transition">{{ t('app.footer.contact') }}</router-link>
+        <nav class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-neutral-500 dark:text-neutral-400">
+          <router-link v-if="isAuthenticated" to="/" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.home') }}</router-link>
+          <router-link to="/explore" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.explore') }}</router-link>
+          <router-link v-if="isAuthenticated" to="/profile" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.profile') }}</router-link>
+          <router-link v-if="isAuthenticated" to="/settings" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.settings') }}</router-link>
+          <router-link to="/faq" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.faq') }}</router-link>
+          <router-link to="/legal/privacy" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('app.footer.privacy') }}</router-link>
+          <router-link to="/legal/terms" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('app.footer.terms') }}</router-link>
+          <router-link to="/contact" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('app.footer.contact') }}</router-link>
         </nav>
 
-        <p class="text-xs text-neutral-400 text-center sm:text-right">
+        <p class="text-xs text-neutral-400 dark:text-neutral-500 text-center sm:text-right">
           {{ t('app.copyright') }}
         </p>
       </div>

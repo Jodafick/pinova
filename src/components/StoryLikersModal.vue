@@ -65,22 +65,22 @@ function close() {
   <Teleport to="body">
     <div
       v-if="modelValue && pinSlug"
-      class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center px-4 py-10 sm:p-6 bg-black/55 backdrop-blur-sm"
+      class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center px-4 py-10 sm:p-6 bg-neutral-950/55 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       @click.self="close"
     >
       <div
-        class="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[min(70vh,520px)] border border-neutral-100"
+        class="w-full max-w-md lux-alert-panel rounded-t-[1.625rem] sm:rounded-[1.625rem] overflow-hidden flex flex-col max-h-[min(70vh,520px)]"
         @click.stop
       >
-        <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-neutral-100">
+        <div class="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-neutral-200/70 bg-white/35">
           <h2 class="text-sm font-semibold text-neutral-900">
             {{ t('story.likers.title', { count: total }) }}
           </h2>
           <button
             type="button"
-            class="p-2 rounded-full hover:bg-neutral-100 text-neutral-600 transition"
+            class="p-2 rounded-full hover:bg-white/90 text-neutral-600 ring-1 ring-transparent hover:ring-neutral-200/80 transition shadow-sm"
             :aria-label="t('story.likers.close')"
             @click="close"
           >
@@ -96,7 +96,7 @@ function close() {
             <li v-for="row in likers" :key="row.username">
               <RouterLink
                 :to="`/profile/${encodeURIComponent(row.username)}`"
-                class="flex items-center gap-3 py-3 px-1 hover:bg-neutral-50 rounded-xl transition"
+                class="flex items-center gap-3 py-3 px-2 hover:bg-white/90 rounded-2xl transition ring-1 ring-transparent hover:ring-neutral-200/70"
                 @click="close"
               >
                 <AvatarDisc

@@ -98,6 +98,12 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
+      path: '/faq',
+      name: 'faq',
+      component: () => import('../pages/FaqPage.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/creator',
       name: 'creator',
       component: () => import('../pages/CreatorDashboardPage.vue'),

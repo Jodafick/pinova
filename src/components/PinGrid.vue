@@ -276,14 +276,14 @@ onUnmounted(() => {
         tabindex="0"
         role="article"
         :aria-label="pinCardLabel(cell.pin)"
-        class="group relative rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        class="group lux-pin-card focus-visible:outline-none"
         @click="onArticleClick(cell.pin, $event)"
         @keydown="onCardKeydown(cell.pin, $event)"
       >
         <!-- Image container : hauteur naturelle après chargement -->
         <div
           data-pin-media
-          class="relative overflow-hidden rounded-2xl bg-neutral-100 min-h-[140px]"
+          class="relative overflow-hidden rounded-3xl bg-neutral-100/90 min-h-[140px]"
           @click.stop="onPinMediaTap(cell.pin)"
           @dblclick.stop.prevent="onPinMediaDblClick(cell.pin)"
         >
@@ -343,14 +343,14 @@ onUnmounted(() => {
 
           <div
             v-if="cell.pin.scheduledPublishAt"
-            class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow"
+            class="absolute top-2 left-2 z-10 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-600 to-amber-500 text-white text-[10px] font-bold tracking-wide shadow-lg shadow-amber-900/25 ring-1 ring-white/20"
           >
             {{ t('pin.scheduledBadge') }}
           </div>
           <button
             v-if="viewerOwnsPin(cell.pin)"
             type="button"
-            class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/55 text-white shadow-md backdrop-blur-[1px] transition-opacity duration-200 hover:bg-black/65 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+            class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/35 text-white shadow-lg backdrop-blur-md border border-white/15 transition-opacity duration-200 hover:bg-black/55 opacity-100 md:opacity-0 md:group-hover:opacity-100"
             :class="cell.pin.scheduledPublishAt ? 'top-10 left-3' : 'top-3 left-3'"
             :aria-expanded="gridOwnerMenuSlug === cell.pin.slug"
             aria-haspopup="menu"
@@ -363,15 +363,15 @@ onUnmounted(() => {
           </button>
 
           <!-- Dark overlay on hover (sous les boutons, au-dessus du média) -->
-          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 z-[5] pointer-events-none"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/25 via-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-[5] pointer-events-none"></div>
 
           <!-- Save button -->
           <button
             v-if="isAuthenticated"
             type="button"
             :aria-pressed="cell.pin.saved"
-            class="absolute top-3 right-3 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 shadow-lg z-10"
-            :class="cell.pin.saved ? 'bg-neutral-950 text-white' : 'bg-pink-700 text-white hover:bg-pink-800'"
+            class="z-10 lux-btn-pin-save"
+            :class="cell.pin.saved ? 'lux-btn-pin-save-saved opacity-100 translate-y-0' : ''"
             :disabled="isSavePending(cell.pin.slug)"
             @click.stop="emit('toggle-save', cell.pin.slug)"
           >
@@ -386,7 +386,7 @@ onUnmounted(() => {
               v-if="cell.pin.link"
               :href="cell.pin.link.startsWith('http') ? cell.pin.link : 'https://' + cell.pin.link"
               target="_blank"
-              class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/95 text-xs font-medium text-neutral-800 shadow-md hover:bg-white max-w-[60%] truncate"
+              class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/92 backdrop-blur-md text-xs font-semibold text-neutral-800 shadow-xl shadow-black/10 ring-1 ring-white/60 hover:bg-white max-w-[60%] truncate transition"
               @click.stop
             >
               <span class="material-symbols-outlined text-sm">link</span>
@@ -397,14 +397,14 @@ onUnmounted(() => {
         </div>
 
         <!-- Pin info below image -->
-        <div class="px-2 pt-2 pb-3">
-          <p v-if="cell.pin.title" class="text-sm font-semibold leading-snug line-clamp-2 text-neutral-950">
+        <div class="px-3 pt-3 pb-3.5 bg-gradient-to-b from-white to-neutral-50/40">
+          <p v-if="cell.pin.title" class="text-sm font-semibold leading-snug line-clamp-2 text-neutral-950 tracking-tight">
             {{ cell.pin.title }}
           </p>
 
           <router-link
             :to="`/profile/${cell.pin.username}`"
-            class="mt-1.5 flex items-center gap-2 hover:bg-neutral-100 p-1 rounded-lg transition-colors"
+            class="mt-1.5 flex items-center gap-2 hover:bg-white/80 p-1.5 rounded-xl transition-colors ring-1 ring-transparent hover:ring-neutral-200/80"
             @click.stop
             :aria-label="t('pin.openAuthorProfile', { name: cell.pin.user })"
           >
@@ -435,7 +435,7 @@ onUnmounted(() => {
               v-for="board in cell.pin.boards.slice(0, 2)"
               :key="board.id"
               :to="`/profile/${board.ownerUsername || cell.pin.username}/board/${board.id}`"
-              class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-purple-50 text-[10px] font-semibold text-purple-700 hover:bg-purple-100 max-w-full"
+              class="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full bg-gradient-to-br from-violet-50 to-fuchsia-50/90 text-[10px] font-semibold text-violet-800 ring-1 ring-violet-100 hover:from-violet-100 hover:to-fuchsia-100 max-w-full transition"
               :title="board.name"
               @click.stop
             >
@@ -449,10 +449,10 @@ onUnmounted(() => {
       <!-- Placeholder masonry : même shell que les cartes pour suivre les colonnes. -->
       <div
         v-else
-        class="rounded-2xl overflow-hidden bg-white shadow-sm pointer-events-none select-none touch-none"
+        class="lux-pin-skeleton-card"
         aria-hidden="true"
       >
-        <div class="relative overflow-hidden rounded-2xl bg-neutral-100 min-h-[140px]">
+        <div class="relative overflow-hidden rounded-3xl bg-neutral-100 min-h-[140px]">
           <div class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200" />
         </div>
         <div class="px-2 pt-2 pb-3 space-y-2">
@@ -476,14 +476,14 @@ onUnmounted(() => {
         v-if="gridOwnerMenuSlug"
         ref="gridOwnerMenuFloatingRef"
         role="menu"
-        class="fixed w-[min(240px,calc(100vw-1rem))] rounded-2xl border border-neutral-200 bg-white py-1.5 shadow-2xl"
+        class="lux-dropdown-panel"
         :style="{ ...gridOwnerMenuFloatingStyles, zIndex: 130 }"
         @pointerdown.stop
       >
         <button
           type="button"
           role="menuitem"
-          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-50"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-pink-50/60 transition-colors"
           @click="gridOwnerMenuSlug ? goGridOwnerEdit(gridOwnerMenuSlug) : null"
         >
           <span class="material-symbols-outlined text-lg text-neutral-500" aria-hidden="true">edit</span>
@@ -492,7 +492,7 @@ onUnmounted(() => {
         <button
           type="button"
           role="menuitem"
-          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50/90 transition-colors"
           @click="gridOwnerMenuSlug ? confirmDeleteGridOwnedPin(gridOwnerMenuSlug) : null"
         >
           <span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>

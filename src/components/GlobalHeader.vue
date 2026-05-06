@@ -345,7 +345,7 @@ onUnmounted(() => {
 
 <template>
   <header
-    class="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-2 border-b border-neutral-100 bg-white/95 backdrop-blur-md sticky top-0 z-30"
+    class="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-2 border-b border-neutral-100 dark:border-neutral-800 bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md sticky top-0 z-30 transition-colors"
   >
     <!-- Logo -->
     <router-link
@@ -364,7 +364,9 @@ onUnmounted(() => {
         :to="item.to"
         class="px-4 py-2 rounded-full text-sm font-semibold transition-colors relative"
         :class="
-          currentRoute === item.name ? 'bg-neutral-900 text-white' : 'text-neutral-700 hover:bg-neutral-100'
+          currentRoute === item.name
+            ? 'bg-neutral-900 text-white dark:bg-pink-600 dark:text-white'
+            : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
         "
       >
         {{ item.label }}
@@ -386,26 +388,26 @@ onUnmounted(() => {
         class="flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all overflow-hidden"
         :class="
           showSearchResults
-            ? 'bg-white ring-2 ring-pink-500 shadow-lg'
-            : 'bg-neutral-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-pink-500 focus-within:shadow-lg'
+            ? 'bg-white dark:bg-neutral-900 ring-2 ring-pink-500 shadow-lg'
+            : 'bg-neutral-100 dark:bg-neutral-800 focus-within:bg-white dark:focus-within:bg-neutral-900 focus-within:ring-2 focus-within:ring-pink-500 focus-within:shadow-lg'
         "
       >
-        <span class="material-symbols-outlined text-lg text-neutral-400">search</span>
+        <span class="material-symbols-outlined text-lg text-neutral-400 dark:text-neutral-500">search</span>
         <input
           v-model="searchQuery"
           type="text"
           :placeholder="t('header.search.placeholder')"
-          class="bg-transparent outline-none flex-1 text-sm"
+          class="bg-transparent outline-none flex-1 text-sm text-neutral-900 placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
           @focus="onSearchFocus"
           @keyup.enter="handleSearch"
         />
         <button
           v-if="searchQuery"
           type="button"
-          class="w-6 h-6 rounded-full hover:bg-neutral-100 flex items-center justify-center"
+          class="w-6 h-6 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center justify-center"
           @click="searchQuery = ''"
         >
-          <span class="material-symbols-outlined text-sm text-neutral-400">close</span>
+          <span class="material-symbols-outlined text-sm text-neutral-400 dark:text-neutral-500">close</span>
         </button>
       </div>
     </div>
@@ -414,7 +416,7 @@ onUnmounted(() => {
       <div
         v-if="showSearchResults"
         ref="searchFloatingRef"
-        class="bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden max-h-[min(70vh,28rem)] flex flex-col"
+        class="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-100 dark:border-neutral-700 overflow-hidden max-h-[min(70vh,28rem)] flex flex-col"
         role="dialog"
         :aria-label="t('header.search.results')"
         :style="{ ...searchFloatingStyles, ...popoverZIndex }"
@@ -439,7 +441,7 @@ onUnmounted(() => {
                 v-for="pin in searchPins"
                 :key="'p-' + pin.id"
                 :to="`/pin/${encodeURIComponent(pin.slug)}`"
-                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 transition"
+                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800/70 transition"
                 @click="showSearchResults = false"
               >
                 <div class="w-10 h-10 rounded-lg bg-neutral-100 shrink-0 overflow-hidden">
@@ -457,7 +459,7 @@ onUnmounted(() => {
                   </div>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-medium text-neutral-800 truncate">{{ pin.title }}</p>
+                  <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ pin.title }}</p>
                   <p class="text-xs text-neutral-400 truncate">@{{ pin.username }} · {{ pin.topicDisplay || pin.topic }}</p>
                 </div>
               </router-link>
@@ -471,7 +473,7 @@ onUnmounted(() => {
                 v-for="u in searchUsers"
                 :key="'u-' + u.username"
                 :to="`/profile/${encodeURIComponent(u.username)}`"
-                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 transition"
+                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800/70 transition"
                 @click="showSearchResults = false"
               >
                 <AvatarDisc
@@ -484,7 +486,7 @@ onUnmounted(() => {
                   <span v-else>{{ displayInitials(u.displayName) }}</span>
                 </AvatarDisc>
                 <div class="min-w-0">
-                  <p class="text-sm font-medium text-neutral-800 truncate">{{ u.displayName }}</p>
+                  <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ u.displayName }}</p>
                   <p class="text-xs text-neutral-400">@{{ u.username }}</p>
                 </div>
               </router-link>
@@ -498,7 +500,7 @@ onUnmounted(() => {
                 v-for="pin in searchRecommended"
                 :key="'r-' + pin.id"
                 :to="`/pin/${encodeURIComponent(pin.slug)}`"
-                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 transition"
+                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800/70 transition"
                 @click="showSearchResults = false"
               >
                 <div class="w-10 h-10 rounded-lg bg-neutral-100 shrink-0 overflow-hidden">
@@ -516,7 +518,7 @@ onUnmounted(() => {
                   </div>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-medium text-neutral-800 truncate">{{ pin.title }}</p>
+                  <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ pin.title }}</p>
                   <p class="text-xs text-pink-600/90">{{ t('header.search.forYouBadge') }}</p>
                 </div>
               </router-link>
@@ -536,7 +538,7 @@ onUnmounted(() => {
             </p>
           </template>
         </div>
-        <div class="border-t border-neutral-100 p-2 shrink-0">
+        <div class="border-t border-neutral-100 dark:border-neutral-800 p-2 shrink-0">
           <button
             type="button"
             class="w-full py-2 text-center text-sm font-semibold text-pink-600 hover:text-pink-700"
@@ -557,7 +559,7 @@ onUnmounted(() => {
         <div ref="notifAnchorRef">
           <button
             type="button"
-            class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 text-neutral-600 transition relative"
+            class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 transition relative"
             @click.stop="toggleNotificationsPanel()"
           >
             <span class="material-symbols-outlined text-xl">notifications</span>
@@ -600,11 +602,11 @@ onUnmounted(() => {
           <div
             v-if="showNotifications"
             ref="notifFloatingRef"
-            class="w-80 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+            class="w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-100 dark:border-neutral-700 overflow-hidden"
             role="menu"
             :style="{ ...notifFloatingStyles, ...popoverZIndex }"
           >
-            <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
+            <div class="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
               <h3 class="font-semibold text-neutral-900">{{ t('header.notifications') }}</h3>
               <button
                 v-if="unreadCount > 0"
@@ -623,7 +625,7 @@ onUnmounted(() => {
               <div
                 v-for="notification in notifications"
                 :key="notification.id"
-                class="p-4 hover:bg-neutral-50 transition flex items-start gap-3 border-b border-neutral-50 last:border-0 cursor-pointer"
+                class="p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/60 transition flex items-start gap-3 border-b border-neutral-50 dark:border-neutral-800 last:border-0 cursor-pointer"
                 :class="{ 'bg-blue-50/30': !notification.is_read }"
                 @click="handleNotificationClick(notification)"
               >
@@ -648,13 +650,13 @@ onUnmounted(() => {
                   >
                     {{ notification.title }}
                   </p>
-                  <p class="text-sm text-neutral-800 leading-snug">{{ notification.message }}</p>
+                  <p class="text-sm text-neutral-800 dark:text-neutral-100 leading-snug">{{ notification.message }}</p>
                   <p class="text-xs text-neutral-400 mt-1">@{{ notification.sender_username }}</p>
                 </div>
                 <div v-if="!notification.is_read" class="w-2 h-2 rounded-full bg-pink-600 mt-2"></div>
               </div>
             </div>
-            <div v-if="notifHasMore" class="border-t border-neutral-100 p-2">
+            <div v-if="notifHasMore" class="border-t border-neutral-100 dark:border-neutral-800 p-2">
               <button
                 type="button"
                 class="w-full py-2 text-center text-sm font-semibold text-pink-600 hover:text-pink-700 disabled:opacity-50"
@@ -671,11 +673,11 @@ onUnmounted(() => {
           <div
             v-if="showUserMenu"
             ref="userFloatingRef"
-            class="w-64 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden"
+            class="w-64 max-w-[calc(100vw-1rem)] bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-100 dark:border-neutral-700 overflow-hidden"
             role="menu"
             :style="{ ...userFloatingStyles, ...popoverZIndex }"
           >
-            <div class="px-4 py-4 border-b border-neutral-100 flex gap-3">
+            <div class="px-4 py-4 border-b border-neutral-100 dark:border-neutral-800 flex gap-3">
               <AvatarDisc
                 v-if="currentUser"
                 :color="currentUser.avatarColor || DEFAULT_AVATAR_COLOR_CLASS"
@@ -709,7 +711,7 @@ onUnmounted(() => {
             <div class="py-1">
               <router-link
                 :to="`/profile/${currentUser?.username}`"
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
               >
                 <span class="material-symbols-outlined text-lg">person</span>
@@ -726,7 +728,7 @@ onUnmounted(() => {
               </router-link>
               <router-link
                 to="/create"
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700 md:hidden"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
                 @click="showUserMenu = false"
               >
                 <span class="material-symbols-outlined text-lg">add_circle</span>
@@ -734,7 +736,7 @@ onUnmounted(() => {
               </router-link>
               <router-link
                 to="/explore"
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700 md:hidden"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
                 @click="showUserMenu = false"
               >
                 <span class="material-symbols-outlined text-lg">explore</span>
@@ -742,7 +744,7 @@ onUnmounted(() => {
               </router-link>
               <router-link
                 to="/following"
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700 md:hidden"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
                 @click="showUserMenu = false"
               >
                 <span class="material-symbols-outlined text-lg">groups</span>
@@ -759,7 +761,7 @@ onUnmounted(() => {
               </router-link>
               <router-link
                 to="/settings"
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
               >
                 <span class="material-symbols-outlined text-lg">settings</span>
@@ -767,7 +769,7 @@ onUnmounted(() => {
               </router-link>
               <router-link
                 to="/billing"
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm text-neutral-700"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
               >
                 <span class="material-symbols-outlined text-lg">receipt_long</span>
@@ -787,7 +789,7 @@ onUnmounted(() => {
                       ? 'bg-amber-100 text-amber-700'
                       : currentPlan === 'plus'
                         ? 'bg-pink-100 text-pink-700'
-                        : 'bg-neutral-100 text-neutral-600'
+                        : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
                   "
                 >
                   {{ currentPlanLabel }}
@@ -795,10 +797,10 @@ onUnmounted(() => {
               </router-link>
             </div>
 
-            <div class="border-t border-neutral-100 py-1">
+            <div class="border-t border-neutral-100 dark:border-neutral-800 py-1">
               <button
                 type="button"
-                class="flex items-center gap-3 px-4 py-2.5 w-full hover:bg-neutral-50 transition text-sm text-pink-600"
+                class="flex items-center gap-3 px-4 py-2.5 w-full hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm text-pink-600 dark:text-pink-400"
                 @click="handleLogout"
               >
                 <span class="material-symbols-outlined text-lg">logout</span>
@@ -814,7 +816,7 @@ onUnmounted(() => {
         <div class="flex items-center gap-2">
           <router-link
             to="/login"
-            class="px-4 py-2 rounded-full text-sm font-semibold text-neutral-700 hover:bg-neutral-100 transition"
+            class="px-4 py-2 rounded-full text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
           >
             {{ t('nav.login') }}
           </router-link>

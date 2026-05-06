@@ -15,11 +15,13 @@ import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
 import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
+import { useAppearance } from '../composables/useAppearance'
 
 const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-profile', icon: 'person', labelKey: 'settings.nav.profile' },
   { id: 'settings-notifications', icon: 'notifications', labelKey: 'settings.nav.notifications' },
   { id: 'settings-privacy', icon: 'lock', labelKey: 'settings.nav.privacy' },
+  { id: 'settings-appearance', icon: 'dark_mode', labelKey: 'settings.nav.appearance' },
   { id: 'settings-blocked', icon: 'block', labelKey: 'settings.nav.blocked' },
   { id: 'settings-access', icon: 'accessibility_new', labelKey: 'settings.nav.access' },
   { id: 'settings-ads', icon: 'campaign', labelKey: 'settings.nav.ads' },
@@ -36,6 +38,7 @@ const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTick
   useAuth()
 const { unblockUser } = usePins()
 const { t, currentLang } = useI18n()
+const { mode: appearanceMode, setMode: setAppearanceMode } = useAppearance()
 const { showAlert, showPrompt } = useAppModal()
 const {
   override: dataSaverOverride,
@@ -977,12 +980,12 @@ watch(
 
 <template>
   <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-    <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">{{ t('settings.title') }}</h1>
-    <p class="text-sm text-neutral-500 mb-5">{{ t('settings.subtitle') }}</p>
+    <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">{{ t('settings.title') }}</h1>
+    <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-5">{{ t('settings.subtitle') }}</p>
 
     <nav
       :aria-label="t('settings.navLabel')"
-      class="sticky top-14 z-20 mb-8 rounded-2xl border border-neutral-200/85 bg-white/95 backdrop-blur-md shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] ring-1 ring-black/[0.03]"
+      class="sticky top-14 z-20 mb-8 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,.5)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
     >
       <div class="flex gap-1.5 overflow-x-auto px-3 py-2.5 no-scrollbar scroll-pl-1 scroll-pr-6 touch-pan-x">
         <button
@@ -994,7 +997,7 @@ watch(
           :class="
             activeSectionId === item.id
               ? 'border-pink-500 bg-pink-600 text-white shadow-md shadow-pink-600/25'
-              : 'border-neutral-200 bg-neutral-50/90 text-neutral-700 hover:bg-white hover:border-pink-300'
+              : 'border-neutral-200 dark:border-neutral-600 bg-neutral-50/90 dark:bg-neutral-800/90 text-neutral-700 dark:text-neutral-200 hover:bg-white dark:hover:bg-neutral-800 hover:border-pink-300 dark:hover:border-pink-500/60'
           "
           @click="scrollToSettingsSection(item.id)"
         >
@@ -1033,10 +1036,10 @@ watch(
 
     <div class="space-y-8">
       <!-- Profile section -->
-      <section id="settings-profile" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.profile.title') }}</h2>
-          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.profile.subtitle') }}</p>
+      <section id="settings-profile" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.profile.title') }}</h2>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.profile.subtitle') }}</p>
         </div>
 
         <div class="p-6 space-y-5">
@@ -1160,8 +1163,8 @@ watch(
       </section>
 
       <!-- Notifications preferences -->
-      <section id="settings-notifications" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
+      <section id="settings-notifications" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.notifications.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.notifications.subtitle') }}</p>
         </div>
@@ -1232,8 +1235,8 @@ watch(
       </section>
 
       <!-- Privacy -->
-      <section id="settings-privacy" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
+      <section id="settings-privacy" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.privacy.title') }}</h2>
         </div>
         <div class="p-6 space-y-4">
@@ -1272,8 +1275,49 @@ watch(
         </div>
       </section>
 
-      <section id="settings-blocked" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
+      <!-- Apparence -->
+      <section
+        id="settings-appearance"
+        class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
+      >
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.appearance.title') }}</h2>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.appearance.subtitle') }}</p>
+        </div>
+        <div class="p-6 space-y-4">
+          <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.appearance.modeLabel') }}</p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 rounded-full text-sm font-semibold border transition"
+              :class="
+                appearanceMode === 'light'
+                  ? 'border-pink-500 bg-pink-50 text-pink-900 dark:bg-pink-950/60 dark:text-pink-50 dark:border-pink-500'
+                  : 'border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-200 hover:border-pink-300'
+              "
+              @click="setAppearanceMode('light')"
+            >
+              {{ t('settings.appearance.light') }}
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 rounded-full text-sm font-semibold border transition"
+              :class="
+                appearanceMode === 'dark'
+                  ? 'border-pink-500 bg-pink-50 text-pink-900 dark:bg-pink-950/60 dark:text-pink-50 dark:border-pink-500'
+                  : 'border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-200 hover:border-pink-300'
+              "
+              @click="setAppearanceMode('dark')"
+            >
+              {{ t('settings.appearance.dark') }}
+            </button>
+          </div>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">{{ t('settings.appearance.hint') }}</p>
+        </div>
+      </section>
+
+      <section id="settings-blocked" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.blocked.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.blocked.subtitle') }}</p>
         </div>
@@ -1305,8 +1349,8 @@ watch(
       </section>
 
       <!-- Accessibilité & données -->
-      <section id="settings-access" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
+      <section id="settings-access" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.access.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.access.subtitle') }}</p>
         </div>
@@ -1421,8 +1465,8 @@ watch(
       </section>
 
       <!-- Ads preferences -->
-      <section id="settings-ads" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+      <section id="settings-ads" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.ads.title') }}</h2>
             <p class="text-xs text-neutral-500 mt-0.5">{{ adSectionHint() }}</p>
@@ -1472,8 +1516,8 @@ watch(
         </div>
       </section>
 
-      <section id="settings-tips" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+      <section id="settings-tips" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.tips.title') }}</h2>
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.tips.subtitle') }}</p>
@@ -1521,9 +1565,9 @@ watch(
       <section
         v-if="currentUser"
         id="settings-seats"
-        class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden"
+        class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
       >
-        <div class="px-6 py-5 border-b border-neutral-100">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.seats.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.seats.subtitle') }}</p>
         </div>
@@ -1599,7 +1643,7 @@ watch(
                 <li
                   v-for="m in seatHub.members"
                   :key="m.username"
-                  class="flex justify-between gap-2 text-xs py-1 border-b border-neutral-100"
+                  class="flex justify-between gap-2 text-xs py-1 border-b border-neutral-100 dark:border-neutral-800"
                 >
                   <span>@{{ m.username }}</span>
                   <button
@@ -1617,7 +1661,7 @@ watch(
                 <li
                   v-for="p in seatHub.pending_invitations"
                   :key="p.id"
-                  class="flex justify-between gap-2 text-xs py-1 border-b border-neutral-100"
+                  class="flex justify-between gap-2 text-xs py-1 border-b border-neutral-100 dark:border-neutral-800"
                 >
                   <span>@{{ p.invitee_username }}</span>
                   <button
@@ -1649,8 +1693,8 @@ watch(
         </div>
       </section>
 
-      <section id="settings-subscription" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 flex flex-wrap items-start justify-between gap-3">
+      <section id="settings-subscription" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0">
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.subscription.title') }}</h2>
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
@@ -1769,8 +1813,8 @@ watch(
         </div>
       </section>
 
-      <section id="settings-support" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100">
+      <section id="settings-support" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.support.title') }}</h2>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.support.subtitle') }}</p>
         </div>
@@ -1813,8 +1857,8 @@ watch(
       </section>
 
       <!-- Password section -->
-      <section id="settings-password" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+      <section id="settings-password" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.password.title') }}</h2>
             <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.password.subtitle') }}</p>

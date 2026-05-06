@@ -289,10 +289,10 @@ watch([boardId, () => route.query.share], loadBoard)
   <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <button
       type="button"
-      class="mb-6 flex items-center gap-1.5 text-sm text-neutral-600 hover:text-neutral-900 transition"
+      class="group mb-8 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white/90 px-3.5 py-2 text-sm font-medium text-neutral-600 shadow-sm backdrop-blur-sm transition hover:border-pink-200/80 hover:bg-white hover:text-neutral-900 hover:shadow-md"
       @click="router.back()"
     >
-      <span class="material-symbols-outlined text-lg">arrow_back</span>
+      <span class="material-symbols-outlined text-lg text-neutral-500 transition group-hover:text-pink-600">arrow_back</span>
       {{ t('common.back') }}
     </button>
 
@@ -326,16 +326,16 @@ watch([boardId, () => route.query.share], loadBoard)
           <button
             v-if="viewerCanManage"
             type="button"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 bg-white text-neutral-800 text-sm font-semibold hover:bg-neutral-50 transition"
+            class="lux-btn-secondary"
             @click="openBoardEditor"
           >
-            <span class="material-symbols-outlined text-lg">edit</span>
+            <span class="material-symbols-outlined text-lg text-neutral-500">edit</span>
             {{ t('board.editBoard') }}
           </button>
           <button
             v-if="boardIsOwner"
             type="button"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-200 bg-white text-red-700 text-sm font-semibold hover:bg-red-50 transition disabled:opacity-50"
+            class="lux-btn-danger-outline disabled:opacity-50"
             :disabled="boardDeletePending"
             @click="confirmDeleteBoard"
           >
@@ -346,7 +346,7 @@ watch([boardId, () => route.query.share], loadBoard)
           <button
             v-if="showOrganizeButton"
             type="button"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 transition"
+            class="lux-btn-accent-dark"
             @click="openOrganize"
           >
             <span class="material-symbols-outlined text-lg">drag_indicator</span>
@@ -354,7 +354,7 @@ watch([boardId, () => route.query.share], loadBoard)
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 bg-white text-neutral-800 text-sm font-semibold hover:bg-neutral-50 transition"
+            class="lux-btn-secondary"
             :aria-label="t('board.share')"
             @click="shareThisBoard"
           >
@@ -370,12 +370,12 @@ watch([boardId, () => route.query.share], loadBoard)
 
     <div
       v-if="organizeModalOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm"
+      class="lux-modal-backdrop z-50"
     >
-      <div class="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
-        <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-          <h3 class="text-lg font-bold text-neutral-900">{{ t('profile.boards.organizeTitle') }}</h3>
-          <button type="button" class="text-neutral-500 hover:text-neutral-800" @click="closeOrganize">
+      <div class="lux-modal-panel w-full max-w-lg max-h-[85vh] flex flex-col">
+        <div class="px-5 py-4 border-b border-neutral-200/80 flex items-center justify-between bg-white/40">
+          <h3 class="text-lg font-bold text-neutral-900 tracking-tight">{{ t('profile.boards.organizeTitle') }}</h3>
+          <button type="button" class="p-2 rounded-full text-neutral-500 hover:bg-white/80 hover:text-neutral-900 transition" @click="closeOrganize">
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -389,7 +389,7 @@ watch([boardId, () => route.query.share], loadBoard)
               v-for="(p, idx) in organizePins"
               :key="p.id"
               draggable="true"
-              class="flex items-center gap-3 p-2 rounded-xl border border-neutral-100 bg-neutral-50 cursor-grab active:cursor-grabbing"
+              class="lux-organize-row"
               @dragstart="onOrganizeDragStart(idx)"
               @dragover="onOrganizeDragOver($event)"
               @drop.prevent="onOrganizeDrop(idx)"
@@ -403,13 +403,13 @@ watch([boardId, () => route.query.share], loadBoard)
             </li>
           </ul>
         </div>
-        <div class="px-5 py-4 border-t border-neutral-100 flex gap-2 justify-end">
-          <button type="button" class="px-4 py-2 rounded-full text-sm font-semibold bg-neutral-100 text-neutral-800" @click="closeOrganize">
+        <div class="px-5 py-4 border-t border-neutral-200/70 flex gap-3 justify-end bg-white/30">
+          <button type="button" class="lux-btn-secondary px-6" @click="closeOrganize">
             {{ t('profile.boards.organizeClose') }}
           </button>
           <button
             type="button"
-            class="px-4 py-2 rounded-full text-sm font-semibold bg-pink-600 text-white disabled:opacity-50"
+            class="lux-btn-primary disabled:opacity-50 disabled:cursor-not-allowed px-6"
             :disabled="organizeSaving || organizeLoading || organizePins.length === 0"
             @click="saveBoardOrder"
           >
@@ -421,24 +421,25 @@ watch([boardId, () => route.query.share], loadBoard)
 
     <div
       v-if="boardEditOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm"
+      class="lux-modal-backdrop z-50"
       role="dialog"
       aria-modal="true"
     >
-      <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 sm:p-7">
-        <h3 class="text-lg font-bold text-neutral-900 mb-4">{{ t('board.editTitle') }}</h3>
+      <div class="lux-modal-panel lux-modal-panel-sm sm:p-8 w-full max-w-md" @click.stop>
+        <div class="h-px w-full bg-gradient-to-r from-transparent via-pink-200/70 to-transparent opacity-70 mb-6" aria-hidden="true" />
+        <h3 class="text-lg font-bold text-neutral-900 mb-5 tracking-tight">{{ t('board.editTitle') }}</h3>
         <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('board.editName') }}</label>
         <input
           v-model="editBoardName"
           type="text"
-          class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-pink-500"
+          class="lux-input-elegant mb-4"
           maxlength="255"
         />
         <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('board.editDescription') }}</label>
         <textarea
           v-model="editBoardDescription"
           rows="3"
-          class="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+          class="lux-input-elegant resize-none mb-4"
         />
         <label
           v-if="boardEditCanTogglePrivate"
@@ -450,13 +451,13 @@ watch([boardId, () => route.query.share], loadBoard)
             <span class="block text-[11px] text-neutral-500 font-normal">{{ t('board.editPrivateHelp') }}</span>
           </span>
         </label>
-        <div class="flex flex-col-reverse sm:flex-row gap-2 justify-end">
-          <button type="button" class="px-4 py-2 rounded-full text-sm font-semibold bg-neutral-100 text-neutral-800" @click="closeBoardEditor">
+        <div class="flex flex-col-reverse sm:flex-row gap-3 justify-end mt-4">
+          <button type="button" class="lux-btn-secondary sm:min-w-[7rem]" @click="closeBoardEditor">
             {{ t('common.cancel') }}
           </button>
           <button
             type="button"
-            class="px-5 py-2 rounded-full text-sm font-semibold bg-pink-600 text-white hover:bg-pink-700 disabled:opacity-50"
+            class="lux-btn-primary sm:min-w-[9rem]"
             :disabled="boardEditSaving"
             @click="submitBoardMeta"
           >

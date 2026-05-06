@@ -58,6 +58,10 @@ const detectBrowserLang = (): LangCode => {
 
 const currentLang = ref<LangCode>(detectBrowserLang())
 
+export function getCurrentWebLang(): LangCode {
+  return currentLang.value
+}
+
 export const useI18n = () => {
   const setLang = (code: LangCode) => {
     currentLang.value = code

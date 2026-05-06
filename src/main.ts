@@ -2,6 +2,9 @@ import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
 import router from './router'
+import { initAppearance } from './composables/useAppearance'
+
+initAppearance()
 import GoogleSignInPlugin from 'vue3-google-signin'
 import { useAuth } from './composables/useAuth'
 import { proactiveRefreshIfStale } from './api'

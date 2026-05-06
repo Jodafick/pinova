@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/** Thème sombre : classe `dark` sur `<html>` (paramètres Pinova). */
+@variant dark (.dark &);
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
@@ -7,7 +10,7 @@
   }
 
   body {
-    @apply bg-neutral-50 text-neutral-900;
+    @apply bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 
@@ -27,7 +30,7 @@
   }
 
   ::selection {
-    @apply bg-pink-100 text-pink-900;
+    @apply bg-pink-100 text-pink-900 dark:bg-pink-900 dark:text-pink-100;
   }
 
   ::-webkit-scrollbar {
@@ -39,12 +42,344 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-neutral-300 rounded-full;
+    @apply bg-neutral-300 rounded-full dark:bg-neutral-600;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-neutral-400;
+    @apply bg-neutral-400 dark:bg-neutral-500;
   }
+
+}
+
+/**
+ * Pins, tableaux, modales — esthétique plus « premium » (ombres stratifiées, dégradés discrets).
+ */
+@layer components {
+  .lux-pin-card {
+    @apply rounded-3xl overflow-hidden bg-white cursor-pointer;
+    border: 1px solid rgb(228 228 231 / 0.85);
+    box-shadow:
+      0 1px 2px rgb(15 23 42 / 0.04),
+      0 12px 44px -14px rgb(15 23 42 / 0.14);
+    transition:
+      transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.35s ease;
+  }
+
+  @media (hover: hover) {
+    .lux-pin-card:hover {
+      transform: translateY(-5px);
+      border-color: rgb(244 244 245);
+      box-shadow:
+        0 2px 8px rgb(15 23 42 / 0.05),
+        0 28px 64px -18px rgb(15 23 42 / 0.2),
+        0 0 0 1px rgb(225 29 119 / 0.08);
+    }
+  }
+
+  .lux-pin-card:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-neutral-900;
+  }
+
+  .lux-pin-skeleton-card {
+    @apply rounded-3xl overflow-hidden bg-white pointer-events-none select-none touch-none;
+    border: 1px solid rgb(228 228 231 / 0.6);
+    box-shadow: 0 8px 32px -12px rgb(15 23 42 / 0.1);
+  }
+
+  .lux-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 font-semibold text-white text-sm;
+    padding: 0.625rem 1.35rem;
+    border-radius: 0.9375rem;
+    background: linear-gradient(145deg, #f472b6 0%, #db2777 42%, #9f1239 100%);
+    box-shadow:
+      0 4px 18px -2px rgb(219 39 119 / 0.45),
+      inset 0 1px 0 rgb(255 255 255 / 0.22);
+    transition: filter 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
+  }
+
+  .lux-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.06);
+    box-shadow:
+      0 8px 26px -2px rgb(219 39 119 / 0.5),
+      inset 0 1px 0 rgb(255 255 255 / 0.25);
+  }
+
+  .lux-btn-primary:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .lux-btn-primary:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .lux-btn-pill {
+    border-radius: 9999px;
+    padding-left: 1.65rem;
+    padding-right: 1.65rem;
+  }
+
+  /** État « enregistré » (CTA pleine largeur ou barre d’actions) */
+  .lux-btn-detail-saved {
+    border-radius: 9999px;
+    padding: 0.625rem 1.65rem;
+    @apply inline-flex items-center justify-center gap-2 font-semibold text-sm text-white;
+    background: linear-gradient(145deg, #3f3f46 0%, #18181b 55%, #09090b 100%);
+    box-shadow: 0 10px 28px -6px rgb(15 23 42 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.08);
+    border: 1px solid rgb(63 63 70 / 0.6);
+    transition: filter 0.2s ease, transform 0.18s ease;
+  }
+
+  .lux-btn-detail-saved:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  /** Boutons icônes discrets (fiche pin, etc.) */
+  .lux-icon-ring-btn {
+    @apply w-10 h-10 rounded-full flex items-center justify-center transition-all text-neutral-700 border;
+    border-color: transparent;
+    background: rgb(255 255 255 / 0.65);
+  }
+
+  .lux-icon-ring-btn:hover:not(:disabled) {
+    border-color: rgb(228 228 231 / 0.95);
+    background: #fff;
+    box-shadow: 0 8px 22px -10px rgb(15 23 42 / 0.2);
+  }
+
+  /** Carte « héro » fiche pin */
+  .lux-pin-detail-card {
+    border-radius: 1.75rem;
+    overflow: hidden;
+    border: 1px solid rgb(228 228 231 / 0.85);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.7) inset,
+      0 32px 64px -28px rgb(15 23 42 / 0.22),
+      0 14px 36px -16px rgb(190 24 93 / 0.1);
+    background: linear-gradient(172deg, #ffffff 0%, #fcfcfd 60%, #f6f6f7 100%);
+  }
+
+  .lux-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 font-semibold text-neutral-800 text-sm;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.9375rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f4f4f5 100%);
+    border: 1px solid rgb(228 228 231 / 0.95);
+    box-shadow: 0 2px 8px -2px rgb(15 23 42 / 0.08);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.18s ease;
+  }
+
+  .lux-btn-secondary:hover:not(:disabled) {
+    @apply bg-white border-neutral-200;
+    box-shadow: 0 4px 16px -4px rgb(15 23 42 / 0.12);
+  }
+
+  .lux-btn-secondary:active:not(:disabled) {
+    transform: scale(0.99);
+  }
+
+  .lux-btn-danger-outline {
+    @apply inline-flex items-center justify-center gap-2 font-semibold text-rose-800 text-sm;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.9375rem;
+    background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+    border: 1px solid rgb(254 205 211);
+    box-shadow: 0 2px 8px -2px rgb(225 29 72 / 0.18);
+    transition: filter 0.2s ease, transform 0.18s ease;
+  }
+
+  .lux-btn-danger-outline:hover:not(:disabled) {
+    filter: brightness(0.97);
+    box-shadow: 0 4px 14px -2px rgb(225 29 72 / 0.22);
+  }
+
+  .lux-btn-accent-dark {
+    @apply inline-flex items-center justify-center gap-2 font-semibold text-white text-sm;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.9375rem;
+    background: linear-gradient(145deg, #27272a 0%, #18181b 55%, #0a0a0a 100%);
+    box-shadow: 0 6px 20px -4px rgb(15 23 42 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.06);
+    transition: filter 0.2s ease, transform 0.18s ease;
+  }
+
+  .lux-btn-accent-dark:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  .lux-btn-pin-save {
+    @apply absolute top-3 right-3 z-10 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300;
+    background: linear-gradient(145deg, #fbcfe8 0%, #db2777 35%, #9f1239 100%);
+    color: #fff;
+    box-shadow: 0 8px 28px -4px rgb(219 39 119 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.2);
+    border: 1px solid rgb(255 255 255 / 0.15);
+  }
+
+  .lux-btn-pin-save-saved {
+    @apply opacity-100;
+    background: linear-gradient(145deg, #fafafa 0%, #18181b 100%);
+    box-shadow: 0 8px 28px -4px rgb(15 23 42 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.06);
+    border-color: rgb(82 82 91 / 0.5);
+  }
+
+  .lux-dropdown-panel {
+    @apply fixed w-[min(240px,calc(100vw-1rem))] rounded-2xl py-1.5;
+    backdrop-filter: blur(16px);
+    background: rgb(255 255 255 / 0.94);
+    border: 1px solid rgb(255 255 255 / 0.75);
+    box-shadow:
+      0 0 0 1px rgb(15 23 42 / 0.06),
+      0 28px 56px -12px rgb(15 23 42 / 0.28);
+  }
+
+  .lux-modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center px-4;
+    background:
+      radial-gradient(circle at 50% -20%, rgb(251 207 232 / 0.2), transparent 45%),
+      rgb(12 12 17 / 0.58);
+    backdrop-filter: blur(12px);
+  }
+
+  .lux-modal-panel {
+    @apply rounded-[1.625rem] w-full shadow-2xl overflow-hidden flex flex-col;
+    border: 1px solid rgb(255 255 255 / 0.72);
+    box-shadow:
+      0 0 0 1px rgb(228 228 231 / 0.6) inset,
+      0 40px 80px -24px rgb(15 23 42 / 0.35),
+      0 20px 40px -16px rgb(190 24 93 / 0.12);
+    background: linear-gradient(174deg, #ffffff 0%, #fdfdfd 72%, #f8f8f9 100%);
+  }
+
+  .lux-modal-panel-sm {
+    @apply max-w-md p-6 sm:p-8;
+  }
+
+  .lux-input-elegant {
+    @apply w-full rounded-2xl border border-neutral-200/90 text-sm outline-none transition;
+    background: linear-gradient(180deg, rgb(250 250 250) 0%, #ffffff 100%);
+    padding: 0.65rem 1rem;
+    box-shadow: inset 0 1px 2px rgb(15 23 42 / 0.05);
+  }
+
+  .lux-input-elegant:focus {
+    @apply border-pink-300 ring-2 ring-pink-200/80 bg-white;
+    box-shadow: inset 0 1px 2px rgb(15 23 42 / 0.04), 0 0 0 1px rgb(251 207 232 / 0.5);
+  }
+
+  .lux-organize-row {
+    @apply flex items-center gap-3 p-2.5 rounded-2xl cursor-grab active:cursor-grabbing border;
+    border-color: rgb(244 244 245);
+    background: linear-gradient(180deg, rgb(252 252 253) 0%, rgb(250 250 250) 100%);
+    box-shadow: 0 1px 3px rgb(15 23 42 / 0.05);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .lux-organize-row:hover {
+    border-color: rgb(251 207 232);
+    box-shadow: 0 4px 16px -4px rgb(225 29 119 / 0.12);
+  }
+
+  /** Modale générique (#app-alert) — complété dans le composant avec utilitaires */
+  .lux-alert-panel {
+    @apply relative overflow-hidden rounded-[1.75rem];
+    background: linear-gradient(174deg, #ffffff 0%, #fdfcfd 72%, #f9f9fa 100%);
+    border: 1px solid rgb(228 228 231 / 0.85);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.72) inset,
+      0 36px 80px -20px rgb(15 23 42 / 0.38),
+      0 12px 32px rgb(190 24 93 / 0.1);
+  }
+
+  .lux-alert-panel::before {
+    content: '';
+    @apply absolute left-0 top-0 h-px w-full;
+    background: linear-gradient(90deg, transparent, rgb(244 114 182 / 0.8) 20%, rgb(225 29 119 / 0.9) 50%, transparent);
+  }
+}
+
+/* ─── Thème sombre : surfaces « lux » (cartes pin, modales, champs) ───────── */
+.dark .lux-pin-card {
+  border-color: rgb(63 63 70 / 0.9);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.35),
+    0 12px 44px -14px rgb(0 0 0 / 0.55);
+  background: linear-gradient(165deg, rgb(30 27 30) 0%, rgb(24 22 26) 100%);
+}
+
+.dark .lux-pin-skeleton-card {
+  @apply bg-neutral-900;
+  border-color: rgb(63 63 70 / 0.45);
+  box-shadow: 0 8px 32px -12px rgb(0 0 0 / 0.45);
+}
+
+.dark .lux-icon-ring-btn {
+  @apply text-neutral-200;
+  background: rgb(39 39 42 / 0.75);
+}
+
+.dark .lux-icon-ring-btn:hover:not(:disabled) {
+  border-color: rgb(82 82 91 / 0.9);
+  background: rgb(48 48 52);
+  box-shadow: 0 8px 22px -10px rgb(0 0 0 / 0.5);
+}
+
+.dark .lux-pin-detail-card {
+  border-color: rgb(63 63 70 / 0.85);
+  background: linear-gradient(172deg, rgb(28 26 30) 0%, rgb(20 18 22) 100%);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.04) inset,
+    0 32px 64px -28px rgb(0 0 0 / 0.55),
+    0 14px 36px -16px rgb(190 24 93 / 0.15);
+}
+
+.dark .lux-btn-secondary {
+  @apply text-neutral-100;
+  background: linear-gradient(180deg, rgb(48 48 52) 0%, rgb(34 34 38) 100%);
+  border-color: rgb(82 82 91 / 0.85);
+  box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.35);
+}
+
+.dark .lux-btn-secondary:hover:not(:disabled) {
+  @apply border-neutral-600 bg-neutral-700;
+  box-shadow: 0 4px 16px -4px rgb(0 0 0 / 0.45);
+}
+
+.dark .lux-dropdown-panel {
+  background: rgb(30 30 34 / 0.96);
+  border-color: rgb(63 63 70 / 0.9);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 28px 56px -12px rgb(0 0 0 / 0.55);
+}
+
+.dark .lux-modal-panel {
+  border-color: rgb(63 63 70 / 0.75);
+  background: linear-gradient(174deg, rgb(32 30 34) 0%, rgb(24 22 26) 100%);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.05) inset,
+    0 40px 80px -24px rgb(0 0 0 / 0.55),
+    0 20px 40px -16px rgb(190 24 93 / 0.12);
+}
+
+.dark .lux-input-elegant {
+  @apply border-neutral-600 text-neutral-100;
+  background: linear-gradient(180deg, rgb(34 34 38) 0%, rgb(28 28 32) 100%);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.dark .lux-input-elegant:focus {
+  @apply border-pink-500 ring-pink-500/40 bg-neutral-800;
+}
+
+.dark .lux-organize-row {
+  border-color: rgb(63 63 70);
+  background: linear-gradient(180deg, rgb(34 34 38) 0%, rgb(28 28 32) 100%);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+}
+
+.dark .lux-alert-panel {
+  background: linear-gradient(174deg, rgb(32 30 34) 0%, rgb(26 24 28) 100%);
+  border-color: rgb(63 63 70 / 0.85);
 }
 
 .no-scrollbar::-webkit-scrollbar {

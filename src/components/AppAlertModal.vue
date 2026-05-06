@@ -95,22 +95,22 @@ function variantStyles(): string {
         role="presentation"
       >
         <div
-          class="absolute inset-0 bg-neutral-950/45 backdrop-blur-[2px]"
+          class="absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(251,207,232,0.25),transparent_42%)] bg-neutral-950/55 backdrop-blur-md"
           aria-hidden="true"
           @click="onBackdropClick"
         />
         <div
-          class="relative w-full max-w-[min(100%,420px)] scale-100 rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.06] overflow-hidden"
+          class="relative w-full max-w-[min(100%,420px)] scale-100 lux-alert-panel"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="title ? 'app-modal-title' : undefined"
           aria-describedby="app-modal-desc"
           @click.stop
         >
-          <div class="p-6 sm:p-7">
-            <div class="flex flex-col items-center text-center gap-3">
+          <div class="p-7 sm:p-8 pt-8">
+            <div class="flex flex-col items-center text-center gap-4">
               <div
-                class="flex h-12 w-12 items-center justify-center rounded-2xl ring-1 shrink-0"
+                class="flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ring-inset shrink-0 shadow-inner"
                 :class="variantStyles()"
               >
                 <span class="material-symbols-outlined text-[28px]">{{ variantIcon() }}</span>
@@ -136,7 +136,7 @@ function variantStyles(): string {
                 ref="promptInputRef"
                 v-model="inputValue"
                 type="text"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                class="lux-input-elegant text-sm text-neutral-900 placeholder:text-neutral-400"
                 :placeholder="inputPlaceholder || t('modal.prompt.placeholder')"
                 autocomplete="off"
                 @keydown.enter.prevent="finishPrompt(true)"
@@ -147,12 +147,12 @@ function variantStyles(): string {
             </div>
 
             <div
-              class="mt-6 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end sm:gap-3"
+              class="mt-7 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end"
             >
               <button
                 v-if="mode === 'prompt' || mode === 'confirm'"
                 type="button"
-                class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition"
+                class="w-full sm:w-auto lux-btn-secondary"
                 @click="mode === 'confirm' ? finishConfirm(false) : finishPrompt(false)"
               >
                 {{ t('common.cancel') }}
@@ -160,7 +160,7 @@ function variantStyles(): string {
               <button
                 ref="okButtonRef"
                 type="button"
-                class="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-pink-600 hover:bg-pink-700 shadow-sm shadow-pink-600/25 transition"
+                class="w-full sm:w-auto lux-btn-primary min-w-[7.5rem]"
                 @click="
                   mode === 'alert'
                     ? dismissAlert()

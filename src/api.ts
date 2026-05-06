@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from './env';
+import { getCurrentWebLang } from './i18n';
 import {
   applyUnreadCountFromResponseHeader,
   UNREAD_NOTIFICATION_RESPONSE_HEADER,
@@ -94,6 +95,14 @@ export async function proactiveRefreshIfStale(): Promise<void> {
 }
 
 api.interceptors.request.use((config) => {
+  const method = String(config.method || 'get').toLowerCase()
+  if (method === 'get') {
+    const params = (config.params || {}) as Record<string, unknown>
+    if (params.lang == null || params.lang === '') {
+      config.params = { ...params, lang: getCurrentWebLang() }
+    }
+  }
+
   /** FormData + `Content-Type: application/json` (défaut axios) = pas de boundary multipart → champs ignorés (ex. `parentId`). */
   if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
     const h = config.headers

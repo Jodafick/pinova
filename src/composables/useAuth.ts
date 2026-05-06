@@ -50,6 +50,47 @@ const inMemoryAccessToken = ref<string | null>(
 )
 let hasAuthInvalidationListener = false
 
+/** Réponse brute `GET me/` pour réhydrater la session hors ligne / avant le premier round-trip. */
+const PINOVA_ME_PAYLOAD_KEY = 'pinova_me_payload_v1'
+
+function persistMePayloadFromApi(data: unknown) {
+  if (typeof window === 'undefined' || data == null || typeof data !== 'object') return
+  try {
+    window.localStorage.setItem(PINOVA_ME_PAYLOAD_KEY, JSON.stringify(data))
+  } catch {
+    /* quota / mode privé */
+  }
+}
+
+function clearMePayloadCache() {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(PINOVA_ME_PAYLOAD_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Si un JWT existe, restaure le dernier snapshot `me/` pour éviter un écran vide avant le réseau. */
+function hydrateCurrentUserFromMeCacheWhenTokenPresent() {
+  if (typeof window === 'undefined') return
+  try {
+    if (!inMemoryAccessToken.value || currentUser.value) return
+    const raw = window.localStorage.getItem(PINOVA_ME_PAYLOAD_KEY)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && parsed.username != null) {
+      currentUser.value = mapDjangoUserToFrontend(parsed)
+    }
+  } catch {
+    /* JSON invalide */
+  }
+}
+
+if (typeof window !== 'undefined' && inMemoryAccessToken.value) {
+  hydrateCurrentUserFromMeCacheWhenTokenPresent()
+}
+
 function getFullMediaUrl(url: string | null): string | undefined {
   if (!url) return undefined
   if (url.startsWith('http')) return url
@@ -145,6 +186,7 @@ export function useAuth() {
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('pinova_token')
       window.localStorage.removeItem('pinova_refresh_token')
+      clearMePayloadCache()
     }
     currentUser.value = null
     clearPinClientCaches()
@@ -185,6 +227,7 @@ export function useAuth() {
       if (response.data) {
         devLog('✅ User received:', response.data.username)
         currentUser.value = mapDjangoUserToFrontend(response.data)
+        persistMePayloadFromApi(response.data)
       }
     } catch (err) {
       if (!currentUser.value) {
@@ -265,6 +308,7 @@ export function useAuth() {
       })
       if (response.data) {
         currentUser.value = mapDjangoUserToFrontend(response.data)
+        persistMePayloadFromApi(response.data)
       }
       return response.data
     } catch (err) {

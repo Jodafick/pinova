@@ -63,23 +63,23 @@ function submit() {
   <Teleport to="body">
     <div
       v-if="modelValue"
-      class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-[2px]"
+      class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[radial-gradient(circle_at_50%_0%,rgba(251,207,232,0.2),transparent_50%)] bg-neutral-950/55 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       @click.self="close"
     >
       <div
-        class="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-neutral-100 max-h-[min(92vh,640px)] flex flex-col"
+        class="w-full sm:max-w-md lux-alert-panel rounded-t-[1.75rem] sm:rounded-[1.75rem] max-h-[min(92vh,640px)] flex flex-col"
         @click.stop
       >
-        <div class="shrink-0 px-4 pt-4 pb-2 border-b border-neutral-100 flex items-start justify-between gap-2">
+        <div class="shrink-0 px-5 pt-5 pb-3 border-b border-neutral-200/70 flex items-start justify-between gap-2 bg-white/25">
           <div>
             <h2 class="text-lg font-semibold text-neutral-900">{{ t('report.title') }}</h2>
             <p v-if="contextLabel" class="text-xs text-neutral-500 mt-0.5 line-clamp-2">{{ contextLabel }}</p>
           </div>
           <button
             type="button"
-            class="p-2 rounded-full text-neutral-500 hover:bg-neutral-100"
+            class="p-2 rounded-full text-neutral-500 hover:bg-white/90 hover:text-neutral-900 transition shadow-sm ring-1 ring-transparent hover:ring-neutral-200/80"
             :aria-label="t('common.close')"
             @click="close"
           >
@@ -94,11 +94,11 @@ function submit() {
               <label
                 v-for="c in categories"
                 :key="c.code"
-                class="flex items-center gap-2 rounded-xl border px-3 py-2 cursor-pointer transition text-sm"
+                class="flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 cursor-pointer transition text-sm shadow-sm"
                 :class="
                   category === c.code
-                    ? 'border-pink-500 bg-pink-50/80 ring-1 ring-pink-200'
-                    : 'border-neutral-200 hover:border-neutral-300'
+                    ? 'border-pink-400 bg-gradient-to-br from-pink-50 to-white ring-1 ring-pink-200/90 shadow-pink-900/5'
+                    : 'border-neutral-200/90 bg-white/50 hover:border-pink-200/80 hover:bg-white'
                 "
               >
                 <input v-model="category" type="radio" :value="c.code" class="sr-only" />
@@ -114,7 +114,7 @@ function submit() {
               v-model="details"
               rows="4"
               maxlength="2000"
-              class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none resize-y min-h-[96px]"
+              class="lux-input-elegant resize-y min-h-[96px] text-sm text-neutral-900 placeholder:text-neutral-400"
               :placeholder="t('report.detailsPlaceholder')"
             />
             <p class="text-[11px] text-neutral-400 mt-1 text-right">{{ details.length }} / 2000</p>
@@ -122,17 +122,17 @@ function submit() {
           </div>
         </div>
 
-        <div class="shrink-0 px-4 py-3 border-t border-neutral-100 flex justify-end gap-2">
+        <div class="shrink-0 px-5 py-4 border-t border-neutral-200/70 flex justify-end gap-3 bg-white/20">
           <button
             type="button"
-            class="px-4 py-2 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+            class="lux-btn-secondary"
             @click="close"
           >
             {{ t('common.cancel') }}
           </button>
           <button
             type="button"
-            class="px-4 py-2 rounded-xl text-sm font-semibold bg-pink-600 text-white hover:bg-pink-700 shadow-sm"
+            class="lux-btn-primary"
             @click="submit"
           >
             {{ t('report.submit') }}

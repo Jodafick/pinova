@@ -62,13 +62,13 @@ const onBackdrop = (ev: MouseEvent) => {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/55 backdrop-blur-[1px]"
+      class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-neutral-950/58 backdrop-blur-md"
       data-backdrop="1"
       role="presentation"
       @mousedown="onBackdrop"
     >
       <div
-        class="relative flex flex-col w-full max-w-5xl h-[85vh] max-h-[900px] bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden motion-safe:animate-[receipt_modal_in_.18s_ease-out_both]"
+        class="lux-modal-panel relative flex flex-col w-full max-w-5xl h-[85vh] max-h-[900px] overflow-hidden motion-safe:animate-[receipt_modal_in_.18s_ease-out_both]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="receipt-pdf-title"
@@ -76,7 +76,7 @@ const onBackdrop = (ev: MouseEvent) => {
         @mousedown.stop
       >
         <header
-          class="shrink-0 flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-neutral-100 bg-neutral-50"
+          class="shrink-0 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-neutral-200/70 bg-gradient-to-r from-white via-neutral-50/95 to-white"
         >
           <h2 id="receipt-pdf-title" class="text-sm font-semibold text-neutral-900">
             {{ t('billing.receiptModal.title') }}
@@ -88,14 +88,14 @@ const onBackdrop = (ev: MouseEvent) => {
               download=""
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 transition"
+              class="lux-btn-primary text-xs px-5 py-2.5"
             >
               <span class="material-symbols-outlined text-base">download</span>
               {{ t('billing.receiptModal.download') }}
             </a>
             <button
               type="button"
-              class="inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-neutral-200 text-neutral-600 transition shrink-0"
+              class="inline-flex items-center justify-center w-11 h-11 rounded-full border border-neutral-200/80 bg-white/90 text-neutral-600 hover:bg-white hover:shadow-md transition shrink-0"
               :aria-label="t('billing.receiptModal.close')"
               @click="emit('close')"
             >
@@ -129,10 +129,10 @@ const onBackdrop = (ev: MouseEvent) => {
           </div>
         </div>
 
-        <footer class="lg:hidden shrink-0 px-3 py-2 border-t border-neutral-100 bg-neutral-50">
+        <footer class="lg:hidden shrink-0 px-4 py-3 border-t border-neutral-200/70 bg-white/80">
           <button
             type="button"
-            class="w-full py-2.5 text-xs font-semibold text-neutral-700 hover:text-neutral-900"
+            class="lux-btn-secondary w-full justify-center text-xs py-3"
             @click="emit('close')"
           >
             {{ t('billing.receiptModal.close') }}

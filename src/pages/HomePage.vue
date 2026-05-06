@@ -125,10 +125,10 @@ const openPin = (slug: string) => {
     <section class="mb-6 sm:mb-8">
       <div class="flex items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 mb-1">
+          <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
             {{ currentUser ? t('home.greetingNamed', { name: currentUser.displayName.split(' ')[0] || currentUser.displayName }) : t('home.greeting') + ' !' }}
           </h1>
-          <p class="text-sm sm:text-base text-neutral-500">
+          <p class="text-sm sm:text-base text-neutral-500 dark:text-neutral-400">
             {{ t('home.subtitle') }}
           </p>
         </div>
@@ -136,7 +136,7 @@ const openPin = (slug: string) => {
           <router-link
             v-if="currentUser?.subscription?.plan === 'plus' || currentUser?.subscription?.plan === 'pro'"
             to="/story/create"
-            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-pink-200 bg-white text-pink-700 text-sm font-semibold shadow-sm hover:bg-pink-50 transition-all"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-pink-200 dark:border-pink-800 bg-white dark:bg-neutral-900 text-pink-700 dark:text-pink-300 text-sm font-semibold shadow-sm hover:bg-pink-50 dark:hover:bg-neutral-800 transition-all"
           >
             <span class="material-symbols-outlined text-lg">auto_stories</span>
             {{ t('story.standalone.navShort') }}
@@ -156,13 +156,13 @@ const openPin = (slug: string) => {
 
     <!-- Search bar for home page -->
     <div class="mb-5 sm:hidden">
-      <div class="flex items-center gap-2 rounded-full bg-neutral-100 px-4 py-2.5 text-sm focus-within:ring-2 focus-within:ring-pink-500">
-        <span class="material-symbols-outlined text-lg text-neutral-400">search</span>
+      <div class="flex items-center gap-2 rounded-full bg-neutral-100 dark:bg-neutral-800 px-4 py-2.5 text-sm focus-within:ring-2 focus-within:ring-pink-500">
+        <span class="material-symbols-outlined text-lg text-neutral-400 dark:text-neutral-500">search</span>
         <input
           v-model="searchQuery"
           type="text"
           :placeholder="t('home.search.placeholder')"
-          class="bg-transparent outline-none flex-1 text-sm"
+          class="bg-transparent outline-none flex-1 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
         />
       </div>
     </div>
@@ -185,9 +185,9 @@ const openPin = (slug: string) => {
 
     <!-- Empty state -->
     <div v-else-if="filteredPins.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
-      <span class="material-symbols-outlined text-6xl text-neutral-300 mb-4">search_off</span>
-      <h2 class="text-xl font-semibold text-neutral-700 mb-2">{{ t('home.empty.title') }}</h2>
-      <p class="text-sm text-neutral-500 max-w-sm">
+      <span class="material-symbols-outlined text-6xl text-neutral-300 dark:text-neutral-600 mb-4">search_off</span>
+      <h2 class="text-xl font-semibold text-neutral-700 dark:text-neutral-200 mb-2">{{ t('home.empty.title') }}</h2>
+      <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">
         {{ t('home.empty.desc') }}
       </p>
     </div>
@@ -196,7 +196,7 @@ const openPin = (slug: string) => {
     <router-link
       v-if="currentUser?.subscription?.plan === 'plus' || currentUser?.subscription?.plan === 'pro'"
       to="/story/create"
-      class="sm:hidden fixed bottom-24 right-6 w-12 h-12 rounded-full bg-white border-2 border-pink-400 text-pink-600 flex items-center justify-center shadow-lg hover:bg-pink-50 hover:scale-105 transition-all z-10"
+      class="sm:hidden fixed bottom-24 right-6 w-12 h-12 rounded-full bg-white dark:bg-neutral-900 border-2 border-pink-400 dark:border-pink-600 text-pink-600 dark:text-pink-400 flex items-center justify-center shadow-lg hover:bg-pink-50 dark:hover:bg-neutral-800 hover:scale-105 transition-all z-10"
       :aria-label="t('story.standalone.title')"
     >
       <span class="material-symbols-outlined text-2xl">auto_stories</span>

@@ -217,7 +217,7 @@ const collaboratorInviteOpen = ref(false)
 const collaboratorInviteBoardId = ref<number | null>(null)
 
 async function loadPendingBoardInvites() {
-  if (!currentUser.value || route.params.username) {
+  if (!currentUser.value || !isMyProfile.value) {
     pendingBoardInvites.value = []
     return
   }
@@ -267,7 +267,14 @@ const loadProfile = async () => {
   profileHttpStatus.value = undefined
   profileLoadBlocked.value = false
 
-  if (!route.params.username) {
+  /** Mon profil sans lien de partage secret : `me/` + boards, pas `profiles/:user/`. */
+  const useLocalOwnProfile =
+    !route.params.username ||
+    (!!currentUser.value &&
+      route.params.username === currentUser.value.username &&
+      !profileShareOpts)
+
+  if (useLocalOwnProfile) {
     if (!currentUser.value) {
       profileUser.value = null
       loading.value = false
@@ -317,7 +324,7 @@ const loadProfile = async () => {
     creatorStats.value = null
   }
   loading.value = false
-  if (!route.params.username && profileUser.value) {
+  if (isMyProfile.value && profileUser.value) {
     void loadBoardSuggestions()
     void loadPendingBoardInvites()
   }
@@ -790,7 +797,7 @@ async function loadActiveStories() {
 }
 
 async function loadBoardSuggestions() {
-  if (!currentUser.value || route.params.username) return
+  if (!currentUser.value || !isMyProfile.value) return
   try {
     const res = await api.get('boards/suggestions/')
     boardSuggestions.value = res.data

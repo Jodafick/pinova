@@ -832,7 +832,7 @@ async function deletePinFromMenu() {
       <span class="material-symbols-outlined text-7xl text-neutral-300 mb-4">broken_image</span>
       <h1 class="text-2xl font-bold text-neutral-800 mb-2">{{ t('pin.notFound.title') }}</h1>
       <p class="text-neutral-500 mb-6">{{ t('pin.notFound.desc') }}</p>
-      <router-link to="/" class="px-6 py-2.5 rounded-full bg-pink-600 text-white font-semibold text-sm hover:bg-pink-700 transition">
+      <router-link to="/" class="lux-btn-primary lux-btn-pill text-sm">
         {{ t('pin.notFound.cta') }}
       </router-link>
     </div>
@@ -849,16 +849,16 @@ async function deletePinFromMenu() {
         <!-- Back button -->
         <button
           type="button"
-          class="mb-6 flex items-center gap-1.5 text-sm text-neutral-800 hover:text-neutral-950 transition"
+          class="group mb-8 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white/90 px-3.5 py-2 text-sm font-medium text-neutral-600 shadow-sm backdrop-blur-sm transition hover:border-pink-200/80 hover:bg-white hover:text-neutral-900 hover:shadow-md"
           :aria-label="t('pin.a11y.back')"
           @click="goBack"
         >
-          <span class="material-symbols-outlined text-lg">arrow_back</span>
+          <span class="material-symbols-outlined text-lg text-neutral-500 transition group-hover:text-pink-600">arrow_back</span>
           {{ t('common.back') }}
         </button>
 
         <!-- Main card -->
-        <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col lg:flex-row lg:max-h-[80vh]">
+        <div class="lux-pin-detail-card flex flex-col lg:flex-row lg:max-h-[80vh]">
           <!-- Image : paysage centré verticalement ; portrait → colonne plus large pour mieux remplir -->
           <div
             class="bg-neutral-100 flex flex-col lg:max-h-[80vh] lg:overflow-hidden shrink-0 min-h-[200px] lg:min-h-0"
@@ -931,7 +931,7 @@ async function deletePinFromMenu() {
                   <button
                     ref="pinOwnerMenuTriggerRef"
                     type="button"
-                    class="inline-flex h-10 w-10 rounded-full hover:bg-neutral-100 items-center justify-center text-neutral-700 transition"
+                    class="lux-icon-ring-btn"
                     :aria-label="t('pin.ownerMenu.more')"
                     :aria-expanded="pinOwnerMenuOpen"
                     aria-haspopup="menu"
@@ -945,8 +945,8 @@ async function deletePinFromMenu() {
                 <button
                   v-if="!(pin.isStory && isPinOwner)"
                   type="button"
-                  class="w-10 h-10 rounded-full flex items-center justify-center transition"
-                  :class="pin.liked ? 'bg-pink-50 text-pink-700' : 'hover:bg-neutral-100 text-neutral-700'"
+                  class="lux-icon-ring-btn"
+                  :class="pin.liked ? 'bg-gradient-to-br from-pink-50 to-rose-50/80 text-pink-700 border-pink-100' : ''"
                   :disabled="likingPin"
                   :aria-pressed="pin.liked"
                   :aria-label="pin.liked ? t('pin.a11y.unlike') : t('pin.a11y.like')"
@@ -957,7 +957,7 @@ async function deletePinFromMenu() {
                 </button>
                 <button
                   type="button"
-                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-700 transition"
+                  class="lux-icon-ring-btn"
                   :aria-label="t('pin.a11y.share')"
                   @click="handleShare"
                 >
@@ -965,7 +965,7 @@ async function deletePinFromMenu() {
                 </button>
                 <button
                   type="button"
-                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-700 transition"
+                  class="lux-icon-ring-btn disabled:opacity-40 disabled:cursor-not-allowed"
                   :disabled="downloadingPin || !pin.imageUrl"
                   :aria-label="t('pin.a11y.download')"
                   @click="handleDownload"
@@ -976,7 +976,7 @@ async function deletePinFromMenu() {
                 <button
                   v-if="isAuthenticated && !isPinOwner && !pin.viewerHasReported"
                   type="button"
-                  class="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-700 transition"
+                  class="lux-icon-ring-btn"
                   :aria-label="t('moderation.report')"
                   @click="handleReportPin"
                 >
@@ -985,10 +985,8 @@ async function deletePinFromMenu() {
               </div>
               <button
                 type="button"
-                class="px-6 py-2.5 rounded-full font-semibold text-sm transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-                :class="pin.saved
-                  ? 'bg-neutral-950 text-white hover:bg-neutral-900'
-                  : 'bg-pink-700 text-white hover:bg-pink-800'"
+                class="transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+                :class="pin.saved ? 'lux-btn-detail-saved' : 'lux-btn-primary lux-btn-pill'"
                 :disabled="savingPin"
                 :aria-pressed="pin.saved"
                 :aria-label="pin.saved ? t('pin.a11y.saved') : t('pin.a11y.save')"
@@ -1077,10 +1075,13 @@ async function deletePinFromMenu() {
               </router-link>
               <button
                 v-if="currentUser && currentUser.id !== pin.userId"
-                class="px-5 py-3 rounded-full text-sm font-bold transition-all"
-                :class="pin.isFollowing
-                  ? 'bg-neutral-900 text-white hover:bg-neutral-800'
-                  : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200'"
+                type="button"
+                class="text-sm font-bold transition-all rounded-full"
+                :class="
+                  pin.isFollowing
+                    ? 'lux-btn-accent-dark py-2.5 px-6'
+                    : 'lux-btn-secondary py-2.5 px-6 border-0 shadow-md'
+                "
                 :disabled="followingAuthor"
                 @click="handleFollow"
               >
@@ -1092,7 +1093,7 @@ async function deletePinFromMenu() {
                 :href="pin.authorTipsUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="px-4 py-3 rounded-full text-sm font-bold bg-amber-50 text-amber-800 hover:bg-amber-100 transition"
+                class="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-bold bg-gradient-to-br from-amber-50 to-amber-100/90 text-amber-900 ring-1 ring-amber-200/70 shadow-sm hover:shadow-md hover:from-amber-100 hover:to-amber-50 transition"
               >
                 {{ t('pin.tip') }}
               </a>
@@ -1281,14 +1282,14 @@ async function deletePinFromMenu() {
         v-if="pinOwnerMenuOpen && isPinOwner && pin?.slug"
         ref="pinOwnerMenuPanelRef"
         role="menu"
-        class="fixed z-[120] w-[min(240px,calc(100vw-1rem))] rounded-2xl border border-neutral-200 bg-white shadow-2xl py-1.5"
+        class="lux-dropdown-panel"
         :style="pinOwnerMenuFloatingStyles"
         @pointerdown.stop
       >
         <button
           type="button"
           role="menuitem"
-          class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-50 flex items-center gap-2"
+          class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-pink-50/60 flex items-center gap-2 transition-colors"
           @click="goEditPinFromMenu"
         >
           <span class="material-symbols-outlined text-lg text-neutral-500" aria-hidden="true">edit</span>
@@ -1297,7 +1298,7 @@ async function deletePinFromMenu() {
         <button
           type="button"
           role="menuitem"
-          class="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
+          class="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50/90 flex items-center gap-2 transition-colors"
           @click="deletePinFromMenu"
         >
           <span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import type { RouteLocationRaw } from 'vue-router'
 import { useRouter } from 'vue-router'
 import CreatorDashboardSkeleton from '../components/CreatorDashboardSkeleton.vue'
+import AvatarDisc from '../components/AvatarDisc.vue'
+import { displayInitials } from '../utils/displayInitials'
 import { useAuth } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
 import { useI18n } from '../i18n'
@@ -10,7 +11,7 @@ import { useI18n } from '../i18n'
 const { t, currentLang } = useI18n()
 const router = useRouter()
 const { currentUser, isAuthenticated, fetchCurrentUser } = useAuth()
-const { fetchCreatorStats, fetchCreatorWeeklyStats } = usePins()
+const { fetchCreatorStats, fetchCreatorWeeklyStats, fetchCreatorEngagement } = usePins()
 
 const loading = ref(true)
 const errorMsg = ref('')
@@ -50,8 +51,28 @@ const topPinsPage = ref(1)
 const weeklyPinsPage = ref(1)
 const TOP_PAGE_SIZE = 10
 const WEEKLY_PAGE_SIZE = 10
+const AUDIENCE_PERIOD_DAYS = 30
 
 const isPro = computed(() => currentUser.value?.subscription?.plan === 'pro')
+
+const audienceOpen = ref(false)
+const audienceKey = ref<TotalKey | null>(null)
+const audienceLoading = ref(false)
+const audienceErr = ref('')
+type AudienceActor = {
+  username: string
+  display_name: string
+  avatar_url: string
+  avatar_color: string
+  count: number
+}
+const audiencePayload = ref<{
+  action: string
+  period_days: number
+  total_actions: number
+  distinct_actors: number
+  top_actors: AudienceActor[]
+} | null>(null)
 
 type TotalKey = 'pins' | 'views' | 'saves' | 'likes' | 'comments'
 
@@ -133,6 +154,13 @@ const kpis = computed(() =>
   }),
 )
 
+const audienceKpiLabel = computed(() => {
+  const k = audienceKey.value
+  if (!k) return ''
+  const row = kpis.value.find((x) => x.key === k)
+  return row?.label || ''
+})
+
 const periodSummaryLine = computed(() => {
   const pe = weeklyMeta.value?.period_engagement
   const days = weeklyMeta.value?.period_days ?? 7
@@ -148,15 +176,37 @@ const periodSummaryLine = computed(() => {
   })
 })
 
-function kpiTarget(key: TotalKey): RouteLocationRaw {
-  const u = currentUser.value?.username
+function audienceActionParam(key: Exclude<TotalKey, 'pins'>): 'likes' | 'saves' | 'comments' | 'views' {
+  return key
+}
+
+async function openAudiencePanel(key: TotalKey) {
   if (key === 'pins') {
-    return u ? { path: `/profile/${encodeURIComponent(u)}` } : { path: '/login' }
+    const u = currentUser.value?.username
+    if (u) await router.push({ path: `/profile/${encodeURIComponent(u)}` })
+    return
   }
-  if (key === 'views') {
-    return { path: '/creator', hash: '#fenetre' }
+  audienceKey.value = key
+  audienceOpen.value = true
+  audienceLoading.value = true
+  audienceErr.value = ''
+  audiencePayload.value = null
+  try {
+    const data = await fetchCreatorEngagement({
+      action: audienceActionParam(key),
+      days: AUDIENCE_PERIOD_DAYS,
+      limit: 40,
+    })
+    audiencePayload.value = data
+  } catch {
+    audienceErr.value = t('creator.errorLoad')
+  } finally {
+    audienceLoading.value = false
   }
-  return { path: '/creator', hash: '#top-classement' }
+}
+
+function closeAudiencePanel() {
+  audienceOpen.value = false
 }
 
 function rankAccent(idx: number) {
@@ -371,28 +421,82 @@ onMounted(async () => {
             <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500">{{ t('creator.badge') }}</span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
-            <router-link
-              v-for="item in kpis"
-              :key="item.key"
-              :to="kpiTarget(item.key)"
-              class="group rounded-2xl border p-4 sm:p-5 flex gap-3 sm:flex-col sm:items-stretch lg:flex-row lg:items-center lg:gap-4 ring-4 transition-[box-shadow,transform] hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br no-underline text-inherit focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
-              :class="[item.border, item.ring, item.subtle]"
-            >
-              <span
-                class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
-                :class="item.iconWrap"
-                aria-hidden="true"
-                >{{ item.icon }}</span
+            <template v-for="item in kpis" :key="item.key">
+              <router-link
+                v-if="item.key === 'pins' && currentUser?.username"
+                :to="{ path: `/profile/${encodeURIComponent(currentUser.username)}` }"
+                class="group rounded-2xl border p-4 sm:p-5 flex gap-3 sm:flex-col sm:items-stretch lg:flex-row lg:items-center lg:gap-4 ring-4 transition-[box-shadow,transform] hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br no-underline text-inherit focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+                :class="[item.border, item.ring, item.subtle]"
               >
-              <div class="min-w-0 flex-1 sm:text-center lg:text-left">
-                <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-neutral-600 mb-0.5 lg:mb-1">
-                  {{ item.label }}
-                </p>
-                <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold text-neutral-950 tracking-tight">
-                  {{ item.formatted }}
-                </p>
-              </div>
-            </router-link>
+                <div class="flex items-center justify-center w-full">
+                  <span
+                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
+                    :class="item.iconWrap"
+                    aria-hidden="true"
+                    >{{ item.icon }}</span
+                  >
+                </div>
+                <div class="min-w-0 flex-1 sm:text-center lg:text-left">
+                  <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-neutral-600 mb-0.5 lg:mb-1">
+                    {{ item.label }}
+                  </p>
+                  <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold text-neutral-950 tracking-tight">
+                    {{ item.formatted }}
+                  </p>
+                </div>
+              </router-link>
+              <button
+                v-else-if="item.key === 'pins'"
+                type="button"
+                class="group rounded-2xl border p-4 sm:p-5 flex gap-3 sm:flex-col sm:items-stretch lg:flex-row lg:items-center lg:gap-4 ring-4 bg-gradient-to-br text-left text-inherit opacity-60 cursor-not-allowed"
+                :class="[item.border, item.ring, item.subtle]"
+                disabled
+              >
+                <div class="flex items-center justify-center w-full">
+                  <span
+                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
+                    :class="item.iconWrap"
+                    aria-hidden="true"
+                    >{{ item.icon }}</span
+                  >
+                </div>
+                <div class="min-w-0 flex-1 sm:text-center lg:text-left">
+                  <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-neutral-600 mb-0.5 lg:mb-1">
+                    {{ item.label }}
+                  </p>
+                  <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold text-neutral-950 tracking-tight">
+                    {{ item.formatted }}
+                  </p>
+                </div>
+              </button>
+              <button
+                v-else
+                type="button"
+                class="group rounded-2xl border p-4 sm:p-5 flex gap-3 sm:flex-col sm:items-stretch lg:flex-row lg:items-center lg:gap-4 ring-4 transition-[box-shadow,transform] hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br text-left text-inherit focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 cursor-pointer"
+                :class="[item.border, item.ring, item.subtle]"
+                @click="openAudiencePanel(item.key)"
+              >
+                <div class="flex items-center justify-center w-full">
+                  <span
+                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
+                    :class="item.iconWrap"
+                    aria-hidden="true"
+                    >{{ item.icon }}</span
+                  >
+                </div>
+                <div class="min-w-0 flex-1 sm:text-center lg:text-left">
+                  <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-neutral-600 mb-0.5 lg:mb-1">
+                    {{ item.label }}
+                  </p>
+                  <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold text-neutral-950 tracking-tight">
+                    {{ item.formatted }}
+                  </p>
+                  <p class="mt-1 text-[10px] sm:text-[11px] font-semibold text-pink-600">
+                    {{ t('creator.audience.cta') }}
+                  </p>
+                </div>
+              </button>
+            </template>
           </div>
         </section>
 
@@ -577,6 +681,105 @@ onMounted(async () => {
             <span>{{ t('creator.digestHint') }}</span>
           </p>
         </footer>
+
+        <Teleport to="body">
+          <div
+            v-if="audienceOpen"
+            class="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="creator-audience-title"
+          >
+            <button
+              type="button"
+              class="absolute inset-0 w-full h-full bg-black/50 backdrop-blur-[1px] border-0 cursor-default p-0"
+              :aria-label="t('creator.audience.close')"
+              @click="closeAudiencePanel"
+            />
+            <div
+              class="relative z-[1] w-full sm:max-w-lg max-h-[min(90vh,720px)] sm:rounded-2xl rounded-t-3xl bg-white shadow-2xl border border-neutral-200 overflow-hidden flex flex-col"
+              @click.stop
+            >
+              <header
+                class="px-5 py-4 border-b border-neutral-100 flex items-start justify-between gap-3 bg-gradient-to-r from-pink-50/70 to-white shrink-0"
+              >
+                <div class="min-w-0">
+                  <p id="creator-audience-title" class="text-[11px] font-bold uppercase tracking-wider text-pink-700">
+                    {{ t('creator.audience.title') }}
+                  </p>
+                  <h3 class="text-lg font-bold text-neutral-950 truncate">{{ audienceKpiLabel }}</h3>
+                  <p class="text-xs text-neutral-500 mt-1">
+                    {{ t('creator.audience.period', { days: AUDIENCE_PERIOD_DAYS }) }}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="p-2 rounded-full hover:bg-neutral-100 text-neutral-700 shrink-0"
+                  @click="closeAudiencePanel"
+                >
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </header>
+              <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-5">
+                <div v-if="audienceLoading" class="py-14 text-center text-sm text-neutral-500">
+                  {{ t('app.loading') }}
+                </div>
+                <div v-else-if="audienceErr" class="py-8 text-center text-sm text-rose-600 font-medium">
+                  {{ audienceErr }}
+                </div>
+                <template v-else-if="audiencePayload">
+                  <div class="flex flex-wrap gap-2 mb-4">
+                    <span
+                      class="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-bold text-neutral-800 tabular-nums"
+                    >
+                      {{ t('creator.audience.totalActions', { n: audiencePayload.total_actions }) }}
+                    </span>
+                    <span
+                      class="inline-flex items-center rounded-full bg-sky-50 border border-sky-100 px-3 py-1 text-[11px] font-bold text-sky-900 tabular-nums"
+                    >
+                      {{ t('creator.audience.distinctActors', { n: audiencePayload.distinct_actors }) }}
+                    </span>
+                  </div>
+                  <p
+                    v-if="!audiencePayload.top_actors?.length"
+                    class="text-sm text-neutral-500 text-center py-10 px-2 leading-relaxed"
+                  >
+                    {{ t('creator.audience.empty') }}
+                  </p>
+                  <ul v-else class="divide-y divide-neutral-100 rounded-xl border border-neutral-100 overflow-hidden">
+                    <li
+                      v-for="row in audiencePayload.top_actors"
+                      :key="row.username"
+                      class="flex items-center gap-3 px-3 py-3 bg-white hover:bg-pink-50/40 transition-colors"
+                    >
+                      <router-link
+                        :to="`/profile/${encodeURIComponent(row.username)}`"
+                        class="flex items-center gap-3 min-w-0 flex-1 no-underline text-inherit"
+                      >
+                        <AvatarDisc
+                          :color="row.avatar_color || '#a3a3a3'"
+                          frame-class="size-10 shrink-0 text-sm"
+                          text-class="text-white"
+                          :has-image="!!row.avatar_url"
+                        >
+                          <img v-if="row.avatar_url" :src="row.avatar_url" class="w-full h-full object-cover" alt="" />
+                          <span v-else class="text-center leading-none px-0.5">{{
+                            displayInitials(row.display_name || row.username)
+                          }}</span>
+                        </AvatarDisc>
+                        <span class="font-semibold text-neutral-900 truncate">{{ row.display_name }}</span>
+                      </router-link>
+                      <span class="tabular-nums text-sm font-black text-neutral-800 shrink-0 px-2 py-1 rounded-lg bg-neutral-100">
+                        {{ formatStat(row.count) }}
+                      </span>
+                    </li>
+                  </ul>
+                  <p class="mt-4 text-[11px] text-neutral-400 text-center">{{ t('creator.audience.footerHint') }}</p>
+                </template>
+              </div>
+            </div>
+          </div>
+        </Teleport>
       </template>
     </div>
   </main>
