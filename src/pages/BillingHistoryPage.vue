@@ -56,15 +56,15 @@ const invoiceAmountLabel = (row: { amount_display: number; currency_iso: string 
 function statusBadgeClasses(status: string) {
   const s = String(status || '').toLowerCase()
   if (s === 'approved' || s === 'completed' || s === 'paid') {
-    return 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80'
+    return 'app-btn app-btn-sm app-btn-secondary border-emerald-300 dark:border-emerald-700/70 text-emerald-700 dark:text-emerald-300'
   }
   if (s === 'pending' || s === 'processing') {
-    return 'bg-amber-50 text-amber-900 ring-1 ring-amber-200/80'
+    return 'app-btn app-btn-sm app-btn-secondary border-amber-300 dark:border-amber-700/70 text-amber-700 dark:text-amber-300'
   }
   if (s === 'failed' || s === 'cancelled' || s === 'canceled') {
-    return 'bg-rose-50 text-rose-800 ring-1 ring-rose-200/80'
+    return 'app-btn app-btn-sm app-btn-secondary border-rose-300 dark:border-rose-700/70 text-rose-700 dark:text-rose-300'
   }
-  return 'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200/90'
+  return 'app-btn app-btn-sm app-btn-secondary'
 }
 
 function formatPlanName(plan: string) {
@@ -144,12 +144,10 @@ onMounted(async () => {
     <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-14 pb-16">
       <button
         type="button"
-        class="group mb-8 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 dark:border-neutral-700 bg-white/80 dark:bg-neutral-900/80 px-3.5 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-300 shadow-sm backdrop-blur-sm transition hover:border-pink-200 hover:bg-pink-50/60 dark:hover:bg-neutral-800 hover:text-pink-900 dark:hover:text-pink-200"
+        class="app-btn app-btn-secondary group mb-8 text-sm"
         @click="router.push('/settings')"
       >
-        <span
-          class="material-symbols-outlined text-[1.125rem] text-neutral-500 transition group-hover:text-pink-600"
-        >
+        <span class="material-symbols-outlined text-[1.125rem]">
           arrow_back
         </span>
         {{ t('billing.backSettings') }}
@@ -233,22 +231,19 @@ onMounted(async () => {
             <li
               v-for="inv in billingInvoices"
               :key="inv.id"
-              class="group rounded-2xl border border-neutral-100 dark:border-neutral-700 bg-gradient-to-b from-white to-neutral-50/40 dark:from-neutral-900 dark:to-neutral-900 p-4 shadow-sm transition hover:border-pink-100/90 hover:shadow-md"
+              class="group rounded-2xl border border-neutral-100 dark:border-neutral-700 bg-gradient-to-b from-white to-neutral-50/40 dark:from-neutral-900 dark:to-neutral-900 p-4 shadow-sm transition hover:border-pink-100/90 dark:hover:border-pink-700/50 hover:shadow-md"
             >
               <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0 flex-1 space-y-2">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-sm font-bold tracking-tight text-neutral-900">
+                    <span class="text-sm font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                       {{ formatPlanName(inv.plan) }}
                     </span>
                     <span class="hidden text-neutral-300 sm:inline" aria-hidden="true">·</span>
-                    <span class="text-sm text-neutral-600">
+                    <span class="text-sm text-neutral-600 dark:text-neutral-300">
                       {{ formatBillingCycleLabel(inv.billing_cycle) }}
                     </span>
-                    <span
-                      class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize"
-                      :class="statusBadgeClasses(inv.status)"
-                    >
+                    <span class="capitalize" :class="statusBadgeClasses(inv.status)">
                       {{ inv.status }}
                     </span>
                     <span
@@ -267,14 +262,14 @@ onMounted(async () => {
                 </div>
 
                 <div class="flex shrink-0 flex-col items-stretch gap-3 sm:items-end sm:text-right">
-                  <p class="text-lg font-bold tabular-nums text-neutral-900 sm:text-xl">
+                  <p class="text-lg font-bold tabular-nums text-neutral-900 dark:text-neutral-100 sm:text-xl">
                     {{ invoiceAmountLabel(inv) }}
                   </p>
                   <div class="flex flex-wrap gap-2 sm:justify-end">
                     <template v-if="inv.status === 'approved'">
                       <button
                         type="button"
-                        class="inline-flex items-center justify-center gap-1.5 rounded-full border border-pink-200/90 bg-pink-50 px-4 py-2 text-xs font-semibold text-pink-800 transition hover:bg-pink-100 disabled:pointer-events-none disabled:opacity-50"
+                        class="app-btn app-btn-primary app-btn-sm text-xs disabled:pointer-events-none"
                         :disabled="receiptLoadingId === inv.id"
                         @click="viewReceipt(inv)"
                       >
@@ -293,9 +288,9 @@ onMounted(async () => {
                       :href="inv.checkout_url"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="inline-flex items-center justify-center gap-1.5 rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-800 shadow-sm transition hover:border-neutral-300 hover:bg-neutral-50"
+                      class="app-btn app-btn-secondary app-btn-sm text-xs"
                     >
-                      <span class="material-symbols-outlined text-[1rem] text-neutral-500">open_in_new</span>
+                      <span class="material-symbols-outlined text-[1rem]">open_in_new</span>
                       {{ t('settings.subscription.openCheckout') }}
                     </a>
                   </div>

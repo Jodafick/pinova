@@ -115,7 +115,7 @@ watch(currentLang, load, { immediate: true })
 
     <div
       v-if="loading"
-      class="rounded-3xl border border-neutral-100 bg-white p-8 shadow-sm animate-pulse space-y-6"
+      class="app-skeleton-wave app-card rounded-3xl p-8 animate-pulse space-y-6"
       aria-hidden="true"
     >
       <div class="h-28 rounded-2xl bg-neutral-100" />
@@ -126,13 +126,13 @@ watch(currentLang, load, { immediate: true })
 
     <div
       v-else-if="error"
-      class="rounded-3xl border border-red-200/90 bg-gradient-to-br from-red-50 to-white p-10 text-center shadow-sm"
+      class="app-card rounded-3xl p-10 text-center"
     >
       <span class="material-symbols-outlined text-red-400 text-[44px] mb-3 inline-block">cloud_off</span>
       <p class="text-red-900/90 font-medium text-sm">{{ t('faq.loadError') }}</p>
       <button
         type="button"
-        class="mt-5 inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-red-300/80 bg-white text-red-800 text-sm font-semibold hover:bg-red-50 transition-colors"
+        class="mt-5 app-btn app-btn-secondary border-red-300/80 dark:border-red-700/70 text-red-800 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm"
         @click="load()"
       >
         {{ t('legal.retry') }}
@@ -149,7 +149,7 @@ watch(currentLang, load, { immediate: true })
             v-for="card in legalCards"
             :key="card.slug"
             :to="legalHref(card.slug)"
-            class="group relative flex flex-col rounded-2xl border border-neutral-100/90 bg-gradient-to-br p-5 shadow-[0_16px_40px_-18px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.03] transition hover:shadow-lg hover:-translate-y-0.5"
+            class="app-card app-card-hover group relative flex flex-col rounded-2xl bg-gradient-to-br p-5 ring-1 ring-black/[0.03] transition hover:-translate-y-0.5"
             :class="[cardVisual(card.slug).gradient, cardVisual(card.slug).ring]"
           >
             <div class="flex items-start gap-3 mb-3">
@@ -160,7 +160,7 @@ watch(currentLang, load, { immediate: true })
                 <span class="material-symbols-outlined text-[22px]">{{ cardVisual(card.slug).icon }}</span>
               </div>
               <div class="min-w-0 flex-1">
-                <h3 class="font-bold text-neutral-900 text-sm leading-snug group-hover:text-pink-700 transition-colors">
+                <h3 class="font-bold text-neutral-900 dark:text-neutral-100 text-sm leading-snug group-hover:text-pink-700 transition-colors">
                   {{ card.title }}
                 </h3>
               </div>
@@ -171,7 +171,7 @@ watch(currentLang, load, { immediate: true })
                 chevron_right
               </span>
             </div>
-            <p class="text-xs text-neutral-600 leading-relaxed line-clamp-4 flex-1">
+            <p class="text-xs app-text-muted leading-relaxed line-clamp-4 flex-1">
               {{ card.excerpt }}
             </p>
             <p
@@ -189,7 +189,7 @@ watch(currentLang, load, { immediate: true })
           {{ t('faq.sectionQuestions') }}
         </h2>
 
-        <div v-if="!items.length" class="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/60 p-8 text-center text-sm text-neutral-600">
+        <div v-if="!items.length" class="app-card-soft rounded-2xl border-dashed p-8 text-center text-sm app-text-muted">
           {{ t('faq.empty') }}
         </div>
 
@@ -197,46 +197,57 @@ watch(currentLang, load, { immediate: true })
           <li
             v-for="row in items"
             :key="row.id"
-            class="rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden"
+            class="app-card rounded-2xl overflow-hidden transition-all duration-200"
+            :class="openId === row.id ? 'ring-1 ring-pink-300/80 dark:ring-pink-500/40 border-pink-200/80 dark:border-pink-700/60' : ''"
           >
             <button
               type="button"
-              class="w-full flex items-center gap-3 text-left px-4 py-4 sm:px-5 hover:bg-neutral-50/80 transition-colors"
+              class="app-list-item w-full flex items-center gap-3 text-left px-4 py-4 sm:px-5 transition-colors"
+              :class="openId === row.id ? 'is-active bg-pink-50/80 dark:bg-pink-950/30' : ''"
               :aria-expanded="openId === row.id"
               @click="toggle(row.id)"
             >
               <span
-                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-pink-600"
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-300 transition-colors"
                 aria-hidden="true"
               >
                 <span class="material-symbols-outlined text-[20px]">help</span>
               </span>
-              <span class="flex-1 min-w-0 font-semibold text-neutral-900 text-sm sm:text-[15px] leading-snug">
+              <span class="flex-1 min-w-0 font-semibold text-neutral-900 dark:text-neutral-100 text-sm sm:text-[15px] leading-snug">
                 {{ row.question }}
               </span>
               <span
-                class="material-symbols-outlined text-neutral-400 shrink-0 transition-transform duration-200"
-                :class="{ 'rotate-180': openId === row.id }"
+                class="material-symbols-outlined text-neutral-400 dark:text-neutral-500 shrink-0 transition-all duration-200"
+                :class="{ 'rotate-180 text-pink-600 dark:text-pink-300': openId === row.id }"
               >
                 expand_more
               </span>
             </button>
-            <div
-              v-show="openId === row.id"
-              class="px-4 pb-4 sm:px-5 sm:pb-5 pt-0 border-t border-neutral-100/80"
+            <Transition
+              enter-active-class="transition-all duration-200 ease-out"
+              enter-from-class="opacity-0 -translate-y-1"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition-all duration-150 ease-in"
+              leave-from-class="opacity-100 translate-y-0"
+              leave-to-class="opacity-0 -translate-y-1"
             >
-              <p class="text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap pt-4">
-                {{ row.answer }}
-              </p>
-              <router-link
-                v-if="row.related_legal_slug"
-                :to="legalHref(row.related_legal_slug)"
-                class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700"
+              <div
+                v-if="openId === row.id"
+                class="px-4 pb-4 sm:px-5 sm:pb-5 pt-0 border-t app-divider-subtle"
               >
-                {{ relatedLabel(row.related_legal_slug) }}
-                <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-              </router-link>
-            </div>
+                <p class="text-sm text-neutral-700 dark:text-neutral-200 leading-relaxed whitespace-pre-wrap pt-4">
+                  {{ row.answer }}
+                </p>
+                <router-link
+                  v-if="row.related_legal_slug"
+                  :to="legalHref(row.related_legal_slug)"
+                  class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700 dark:text-pink-300 dark:hover:text-pink-200 transition-colors"
+                >
+                  {{ relatedLabel(row.related_legal_slug) }}
+                  <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </router-link>
+              </div>
+            </Transition>
           </li>
         </ul>
       </section>

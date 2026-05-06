@@ -849,11 +849,11 @@ async function deletePinFromMenu() {
         <!-- Back button -->
         <button
           type="button"
-          class="group mb-8 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 dark:border-neutral-700 bg-white/90 dark:bg-neutral-900/85 px-3.5 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-200 shadow-sm backdrop-blur-sm transition hover:border-pink-300/80 dark:hover:border-pink-500/50 hover:bg-white dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white hover:shadow-md"
+          class="app-btn app-btn-secondary group mb-8 text-sm"
           :aria-label="t('pin.a11y.back')"
           @click="goBack"
         >
-          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-300 transition group-hover:text-pink-600">arrow_back</span>
+          <span class="material-symbols-outlined text-lg">arrow_back</span>
           {{ t('common.back') }}
         </button>
 
@@ -1057,7 +1057,7 @@ async function deletePinFromMenu() {
               <router-link
                 v-if="pin"
                 :to="`/profile/${pin.username}`"
-                class="flex items-center gap-3 hover:bg-neutral-50 p-2 rounded-xl transition-colors"
+                class="flex items-center gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 p-2 rounded-xl transition-colors"
               >
                 <AvatarDisc
                   :color="pin.userAvatarColor"
@@ -1069,7 +1069,7 @@ async function deletePinFromMenu() {
                   <span v-else class="avatar-text">{{ displayInitials(pin.user) }}</span>
                 </AvatarDisc>
                 <div>
-                  <p class="text-sm font-bold text-neutral-900">{{ pin.user }}</p>
+                  <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ pin.user }}</p>
                   <p class="text-xs text-neutral-500">{{ t('pin.followers', { count: formatCount(pin.authorFollowersCount ?? 0) }) }}</p>
                 </div>
               </router-link>
@@ -1108,7 +1108,7 @@ async function deletePinFromMenu() {
               <button
                 v-if="pin.isStory && isPinOwner"
                 type="button"
-                class="flex items-center gap-1.5 rounded-lg px-1 -mx-1 py-0.5 text-sm text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
+                class="flex items-center gap-1.5 rounded-lg px-1 -mx-1 py-0.5 text-sm text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
                 :aria-label="t('story.likers.openListAria', { count: pin.stats.reactions })"
                 @click="storyLikersOpen = true"
               >
@@ -1142,7 +1142,7 @@ async function deletePinFromMenu() {
                 v-for="board in pin.boards"
                 :key="board.id"
                 :to="`/profile/${board.ownerUsername || pin.username}/board/${board.id}`"
-                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-xs font-semibold text-purple-700 hover:bg-purple-100 transition"
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/35 text-xs font-semibold text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/45 transition"
               >
                 <span class="material-symbols-outlined text-sm" aria-hidden="true">dashboard</span>
                 {{ board.name }}
@@ -1153,7 +1153,7 @@ async function deletePinFromMenu() {
             <div class="flex-1">
               <div class="flex flex-col gap-3 mb-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
-                  <h3 class="font-semibold text-neutral-900 flex items-center gap-2">
+                  <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                     {{ t('pin.comments') }}
                     <span class="text-neutral-400 font-normal text-sm">({{ commentsTotalCount }})</span>
                   </h3>
@@ -1161,7 +1161,7 @@ async function deletePinFromMenu() {
                     <label v-if="isPinOwner" class="flex items-center gap-2 text-xs text-neutral-600">
                       <span class="whitespace-nowrap">{{ t('pin.comments.policyLabel') }}</span>
                       <select
-                        class="rounded-lg border border-neutral-200 px-2 py-1 text-xs font-medium bg-white max-w-[11rem]"
+                        class="rounded-lg border border-neutral-200 dark:border-neutral-700 px-2 py-1 text-xs font-medium bg-white dark:bg-neutral-900 max-w-[11rem]"
                         :value="pin.commentsPolicy || 'open'"
                         :disabled="commentsPolicySaving"
                         @change="handleCommentsPolicyChange"
@@ -1173,15 +1173,15 @@ async function deletePinFromMenu() {
                     </label>
                     <div class="flex items-center gap-1.5">
                       <button
-                        class="text-xs font-medium px-2 py-1 rounded-full border transition"
-                        :class="commentSort === 'recent' ? 'bg-pink-50 text-pink-600 border-pink-200' : 'text-neutral-500 border-neutral-200 hover:text-neutral-700'"
+                        class="app-btn app-btn-sm text-xs"
+                        :class="commentSort === 'recent' ? 'app-btn-primary' : 'app-btn-secondary'"
                         @click="setCommentSort('recent')"
                       >
                         {{ t('pin.comments.sortRecent') }}
                       </button>
                       <button
-                        class="text-xs font-medium px-2 py-1 rounded-full border transition"
-                        :class="commentSort === 'relevant' ? 'bg-pink-50 text-pink-600 border-pink-200' : 'text-neutral-500 border-neutral-200 hover:text-neutral-700'"
+                        class="app-btn app-btn-sm text-xs"
+                        :class="commentSort === 'relevant' ? 'app-btn-primary' : 'app-btn-secondary'"
                         @click="setCommentSort('relevant')"
                       >
                         {{ t('pin.comments.sortRelevant') }}
@@ -1256,7 +1256,7 @@ async function deletePinFromMenu() {
 
       <!-- Related pins -->
       <section v-if="relatedPins.length > 0 || pinsLoading" class="px-3 sm:px-6 lg:px-10 xl:px-16 pb-10">
-        <h2 class="text-xl font-bold text-neutral-900 mb-5">{{ t('pin.related') }}</h2>
+        <h2 class="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-5">{{ t('pin.related') }}</h2>
         <PinGrid
           :pins="relatedPins"
           :loading-initial="pinsLoading && relatedPins.length === 0"
@@ -1282,14 +1282,14 @@ async function deletePinFromMenu() {
         v-if="pinOwnerMenuOpen && isPinOwner && pin?.slug"
         ref="pinOwnerMenuPanelRef"
         role="menu"
-        class="lux-dropdown-panel"
+        class="app-floating-panel rounded-xl overflow-hidden"
         :style="pinOwnerMenuFloatingStyles"
         @pointerdown.stop
       >
         <button
           type="button"
           role="menuitem"
-          class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-pink-50/60 flex items-center gap-2 transition-colors"
+          class="app-menu-item w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 flex items-center gap-2 transition-colors"
           @click="goEditPinFromMenu"
         >
           <span class="material-symbols-outlined text-lg text-neutral-500" aria-hidden="true">edit</span>
@@ -1298,7 +1298,7 @@ async function deletePinFromMenu() {
         <button
           type="button"
           role="menuitem"
-          class="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50/90 flex items-center gap-2 transition-colors"
+          class="app-menu-item w-full px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-300 flex items-center gap-2 transition-colors"
           @click="deletePinFromMenu"
         >
           <span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>

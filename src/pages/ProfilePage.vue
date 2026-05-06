@@ -940,7 +940,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 </script>
 
 <template>
-  <div v-if="loading" class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+  <div v-if="loading" class="app-skeleton-wave max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <ProfileHeaderSkeleton />
     <PinGrid class="mt-4" :pins="[]" loading-initial />
   </div>
@@ -1032,15 +1032,15 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         <template v-if="isMyProfile">
           <router-link
             to="/settings"
-            class="px-5 py-2.5 rounded-full bg-neutral-100 text-sm font-semibold text-neutral-800 hover:bg-neutral-200 transition"
+            class="app-btn app-btn-secondary text-sm"
           >
             {{ t('profile.editProfile') }}
           </router-link>
         </template>
         <template v-else>
           <button
-            class="px-6 py-2.5 rounded-full text-sm font-semibold transition"
-            :class="isFollowing ? 'bg-neutral-900 text-white hover:bg-neutral-800' : 'bg-pink-600 text-white hover:bg-pink-700'"
+            class="app-btn text-sm"
+            :class="isFollowing ? 'app-btn-secondary' : 'app-btn-primary'"
             :disabled="followingProfilePending"
             @click="handleFollow"
           >
@@ -1051,24 +1051,24 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         <router-link
           v-if="isMyProfile"
           to="/premium"
-          class="px-5 py-2.5 rounded-full bg-amber-50 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition inline-flex items-center gap-1.5"
+          class="app-btn app-btn-secondary text-sm inline-flex items-center gap-1.5 border-amber-300 text-amber-700 dark:text-amber-300"
         >
           <span class="material-symbols-outlined text-base">workspace_premium</span>
           Plan {{ currentPlanLabel }}
         </router-link>
         <button
           type="button"
-          class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition"
+          class="app-btn app-btn-ghost app-btn-icon"
           :title="t('profile.share.profileTitle')"
           @click="handleShareProfile"
         >
-          <span class="material-symbols-outlined text-neutral-600">share</span>
+          <span class="material-symbols-outlined">share</span>
         </button>
         <div v-if="currentUser && !isMyProfile && profileUser" class="relative flex items-center">
           <button
             ref="profileMoreMenuTriggerRef"
             type="button"
-            class="w-9 h-9 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition"
+            class="app-btn app-btn-ghost app-btn-icon !w-9 !min-w-9 !h-9"
             :aria-expanded="profileMoreMenuOpen"
             :aria-label="t('profile.moreAriaLabel')"
             @click.stop="profileMoreMenuOpen = !profileMoreMenuOpen"
@@ -1084,7 +1084,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
       <div
         v-if="isMyProfile && boardSuggestions && (boardSuggestions.new_board_hints?.length || boardSuggestions.existing_boards?.length)"
-        class="mb-4 rounded-2xl border border-neutral-100 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4"
+        class="app-card mb-4 rounded-2xl p-4"
       >
         <p class="text-xs font-semibold text-neutral-800 mb-2">{{ t('profile.boards.suggestionsTitle') }}</p>
         <div v-if="boardSuggestions.new_board_hints?.length" class="mb-3">
@@ -1094,7 +1094,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               v-for="hint in boardSuggestions.new_board_hints"
               :key="hint.topic_slug + hint.name"
               type="button"
-              class="px-3 py-1 rounded-full text-xs bg-pink-50 text-pink-700 border border-pink-100 hover:bg-pink-100"
+              class="app-btn app-btn-sm app-btn-secondary text-xs border-pink-300 text-pink-700 dark:text-pink-300"
               @click="applyBoardSuggestionName(hint.name)"
             >
               + {{ hint.name }}
@@ -1107,7 +1107,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             <span
               v-for="b in boardSuggestions.existing_boards"
               :key="b.id"
-              class="text-xs px-2 py-1 rounded-lg bg-neutral-100 text-neutral-600"
+              class="text-xs px-2 py-1 rounded-lg app-card-soft app-text-muted"
             >
               {{ b.name }} · {{ b.overlap_score }}
             </span>
@@ -1117,7 +1117,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
       <div
         v-if="isMyProfile && (pendingInvitesLoading || pendingBoardInvites.length > 0)"
-        class="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4"
+        class="app-card mb-4 rounded-2xl p-4 border-emerald-300/70"
       >
         <p class="text-sm font-semibold text-neutral-900 mb-3">{{ t('profile.boards.pendingInvitesTitle') }}</p>
         <div v-if="pendingInvitesLoading" class="pt-1">
@@ -1127,7 +1127,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           <li
             v-for="inv in pendingBoardInvites"
             :key="inv.id"
-            class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-700 px-3 py-2"
+            class="app-card-soft flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 py-2"
           >
             <div class="min-w-0">
               <p class="text-sm font-medium text-neutral-900 truncate">{{ inv.board_name }}</p>
@@ -1166,7 +1166,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         <div
           v-for="board in boards"
           :key="board.id"
-          class="group relative bg-neutral-200 rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer hover:shadow-md transition ring-1 ring-black/5"
+          class="app-card app-card-hover group relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer transition ring-1 ring-black/5"
           role="button"
           tabindex="0"
           @click="goToBoard(board)"
@@ -1190,7 +1190,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               <span class="material-symbols-outlined text-4xl">collections</span>
             </div>
           </div>
-          <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-neutral-900/72 via-neutral-900/12 to-transparent pointer-events-none"></div>
           <div class="absolute bottom-0 left-0 right-0 p-4 text-white pointer-events-none">
             <p class="font-semibold text-sm drop-shadow-sm">{{ board.name }}</p>
             <p class="text-xs opacity-90">{{ t('explore.pinsCount', { count: board.pinCount }) }}</p>
@@ -1207,14 +1207,14 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           >
             <span
               v-if="board.isPrivate"
-              class="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white shadow-md"
+              class="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-900/55 dark:bg-neutral-800/75 text-white shadow-md"
               :title="t('board.private')"
             >
               <span class="material-symbols-outlined text-base">lock</span>
             </span>
             <button
               type="button"
-              class="w-9 h-9 rounded-full bg-white/95 shadow-md flex items-center justify-center text-neutral-700 hover:bg-white"
+              class="app-btn app-btn-secondary app-btn-icon !w-9 !min-w-9 !h-9"
               :title="t('profile.share.boardTitle')"
               @click.stop="shareBoardLink(board)"
             >
@@ -1224,7 +1224,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           <button
             v-if="isMyProfile && board.isOwner !== false"
             type="button"
-            class="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-white/95 shadow-md flex items-center justify-center text-neutral-700 hover:bg-white"
+            class="app-btn app-btn-secondary app-btn-icon absolute bottom-3 right-3 z-10 !w-9 !min-w-9 !h-9"
             :title="t('profile.boards.reorganize')"
             @click.stop="openOrganizeBoard(board.id)"
           >
@@ -1232,7 +1232,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           </button>
           <button
             v-if="isMyProfile && currentPlan !== 'free' && board.isOwner !== false"
-            class="absolute top-3 left-3 px-2 py-1 rounded-full bg-white/90 text-[10px] font-bold text-neutral-700 hover:bg-white z-10"
+            class="app-btn app-btn-secondary app-btn-sm absolute top-3 left-3 text-[10px] font-bold z-10"
             @click.stop="handleInviteCollaborator(board.id)"
           >
             + Collab
@@ -1242,7 +1242,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         <!-- Create new board -->
         <button
           v-if="isMyProfile"
-          class="bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-2xl aspect-[4/3] flex flex-col items-center justify-center gap-2 text-neutral-500 hover:border-pink-300 hover:text-pink-500 transition"
+          class="app-card-soft border-2 border-dashed rounded-2xl aspect-[4/3] flex flex-col items-center justify-center gap-2 app-text-muted hover:border-pink-300 hover:text-pink-500 transition"
           @click="showCreateBoard = true"
         >
           <span class="material-symbols-outlined text-3xl">add</span>
@@ -1253,8 +1253,8 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
     <!-- Réorganiser pins du board -->
     <div v-if="organizeBoardId !== null" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
-      <div class="bg-white dark:bg-neutral-900 rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
-        <div class="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
+      <div class="app-modal-surface rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+        <div class="px-5 py-4 border-b app-divider-subtle flex items-center justify-between">
           <h3 class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ t('profile.boards.organizeTitle') }}</h3>
           <button type="button" class="text-neutral-500 hover:text-neutral-800" @click="closeOrganizeBoard">
             <span class="material-symbols-outlined">close</span>
@@ -1270,7 +1270,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               v-for="(p, idx) in organizePins"
               :key="p.id"
               draggable="true"
-              class="flex items-center gap-3 p-2 rounded-xl border border-neutral-100 bg-neutral-50 cursor-grab active:cursor-grabbing"
+              class="app-card-soft flex items-center gap-3 p-2 rounded-xl cursor-grab active:cursor-grabbing"
               @dragstart="onOrganizeDragStart(idx)"
               @dragover="onOrganizeDragOver($event)"
               @drop.prevent="onOrganizeDrop(idx)"
@@ -1284,7 +1284,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             </li>
           </ul>
         </div>
-        <div class="px-5 py-4 border-t border-neutral-100 flex gap-2 justify-end">
+        <div class="px-5 py-4 border-t app-divider-subtle flex gap-2 justify-end">
           <button type="button" class="px-4 py-2 rounded-full text-sm font-semibold bg-neutral-100 text-neutral-800" @click="closeOrganizeBoard">
             {{ t('profile.boards.organizeClose') }}
           </button>
@@ -1342,8 +1342,8 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     </section>
 
     <!-- Create Board Modal -->
-    <div v-if="showCreateBoard" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
-      <div class="bg-white dark:bg-neutral-900 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl">
+    <div v-if="showCreateBoard" class="fixed inset-0 z-50 flex items-center justify-center px-4 app-modal-backdrop">
+      <div class="app-modal-surface rounded-3xl w-full max-w-md p-6 sm:p-8">
         <h3 class="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">{{ t('profile.boards.modal.title') }}</h3>
         <div class="space-y-5">
           <div>
@@ -1372,13 +1372,13 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           </p>
           <div class="flex gap-3 pt-4">
             <button
-              class="flex-1 px-4 py-2.5 rounded-full bg-neutral-100 text-sm font-bold text-neutral-800 hover:bg-neutral-200 transition"
+              class="app-btn app-btn-secondary flex-1 text-sm"
               @click="showCreateBoard = false"
             >
               {{ t('common.cancel') }}
             </button>
             <button
-              class="flex-1 px-4 py-2.5 rounded-full bg-pink-600 text-sm font-bold text-white hover:bg-pink-700 disabled:opacity-50 transition"
+              class="app-btn app-btn-primary flex-1 text-sm"
               :disabled="!canSubmitBoardCreation"
               @click="handleCreateBoard"
             >
@@ -1389,13 +1389,13 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </div>
     </div>
 
-    <div v-if="showFollowersModal || showFollowingModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50">
-      <div class="bg-white dark:bg-neutral-900 rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
+      <div v-if="showFollowersModal || showFollowingModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 app-modal-backdrop">
+      <div class="app-modal-surface rounded-2xl w-full max-w-md overflow-hidden">
         <div class="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <h3 class="font-semibold text-neutral-900 dark:text-neutral-100">
             {{ showFollowersModal ? t('profile.followers') : t('profile.following') }}
           </h3>
-          <button class="text-neutral-500 hover:text-neutral-700" @click="showFollowersModal = false; showFollowingModal = false">
+          <button class="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200" @click="showFollowersModal = false; showFollowingModal = false">
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -1410,7 +1410,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             <button
               v-for="item in relationItems"
               :key="item.username"
-              class="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-50 text-left"
+              class="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-left transition-colors"
               @click="showFollowersModal = false; showFollowingModal = false; router.push(`/profile/${item.username}`)"
             >
               <AvatarDisc
@@ -1423,7 +1423,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
                 <span v-else class="avatar-text">{{ displayInitials(item.display_name) }}</span>
               </AvatarDisc>
               <div class="min-w-0">
-                <p class="text-sm text-neutral-900 truncate flex items-center gap-1">
+                <p class="text-sm text-neutral-900 dark:text-neutral-100 truncate flex items-center gap-1">
                   <span v-if="item.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>
                   {{ item.display_name }}
                 </p>
@@ -1440,8 +1440,8 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       <button
         class="px-6 py-3 text-sm font-semibold transition-colors border-b-2"
         :class="activeTab === 'created'
-          ? 'border-neutral-900 text-neutral-900'
-          : 'border-transparent text-neutral-500 hover:text-neutral-700'"
+          ? 'border-neutral-900 dark:border-neutral-200 text-neutral-900 dark:text-neutral-100'
+          : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'"
         @click="activeTab = 'created'"
       >
         {{ t('profile.tab.created') }}
@@ -1450,8 +1450,8 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         v-if="isMyProfile"
         class="px-6 py-3 text-sm font-semibold transition-colors border-b-2"
         :class="activeTab === 'saved'
-          ? 'border-neutral-900 text-neutral-900'
-          : 'border-transparent text-neutral-500 hover:text-neutral-700'"
+          ? 'border-neutral-900 dark:border-neutral-200 text-neutral-900 dark:text-neutral-100'
+          : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'"
         @click="activeTab = 'saved'"
       >
         {{ t('profile.tab.saved') }}
@@ -1515,7 +1515,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         v-if="profileMoreMenuOpen && profileUser"
         ref="profileMoreMenuPanelRef"
         role="menu"
-        class="fixed z-[120] w-[min(220px,calc(100vw-1rem))] rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl py-1"
+        class="app-floating-panel fixed z-[120] w-[min(220px,calc(100vw-1rem))] rounded-xl py-1"
         :style="profileMoreMenuFloatingStyles"
         @pointerdown.stop
       >
@@ -1523,7 +1523,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           v-if="!profileUser.viewerHasReportedProfile"
           type="button"
           role="menuitem"
-          class="w-full px-3 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+          class="w-full px-3 py-2.5 text-left text-sm app-btn app-btn-ghost justify-start border-0 rounded-none"
           @click="profileMoreMenuOpen = false; reportProfileOpen = true"
         >
           {{ t('profile.moreReport') }}
@@ -1535,7 +1535,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           v-if="!isTargetBlocked"
           type="button"
           role="menuitem"
-          class="w-full px-3 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+          class="w-full px-3 py-2.5 text-left text-sm app-btn app-btn-ghost justify-start border-0 rounded-none"
           :disabled="blockProfilePending"
           @click="handleBlockProfile"
         >

@@ -6,7 +6,7 @@ const { t } = useI18n()
 
 <template>
   <div
-    class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12"
+    class="app-skeleton-wave max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12"
     role="status"
     :aria-label="t('pin.edit.loadingSkeleton')"
   >

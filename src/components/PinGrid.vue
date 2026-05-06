@@ -252,7 +252,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="pin-grid-scope" aria-labelledby="pin-feed-grid-heading" :aria-busy="gridBusy || undefined">
+  <section class="pin-grid-scope app-skeleton-wave" aria-labelledby="pin-feed-grid-heading" :aria-busy="gridBusy || undefined">
     <h2 id="pin-feed-grid-heading" class="sr-only">{{ t('feed.pinsGridHeading') }}</h2>
     <div class="flex gap-3 sm:gap-4 items-start">
     <div
@@ -377,7 +377,7 @@ onUnmounted(() => {
               v-if="cell.pin.link"
               :href="cell.pin.link.startsWith('http') ? cell.pin.link : 'https://' + cell.pin.link"
               target="_blank"
-              class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/92 backdrop-blur-md text-xs font-semibold text-neutral-800 shadow-xl shadow-black/10 ring-1 ring-white/60 hover:bg-white max-w-[60%] truncate transition"
+              class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/92 dark:bg-neutral-900/92 backdrop-blur-md text-xs font-semibold text-neutral-800 dark:text-neutral-100 shadow-xl shadow-black/10 ring-1 ring-white/60 dark:ring-neutral-700/80 hover:bg-white dark:hover:bg-neutral-800 max-w-[60%] truncate transition"
               @click.stop
             >
               <span class="material-symbols-outlined text-sm">link</span>
@@ -387,18 +387,6 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Pin info below image -->
-        <div class="px-1 pt-2 pb-2.5 bg-transparent">
-          <p v-if="cell.pin.title" class="text-sm font-semibold leading-snug line-clamp-2 text-neutral-950 dark:text-neutral-100 tracking-tight">
-            {{ cell.pin.title }}
-          </p>
-          <p
-            v-if="cell.pin.description"
-            class="mt-1 text-xs leading-relaxed line-clamp-2 text-neutral-600 dark:text-neutral-400"
-          >
-            {{ cell.pin.description }}
-          </p>
-        </div>
       </article>
 
       <!-- Placeholder masonry : même shell que les cartes pour suivre les colonnes. -->
@@ -407,12 +395,8 @@ onUnmounted(() => {
         class="lux-pin-skeleton-card"
         aria-hidden="true"
       >
-        <div class="relative overflow-hidden rounded-3xl bg-neutral-100 min-h-[140px]">
-          <div class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200" />
-        </div>
-        <div class="px-1 pt-2 pb-2.5 space-y-2">
-          <div class="h-[15px] w-5/6 max-w-[90%] rounded-md bg-neutral-200 animate-pulse" />
-          <div class="h-3 w-[82%] max-w-[11rem] rounded-md bg-neutral-200/90 animate-pulse" />
+        <div class="relative overflow-hidden rounded-3xl bg-neutral-100 dark:bg-neutral-900/80 min-h-[140px]">
+          <div class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200 dark:from-neutral-800 dark:via-neutral-900 dark:to-neutral-800" />
         </div>
       </div>
       </template>

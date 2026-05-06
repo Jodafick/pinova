@@ -170,16 +170,6 @@ watch(
   { immediate: true },
 )
 
-watch(
-  () => currentUser.value?.subscription?.activeBillingCycle,
-  (cycle) => {
-    const sub = currentUser.value?.subscription
-    if (!sub || sub.plan === 'free' || sub.isSeatMember) return
-    if (cycle === 'monthly' || cycle === 'yearly') billingCycle.value = cycle
-  },
-  { immediate: true },
-)
-
 const handleStartTrial = async () => {
   if (!isAuthenticated.value) {
     router.push('/login')
@@ -221,7 +211,7 @@ const plans = computed(() => [
     currencyIso: readCycle('free', 'monthly')?.currency_iso || readCycle('free', 'yearly')?.currency_iso || null,
     isPriceReady: !!(readCycle('free', 'monthly') && readCycle('free', 'yearly')),
     badge: null,
-    color: 'border-neutral-200',
+    color: 'border-neutral-200 dark:border-neutral-700',
     cta: currentPlanId.value === 'free' ? t('premium.plan.free.cta') : t('premium.plan.free.name'),
     tierLocked: false,
     features: [
@@ -246,7 +236,7 @@ const plans = computed(() => [
     currencyIso: readCycle('plus', 'monthly')?.currency_iso || readCycle('plus', 'yearly')?.currency_iso || null,
     isPriceReady: !!(readCycle('plus', 'monthly') && readCycle('plus', 'yearly')),
     badge: t('premium.plan.plus.badge'),
-    color: 'border-pink-500 ring-4 ring-pink-100',
+    color: 'border-pink-500 dark:border-pink-500/80 ring-4 ring-pink-100 dark:ring-pink-500/25',
     cta:
       currentPlanId.value === 'plus'
         ? paidTierFullyMatchesSelection('plus')
@@ -277,7 +267,7 @@ const plans = computed(() => [
     currencyIso: readCycle('pro', 'monthly')?.currency_iso || readCycle('pro', 'yearly')?.currency_iso || null,
     isPriceReady: !!(readCycle('pro', 'monthly') && readCycle('pro', 'yearly')),
     badge: t('premium.plan.pro.badge'),
-    color: 'border-amber-400',
+    color: 'border-amber-400 dark:border-amber-500/70',
     cta:
       currentPlanId.value === 'pro'
         ? paidTierFullyMatchesSelection('pro')
@@ -607,7 +597,7 @@ onUnmounted(() => {
       <div
         v-for="plan in plans"
         :key="plan.id"
-        class="bg-white rounded-3xl border-2 p-6 relative transition-all"
+        class="app-card rounded-3xl border-2 p-6 relative transition-all"
         :class="plan.color"
       >
         <!-- Badge -->
@@ -619,26 +609,26 @@ onUnmounted(() => {
           {{ plan.badge }}
         </div>
 
-        <h3 class="text-xl font-bold text-neutral-900">{{ plan.name }}</h3>
-        <p class="text-sm text-neutral-500 mt-1 mb-5">{{ plan.tagline }}</p>
+        <h3 class="text-xl font-bold text-neutral-900 dark:text-neutral-100">{{ plan.name }}</h3>
+        <p class="text-sm text-neutral-500 dark:text-neutral-300 mt-1 mb-5">{{ plan.tagline }}</p>
 
         <div class="flex items-baseline gap-1 mb-1">
           <template v-if="pricingLoading || !plan.isPriceReady">
-            <span class="inline-block h-10 w-full rounded-xl bg-neutral-200 animate-pulse"></span>
+            <span class="app-skeleton-wave inline-block h-10 w-full rounded-xl bg-neutral-200 animate-pulse"></span>
           </template>
           <template v-else>
-            <span class="text-4xl font-bold text-neutral-900">
+            <span class="text-4xl font-bold text-neutral-900 dark:text-neutral-100">
               {{ billingCycle === 'monthly' ? formatCurrency(Number(plan.monthly), String(plan.currencyIso)) : monthlyDisplayFromYearly(Number(plan.yearly), String(plan.currencyIso)) }}
             </span>
-            <span class="text-sm text-neutral-500">{{ t('premium.priceUnit') }}</span>
+            <span class="text-sm text-neutral-500 dark:text-neutral-300">{{ t('premium.priceUnit') }}</span>
           </template>
         </div>
-        <p class="text-xs text-neutral-400 mb-5 min-h-[2.5rem]">
+        <p class="text-xs text-neutral-400 dark:text-neutral-500 mb-5 min-h-[2.5rem]">
           <template v-if="!pricingLoading && plan.isPriceReady && Number(plan.yearly) > 0 && billingCycle === 'yearly'">
             <span class="block">{{ t('premium.yearlyBilled', { amount: formatCurrency(Number(plan.yearly), String(plan.currencyIso)) }) }}</span>
             <span
               v-if="yearlySavingsText(plan.id, String(plan.currencyIso))"
-              class="block text-emerald-700 font-medium mt-0.5"
+              class="block text-emerald-700 dark:text-emerald-300 font-medium mt-0.5"
             >{{ yearlySavingsText(plan.id, String(plan.currencyIso)) }}</span>
           </template>
         </p>
@@ -649,7 +639,7 @@ onUnmounted(() => {
             ? 'bg-pink-600 text-white hover:bg-pink-700'
             : plan.id === 'pro'
               ? 'bg-neutral-900 text-white hover:bg-neutral-800'
-              : 'bg-neutral-100 text-neutral-500 cursor-not-allowed'"
+              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 cursor-not-allowed'"
           :disabled="pricingLoading || !plan.isPriceReady || plan.tierLocked || checkoutPendingPlan === plan.id"
           @click="handleCheckout(plan.id)"
         >
@@ -662,11 +652,11 @@ onUnmounted(() => {
             v-for="(feature, i) in plan.features"
             :key="i"
             class="flex items-start gap-2 text-sm"
-            :class="feature.included ? 'text-neutral-700' : 'text-neutral-300'"
+            :class="feature.included ? 'text-neutral-700 dark:text-neutral-200' : 'text-neutral-300 dark:text-neutral-600'"
           >
             <span
               class="material-symbols-outlined text-base mt-0.5 shrink-0"
-              :class="feature.included ? 'text-emerald-500' : 'text-neutral-300'"
+              :class="feature.included ? 'text-emerald-500 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'"
             >{{ feature.included ? 'check_circle' : 'cancel' }}</span>
             <span>{{ feature.label }}</span>
           </li>
@@ -675,33 +665,33 @@ onUnmounted(() => {
     </div>
 
     <!-- Trust banner -->
-    <div class="bg-gradient-to-br from-emerald-50 via-white to-blue-50 border border-emerald-100 rounded-3xl p-6 sm:p-10 mb-16">
+    <div class="app-card rounded-3xl p-6 sm:p-10 mb-16">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="flex items-start gap-3">
-          <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-emerald-600">block</span>
+        <div class="app-card-soft rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+          <div class="w-11 h-11 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/22 ring-1 ring-emerald-300/55 dark:ring-emerald-500/45 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-emerald-700 dark:text-emerald-300">block</span>
           </div>
           <div>
-            <p class="text-sm font-bold text-neutral-900">{{ t('premium.trust.planLimits') }}</p>
-            <p class="text-xs text-neutral-500 mt-1">{{ t('premium.trust.planLimits.desc') }}</p>
+            <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trust.planLimits') }}</p>
+            <p class="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{{ t('premium.trust.planLimits.desc') }}</p>
           </div>
         </div>
-        <div class="flex items-start gap-3">
-          <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-blue-600">shield</span>
+        <div class="app-card-soft rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+          <div class="w-11 h-11 rounded-xl bg-blue-500/15 dark:bg-blue-500/22 ring-1 ring-blue-300/55 dark:ring-blue-500/45 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-blue-700 dark:text-blue-300">shield</span>
           </div>
           <div>
-            <p class="text-sm font-bold text-neutral-900">{{ t('premium.trust.noTracking') }}</p>
-            <p class="text-xs text-neutral-500 mt-1">{{ t('premium.trust.noTracking.desc') }}</p>
+            <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trust.noTracking') }}</p>
+            <p class="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{{ t('premium.trust.noTracking.desc') }}</p>
           </div>
         </div>
-        <div class="flex items-start gap-3">
-          <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-pink-600">favorite</span>
+        <div class="app-card-soft rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+          <div class="w-11 h-11 rounded-xl bg-pink-500/15 dark:bg-pink-500/22 ring-1 ring-pink-300/55 dark:ring-pink-500/45 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-pink-700 dark:text-pink-300">favorite</span>
           </div>
           <div>
-            <p class="text-sm font-bold text-neutral-900">{{ t('premium.trust.creators') }}</p>
-            <p class="text-xs text-neutral-500 mt-1">{{ t('premium.trust.creators.desc') }}</p>
+            <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trust.creators') }}</p>
+            <p class="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{{ t('premium.trust.creators.desc') }}</p>
           </div>
         </div>
       </div>
@@ -711,26 +701,26 @@ onUnmounted(() => {
     <div>
       <div class="max-w-2xl mx-auto mb-6 flex items-center justify-between gap-3">
         <button
-          class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
+          class="app-btn app-btn-secondary app-btn-sm text-xs"
           :disabled="confirmPending"
           @click="confirmPendingPaymentFromButton"
         >
           {{ confirmPending ? t('premium.payment.checking') : t('premium.payment.confirmCta') }}
         </button>
-        <p v-if="paymentInfoMessage" class="text-xs text-neutral-600">{{ paymentInfoMessage }}</p>
+        <p v-if="paymentInfoMessage" class="text-xs text-neutral-600 dark:text-neutral-300">{{ paymentInfoMessage }}</p>
       </div>
-      <h2 class="text-2xl font-bold text-neutral-900 mb-6 text-center">{{ t('premium.faq.title') }}</h2>
+      <h2 class="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-6 text-center">{{ t('premium.faq.title') }}</h2>
       <div class="max-w-2xl mx-auto space-y-3">
         <details
           v-for="(faq, i) in faqs"
           :key="i"
-          class="bg-white rounded-2xl border border-neutral-100 group"
+          class="app-card rounded-2xl group"
         >
-          <summary class="px-5 py-4 cursor-pointer flex items-center justify-between text-sm font-semibold text-neutral-900">
+          <summary class="px-5 py-4 cursor-pointer flex items-center justify-between text-sm font-semibold text-neutral-900 dark:text-neutral-100">
             {{ faq.q }}
             <span class="material-symbols-outlined text-neutral-400 group-open:rotate-180 transition-transform">expand_more</span>
           </summary>
-          <div class="px-5 pb-4 text-sm text-neutral-600 leading-relaxed">
+          <div class="px-5 pb-4 text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
             {{ faq.a }}
           </div>
         </details>

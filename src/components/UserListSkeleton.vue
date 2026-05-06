@@ -11,7 +11,7 @@ withDefaults(
 </script>
 
 <template>
-  <div :class="divided ? 'divide-y divide-neutral-100' : 'space-y-3'" aria-hidden="true">
+  <div :class="['app-skeleton-wave', divided ? 'divide-y divide-neutral-100' : 'space-y-3']" aria-hidden="true">
     <div
       v-for="i in rows"
       :key="i"

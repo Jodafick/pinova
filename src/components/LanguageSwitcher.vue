@@ -61,7 +61,7 @@ function toggle() {
   <div ref="anchorRef" class="relative shrink-0">
     <button
       type="button"
-      class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-100 text-neutral-600 transition relative"
+      class="app-btn app-btn-ghost app-btn-icon !w-9 !min-w-9 !h-9 relative"
       :title="`${t('lang.title')} : ${currentLangMeta.label}`"
       @click.stop="toggle()"
     >
@@ -73,12 +73,12 @@ function toggle() {
       <div
         v-if="open"
         ref="floatingRef"
-        class="rounded-2xl shadow-xl border border-neutral-100 overflow-hidden bg-white w-72 max-w-[calc(100vw-1rem)] z-[115]"
+        class="app-floating-panel rounded-2xl overflow-hidden w-72 max-w-[calc(100vw-1rem)] z-[115]"
         :style="{ ...floatingStyles, zIndex: 115 }"
       >
-        <div class="px-4 py-3 border-b border-neutral-100">
-          <h3 class="font-semibold text-neutral-900 text-sm">{{ t('lang.title') }}</h3>
-          <p class="text-xs text-neutral-500 mt-0.5">{{ t('lang.description') }}</p>
+        <div class="px-4 py-3 border-b border-neutral-200/70 dark:border-neutral-700/80">
+          <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 text-sm">{{ t('lang.title') }}</h3>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('lang.description') }}</p>
         </div>
 
         <div class="max-h-80 overflow-y-auto py-1">
@@ -86,11 +86,11 @@ function toggle() {
             v-for="lang in languages"
             :key="lang.code"
             type="button"
-            class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 transition text-sm"
+            class="app-menu-item w-full flex items-center gap-3 px-4 py-2.5 transition text-sm"
             :class="
               currentLangMeta.code === lang.code
-                ? 'text-pink-600 font-semibold bg-pink-50/50'
-                : 'text-neutral-700'
+                ? 'is-active text-pink-600 dark:text-pink-300 font-semibold'
+                : 'text-neutral-700 dark:text-neutral-200'
             "
             @click="select(lang.code)"
           >

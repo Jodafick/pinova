@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 animate-pulse" aria-hidden="true">
+  <div class="app-skeleton-wave grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 animate-pulse" aria-hidden="true">
     <div
       v-for="i in 5"
       :key="i"

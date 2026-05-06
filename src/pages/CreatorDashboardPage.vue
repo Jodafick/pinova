@@ -373,13 +373,14 @@ onMounted(async () => {
           <router-link
             to="/create"
             class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold
-                   bg-neutral-950 dark:bg-white
-                   text-white dark:text-neutral-950
-                   shadow-lg shadow-neutral-950/20 dark:shadow-white/10
-                   hover:bg-neutral-800 dark:hover:bg-neutral-100
+                   bg-white dark:bg-neutral-900
+                   text-neutral-900 dark:text-neutral-100
+                   border border-neutral-200 dark:border-neutral-700
+                   shadow-sm shadow-neutral-900/10 dark:shadow-black/30
+                   hover:bg-neutral-50 dark:hover:bg-neutral-800
                    transition-colors
                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
-                   focus-visible:outline-neutral-950 dark:focus-visible:outline-white"
+                   focus-visible:outline-pink-500"
           >
             <span class="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>
             {{ t('nav.create') }}
@@ -481,31 +482,31 @@ onMounted(async () => {
             </span>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
             <template v-for="item in kpis" :key="item.key">
 
               <!-- Pins → link to profile -->
               <router-link
                 v-if="item.key === 'pins' && currentUser?.username"
                 :to="{ path: `/profile/${encodeURIComponent(currentUser.username)}` }"
-                class="group rounded-2xl border p-4 sm:p-5
-                       flex gap-3 sm:flex-col sm:items-stretch lg:flex-row lg:items-center lg:gap-4
+                class="group rounded-2xl border p-4 sm:p-5 min-h-[9.5rem]
+                       flex flex-col items-start gap-4
                        ring-4 transition-all duration-200
                        hover:shadow-lg hover:-translate-y-0.5
                        bg-gradient-to-br no-underline text-inherit
                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
               >
-                <div class="flex items-center justify-center w-full">
+                <div class="flex items-center justify-start w-full">
                   <span
                     class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
                     :class="[item.iconWrap, item.darkIconWrap]"
                     aria-hidden="true"
                   >{{ item.icon }}</span>
                 </div>
-                <div class="min-w-0 flex-1 sm:text-center lg:text-left">
+                <div class="min-w-0 flex-1 w-full">
                   <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
-                             text-neutral-500 dark:text-neutral-400 mb-0.5 lg:mb-1">
+                             text-neutral-500 dark:text-neutral-400 mb-1">
                     {{ item.label }}
                   </p>
                   <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold
@@ -519,22 +520,22 @@ onMounted(async () => {
               <button
                 v-else-if="item.key === 'pins'"
                 type="button"
-                class="group rounded-2xl border p-4 sm:p-5
-                       flex gap-3 sm:flex-col sm:items-stretch lg:flex-row lg:items-center lg:gap-4
+                class="group rounded-2xl border p-4 sm:p-5 min-h-[9.5rem]
+                       flex flex-col items-start gap-4
                        ring-4 bg-gradient-to-br text-left text-inherit opacity-50 cursor-not-allowed"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
                 disabled
               >
-                <div class="flex items-center justify-center w-full">
+                <div class="flex items-center justify-start w-full">
                   <span
                     class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
                     :class="[item.iconWrap, item.darkIconWrap]"
                     aria-hidden="true"
                   >{{ item.icon }}</span>
                 </div>
-                <div class="min-w-0 flex-1 sm:text-center lg:text-left">
+                <div class="min-w-0 flex-1 w-full">
                   <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
-                             text-neutral-500 dark:text-neutral-400 mb-0.5 lg:mb-1">
+                             text-neutral-500 dark:text-neutral-400 mb-1">
                     {{ item.label }}
                   </p>
                   <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold
@@ -548,8 +549,8 @@ onMounted(async () => {
               <button
                 v-else
                 type="button"
-                class="group rounded-2xl border p-4 sm:p-5
-                       flex gap-3 sm:flex-col sm:items-stretch lg:flex-row lg:items-center lg:gap-4
+                class="group rounded-2xl border p-4 sm:p-5 min-h-[9.5rem]
+                       flex flex-col items-start gap-4
                        ring-4 transition-all duration-200
                        hover:shadow-lg hover:-translate-y-0.5
                        bg-gradient-to-br text-left text-inherit
@@ -558,16 +559,16 @@ onMounted(async () => {
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
                 @click="openAudiencePanel(item.key)"
               >
-                <div class="flex items-center justify-center w-full">
+                <div class="flex items-center justify-start w-full">
                   <span
                     class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl flex items-center justify-center text-[22px]"
                     :class="[item.iconWrap, item.darkIconWrap]"
                     aria-hidden="true"
                   >{{ item.icon }}</span>
                 </div>
-                <div class="min-w-0 flex-1 sm:text-center lg:text-left">
+                <div class="min-w-0 flex-1 w-full">
                   <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
-                             text-neutral-500 dark:text-neutral-400 mb-0.5 lg:mb-1">
+                             text-neutral-500 dark:text-neutral-400 mb-1">
                     {{ item.label }}
                   </p>
                   <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold

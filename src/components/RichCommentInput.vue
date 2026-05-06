@@ -321,7 +321,7 @@ defineExpose({ setReply })
       />
 
       <div
-        class="w-full rounded-2xl bg-neutral-100 dark:bg-neutral-800 px-3 py-2 focus-within:ring-2 focus-within:ring-pink-500 focus-within:bg-white dark:focus-within:bg-neutral-900 transition"
+        class="app-input-surface w-full rounded-2xl px-3 py-2 transition"
       >
         <input
           ref="inputEl"
@@ -329,7 +329,7 @@ defineExpose({ setReply })
           type="text"
           enterkeyhint="send"
           :placeholder="placeholder || t('comment.placeholder')"
-          class="w-full min-w-0 bg-transparent outline-none text-sm py-1.5 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
+          class="w-full min-w-0 bg-transparent border-0 shadow-none outline-none focus:ring-0 text-sm py-1.5"
           @input="handleInput"
           @keyup.enter="submit"
         />
@@ -345,7 +345,7 @@ defineExpose({ setReply })
             class="w-8 h-8 rounded-full flex items-center justify-center transition"
             :class="
               canUsePremiumCommentMedia && !mediaCompressing
-                ? 'hover:bg-neutral-200 text-neutral-500'
+                ? 'hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-500 dark:text-neutral-300'
                 : 'opacity-40 cursor-not-allowed text-neutral-400'
             "
             :title="canUsePremiumCommentMedia ? t('comment.media.title') : t('comment.media.premiumHint')"
@@ -357,7 +357,7 @@ defineExpose({ setReply })
           </button>
           <button
             type="button"
-            class="w-8 h-8 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
+            class="w-8 h-8 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 flex items-center justify-center text-neutral-500 dark:text-neutral-300 transition"
             :title="t('comment.emoji.nativeHint')"
             @click="focusKeyboardForEmoji"
           >
@@ -367,7 +367,7 @@ defineExpose({ setReply })
 
         <button
           type="button"
-          class="md:hidden w-8 h-8 shrink-0 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
+          class="md:hidden w-8 h-8 shrink-0 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 flex items-center justify-center text-neutral-500 dark:text-neutral-300 transition"
           :title="t('comment.emoji.nativeHint')"
           @click="focusKeyboardForEmoji"
         >
@@ -376,7 +376,7 @@ defineExpose({ setReply })
 
         <button
           type="button"
-          class="w-8 h-8 shrink-0 rounded-full hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition"
+          class="w-8 h-8 shrink-0 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 flex items-center justify-center text-neutral-500 dark:text-neutral-300 transition"
           :title="t('comment.mention.title')"
           @click="openMentionPicker"
         >
@@ -388,7 +388,7 @@ defineExpose({ setReply })
           class="md:hidden w-8 h-8 shrink-0 rounded-full flex items-center justify-center transition"
           :class="
             canUsePremiumCommentMedia && !mediaCompressing && !submitting
-              ? 'hover:bg-neutral-200 text-neutral-500'
+              ? 'hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-500 dark:text-neutral-300'
               : 'opacity-40 cursor-not-allowed text-neutral-400'
           "
           :disabled="submitting || mediaCompressing || !canUsePremiumCommentMedia"
@@ -418,7 +418,7 @@ defineExpose({ setReply })
       <div
         v-if="showMentionList"
         ref="mentionPanelEl"
-        class="w-[min(100vw-2rem,20rem)] max-w-[20rem] bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-100 dark:border-neutral-700 overflow-hidden flex flex-col max-h-[60vh]"
+        class="app-floating-panel w-[min(100vw-2rem,20rem)] max-w-[20rem] rounded-2xl overflow-hidden flex flex-col max-h-[60vh]"
         role="listbox"
         :style="{ ...mentionPopoverStyles, ...popLayerStyle }"
       >
@@ -436,7 +436,7 @@ defineExpose({ setReply })
             v-for="user in suggestedUsers"
             :key="user.username"
             type="button"
-            class="w-full flex items-center gap-3 px-4 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-left"
+            class="app-menu-item w-full flex items-center gap-3 px-4 py-2 transition text-left"
             @click="insertMention(user.username)"
           >
             <AvatarDisc

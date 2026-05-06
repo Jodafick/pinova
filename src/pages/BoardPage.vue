@@ -289,14 +289,14 @@ watch([boardId, () => route.query.share], loadBoard)
   <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <button
       type="button"
-      class="group mb-8 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white/90 px-3.5 py-2 text-sm font-medium text-neutral-600 shadow-sm backdrop-blur-sm transition hover:border-pink-200/80 hover:bg-white hover:text-neutral-900 hover:shadow-md"
+      class="app-btn app-btn-secondary group mb-8 text-sm"
       @click="router.back()"
     >
-      <span class="material-symbols-outlined text-lg text-neutral-500 transition group-hover:text-pink-600">arrow_back</span>
+      <span class="material-symbols-outlined text-lg">arrow_back</span>
       {{ t('common.back') }}
     </button>
 
-    <div v-if="loading" class="animate-pulse">
+    <div v-if="loading" class="app-skeleton-wave animate-pulse">
       <BoardHeaderSkeleton />
       <PinGrid class="mt-8" :pins="[]" loading-initial />
     </div>
@@ -312,7 +312,7 @@ watch([boardId, () => route.query.share], loadBoard)
     <template v-else>
       <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div class="min-w-0 flex-1">
-          <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">{{ boardName }}</h1>
+          <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">{{ boardName }}</h1>
           <router-link
             v-if="ownerUsername"
             :to="`/profile/${ownerUsername}`"
@@ -320,7 +320,7 @@ watch([boardId, () => route.query.share], loadBoard)
           >
             @{{ ownerUsername }}
           </router-link>
-          <p class="text-sm text-neutral-500 mt-2">{{ t('board.pinCount', { count: boardPins.length }) }}</p>
+          <p class="text-sm app-text-muted mt-2">{{ t('board.pinCount', { count: boardPins.length }) }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-end ml-auto">
           <button
@@ -335,7 +335,7 @@ watch([boardId, () => route.query.share], loadBoard)
           <button
             v-if="boardIsOwner"
             type="button"
-            class="lux-btn-danger-outline disabled:opacity-50"
+            class="app-btn app-btn-danger disabled:opacity-50"
             :disabled="boardDeletePending"
             @click="confirmDeleteBoard"
           >
@@ -365,7 +365,7 @@ watch([boardId, () => route.query.share], loadBoard)
       </div>
 
       <PinGrid v-if="boardPins.length" :pins="boardPins" @open-pin="openPin" @toggle-save="onToggleSave" @pin-deleted="onPinDeletedFromGrid" />
-      <p v-else class="text-neutral-500 text-center py-16">{{ t('board.empty') }}</p>
+      <p v-else class="app-text-muted text-center py-16">{{ t('board.empty') }}</p>
     </template>
 
     <div
@@ -373,13 +373,13 @@ watch([boardId, () => route.query.share], loadBoard)
       class="lux-modal-backdrop z-50"
     >
       <div class="lux-modal-panel w-full max-w-lg max-h-[85vh] flex flex-col">
-        <div class="px-5 py-4 border-b border-neutral-200/80 flex items-center justify-between bg-white/40">
-          <h3 class="text-lg font-bold text-neutral-900 tracking-tight">{{ t('profile.boards.organizeTitle') }}</h3>
+        <div class="px-5 py-4 border-b app-divider-subtle flex items-center justify-between">
+          <h3 class="text-lg font-bold text-neutral-900 dark:text-neutral-100 tracking-tight">{{ t('profile.boards.organizeTitle') }}</h3>
           <button type="button" class="p-2 rounded-full text-neutral-500 hover:bg-white/80 hover:text-neutral-900 transition" @click="closeOrganize">
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
-        <p class="text-xs text-neutral-500 px-5 pt-3">{{ t('profile.boards.organizeHint') }}</p>
+        <p class="text-xs app-text-muted px-5 pt-3">{{ t('profile.boards.organizeHint') }}</p>
         <div class="flex-1 overflow-y-auto px-5 py-4 min-h-[120px]">
           <div v-if="organizeLoading" class="min-h-[140px]">
             <UserListSkeleton :rows="7" thumb="rounded" :divided="false" />
@@ -403,7 +403,7 @@ watch([boardId, () => route.query.share], loadBoard)
             </li>
           </ul>
         </div>
-        <div class="px-5 py-4 border-t border-neutral-200/70 flex gap-3 justify-end bg-white/30">
+        <div class="px-5 py-4 border-t app-divider-subtle flex gap-3 justify-end">
           <button type="button" class="lux-btn-secondary px-6" @click="closeOrganize">
             {{ t('profile.boards.organizeClose') }}
           </button>

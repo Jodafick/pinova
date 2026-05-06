@@ -157,7 +157,7 @@ function clearExploreSearch() {
           />
         </div>
       </div>
-      <div v-if="categoriesLoading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div v-if="categoriesLoading" class="app-skeleton-wave grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <div
           v-for="i in 10"
           :key="i"

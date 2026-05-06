@@ -4,7 +4,7 @@ import CreatorStatsSkeleton from './CreatorStatsSkeleton.vue'
 </script>
 
 <template>
-  <div class="space-y-10 sm:space-y-12" aria-hidden="true">
+  <div class="app-skeleton-wave space-y-10 sm:space-y-12" aria-hidden="true">
 
     <!-- Breadcrumb / nav bar -->
     <nav class="flex flex-wrap items-center justify-between gap-3">

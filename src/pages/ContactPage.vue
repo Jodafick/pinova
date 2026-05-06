@@ -79,7 +79,7 @@ watch(currentLang, load, { immediate: true })
 
     <div
       v-if="loading"
-      class="rounded-3xl border border-neutral-100 bg-white p-8 sm:p-10 shadow-[0_24px_60px_-20px_rgba(15,23,42,0.12)] ring-1 ring-neutral-900/[0.04] animate-pulse"
+      class="app-skeleton-wave app-card rounded-3xl p-8 sm:p-10 animate-pulse"
       aria-hidden="true"
     >
       <div class="flex flex-wrap items-start gap-4 mb-8">
@@ -101,7 +101,7 @@ watch(currentLang, load, { immediate: true })
 
     <div
       v-else-if="error"
-      class="rounded-3xl border border-red-200/90 bg-gradient-to-br from-red-50 to-white p-10 sm:p-12 text-center shadow-sm"
+      class="app-card rounded-3xl p-10 sm:p-12 text-center border-rose-300/70"
     >
       <span class="material-symbols-outlined text-red-400 text-[44px] mb-4 inline-block" aria-hidden="true">
         cloud_off
@@ -109,7 +109,7 @@ watch(currentLang, load, { immediate: true })
       <p class="text-red-900/90 font-medium text-sm">{{ t('legal.loadError') }}</p>
       <button
         type="button"
-        class="mt-6 inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-red-300/80 bg-white text-red-800 text-sm font-semibold hover:bg-red-50 transition-colors"
+        class="mt-6 app-btn app-btn-secondary text-sm border-rose-300 text-rose-700 dark:text-rose-300"
         @click="load()"
       >
         {{ t('legal.retry') }}
@@ -118,10 +118,10 @@ watch(currentLang, load, { immediate: true })
 
     <article
       v-else
-      class="relative rounded-3xl border border-neutral-100/90 bg-gradient-to-br from-pink-50/90 via-white to-neutral-50 shadow-[0_24px_60px_-20px_rgba(15,23,42,0.12)] overflow-hidden ring-1 ring-black/[0.04]"
+      class="app-card relative rounded-3xl bg-gradient-to-br from-pink-50/90 via-white to-neutral-50 dark:from-pink-950/25 dark:via-neutral-900 dark:to-neutral-900 overflow-hidden ring-1 ring-black/[0.04]"
     >
       <div class="relative p-8 sm:p-10">
-        <header class="flex flex-wrap items-start gap-5 pb-8 mb-2 border-b border-neutral-200/70">
+        <header class="flex flex-wrap items-start gap-5 pb-8 mb-2 border-b app-divider-subtle">
           <div
             class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 ring-black/[0.05] bg-pink-500/15 text-pink-700"
           >
@@ -129,14 +129,14 @@ watch(currentLang, load, { immediate: true })
           </div>
           <div class="min-w-0 flex-1 pt-0.5 space-y-3">
             <span
-              class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wider bg-pink-100 text-pink-900 border-pink-200/80"
+              class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wider bg-pink-100 text-pink-900 border-pink-200/80 dark:bg-neutral-800/80 dark:text-neutral-100 dark:border-neutral-700"
             >
               {{ t('app.footer.contact') }}
             </span>
-            <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight text-balance">
+            <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100 tracking-tight text-balance">
               {{ title }}
             </h1>
-            <p v-if="formattedUpdatedAt" class="text-xs sm:text-sm text-neutral-500 font-medium">
+            <p v-if="formattedUpdatedAt" class="text-xs sm:text-sm text-neutral-500 dark:text-neutral-300 font-medium">
               {{ t('legal.updatedAt') }}
               <time :datetime="updatedAt ?? undefined">{{ formattedUpdatedAt }}</time>
             </p>
@@ -147,21 +147,21 @@ watch(currentLang, load, { immediate: true })
           <p
             v-for="(para, i) in bodyParagraphs"
             :key="i"
-            class="text-[15px] sm:text-base text-neutral-700 leading-relaxed text-pretty whitespace-pre-wrap"
+            class="text-[15px] sm:text-base text-neutral-700 dark:text-neutral-200 leading-relaxed text-pretty whitespace-pre-wrap"
           >
             {{ para }}
           </p>
         </div>
 
-        <div class="mt-10 pt-8 border-t border-neutral-200/70">
+        <div class="mt-10 pt-8 border-t app-divider-subtle">
           <a
             :href="mailtoHref"
-            class="inline-flex items-center justify-center gap-2 w-full sm:w-auto min-w-[220px] px-6 py-3.5 rounded-full bg-pink-600 text-white text-sm font-semibold shadow-md hover:bg-pink-700 transition"
+            class="app-btn app-btn-primary inline-flex items-center justify-center gap-2 w-full sm:w-auto min-w-[220px] px-6 py-3.5 text-sm shadow-md"
           >
             <span class="material-symbols-outlined text-xl">outgoing_mail</span>
             {{ t('contact.emailCta') }}
           </a>
-          <p class="mt-3 text-sm text-pink-900/80 font-medium break-all">
+          <p class="mt-3 text-sm text-pink-700 dark:text-pink-300 font-medium break-all">
             {{ contactEmail.trim() || FALLBACK_EMAIL }}
           </p>
         </div>

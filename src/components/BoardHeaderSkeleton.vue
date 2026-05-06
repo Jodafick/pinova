@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="mb-8 flex flex-wrap items-start justify-between gap-4 animate-pulse" aria-hidden="true">
+  <div class="app-skeleton-wave mb-8 flex flex-wrap items-start justify-between gap-4 animate-pulse" aria-hidden="true">
     <div class="min-w-0 flex-1 space-y-3">
       <div class="h-8 sm:h-10 bg-neutral-200 rounded-lg w-[min(100%,280px)]" />
       <div class="h-4 bg-neutral-100 rounded w-32" />

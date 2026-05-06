@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <section class="flex flex-col items-center text-center mb-10 animate-pulse" aria-hidden="true">
+  <section class="app-skeleton-wave flex flex-col items-center text-center mb-10 animate-pulse" aria-hidden="true">
     <div class="w-28 h-28 rounded-full bg-neutral-200 mb-4 shrink-0" />
     <div class="h-8 sm:h-9 bg-neutral-200 rounded-lg w-48 sm:w-56 max-w-full mb-3" />
     <div class="h-4 bg-neutral-100 rounded w-32 mb-4" />

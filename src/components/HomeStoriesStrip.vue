@@ -325,7 +325,7 @@ onUnmounted(() => {
   </section>
 
   <!-- Chargement léger : même hauteur que la rangée pour éviter un saut -->
-  <div v-else-if="loading" class="mb-6 sm:mb-8 animate-pulse">
+  <div v-else-if="loading" class="app-skeleton-wave mb-6 sm:mb-8 animate-pulse">
     <div class="h-4 w-24 bg-neutral-200 rounded mb-3" />
     <div class="flex gap-4 overflow-hidden pb-2">
       <div v-for="i in 10" :key="'sk-' + i" class="shrink-0 flex flex-col items-center gap-2 w-[84px]">

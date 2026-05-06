@@ -1017,7 +1017,7 @@ watch(
       </p>
       <button
         type="button"
-        class="mt-3 px-4 py-2 rounded-full bg-white border border-rose-200 text-xs font-semibold text-rose-900 hover:bg-rose-100 disabled:opacity-50"
+        class="mt-3 app-btn app-btn-secondary app-btn-sm border-rose-200 dark:border-rose-700/70 text-rose-900 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/30"
         :disabled="accountDeletionBusy"
         @click="cancelAccountDeletion()"
       >
@@ -1064,7 +1064,7 @@ watch(
                 @change="handleFileChange" 
               />
               <button
-                class="px-4 py-2 rounded-full bg-neutral-100 text-sm font-medium text-neutral-700 hover:bg-neutral-200 transition"
+                class="app-btn app-btn-secondary app-btn-sm text-sm"
                 @click="triggerFileInput"
               >
                 {{ t('settings.profile.changePhoto') }}
@@ -1148,7 +1148,7 @@ watch(
 
           <div class="flex justify-end">
             <button
-              class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition flex items-center gap-2"
+              class="app-btn app-btn-primary text-sm flex items-center gap-2"
               :disabled="saving"
               @click="handleSave"
             >
@@ -1316,29 +1316,29 @@ watch(
         </div>
       </section>
 
-      <section id="settings-blocked" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.blocked.title') }}</h2>
-          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.blocked.subtitle') }}</p>
+      <section id="settings-blocked" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-6 py-5 border-b app-divider-subtle">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.blocked.title') }}</h2>
+          <p class="text-xs app-text-muted mt-0.5">{{ t('settings.blocked.subtitle') }}</p>
         </div>
         <div class="p-6">
-          <div v-if="blockedLoading" class="text-sm text-neutral-500">{{ t('common.loading') }}</div>
-          <p v-else-if="blockedRows.length === 0" class="text-sm text-neutral-500">{{ t('settings.blocked.empty') }}</p>
-          <ul v-else class="divide-y divide-neutral-100 rounded-xl border border-neutral-100 overflow-hidden">
+          <div v-if="blockedLoading" class="text-sm app-text-muted">{{ t('common.loading') }}</div>
+          <p v-else-if="blockedRows.length === 0" class="text-sm app-text-muted">{{ t('settings.blocked.empty') }}</p>
+          <ul v-else class="rounded-xl border app-divider-subtle overflow-hidden">
             <li
               v-for="row in blockedRows"
               :key="row.id"
-              class="flex items-center justify-between gap-3 px-4 py-3 bg-white"
+              class="app-list-item flex items-center justify-between gap-3 px-4 py-3 border-b app-divider-subtle last:border-b-0"
             >
               <div class="min-w-0">
-                <p class="text-sm font-medium text-neutral-900 truncate">
+                <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
                   {{ row.display_name || row.displayName || row.username }}
                 </p>
-                <p class="text-xs text-neutral-500">@{{ row.username }}</p>
+                <p class="text-xs app-text-muted">@{{ row.username }}</p>
               </div>
               <button
                 type="button"
-                class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                class="app-btn app-btn-secondary app-btn-sm shrink-0 text-xs"
                 @click="handleUnblockUser(row)"
               >
                 {{ t('settings.blocked.unblock') }}
@@ -1349,85 +1349,85 @@ watch(
       </section>
 
       <!-- Accessibilité & données -->
-      <section id="settings-access" class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.access.title') }}</h2>
-          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.access.subtitle') }}</p>
+      <section id="settings-access" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-6 py-5 border-b app-divider-subtle">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.access.title') }}</h2>
+          <p class="text-xs app-text-muted mt-0.5">{{ t('settings.access.subtitle') }}</p>
         </div>
         <div class="p-6 space-y-4">
           <div>
-            <p class="text-sm font-medium text-neutral-800 mb-2">{{ t('settings.access.dataSaver') }}</p>
-            <p class="text-xs text-neutral-600 mb-3">{{ t('settings.access.dataSaver.desc') }}</p>
+            <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 mb-2">{{ t('settings.access.dataSaver') }}</p>
+            <p class="text-xs text-neutral-600 dark:text-neutral-300 mb-3">{{ t('settings.access.dataSaver.desc') }}</p>
             <div class="flex flex-wrap gap-2">
               <button
                 type="button"
-                class="px-3 py-1.5 rounded-full text-xs font-semibold border transition"
-                :class="dataSaverOverride === 'auto' ? 'border-pink-500 bg-pink-50 text-pink-900' : 'border-neutral-200 text-neutral-600'"
+                class="app-btn app-btn-sm text-xs"
+                :class="dataSaverOverride === 'auto' ? 'app-btn-primary' : 'app-btn-secondary'"
                 @click="handleDataSaverMode('auto')"
               >
                 {{ t('settings.access.dataSaver.auto') }}
               </button>
               <button
                 type="button"
-                class="px-3 py-1.5 rounded-full text-xs font-semibold border transition"
-                :class="dataSaverOverride === 'on' ? 'border-pink-500 bg-pink-50 text-pink-900' : 'border-neutral-200 text-neutral-600'"
+                class="app-btn app-btn-sm text-xs"
+                :class="dataSaverOverride === 'on' ? 'app-btn-primary' : 'app-btn-secondary'"
                 @click="handleDataSaverMode('on')"
               >
                 {{ t('settings.access.dataSaver.on') }}
               </button>
               <button
                 type="button"
-                class="px-3 py-1.5 rounded-full text-xs font-semibold border transition"
-                :class="dataSaverOverride === 'off' ? 'border-pink-500 bg-pink-50 text-pink-900' : 'border-neutral-200 text-neutral-600'"
+                class="app-btn app-btn-sm text-xs"
+                :class="dataSaverOverride === 'off' ? 'app-btn-primary' : 'app-btn-secondary'"
                 @click="handleDataSaverMode('off')"
               >
                 {{ t('settings.access.dataSaver.off') }}
               </button>
             </div>
-            <p class="text-[11px] text-neutral-600 mt-2">{{ t('settings.access.dataSaver.hint', { active: isLowDataMode ? t('settings.access.dataSaver.yes') : t('settings.access.dataSaver.no') }) }}</p>
+            <p class="text-[11px] text-neutral-600 dark:text-neutral-300 mt-2">{{ t('settings.access.dataSaver.hint', { active: isLowDataMode ? t('settings.access.dataSaver.yes') : t('settings.access.dataSaver.no') }) }}</p>
           </div>
 
-          <div v-if="isVerifiedAdultForSensitiveSettings" class="pt-2 border-t border-neutral-100 space-y-3">
+          <div v-if="isVerifiedAdultForSensitiveSettings" class="pt-2 border-t app-divider-subtle space-y-3">
             <div>
               <p class="text-sm font-medium text-neutral-800">{{ t('settings.access.sensitiveMedia.title') }}</p>
               <p class="text-xs text-neutral-600 mt-0.5">{{ t('settings.access.sensitiveMedia.subtitle') }}</p>
             </div>
             <fieldset class="space-y-2">
               <legend class="sr-only">{{ t('settings.access.sensitiveMedia.title') }}</legend>
-              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'blur' ? 'border-pink-400 bg-pink-50/50' : 'border-neutral-200 hover:bg-neutral-50'">
+              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'blur' ? 'border-pink-400 bg-pink-50/50 dark:bg-pink-950/35 dark:border-pink-500/70' : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/70'">
                 <input v-model="sensitiveMediaViewerPref" type="radio" value="blur" class="mt-1" />
                 <span>
-                  <span class="text-sm font-medium text-neutral-900">{{ t('settings.access.sensitiveMedia.optionBlur') }}</span>
-                  <span class="block text-xs text-neutral-600 mt-0.5">{{ t('settings.access.sensitiveMedia.optionBlurDesc') }}</span>
+                  <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">{{ t('settings.access.sensitiveMedia.optionBlur') }}</span>
+                  <span class="block text-xs text-neutral-600 dark:text-neutral-300 mt-0.5">{{ t('settings.access.sensitiveMedia.optionBlurDesc') }}</span>
                 </span>
               </label>
               <label
                 class="flex gap-3 p-3 rounded-xl border transition"
                 :class="[
                   !canShowUnblurredSensitiveOption ? 'opacity-55 cursor-not-allowed' : 'cursor-pointer',
-                  sensitiveMediaViewerPref === 'show' ? 'border-pink-400 bg-pink-50/50' : 'border-neutral-200',
-                  canShowUnblurredSensitiveOption ? 'hover:bg-neutral-50' : '',
+                  sensitiveMediaViewerPref === 'show' ? 'border-pink-400 bg-pink-50/50 dark:bg-pink-950/35 dark:border-pink-500/70' : 'border-neutral-200 dark:border-neutral-700',
+                  canShowUnblurredSensitiveOption ? 'hover:bg-neutral-50 dark:hover:bg-neutral-800/70' : '',
                 ]"
               >
                 <input v-model="sensitiveMediaViewerPref" type="radio" value="show" class="mt-1 shrink-0" :disabled="!canShowUnblurredSensitiveOption" />
                 <span>
-                  <span class="text-sm font-medium text-neutral-900">{{ t('settings.access.sensitiveMedia.optionShow') }}</span>
-                  <span class="block text-xs text-neutral-600 mt-0.5">{{ t('settings.access.sensitiveMedia.optionShowDesc') }}</span>
+                  <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">{{ t('settings.access.sensitiveMedia.optionShow') }}</span>
+                  <span class="block text-xs text-neutral-600 dark:text-neutral-300 mt-0.5">{{ t('settings.access.sensitiveMedia.optionShowDesc') }}</span>
                   <span v-if="!canShowUnblurredSensitiveOption" class="block text-[11px] text-amber-800 mt-1">{{ t('settings.access.sensitiveMedia.optionShowBadge') }}</span>
                 </span>
               </label>
-              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'hide' ? 'border-pink-400 bg-pink-50/50' : 'border-neutral-200 hover:bg-neutral-50'">
+              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'hide' ? 'border-pink-400 bg-pink-50/50 dark:bg-pink-950/35 dark:border-pink-500/70' : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/70'">
                 <input v-model="sensitiveMediaViewerPref" type="radio" value="hide" class="mt-1" />
                 <span>
-                  <span class="text-sm font-medium text-neutral-900">{{ t('settings.access.sensitiveMedia.optionHide') }}</span>
-                  <span class="block text-xs text-neutral-600 mt-0.5">{{ t('settings.access.sensitiveMedia.optionHideDesc') }}</span>
+                  <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">{{ t('settings.access.sensitiveMedia.optionHide') }}</span>
+                  <span class="block text-xs text-neutral-600 dark:text-neutral-300 mt-0.5">{{ t('settings.access.sensitiveMedia.optionHideDesc') }}</span>
                 </span>
               </label>
             </fieldset>
             <div class="flex justify-end mt-2">
               <button
                 type="button"
-                class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
+                class="app-btn app-btn-primary app-btn-sm text-xs"
                 :disabled="sensitiveMediaPrefsSaving"
                 @click="persistSensitiveMediaPreferences"
               >
@@ -1437,7 +1437,7 @@ watch(
             <p v-if="sensitiveMediaPrefsSaved" class="text-xs text-emerald-700">{{ t('settings.access.sensitiveMedia.saved') }}</p>
           </div>
 
-          <div v-if="currentPlan === 'pro'" class="pt-2 border-t border-neutral-100">
+          <div v-if="currentPlan === 'pro'" class="pt-2 border-t app-divider-subtle">
             <label class="flex items-center justify-between py-2 cursor-pointer">
               <div>
                 <p class="text-sm font-medium text-neutral-800">{{ t('settings.access.digestWeekly') }}</p>
@@ -1452,7 +1452,7 @@ watch(
             <div class="flex justify-end mt-2">
               <button
                 type="button"
-                class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
+                class="app-btn app-btn-primary app-btn-sm text-xs"
                 :disabled="digestSaving"
                 @click="persistDigestWeekly"
               >
@@ -1565,19 +1565,19 @@ watch(
       <section
         v-if="currentUser"
         id="settings-seats"
-        class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
+        class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden"
       >
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.seats.title') }}</h2>
-          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.seats.subtitle') }}</p>
+        <div class="px-6 py-5 border-b app-divider-subtle">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.seats.title') }}</h2>
+          <p class="text-xs app-text-muted mt-0.5">{{ t('settings.seats.subtitle') }}</p>
         </div>
         <div class="p-6 space-y-4 text-sm">
           <p v-if="seatHubLoading" class="text-xs text-neutral-400">{{ t('settings.seats.loading') }}</p>
           <template v-else-if="seatHub">
             <!-- Invitations entrantes -->
-            <div v-if="seatHub.incoming_invitations?.length" class="space-y-3 rounded-xl border border-amber-100 bg-amber-50/80 p-3">
-              <p class="text-xs font-semibold text-neutral-900">{{ t('settings.seats.incoming') }}</p>
-              <div v-for="row in seatHub.incoming_invitations" :key="row.id" class="space-y-2 border border-amber-200/70 rounded-lg p-2 bg-white">
+            <div v-if="seatHub.incoming_invitations?.length" class="space-y-3 rounded-xl border border-amber-300/60 bg-amber-50/80 dark:bg-amber-950/25 p-3">
+              <p class="text-xs font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.seats.incoming') }}</p>
+              <div v-for="row in seatHub.incoming_invitations" :key="row.id" class="space-y-2 app-card-soft rounded-lg p-2">
                 <p class="text-xs text-neutral-700">
                   {{ row.owner_display_name || row.owner_username }}
                   <span class="text-neutral-400">(@{{ row.owner_username }})</span>
@@ -1585,7 +1585,7 @@ watch(
                 <div class="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    class="px-3 py-1.5 rounded-full bg-pink-600 text-white text-[11px] font-semibold disabled:opacity-50"
+                    class="app-btn app-btn-primary app-btn-sm text-[11px]"
                     :disabled="seatBusy"
                     @click="respondSeatInvite(row.id, 'accept')"
                   >
@@ -1593,7 +1593,7 @@ watch(
                   </button>
                   <button
                     type="button"
-                    class="px-3 py-1.5 rounded-full border border-neutral-300 text-neutral-800 text-[11px] font-semibold disabled:opacity-50"
+                    class="app-btn app-btn-secondary app-btn-sm text-[11px]"
                     :disabled="seatBusy"
                     @click="respondSeatInvite(row.id, 'decline')"
                   >
@@ -1609,7 +1609,7 @@ watch(
               </p>
               <button
                 type="button"
-                class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50"
+                class="app-btn app-btn-primary app-btn-sm text-xs"
                 :disabled="seatBusy"
                 @click="leaveSeatGroup"
               >
@@ -1630,7 +1630,7 @@ watch(
               <div class="space-y-2">
                 <button
                   type="button"
-                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-pink-200 bg-pink-50 text-pink-900 text-xs font-semibold hover:bg-pink-100 disabled:opacity-50 transition"
+                  class="app-btn app-btn-secondary w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl text-xs border-pink-300 text-pink-700 dark:text-pink-300 disabled:opacity-50"
                   :disabled="seatBusy"
                   @click="seatInviteSearchOpen = true"
                 >
@@ -1643,7 +1643,7 @@ watch(
                 <li
                   v-for="m in seatHub.members"
                   :key="m.username"
-                  class="flex justify-between gap-2 text-xs py-1 border-b border-neutral-100 dark:border-neutral-800"
+                  class="flex justify-between gap-2 text-xs py-1 border-b app-divider-subtle"
                 >
                   <span>@{{ m.username }}</span>
                   <button
@@ -1661,7 +1661,7 @@ watch(
                 <li
                   v-for="p in seatHub.pending_invitations"
                   :key="p.id"
-                  class="flex justify-between gap-2 text-xs py-1 border-b border-neutral-100 dark:border-neutral-800"
+                  class="flex justify-between gap-2 text-xs py-1 border-b app-divider-subtle"
                 >
                   <span>@{{ p.invitee_username }}</span>
                   <button
@@ -1674,7 +1674,7 @@ watch(
                   </button>
                 </li>
               </ul>
-              <div class="pt-2 border-t border-neutral-100 mt-3">
+              <div class="pt-2 border-t app-divider-subtle mt-3">
                 <button
                   type="button"
                   class="text-xs font-semibold text-rose-600 hover:underline disabled:opacity-50"
@@ -1921,24 +1921,24 @@ watch(
       </section>
 
       <!-- Danger zone -->
-      <section id="settings-danger" class="scroll-mt-40 md:scroll-mt-44 bg-white rounded-2xl border border-pink-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-pink-100">
-          <h2 class="text-lg font-semibold text-pink-600">{{ t('settings.danger.title') }}</h2>
+      <section id="settings-danger" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl border-pink-300/55 overflow-hidden">
+        <div class="px-6 py-5 border-b border-pink-300/50 dark:border-pink-700/50">
+          <h2 class="text-lg font-semibold text-pink-600 dark:text-pink-300">{{ t('settings.danger.title') }}</h2>
         </div>
-        <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-50">
+        <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-200/45 dark:border-pink-800/40">
           <div>
             <p class="text-sm font-medium text-neutral-700">{{ t('settings.danger.logout') }}</p>
             <p class="text-xs text-neutral-500">{{ t('settings.danger.logout.desc') }}</p>
           </div>
           <button
             type="button"
-            class="px-5 py-2.5 rounded-full border border-pink-200 text-pink-600 text-sm font-semibold hover:bg-pink-50 transition"
+            class="app-btn app-btn-secondary text-sm border-pink-300 text-pink-600 dark:text-pink-300"
             @click="handleLogout"
           >
             {{ t('settings.danger.logout.cta') }}
           </button>
         </div>
-        <div class="p-6 flex flex-col sm:flex-row items-start gap-4 bg-rose-50/40">
+        <div class="p-6 flex flex-col sm:flex-row items-start gap-4 bg-rose-50/45 dark:bg-rose-950/20">
           <div class="max-w-xl flex-1 space-y-2">
             <p class="text-sm font-bold text-rose-900">{{ t('settings.danger.delete.title') }}</p>
             <p class="text-xs text-neutral-700 leading-relaxed">{{ t('settings.danger.delete.warningBody') }}</p>
@@ -1946,7 +1946,7 @@ watch(
           <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
             <button
               type="button"
-              class="px-5 py-2.5 rounded-full bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 disabled:opacity-50 transition text-center"
+              class="app-btn app-btn-danger text-sm text-center"
               :disabled="accountDeletionBusy || !!scheduledAccountDeletion"
               @click="requestAccountDeletion()"
             >

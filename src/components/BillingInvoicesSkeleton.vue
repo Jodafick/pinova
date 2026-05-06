@@ -1,5 +1,5 @@
 <template>
-  <ul class="space-y-3 animate-pulse" aria-hidden="true">
+  <ul class="app-skeleton-wave space-y-3 animate-pulse" aria-hidden="true">
     <li
       v-for="i in 6"
       :key="i"

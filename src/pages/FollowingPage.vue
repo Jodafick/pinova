@@ -96,7 +96,7 @@ const followSuggestedUser = async (username: string) => {
 
       <div class="mt-6 text-left max-w-2xl mx-auto">
         <p class="text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-3">{{ t('following.suggest') }}</p>
-        <div v-if="suggestionsLoading" class="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-pulse" aria-hidden="true">
+        <div v-if="suggestionsLoading" class="app-skeleton-wave grid grid-cols-1 sm:grid-cols-2 gap-3 animate-pulse" aria-hidden="true">
           <div
             v-for="s in 4"
             :key="s"
