@@ -125,7 +125,7 @@ const openPin = (slug: string) => {
     <section class="mb-6 sm:mb-8">
       <div class="flex items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-1">
+          <h1 class="text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-50 mb-1">
             {{ currentUser ? t('home.greetingNamed', { name: currentUser.displayName.split(' ')[0] || currentUser.displayName }) : t('home.greeting') + ' !' }}
           </h1>
           <p class="text-sm sm:text-base text-neutral-500 dark:text-neutral-400">

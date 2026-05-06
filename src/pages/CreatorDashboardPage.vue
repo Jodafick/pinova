@@ -416,7 +416,7 @@ onMounted(async () => {
                 <p class="text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em] text-white/70 mb-2 sm:mb-3">
                   {{ t('creator.badge') }}
                 </p>
-                <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-3 sm:mb-4 drop-shadow-sm">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-auth-title font-auth-title--black tracking-tight text-white mb-3 sm:mb-4 drop-shadow-sm">
                   {{ t('creator.title') }}
                 </h1>
                 <p class="text-sm sm:text-[15px] leading-relaxed text-white/80 max-w-2xl">

@@ -15,6 +15,7 @@ const defaultUser: User = {
   username: 'admin',
   displayName: 'Admin Pinova',
   email: 'admin@pinova.local',
+  hasUsablePassword: true,
   preferredLanguage: 'fr',
   preferredCurrency: 'XOF',
   privateProfile: false,
@@ -236,6 +237,8 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       ? djangoUser.blocked_usernames.map((x: unknown) => String(x))
       : [],
     viewerHasReportedProfile: !!djangoUser.viewer_has_reported_profile,
+    hasUsablePassword:
+      typeof djangoUser.has_usable_password === 'boolean' ? djangoUser.has_usable_password : true,
   }
 }
 
@@ -419,15 +422,14 @@ export function useAuth() {
           '[Pinova auth] Pas de refresh_token dans la réponse login — session courte uniquement ; vérifiez le backend (dj-rest-auth + SIMPLE_JWT).',
         )
       }
-      if (response.data?.user) {
-        currentUser.value = mapDjangoUserToFrontend(response.data.user)
-        currentUserLastFetchAt = Date.now()
+      // 1re requête authentifiée : `me/` (évite le TTL qui skip le fetch si on avait posé `user` du login).
+      await fetchCurrentUser({ force: true })
+      if (!currentUser.value) {
+        clearAuthState()
+        return { success: false as const, error: 'Impossible de charger le profil.' }
       }
-      
-      // Get full user profile after login
-      await fetchCurrentUser()
-      return { 
-        success: true,
+      return {
+        success: true as const,
         access: response.data?.access,
         refresh: response.data?.refresh,
       }
@@ -514,15 +516,15 @@ export function useAuth() {
           '[Pinova auth] Pas de refresh_token dans la réponse connexion sociale — vérifiez le backend.',
         )
       }
-      if (response.data?.user) {
-        currentUser.value = mapDjangoUserToFrontend(response.data.user)
-        currentUserLastFetchAt = Date.now()
+      await fetchCurrentUser({ force: true })
+      if (!currentUser.value) {
+        clearAuthState()
+        return { success: false as const, error: 'Impossible de charger le profil.' }
       }
-      await fetchCurrentUser()
-      return { 
-        success: true, 
-        access: response.data?.access, 
-        refresh: response.data?.refresh, 
+      return {
+        success: true as const,
+        access: response.data?.access,
+        refresh: response.data?.refresh,
       }
     } catch (err: any) {
       console.error(`${provider} login error:`, err)

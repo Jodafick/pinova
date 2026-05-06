@@ -69,11 +69,11 @@ const handleGoogleClick = () => {
       <div class="w-20 h-20 rounded-full bg-pink-600 flex items-center justify-center overflow-hidden shadow-lg mb-4">
         <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
       </div>
-      <span class="text-3xl font-bold text-neutral-900 tracking-tight">{{ t('mobile.brand') }}</span>
+      <span class="text-3xl font-auth-title text-neutral-900 tracking-tight">{{ t('mobile.brand') }}</span>
     </div>
 
     <div v-if="!loading" class="w-full max-w-sm">
-      <h1 class="text-2xl font-bold text-neutral-800 mb-2">{{ t('mobile.title') }}</h1>
+      <h1 class="text-2xl font-auth-title font-auth-title--black text-neutral-800 mb-2">{{ t('mobile.title') }}</h1>
       <p class="text-neutral-500 mb-8 px-4">{{ t('mobile.desc') }}</p>
 
       <button

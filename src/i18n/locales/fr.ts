@@ -975,6 +975,17 @@ export const fr: Record<string, string> = {
   'settings.password.submitting': 'Mise à jour...',
   'settings.password.error.mismatch': 'Les nouveaux mots de passe ne correspondent pas.',
   'settings.password.error.generic': 'Erreur lors du changement de mot de passe.',
+  'settings.password.socialBannerTitle': 'Ajoutez un mot de passe',
+  'settings.password.socialBannerBody':
+    'Vous vous connectez avec Google (ou un autre réseau) sans mot de passe Pinova. Définissez-en un pour pouvoir aussi vous connecter avec votre e-mail.',
+  'settings.password.socialBannerCta': 'Définir un mot de passe',
+  'settings.password.socialSubtitle': 'Compte sans mot de passe Pinova — ajoutez-en un pour vous connecter aussi par e-mail.',
+  'settings.password.socialSectionLead':
+    'Choisissez un mot de passe solide. Vous pourrez ensuite utiliser l’e-mail et ce mot de passe en plus de Google.',
+  'settings.password.setInitialModalTitle': 'Définir votre mot de passe',
+  'settings.password.setInitialModalBody':
+    'Saisissez deux fois le même mot de passe. Il servira avec votre adresse e-mail si vous ne passez pas par Google.',
+  'settings.password.setInitialSubmit': 'Enregistrer le mot de passe',
   'settings.danger.title': 'Zone de danger',
   'settings.danger.logout': 'Déconnexion',
   'settings.danger.logout.desc': 'Vous serez redirigé vers la page de connexion',

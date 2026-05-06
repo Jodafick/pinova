@@ -31,7 +31,7 @@ onMounted(async () => {
     <div class="w-full max-w-md bg-white dark:bg-neutral-900 p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800 text-center">
       <div v-if="loading">
         <div class="w-16 h-16 border-4 border-neutral-100 border-t-pink-600 rounded-full animate-spin mx-auto mb-6"></div>
-        <h2 class="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.loading.title') }}</h2>
+        <h2 class="text-2xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.loading.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('verifyEmail.loading.desc') }}</p>
       </div>
 
@@ -39,7 +39,7 @@ onMounted(async () => {
         <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-6">
           <span class="material-symbols-outlined text-green-600 text-3xl">verified</span>
         </div>
-        <h2 class="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.success.title') }}</h2>
+        <h2 class="text-2xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.success.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('verifyEmail.success.desc') }}</p>
         <router-link to="/login" class="inline-block mt-8 px-8 py-3 rounded-full bg-pink-600 text-white font-bold hover:bg-pink-700 transition-all">
           {{ t('verifyEmail.success.cta') }}
@@ -50,7 +50,7 @@ onMounted(async () => {
         <div class="w-16 h-16 rounded-full bg-pink-50 flex items-center justify-center mx-auto mb-6">
           <span class="material-symbols-outlined text-pink-600 text-3xl">error_outline</span>
         </div>
-        <h2 class="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.error.title') }}</h2>
+        <h2 class="text-2xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.error.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ error }}</p>
         <router-link to="/login" class="inline-block mt-8 text-neutral-900 dark:text-neutral-100 font-bold hover:underline">
           {{ t('verifyEmail.error.back') }}

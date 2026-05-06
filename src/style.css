@@ -64,6 +64,26 @@
   );
 }
 
+/**
+ * Titres manuscrits (même esprit que l’app mobile auth : Apple Chancery / cursives).
+ * `.font-auth-title` = gras ; `.font-auth-title--black` = très gras (onglet actif, grands titres).
+ */
+.font-auth-title {
+  font-family:
+    "Apple Chancery",
+    "Brush Script MT",
+    "Lucida Handwriting",
+    "Segoe Script",
+    cursive,
+    ui-serif,
+    Georgia,
+    serif;
+  font-weight: 700;
+}
+.font-auth-title--black {
+  font-weight: 900;
+}
+
 .dark {
   --input-bg: rgb(38 38 43);
   --input-border: rgb(82 82 91 / 0.9);

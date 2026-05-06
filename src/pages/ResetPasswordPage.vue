@@ -48,7 +48,7 @@ const handleResetPassword = async () => {
   <div class="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-6 py-12">
     <div class="w-full max-w-md bg-white dark:bg-neutral-900 p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800">
       <div class="text-center mb-8">
-        <h2 class="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('reset.title') }}</h2>
+        <h2 class="text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('reset.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('reset.subtitle') }}</p>
       </div>
 

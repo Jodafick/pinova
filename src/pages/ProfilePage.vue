@@ -1463,9 +1463,9 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     <!-- Tabs -->
     <div class="flex items-center justify-center gap-1 mb-6 border-b border-neutral-100 dark:border-neutral-800">
       <button
-        class="px-6 py-3 text-sm font-semibold transition-colors border-b-2"
+        class="px-6 py-3 text-sm font-auth-title transition-colors border-b-2"
         :class="activeTab === 'created'
-          ? 'border-neutral-900 dark:border-neutral-200 text-neutral-900 dark:text-neutral-100'
+          ? 'font-auth-title--black border-neutral-900 dark:border-neutral-200 text-neutral-900 dark:text-neutral-100'
           : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'"
         @click="activeTab = 'created'"
       >
@@ -1473,9 +1473,9 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </button>
       <button
         v-if="isMyProfile"
-        class="px-6 py-3 text-sm font-semibold transition-colors border-b-2"
+        class="px-6 py-3 text-sm font-auth-title transition-colors border-b-2"
         :class="activeTab === 'saved'
-          ? 'border-neutral-900 dark:border-neutral-200 text-neutral-900 dark:text-neutral-100'
+          ? 'font-auth-title--black border-neutral-900 dark:border-neutral-200 text-neutral-900 dark:text-neutral-100'
           : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'"
         @click="activeTab = 'saved'"
       >

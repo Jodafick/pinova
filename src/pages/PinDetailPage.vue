@@ -830,7 +830,7 @@ async function deletePinFromMenu() {
       class="flex flex-col items-center justify-center py-32 text-center px-6"
     >
       <span class="material-symbols-outlined text-7xl text-neutral-300 mb-4">broken_image</span>
-      <h1 class="text-2xl font-bold text-neutral-800 mb-2">{{ t('pin.notFound.title') }}</h1>
+      <h1 class="text-2xl font-auth-title font-auth-title--black text-neutral-800 mb-2">{{ t('pin.notFound.title') }}</h1>
       <p class="text-neutral-500 mb-6">{{ t('pin.notFound.desc') }}</p>
       <router-link to="/" class="lux-btn-primary lux-btn-pill text-sm">
         {{ t('pin.notFound.cta') }}
@@ -1012,7 +1012,7 @@ async function deletePinFromMenu() {
 
             <!-- Title & Description -->
             <div class="flex items-start gap-2 mb-3 flex-wrap">
-              <h1 id="pin-detail-title" class="text-2xl sm:text-3xl font-black text-neutral-950 dark:text-neutral-100 flex-1 min-w-[12rem]">{{ pin.title }}</h1>
+              <h1 id="pin-detail-title" class="text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-950 dark:text-neutral-100 flex-1 min-w-[12rem]">{{ pin.title }}</h1>
               <span
                 v-if="pinVisibility !== 'public'"
                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0"

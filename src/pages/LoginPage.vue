@@ -40,9 +40,7 @@ const handleLogin = async () => {
     return
   }
   
-  // Attendre que fetchCurrentUser soit terminé avant de rediriger
-  // login() appelle déjà fetchCurrentUser() mais on peut forcer une petite pause
-  // ou vérifier si currentUser est rempli
+  // login() attend `GET me/` (force) avant de retourner success
   loading.value = false
   void goAfterLogin()
 }
@@ -81,9 +79,9 @@ const { login: googleLogin } = useTokenClient({
           <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden">
             <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          <span class="text-3xl font-bold">Pinova</span>
+          <span class="text-3xl font-auth-title">Pinova</span>
         </div>
-        <h1 class="text-5xl font-bold leading-tight mb-4">
+        <h1 class="text-5xl font-auth-title font-auth-title--black leading-tight mb-4">
           {{ t('login.hero.title') }}
         </h1>
         <p class="text-lg text-white/90 max-w-md">
@@ -100,11 +98,11 @@ const { login: googleLogin } = useTokenClient({
           <div class="w-10 h-10 rounded-full bg-pink-600 flex items-center justify-center overflow-hidden shadow-sm">
             <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          <span class="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Pinova</span>
+          <span class="text-2xl font-auth-title text-neutral-900 dark:text-neutral-100">Pinova</span>
         </div>
 
         <div class="text-center mb-10">
-          <h2 class="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('login.welcome') }}</h2>
+          <h2 class="text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('login.welcome') }}</h2>
           <p class="text-neutral-500 dark:text-neutral-400">{{ t('login.subtitle') }}</p>
         </div>
 

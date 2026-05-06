@@ -949,6 +949,17 @@ export const en: Record<string, string> = {
   'settings.password.submitting': 'Updating...',
   'settings.password.error.mismatch': 'New passwords do not match.',
   'settings.password.error.generic': 'Error while changing password.',
+  'settings.password.socialBannerTitle': 'Add a password',
+  'settings.password.socialBannerBody':
+    'You sign in with Google (or another provider) without a Pinova password. Set one to also sign in with your email.',
+  'settings.password.socialBannerCta': 'Set password',
+  'settings.password.socialSubtitle': 'No Pinova password yet — add one to sign in with email as well.',
+  'settings.password.socialSectionLead':
+    'Choose a strong password. You can then use your email and this password in addition to Google.',
+  'settings.password.setInitialModalTitle': 'Set your password',
+  'settings.password.setInitialModalBody':
+    'Enter the same password twice. It will work with your email address if you do not use Google.',
+  'settings.password.setInitialSubmit': 'Save password',
   'settings.danger.title': 'Danger zone',
   'settings.danger.logout': 'Sign out',
   'settings.danger.logout.desc': 'You will be redirected to the sign-in page',

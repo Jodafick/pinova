@@ -34,7 +34,7 @@ const handleForgotPassword = async () => {
         <div class="w-16 h-16 rounded-full bg-pink-50 flex items-center justify-center mx-auto mb-6">
           <span class="material-symbols-outlined text-pink-600 text-3xl">lock_reset</span>
         </div>
-        <h2 class="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('forgot.title') }}</h2>
+        <h2 class="text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('forgot.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('forgot.subtitle') }}</p>
       </div>
 

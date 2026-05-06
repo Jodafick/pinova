@@ -153,6 +153,8 @@ export type User = {
   blockedUsernames?: string[]
   /** Profil consulté : le visiteur connecté a déjà signalé ce compte (API `viewer_has_reported_profile`). */
   viewerHasReportedProfile?: boolean
+  /** `GET me/` — compte avec mot de passe Django utilisable (false si connexion sociale sans mot de passe). */
+  hasUsablePassword?: boolean
 }
 
 export type Notification = {

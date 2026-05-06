@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
 import { useI18n } from '../i18n'
@@ -34,6 +34,7 @@ const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
 ]
 
 const router = useRouter()
+const route = useRoute()
 const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket, fetchSubscriptionInvoices, fetchSubscriptionInvoiceReceipt, fetchCurrentUser } =
   useAuth()
 const { unblockUser } = usePins()
@@ -91,6 +92,15 @@ const saving = ref(false)
 const passwordChanging = ref(false)
 const passwordSaved = ref(false)
 const passwordError = ref('')
+const needsPasswordSetup = computed(
+  () => !!currentUser.value && currentUser.value.hasUsablePassword === false,
+)
+const initialPasswordModalOpen = ref(false)
+const initialPw1 = ref('')
+const initialPw2 = ref('')
+const initialPwBusy = ref(false)
+const initialPwError = ref('')
+const initialPwAutoOpened = ref(false)
 const adPrefsSaving = ref(false)
 const adAdsEnabled = ref(true)
 const partnerAdsEnabled = ref(true)
@@ -596,12 +606,11 @@ const handlePasswordChange = async () => {
 
   passwordChanging.value = true
   try {
-    // dj-rest-auth provides auth/password/change/
-    const api = (await import('../api')).default
-    await api.post('auth/password/change/', {
+    const apiMod = (await import('../api')).default
+    await apiMod.post('auth/password/change/', {
       old_password: oldPassword.value,
       new_password1: newPassword.value,
-      new_password2: confirmNewPassword.value
+      new_password2: confirmNewPassword.value,
     })
     passwordSaved.value = true
     oldPassword.value = ''
@@ -613,6 +622,55 @@ const handlePasswordChange = async () => {
     passwordError.value = err.response?.data?.non_field_errors?.[0] || t('settings.password.error.generic')
   } finally {
     passwordChanging.value = false
+  }
+}
+
+function openInitialPasswordModal() {
+  initialPwError.value = ''
+  initialPasswordModalOpen.value = true
+}
+
+function closeInitialPasswordModal() {
+  initialPasswordModalOpen.value = false
+  initialPwError.value = ''
+}
+
+const submitInitialPassword = async () => {
+  initialPwError.value = ''
+  if (initialPw1.value !== initialPw2.value) {
+    initialPwError.value = t('settings.password.error.mismatch')
+    return
+  }
+  initialPwBusy.value = true
+  try {
+    const apiMod = (await import('../api')).default
+    await apiMod.post('me/set-password/', {
+      new_password1: initialPw1.value,
+      new_password2: initialPw2.value,
+    })
+    initialPw1.value = ''
+    initialPw2.value = ''
+    closeInitialPasswordModal()
+    await fetchCurrentUser({ silent: true })
+    await showAlert(t('settings.password.saved'), { variant: 'success' })
+  } catch (err: unknown) {
+    const ax = err as { response?: { data?: Record<string, unknown> } }
+    const d = ax.response?.data
+    const np1 = d?.new_password1
+    const fromField = Array.isArray(np1) && typeof np1[0] === 'string' ? np1[0] : ''
+    const detail = d?.detail
+    const fromDetail =
+      typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail) && typeof detail[0] === 'string'
+          ? detail[0]
+          : ''
+    const nfe = d?.non_field_errors
+    const fromNfe = Array.isArray(nfe) && typeof nfe[0] === 'string' ? nfe[0] : ''
+    initialPwError.value =
+      fromField || fromDetail || fromNfe || t('settings.password.error.generic')
+  } finally {
+    initialPwBusy.value = false
   }
 }
 
@@ -932,6 +990,19 @@ function scrollToSettingsSection(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+watch(
+  () => [needsPasswordSetup.value, route.query.set_password, route.query.add_password] as const,
+  () => {
+    if (!needsPasswordSetup.value || initialPwAutoOpened.value) return
+    const q = route.query.set_password === '1' || route.query.add_password === '1'
+    if (!q) return
+    initialPwAutoOpened.value = true
+    initialPasswordModalOpen.value = true
+    void nextTick(() => scrollToSettingsSection('settings-password'))
+  },
+  { immediate: true },
+)
+
 let settingsNavScrollRaf: number | null = null
 
 function refreshSettingsActiveSection() {
@@ -982,6 +1053,21 @@ watch(
   <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">{{ t('settings.title') }}</h1>
     <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-5">{{ t('settings.subtitle') }}</p>
+
+    <div
+      v-if="needsPasswordSetup"
+      class="mb-6 rounded-2xl border border-amber-300/80 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-700/60 px-4 py-4 text-sm text-amber-950 dark:text-amber-100"
+    >
+      <p class="font-semibold">{{ t('settings.password.socialBannerTitle') }}</p>
+      <p class="mt-1 text-xs leading-relaxed opacity-90">{{ t('settings.password.socialBannerBody') }}</p>
+      <button
+        type="button"
+        class="mt-3 app-btn app-btn-sm bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+        @click="openInitialPasswordModal"
+      >
+        {{ t('settings.password.socialBannerCta') }}
+      </button>
+    </div>
 
     <nav
       :aria-label="t('settings.navLabel')"
@@ -1860,8 +1946,10 @@ watch(
       <section id="settings-password" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <div>
-            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.password.title') }}</h2>
-            <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.password.subtitle') }}</p>
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.password.title') }}</h2>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+              {{ needsPasswordSetup ? t('settings.password.socialSubtitle') : t('settings.password.subtitle') }}
+            </p>
           </div>
           <div v-if="passwordSaved" class="text-green-600 flex items-center gap-1 text-xs font-bold animate-fade-in">
             <span class="material-symbols-outlined text-sm">check_circle</span>
@@ -1869,7 +1957,18 @@ watch(
           </div>
         </div>
 
-        <div class="p-6 space-y-5">
+        <div v-if="needsPasswordSetup" class="p-6 space-y-4">
+          <p class="text-sm text-neutral-600 dark:text-neutral-300">{{ t('settings.password.socialSectionLead') }}</p>
+          <button
+            type="button"
+            class="app-btn app-btn-primary text-sm w-full sm:w-auto"
+            @click="openInitialPasswordModal"
+          >
+            {{ t('settings.password.socialBannerCta') }}
+          </button>
+        </div>
+
+        <div v-else class="p-6 space-y-5">
           <div v-if="passwordError" class="px-4 py-3 rounded-xl bg-pink-50 border border-pink-100 text-pink-600 text-xs">
             {{ passwordError }}
           </div>
@@ -1960,6 +2059,77 @@ watch(
       </section>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div
+      v-if="initialPasswordModalOpen"
+      class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-[2px]"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t('settings.password.setInitialModalTitle')"
+      @click.self="closeInitialPasswordModal"
+    >
+      <div
+        class="w-full max-w-md rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl p-6 space-y-4"
+        @click.stop
+      >
+        <div class="flex items-start justify-between gap-3">
+          <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+            {{ t('settings.password.setInitialModalTitle') }}
+          </h3>
+          <button
+            type="button"
+            class="rounded-full p-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            :aria-label="t('common.close')"
+            @click="closeInitialPasswordModal"
+          >
+            <span class="material-symbols-outlined text-xl">close</span>
+          </button>
+        </div>
+        <p class="text-sm text-neutral-600 dark:text-neutral-300">{{ t('settings.password.setInitialModalBody') }}</p>
+        <div v-if="initialPwError" class="px-3 py-2 rounded-xl bg-pink-50 dark:bg-pink-950/40 border border-pink-100 text-pink-700 text-xs">
+          {{ initialPwError }}
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">{{
+              t('settings.password.new')
+            }}</label>
+            <input
+              v-model="initialPw1"
+              type="password"
+              autocomplete="new-password"
+              class="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-950 text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">{{
+              t('settings.password.confirm')
+            }}</label>
+            <input
+              v-model="initialPw2"
+              type="password"
+              autocomplete="new-password"
+              class="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-950 text-sm"
+            />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="app-btn app-btn-secondary app-btn-sm" @click="closeInitialPasswordModal">
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="app-btn app-btn-primary app-btn-sm disabled:opacity-50"
+            :disabled="initialPwBusy || !initialPw1 || !initialPw2"
+            @click="submitInitialPassword"
+          >
+            {{ initialPwBusy ? t('settings.password.submitting') : t('settings.password.setInitialSubmit') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 
   <BillingReceiptPdfModal :open="receiptPdfOpen" :url="receiptPdfUrl" @close="closeReceiptPdf" />
 
