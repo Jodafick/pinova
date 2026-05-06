@@ -13,8 +13,6 @@
     "@floating-ui/vue": "^1.1.11",
     "@tensorflow/tfjs": "^4.22.0",
     "axios": "^1.14.0",
-    "dexie": "^4.2.1",
-    "fuse.js": "^7.1.0",
     "glin-profanity": "^3.3.0",
     "nsfwjs": "^4.3.0",
     "vue": "^3.5.25",

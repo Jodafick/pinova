@@ -68,7 +68,11 @@ const isAuthPage = computed(() => {
   <div class="min-h-screen flex flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-200">
     <!-- Full screen loading while initializing -->
     <div v-if="isInitializing" class="fixed inset-0 z-50 bg-white dark:bg-neutral-950 flex flex-col items-center justify-center">
-      <div class="w-12 h-12 rounded-full border-4 border-pink-100 dark:border-pink-900 border-t-pink-600 animate-spin mb-4"></div>
+      <img
+        src="./assets/logo.png"
+        alt="Pinova"
+        class="w-16 h-16 rounded-2xl object-cover shadow-sm animate-pulse mb-4"
+      />
       <p class="text-neutral-500 dark:text-neutral-400 font-medium">{{ t('app.loading') }}</p>
     </div>
 

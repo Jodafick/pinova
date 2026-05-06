@@ -281,22 +281,28 @@ const loadProfile = async () => {
       void router.replace({ name: 'login', query: { redirect: '/profile' } })
       return
     }
-    profileUser.value = currentUser.value
+    const cuOwn = currentUser.value
+    profileUser.value = cuOwn
     profileBoardsLoading.value = true
     try {
-      const myBoards = await fetchMyBoards()
-      profileUser.value.boards = myBoards.map((board: any) => ({
-        id: board.id,
-        name: board.name,
-        pinCount: board.pin_count ?? board.pinCount ?? 0,
-        isPrivate: board.is_private ?? board.isPrivate ?? false,
-        isOwner: board.is_owner !== false,
-        ownerUsername:
-          board.owner_username ?? board.ownerUsername ?? profileUser.value?.username,
-        collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
-        previewImages: board.preview_images ?? board.previewImages ?? [],
-        shareToken: board.share_token ?? board.shareToken ?? undefined,
-      }))
+      /** `GET me/` inclut déjà `me_boards_page` (page 1) avec les boards mappés — pas de 2e requête boards. */
+      const boardsFromMeBundle =
+        cuOwn.meCreatedPinsPage != null || cuOwn.meSavedPinsPage != null
+      if (!boardsFromMeBundle) {
+        const myBoards = await fetchMyBoards()
+        profileUser.value.boards = myBoards.map((board: any) => ({
+          id: board.id,
+          name: board.name,
+          pinCount: board.pin_count ?? board.pinCount ?? 0,
+          isPrivate: board.is_private ?? board.isPrivate ?? false,
+          isOwner: board.is_owner !== false,
+          ownerUsername:
+            board.owner_username ?? board.ownerUsername ?? profileUser.value?.username,
+          collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
+          previewImages: board.preview_images ?? board.previewImages ?? [],
+          shareToken: board.share_token ?? board.shareToken ?? undefined,
+        }))
+      }
     } catch (err) {
       console.error('Erreur chargement tableaux:', err)
     } finally {
@@ -336,7 +342,25 @@ const loadProfile = async () => {
 
   const uname = profileUser.value?.username
   if (uname) {
-    await loadProfilePins(uname, true)
+    const cu = currentUser.value
+    const createdHydrated = isMyProfile.value && cu?.meCreatedPinsPage != null
+    const savedHydrated = isMyProfile.value && cu?.meSavedPinsPage != null
+
+    if (createdHydrated) {
+      profilePins.value = [...(cu!.meCreatedPinsPage!.results || [])]
+      profilePinsHasMore.value = !!cu!.meCreatedPinsPage!.next
+      profilePinsNextPage.value = profilePinsHasMore.value ? 2 : 1
+      profilePinsLoading.value = false
+    } else {
+      await loadProfilePins(uname, true)
+    }
+
+    if (savedHydrated) {
+      savedPinsList.value = [...(cu!.meSavedPinsPage!.results || [])]
+      savedPinsHasMore.value = !!cu!.meSavedPinsPage!.next
+      savedPinsNextPage.value = savedPinsHasMore.value ? 2 : 1
+      savedPinsEverOpened.value = true
+    }
   } else {
     profilePins.value = []
   }
@@ -470,7 +494,8 @@ watch(currentLang, () => {
 watch(activeTab, (tab) => {
   if (tab === 'saved' && isMyProfile.value && currentUser.value && !savedPinsEverOpened.value) {
     savedPinsEverOpened.value = true
-    void loadSavedPins(true)
+    // Données déjà hydratées depuis `GET me/` : pas refetch inutile
+    if (savedPinsList.value.length === 0) void loadSavedPins(true)
   }
 })
 

@@ -886,6 +886,7 @@ async function deletePinFromMenu() {
                   :src="pin.imageUrl"
                   :alt="pin.title ? `${pin.title} — ${pin.user}` : t('feed.pinImageFallback', { user: pin.user })"
                   :fetchpriority="detailImageFetchPriority"
+                  loading="eager"
                   decoding="async"
                   :class="[
                     PIN_MEDIA_ANTI_LEAK_CLASS,
@@ -1065,7 +1066,13 @@ async function deletePinFromMenu() {
                   text-class="text-white"
                   :has-image="!!pin.userAvatarUrl"
                 >
-                  <img v-if="pin.userAvatarUrl" :src="pin.userAvatarUrl" class="w-full h-full object-cover" />
+                  <img
+                    v-if="pin.userAvatarUrl"
+                    :src="pin.userAvatarUrl"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <span v-else class="avatar-text">{{ displayInitials(pin.user) }}</span>
                 </AvatarDisc>
                 <div>
@@ -1242,6 +1249,8 @@ async function deletePinFromMenu() {
                     :src="currentUser.avatarUrl"
                     alt=""
                     class="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <span v-else>{{ currentUser.displayName[0] }}</span>
                 </AvatarDisc>

@@ -1,5 +1,5 @@
 import api from '../api'
-import { DEFAULT_AVATAR_COLOR_CLASS } from './useAuth'
+import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 import { getFullMediaUrl } from './usePins'
 
 export type SuggestUserRow = {

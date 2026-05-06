@@ -56,6 +56,14 @@ export type Pin = {
   viewerHasReported?: boolean
 }
 
+/** Première page renvoyée par `GET me/` (`me_created_pins_page` / `me_saved_pins_page`). */
+export type MeHydrationPinsPage = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: Pin[]
+}
+
 export type PinLikerEntry = {
   username: string
   display_name: string
@@ -133,6 +141,10 @@ export type User = {
     previewImages?: string[]
     shareToken?: string | null
   }[]
+  /** Hydratation `GET me/` — suite via `pins/?author=…&page=2` comme aujourd’hui. */
+  meCreatedPinsPage?: MeHydrationPinsPage
+  /** Hydratation `GET me/` — suite via `pins/?saved_by_me=1&page=2`. */
+  meSavedPinsPage?: MeHydrationPinsPage
   /** ISO YYYY-MM-DD — réservé au propriétaire ; obligatoire pour publier du média */
   birthDate?: string | null
   /** Nombre de pins créés visibles pour le visiteur (API `pins_count`). */

@@ -22,6 +22,12 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
+      path: '/explore/boards',
+      name: 'explore-boards',
+      component: () => import('../pages/ExploreBoardsPage.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/stories',
       redirect: '/',
     },

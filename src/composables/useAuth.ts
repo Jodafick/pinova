@@ -5,9 +5,10 @@ import { readApiErrorCode } from '../constants/authErrors'
 import { clearPinClientCaches } from '../pinClientCache'
 import { devLog } from '../devLog'
 import { API_BASE_URL } from '../env'
+import { extractMeHydrationFromApiPayload } from '../utils/mePayload'
+import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 
-/** Tailwind par défaut si l’API ne fournit pas `avatar_color` (aligné avec le backend). */
-export const DEFAULT_AVATAR_COLOR_CLASS = 'bg-neutral-400'
+export { DEFAULT_AVATAR_COLOR_CLASS }
 
 const defaultUser: User = {
   id: 1,
@@ -101,6 +102,64 @@ function getFullMediaUrl(url: string | null): string | undefined {
   return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
 }
 
+/** URL absolue pour les médias (tableaux, etc.) — chaîne vide si invalide. */
+function resolveFullMediaUrlString(url: string | null | undefined): string {
+  if (url == null || !String(url).trim()) return ''
+  const u = String(url).trim()
+  if (/^https?:\/\//i.test(u)) return u
+  return `${API_BASE_URL}${u.startsWith('/') ? '' : '/'}${u}`
+}
+
+/** Aperçus tableau : `profiles/` et `me/` renvoient `previewImages` ; `boards/` renvoie `preview_images`. */
+function normalizeBoardPreviewList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const out: string[] = []
+  for (const x of raw) {
+    if (typeof x !== 'string' || !x.trim()) continue
+    const r = resolveFullMediaUrlString(x.trim())
+    if (r) out.push(r)
+  }
+  return out.slice(0, 8)
+}
+
+function mapUserBoardsFromApi(raw: unknown): User['boards'] {
+  if (!Array.isArray(raw)) return []
+  const rows: NonNullable<User['boards']> = []
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue
+    const b = entry as Record<string, unknown>
+    const id = Number(b.id)
+    if (!Number.isFinite(id)) continue
+    rows.push({
+      id,
+      name: String(b.name ?? ''),
+      pinCount: Number(b.pinCount ?? b.pin_count ?? 0),
+      isPrivate: !!(b.isPrivate ?? b.is_private),
+      collaboratorCount: Number(b.collaboratorCount ?? b.collaborator_count ?? 0),
+      previewImages: normalizeBoardPreviewList(b.preview_images ?? b.previewImages),
+      isOwner:
+        typeof b.isOwner === 'boolean'
+          ? b.isOwner
+          : typeof b.is_owner === 'boolean'
+            ? b.is_owner
+            : undefined,
+      ownerUsername:
+        typeof b.ownerUsername === 'string'
+          ? b.ownerUsername
+          : typeof b.owner_username === 'string'
+            ? b.owner_username
+            : undefined,
+      shareToken:
+        b.shareToken != null
+          ? String(b.shareToken)
+          : b.share_token != null
+            ? String(b.share_token)
+            : undefined,
+    })
+  }
+  return rows
+}
+
 /** Date ISO YYYY-MM-DD pour affichage / formulaires ; alignée sur Django DateField. */
 export function normalizeBirthDateFromApi(raw: unknown): string | null {
   if (raw == null || raw === '') return null
@@ -114,6 +173,9 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
   if (!djangoUser) return defaultUser
   const profile = djangoUser.profile || djangoUser || {}
   const birthNormalized = normalizeBirthDateFromApi(profile.birth_date)
+  const meBundle = extractMeHydrationFromApiPayload(djangoUser as Record<string, unknown>)
+  const boards =
+    meBundle != null ? meBundle.boards : mapUserBoardsFromApi(djangoUser.boards)
   // id = clé utilisateur Django (User.pk), indispensable pour payloads cohérents.
   return {
     id: djangoUser.id,
@@ -165,7 +227,9 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
         ? djangoUser.subscription.seat_max_invitees
         : undefined,
     },
-    boards: djangoUser.boards || [],
+    boards,
+    meCreatedPinsPage: meBundle?.createdPinsPage,
+    meSavedPinsPage: meBundle?.savedPinsPage,
     birthDate: birthNormalized,
     pinsCount: typeof djangoUser.pins_count === 'number' ? djangoUser.pins_count : undefined,
     blockedUsernames: Array.isArray(djangoUser.blocked_usernames)
@@ -533,7 +597,7 @@ export function useAuth() {
       is_owner: b.is_owner === undefined ? true : !!b.is_owner,
       pin_count: Number(b.pin_count ?? b.pinCount ?? 0),
       collaborator_count: Number(b.collaborator_count ?? b.collaboratorCount ?? 0),
-      preview_images: (b.preview_images as string[] | undefined) ?? (b.previewImages as string[] | undefined) ?? [],
+      preview_images: normalizeBoardPreviewList(b.preview_images ?? b.previewImages),
       share_token: b.share_token as string | undefined,
       ownerUsername: String((b.owner_username as string | undefined) || '').trim() || undefined,
     }))

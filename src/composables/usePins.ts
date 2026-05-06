@@ -12,10 +12,7 @@ import {
   invalidatePinDetailClientCache,
   clearFeedFirstPageClientCache,
 } from '../pinClientCache'
-import { DEFAULT_AVATAR_COLOR_CLASS } from './useAuth'
-import { enqueueOfflineAction } from '../offline/queue'
-import { offlineDb } from '../offline/db'
-import type { CachedPost } from '../offline/types'
+import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 
 const pins = ref<Pin[]>([])
 const loading = ref(false)
@@ -109,19 +106,6 @@ export function isAlreadyReportedError(err: unknown): boolean {
 }
 
 export function usePins() {
-  const cachePinOffline = async (pin: Pin, synced: boolean) => {
-    const row: CachedPost = {
-      id: String(pin.id),
-      slug: pin.slug,
-      title: pin.title,
-      content: pin.description,
-      likes: pin.stats.reactions,
-      updatedAt: Date.now(),
-      synced,
-    }
-    await offlineDb.posts.put(row)
-  }
-  const isNetworkOffline = () => typeof navigator !== 'undefined' && !navigator.onLine
   const { currentLang } = useI18n()
   const setPendingFlag = (store: Record<string, boolean>, key: string, value: boolean) => {
     if (!key) return
@@ -204,7 +188,6 @@ export function usePins() {
       if (Array.isArray(pinsData) && pinsData.length > 0) {
         const newPins = pinsData.map(mapDjangoPinToFrontend)
         pins.value = [...pins.value, ...newPins]
-        await Promise.all(newPins.map((pin) => cachePinOffline(pin, true)))
         currentPage.value += 1
         hasNextPage.value = !!next
         if (pageAtStart === 1) {
@@ -251,7 +234,6 @@ export function usePins() {
       params: { lang: currentLang.value },
     })
     const mapped = mapDjangoPinToFrontend(response.data)
-    await cachePinOffline(mapped, true)
     setCachedPinDetail(slug, mapped)
     const idx = pins.value.findIndex((p) => p.slug === slug)
     if (idx >= 0) {
@@ -368,18 +350,11 @@ export function usePins() {
       pin.stats.reactions = Math.max(0, previousReactions + (pin.liked ? 1 : -1))
     }
     setPendingFlag(likePendingBySlug.value, pinSlug, true)
-    if (isNetworkOffline()) {
-      await enqueueOfflineAction('LIKE_POST', { pinSlug, liked: !previousLiked })
-      if (pin) await cachePinOffline(pin, false)
-      setPendingFlag(likePendingBySlug.value, pinSlug, false)
-      return { status: pin?.liked ? 'liked' : 'unliked', queued: true }
-    }
     try {
       const response = await api.post(`pins/${pinSlug}/like/`)
       if (pin) {
         pin.liked = response.data.status === 'liked'
         pin.stats.reactions = response.data.likes_count
-        await cachePinOffline(pin, true)
       }
       invalidatePinDetailClientCache(pinSlug)
       return response.data
@@ -387,7 +362,6 @@ export function usePins() {
       if (pin) {
         pin.liked = previousLiked
         pin.stats.reactions = previousReactions
-        await cachePinOffline(pin, false)
       }
       console.error('Error toggling like:', err)
       throw err
@@ -460,19 +434,6 @@ export function usePins() {
     pinSlug: string,
     payload: FormData | { text: string; gif?: string | null; parentId?: number | null },
   ) {
-    if (isNetworkOffline()) {
-      if (payload instanceof FormData) {
-        const text = String(payload.get('text') || '').trim()
-        await enqueueOfflineAction('COMMENT_POST', { pinSlug, text })
-      } else {
-        await enqueueOfflineAction('COMMENT_POST', {
-          pinSlug,
-          text: payload.text,
-          parentId: payload.parentId ?? null,
-        })
-      }
-      return { queued: true }
-    }
     try {
       /** Ne pas fixer `Content-Type` à la main sur FormData : axios ajoute le boundary requis ; sinon `parentId` / médias sont ignorés côté Django. */
       const response = await api.post(`pins/${pinSlug}/comments/`, payload)
@@ -569,40 +530,6 @@ export function usePins() {
   async function addPin(pinData: FormData) {
     loading.value = true
     try {
-      if (isNetworkOffline()) {
-        const title = String(pinData.get('title') || '').trim()
-        const description = String(pinData.get('description') || '').trim()
-        const link = String(pinData.get('link') || '').trim()
-        const optimisticSlug = `offline-${crypto.randomUUID()}`
-        const optimisticPin: Pin = {
-          id: -Date.now(),
-          slug: optimisticSlug,
-          title: title || 'Offline post',
-          description,
-          imageUrl: '',
-          user: 'Vous',
-          username: 'you',
-          userId: -1,
-          userAvatarColor: DEFAULT_AVATAR_COLOR_CLASS,
-          link,
-          stats: { saves: 0, reactions: 0 },
-          topic: 'Général',
-          topicDisplay: 'Général',
-          createdAt: new Date().toISOString(),
-          liked: false,
-          saved: false,
-        }
-        pins.value.unshift(optimisticPin)
-        await cachePinOffline(optimisticPin, false)
-        await enqueueOfflineAction('CREATE_POST', {
-          slug: optimisticSlug,
-          title,
-          description,
-          content: description,
-          link,
-        })
-        return optimisticPin
-      }
       // Pour Django, on envoie un FormData car il y a une image
       const response = await api.post('pins/', pinData, {
         headers: {
@@ -611,7 +538,6 @@ export function usePins() {
       })
       const newPin = mapDjangoPinToFrontend(response.data)
       pins.value.unshift(newPin)
-      await cachePinOffline(newPin, true)
       clearFeedFirstPageClientCache()
       setCachedPinDetail(newPin.slug, newPin)
       return newPin
@@ -651,14 +577,8 @@ export function usePins() {
   }
 
   async function deletePin(slug: string) {
-    if (isNetworkOffline()) {
-      pins.value = pins.value.filter((p) => p.slug !== slug)
-      await enqueueOfflineAction('DELETE_POST', { pinSlug: slug })
-      return
-    }
     await api.delete(`pins/${slug}/`)
     pins.value = pins.value.filter((p) => p.slug !== slug)
-    await offlineDb.posts.where('slug').equals(slug).delete()
     invalidatePinDetailClientCache(slug)
     clearFeedFirstPageClientCache()
   }

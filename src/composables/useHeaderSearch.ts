@@ -1,7 +1,7 @@
 import api from '../api'
 import { mapDjangoPinToFrontend, getFullMediaUrl } from './usePins'
 import type { Pin } from '../types'
-import { DEFAULT_AVATAR_COLOR_CLASS } from './useAuth'
+import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 
 export type HeaderSearchUser = {
   username: string
@@ -17,6 +17,7 @@ export type HeaderSearchBoard = {
   pinCount: number
   ownerUsername: string
   coverImageUrl: string
+  previewImages: string[]
 }
 
 export type HeaderSearchResult = {
@@ -39,17 +40,57 @@ function mapUser(row: Record<string, unknown>): HeaderSearchUser {
 }
 
 function mapBoard(row: Record<string, unknown>): HeaderSearchBoard {
+  const previewsRaw = row.preview_images
+  const previewImages =
+    Array.isArray(previewsRaw)
+      ? previewsRaw.filter((u): u is string => typeof u === 'string' && !!String(u).trim()).map(String)
+      : []
+  const cover =
+    typeof row.cover_image_url === 'string' && row.cover_image_url.trim()
+      ? row.cover_image_url.trim()
+      : previewImages[0] ?? ''
   return {
     id: Number(row.id ?? 0),
     name: String(row.name ?? ''),
     description: String(row.description ?? ''),
     pinCount: Number(row.pin_count ?? 0),
     ownerUsername: String(row.owner_username ?? ''),
-    coverImageUrl: String(row.cover_image_url ?? ''),
+    coverImageUrl: cover,
+    previewImages,
   }
 }
 
 /** Recherche unifiée header : pins + utilisateurs + recommandations (API fuzzy côté serveur). */
+export async function fetchExploreBoardsPage(opts: {
+  q?: string
+  page?: number
+  pageSize?: number
+}): Promise<{ results: HeaderSearchBoard[]; next: string | null; previous: string | null; count: number }> {
+  const page = opts.page ?? 1
+  const pageSize = opts.pageSize ?? 24
+  const trimmed = (opts.q || '').trim()
+  const res = await api.get<{
+    results?: Record<string, unknown>[]
+    next?: string | null
+    previous?: string | null
+    count?: number
+  }>('pins/explore-boards/', {
+    params: {
+      q: trimmed || undefined,
+      page,
+      page_size: pageSize,
+    },
+  })
+  const d = res.data ?? {}
+  const raw = Array.isArray(d.results) ? d.results : []
+  return {
+    results: raw.map((b: Record<string, unknown>) => mapBoard(b)),
+    next: typeof d.next === 'string' && d.next.trim() ? d.next : null,
+    previous: typeof d.previous === 'string' && d.previous.trim() ? d.previous : null,
+    count: typeof d.count === 'number' ? d.count : raw.length,
+  }
+}
+
 export async function fetchHeaderSearch(q: string, limit = 8): Promise<HeaderSearchResult> {
   const trimmed = q.trim()
   const res = await api.get('pins/header-search/', {
