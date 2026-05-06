@@ -42,8 +42,12 @@ function readUnreadCountHeader(headers: unknown): string | undefined {
   )
 }
 
+/** Évite un chargement infini si l’API ne répond pas (pas de timeout par défaut dans axios). */
+const API_REQUEST_TIMEOUT_MS = 45_000
+
 const api = axios.create({
   baseURL: API_URL,
+  timeout: API_REQUEST_TIMEOUT_MS,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -76,7 +80,10 @@ export async function proactiveRefreshIfStale(): Promise<void> {
     const { data } = await axios.post<{ access?: string; refresh?: string }>(
       `${API_URL}auth/token/refresh/`,
       { refresh },
-      { headers: { 'Content-Type': 'application/json' } },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: API_REQUEST_TIMEOUT_MS,
+      },
     )
     const newAccess = data?.access
     const newRefresh = data?.refresh
