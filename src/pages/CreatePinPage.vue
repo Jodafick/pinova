@@ -540,7 +540,7 @@ const selectCategory = (selected: TopicOption) => {
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900">
     <CreatePinEditSkeleton v-if="loadingEdit" />
     <template v-else>
     <div
@@ -558,13 +558,13 @@ const selectCategory = (selected: TopicOption) => {
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">{{ isEditMode ? t('pin.edit.title') : t('create.title') }}</h1>
-        <p class="text-sm text-neutral-500 mt-1">{{ isEditMode ? t('pin.edit.subtitle') : t('create.subtitle') }}</p>
+        <h1 class="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-neutral-100">{{ isEditMode ? t('pin.edit.title') : t('create.title') }}</h1>
+        <p class="text-sm text-neutral-500 dark:text-neutral-300 mt-1">{{ isEditMode ? t('pin.edit.subtitle') : t('create.subtitle') }}</p>
         <p v-if="createStep === 1" class="text-xs text-pink-600 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
       </div>
       <div class="flex items-center gap-3">
         <button
-          class="px-5 py-2.5 rounded-full text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition"
+          class="px-5 py-2.5 rounded-full text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
           @click="router.back()"
         >
           {{ t('common.cancel') }}
@@ -572,7 +572,7 @@ const selectCategory = (selected: TopicOption) => {
         <button
           v-if="createStep === 2"
           type="button"
-          class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition flex items-center gap-2"
+          class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition flex items-center gap-2 shadow-lg shadow-pink-400/30"
           :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending"
           @click="submitPin"
         >
@@ -593,7 +593,7 @@ const selectCategory = (selected: TopicOption) => {
         <button
           v-else
           type="button"
-          class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition"
+          class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition shadow-lg shadow-pink-400/30"
           :disabled="!title.trim()"
           @click="goStep2"
         >
@@ -604,7 +604,7 @@ const selectCategory = (selected: TopicOption) => {
 
     <!-- Form -->
     <!-- Formulaire : overflow visible pour que la liste catégories ne soit pas coupée -->
-    <div class="bg-white rounded-3xl shadow-lg border border-neutral-100 overflow-visible">
+    <div class="bg-white/95 dark:bg-neutral-900/95 rounded-3xl shadow-xl border border-pink-100 dark:border-neutral-700 overflow-visible">
       <div class="flex flex-col lg:flex-row">
         <!-- Image (étape 2) -->
         <div v-if="createStep === 2" class="lg:w-2/5 p-6 sm:p-8 bg-neutral-50 border-b lg:border-b-0 lg:border-r border-neutral-100">

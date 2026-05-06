@@ -5,9 +5,7 @@ import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
-import { displayInitials } from '../utils/displayInitials'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
-import AvatarDisc from './AvatarDisc.vue'
 import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/useModeration'
 import { useDataSaver } from '../composables/useDataSaver'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
@@ -19,7 +17,7 @@ import {
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
 
-const { formatCount, isPinSavePending, toggleLike, deletePin } = usePins()
+const { isPinSavePending, toggleLike, deletePin } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
 const router = useRouter()
 const { t } = useI18n()
@@ -201,13 +199,6 @@ function onCardKeydown(pin: Pin, ev: KeyboardEvent) {
 
 function usernamesMatch(a?: string | null, b?: string | null) {
   return (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
-}
-
-/** Compteur j’aime : toujours pour les pins classiques ; pour les stories, seulement l’auteur connecté. */
-function showPinReactionStats(pin: Pin) {
-  if (!pin.isStory) return true
-  if (!isAuthenticated.value) return false
-  return usernamesMatch(currentUser.value?.username, pin.username)
 }
 
 function viewerOwnsPin(pin: Pin): boolean {
@@ -397,52 +388,16 @@ onUnmounted(() => {
         </div>
 
         <!-- Pin info below image -->
-        <div class="px-3 pt-3 pb-3.5 bg-gradient-to-b from-white to-neutral-50/40 dark:from-neutral-900 dark:to-neutral-900">
+        <div class="px-1 pt-2 pb-2.5 bg-transparent">
           <p v-if="cell.pin.title" class="text-sm font-semibold leading-snug line-clamp-2 text-neutral-950 dark:text-neutral-100 tracking-tight">
             {{ cell.pin.title }}
           </p>
-
-          <router-link
-            :to="`/profile/${cell.pin.username}`"
-            class="mt-1.5 flex items-center gap-2 hover:bg-white/80 p-1.5 rounded-xl transition-colors ring-1 ring-transparent hover:ring-neutral-200/80"
-            @click.stop
-            :aria-label="t('pin.openAuthorProfile', { name: cell.pin.user })"
+          <p
+            v-if="cell.pin.description"
+            class="mt-1 text-xs leading-relaxed line-clamp-2 text-neutral-600 dark:text-neutral-400"
           >
-            <AvatarDisc
-              :color="cell.pin.userAvatarColor"
-              frame-class="w-7 h-7 text-[10px]"
-              text-class="text-white text-[10px]"
-              :has-image="!!cell.pin.userAvatarUrl"
-            >
-              <img v-if="cell.pin.userAvatarUrl" :src="cell.pin.userAvatarUrl" class="w-full h-full object-cover" />
-              <span v-else class="avatar-text">{{ displayInitials(cell.pin.user) }}</span>
-            </AvatarDisc>
-            <span class="text-xs text-neutral-600 dark:text-neutral-300 truncate font-medium">{{ cell.pin.user }}</span>
-          </router-link>
-
-          <div class="mt-1 flex items-center gap-3 text-[11px] text-neutral-700 dark:text-neutral-300">
-            <span v-if="cell.pin.stats.saves > 0" class="flex items-center gap-0.5">
-              {{ formatCount(cell.pin.stats.saves) }}
-              <span class="material-symbols-outlined text-xs" :class="{ 'fill-1 text-neutral-600': cell.pin.saved }">bookmark</span>
-            </span>
-            <span v-if="showPinReactionStats(cell.pin)" class="flex items-center gap-0.5">
-              {{ formatCount(cell.pin.stats.reactions) }}
-              <span class="material-symbols-outlined text-xs fill-1" :class="cell.pin.liked ? 'text-pink-600' : 'text-neutral-600'">favorite</span>
-            </span>
-          </div>
-          <div v-if="cell.pin.boards?.length" class="mt-2 flex flex-wrap gap-1.5">
-            <router-link
-              v-for="board in cell.pin.boards.slice(0, 2)"
-              :key="board.id"
-              :to="`/profile/${board.ownerUsername || cell.pin.username}/board/${board.id}`"
-              class="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full bg-gradient-to-br from-violet-50 to-fuchsia-50/90 text-[10px] font-semibold text-violet-800 ring-1 ring-violet-100 hover:from-violet-100 hover:to-fuchsia-100 max-w-full transition"
-              :title="board.name"
-              @click.stop
-            >
-              <span class="material-symbols-outlined text-xs shrink-0" aria-hidden="true">dashboard</span>
-              <span class="truncate">{{ board.name }}</span>
-            </router-link>
-          </div>
+            {{ cell.pin.description }}
+          </p>
         </div>
       </article>
 
@@ -455,16 +410,9 @@ onUnmounted(() => {
         <div class="relative overflow-hidden rounded-3xl bg-neutral-100 min-h-[140px]">
           <div class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200" />
         </div>
-        <div class="px-2 pt-2 pb-3 space-y-2">
+        <div class="px-1 pt-2 pb-2.5 space-y-2">
           <div class="h-[15px] w-5/6 max-w-[90%] rounded-md bg-neutral-200 animate-pulse" />
-          <div class="flex items-center gap-2 mt-1.5">
-            <div class="w-7 h-7 rounded-full bg-neutral-200 animate-pulse shrink-0" />
-            <div class="h-3 w-[55%] max-w-[9rem] rounded-md bg-neutral-200 animate-pulse" />
-          </div>
-          <div class="mt-1 flex items-center gap-3 pt-0.5">
-            <div class="h-[11px] w-9 rounded bg-neutral-100 animate-pulse" />
-            <div class="h-[11px] w-9 rounded bg-neutral-100 animate-pulse" />
-          </div>
+          <div class="h-3 w-[82%] max-w-[11rem] rounded-md bg-neutral-200/90 animate-pulse" />
         </div>
       </div>
       </template>

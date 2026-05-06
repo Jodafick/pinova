@@ -22,7 +22,6 @@ const description = ref('')
 const imageFile = ref<File | null>(null)
 const imagePreviewUrl = ref<string | null>(null)
 const saving = ref(false)
-const blurSensitive = ref(false)
 const mediaModerationPending = ref(false)
 const pendingSensitiveBlur = ref(false)
 let mediaScanGeneration = 0
@@ -39,8 +38,6 @@ const canPremium = computed(() =>
 const needsBirthBanner = computed(
   () => isAuthenticated.value && !hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate),
 )
-
-const showBlurToggle = computed(() => isVerifiedAdultFromBirthDate(currentUser.value?.birthDate))
 
 function revoke(name: string | null) {
   if (name) URL.revokeObjectURL(name)
@@ -140,9 +137,7 @@ async function submit() {
   }
 
   await fetchCurrentUser({ silent: true })
-  const blurPublish =
-    (blurSensitive.value || pendingSensitiveBlur.value) &&
-    isVerifiedAdultFromBirthDate(currentUser.value?.birthDate)
+  const blurPublish = pendingSensitiveBlur.value && isVerifiedAdultFromBirthDate(currentUser.value?.birthDate)
 
   saving.value = true
   try {
@@ -173,10 +168,10 @@ async function submit() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-neutral-50 pb-28">
+  <div class="min-h-screen bg-gradient-to-b from-pink-50 via-neutral-50 to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 pb-28">
     <div class="mx-auto max-w-lg px-4 py-8">
-      <h1 class="text-2xl font-bold text-neutral-900 mb-1">{{ t('story.standalone.title') }}</h1>
-      <p class="text-sm text-neutral-600 mb-6">{{ t('story.standalone.subtitle') }}</p>
+      <h1 class="text-2xl font-black text-neutral-900 dark:text-neutral-100 mb-1">{{ t('story.standalone.title') }}</h1>
+      <p class="text-sm text-neutral-600 dark:text-neutral-300 mb-6">{{ t('story.standalone.subtitle') }}</p>
 
       <div
         v-if="needsBirthBanner"
@@ -188,12 +183,12 @@ async function submit() {
         </router-link>
       </div>
 
-      <div class="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <div class="space-y-4 rounded-3xl border border-pink-100 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 p-5 shadow-lg shadow-pink-100/60 dark:shadow-black/20">
         <div>
-          <p class="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">{{ t('story.standalone.media') }}</p>
+          <p class="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">{{ t('story.standalone.media') }}</p>
           <div class="flex flex-wrap gap-2">
             <label
-              class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-100 transition disabled:opacity-40"
+              class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition disabled:opacity-40"
               :class="{ 'pointer-events-none': mediaModerationPending }"
             >
               <span class="material-symbols-outlined text-lg">photo_library</span>
@@ -201,10 +196,10 @@ async function submit() {
               <input type="file" accept="image/*" class="hidden" :disabled="mediaModerationPending" @change="(e) => void pickImage(e)">
             </label>
           </div>
-          <p class="text-xs text-neutral-500 mt-2">{{ t('story.standalone.mediaHint') }}</p>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-2">{{ t('story.standalone.mediaHint') }}</p>
         </div>
 
-        <div v-if="mediaModerationPending" class="flex items-center gap-2 text-xs text-neutral-500">
+        <div v-if="mediaModerationPending" class="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
           <span class="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin shrink-0" />
           {{ t('common.loading') }}
         </div>
@@ -214,23 +209,15 @@ async function submit() {
         </div>
 
         <div>
-          <label class="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{{ t('story.standalone.caption') }}</label>
+          <label class="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">{{ t('story.standalone.caption') }}</label>
           <textarea
             v-model="description"
             rows="4"
             maxlength="1000"
-            class="mt-2 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-pink-500 outline-none"
+            class="mt-2 w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-pink-500 outline-none"
             :placeholder="t('story.standalone.captionPlaceholder')"
           />
         </div>
-
-        <label
-          v-if="showBlurToggle"
-          class="flex items-start gap-3 cursor-pointer rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2.5"
-        >
-          <input v-model="blurSensitive" type="checkbox" class="mt-1 rounded border-neutral-300 text-pink-600 focus:ring-pink-500">
-          <span class="text-sm text-neutral-700 leading-snug">{{ t('story.standalone.sensitiveBlur') }}</span>
-        </label>
 
         <button
           type="button"

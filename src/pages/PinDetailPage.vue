@@ -849,11 +849,11 @@ async function deletePinFromMenu() {
         <!-- Back button -->
         <button
           type="button"
-          class="group mb-8 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white/90 px-3.5 py-2 text-sm font-medium text-neutral-600 shadow-sm backdrop-blur-sm transition hover:border-pink-200/80 hover:bg-white hover:text-neutral-900 hover:shadow-md"
+          class="group mb-8 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 dark:border-neutral-700 bg-white/90 dark:bg-neutral-900/85 px-3.5 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-200 shadow-sm backdrop-blur-sm transition hover:border-pink-300/80 dark:hover:border-pink-500/50 hover:bg-white dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white hover:shadow-md"
           :aria-label="t('pin.a11y.back')"
           @click="goBack"
         >
-          <span class="material-symbols-outlined text-lg text-neutral-500 transition group-hover:text-pink-600">arrow_back</span>
+          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-300 transition group-hover:text-pink-600">arrow_back</span>
           {{ t('common.back') }}
         </button>
 
@@ -1011,7 +1011,7 @@ async function deletePinFromMenu() {
 
             <!-- Title & Description -->
             <div class="flex items-start gap-2 mb-3 flex-wrap">
-              <h1 id="pin-detail-title" class="text-2xl sm:text-3xl font-bold text-neutral-950 flex-1 min-w-[12rem]">{{ pin.title }}</h1>
+              <h1 id="pin-detail-title" class="text-2xl sm:text-3xl font-black text-neutral-950 dark:text-neutral-100 flex-1 min-w-[12rem]">{{ pin.title }}</h1>
               <span
                 v-if="pinVisibility !== 'public'"
                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0"

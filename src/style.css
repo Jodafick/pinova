@@ -56,25 +56,25 @@
  */
 @layer components {
   .lux-pin-card {
-    @apply rounded-3xl overflow-hidden bg-white cursor-pointer;
-    border: 1px solid rgb(228 228 231 / 0.85);
+    @apply rounded-3xl overflow-hidden cursor-pointer;
+    border: 1px solid rgb(228 228 231 / 0.45);
     box-shadow:
-      0 1px 2px rgb(15 23 42 / 0.04),
-      0 12px 44px -14px rgb(15 23 42 / 0.14);
+      0 1px 2px rgb(15 23 42 / 0.02),
+      0 8px 30px -18px rgb(15 23 42 / 0.12);
     transition:
       transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
       box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
       border-color 0.35s ease;
+    background: transparent;
   }
 
   @media (hover: hover) {
     .lux-pin-card:hover {
-      transform: translateY(-5px);
-      border-color: rgb(244 244 245);
+      transform: translateY(-3px);
+      border-color: rgb(228 228 231 / 0.75);
       box-shadow:
-        0 2px 8px rgb(15 23 42 / 0.05),
-        0 28px 64px -18px rgb(15 23 42 / 0.2),
-        0 0 0 1px rgb(225 29 119 / 0.08);
+        0 2px 8px rgb(15 23 42 / 0.04),
+        0 14px 38px -18px rgb(15 23 42 / 0.18);
     }
   }
 
@@ -125,7 +125,7 @@
     border-radius: 9999px;
     padding: 0.625rem 1.65rem;
     @apply inline-flex items-center justify-center gap-2 font-semibold text-sm text-white;
-    background: linear-gradient(145deg, #3f3f46 0%, #18181b 55%, #09090b 100%);
+    background: #27272a;
     box-shadow: 0 10px 28px -6px rgb(15 23 42 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.08);
     border: 1px solid rgb(63 63 70 / 0.6);
     transition: filter 0.2s ease, transform 0.18s ease;
@@ -209,7 +209,7 @@
 
   .lux-btn-pin-save {
     @apply absolute top-3 right-3 z-10 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300;
-    background: linear-gradient(145deg, #fbcfe8 0%, #db2777 35%, #9f1239 100%);
+    background: #db2777;
     color: #fff;
     box-shadow: 0 8px 28px -4px rgb(219 39 119 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.2);
     border: 1px solid rgb(255 255 255 / 0.15);
@@ -217,7 +217,7 @@
 
   .lux-btn-pin-save-saved {
     @apply opacity-100;
-    background: linear-gradient(145deg, #fafafa 0%, #18181b 100%);
+    background: #27272a;
     box-shadow: 0 8px 28px -4px rgb(15 23 42 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.06);
     border-color: rgb(82 82 91 / 0.5);
   }
@@ -299,17 +299,37 @@
 
 /* ─── Thème sombre : surfaces « lux » (cartes pin, modales, champs) ───────── */
 .dark .lux-pin-card {
-  border-color: rgb(63 63 70 / 0.9);
+  border-color: rgb(63 63 70 / 0.55);
   box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.35),
-    0 12px 44px -14px rgb(0 0 0 / 0.55);
-  background: linear-gradient(165deg, rgb(30 27 30) 0%, rgb(24 22 26) 100%);
+    0 1px 2px rgb(0 0 0 / 0.28),
+    0 10px 30px -18px rgb(0 0 0 / 0.5);
+  background: transparent;
 }
 
 .dark .lux-pin-skeleton-card {
-  @apply bg-neutral-900;
+  @apply bg-transparent;
   border-color: rgb(63 63 70 / 0.45);
   box-shadow: 0 8px 32px -12px rgb(0 0 0 / 0.45);
+}
+
+.dark .lux-btn-primary {
+  background: #ec4899;
+  box-shadow: 0 8px 24px -10px rgb(236 72 153 / 0.5);
+}
+
+.dark .lux-btn-detail-saved {
+  background: #3f3f46;
+  border-color: rgb(82 82 91 / 0.8);
+}
+
+.dark .lux-btn-pin-save {
+  background: #ec4899;
+  box-shadow: 0 8px 24px -10px rgb(236 72 153 / 0.55);
+}
+
+.dark .lux-btn-pin-save-saved {
+  background: #3f3f46;
+  border-color: rgb(82 82 91 / 0.8);
 }
 
 .dark .lux-icon-ring-btn {
@@ -432,8 +452,8 @@
 .dark input:not([type='checkbox']):not([type='radio']),
 .dark textarea,
 .dark select {
-  background-color: rgb(39 39 42) !important;
-  border-color: rgb(82 82 91 / 0.9) !important;
+  background-color: rgb(30 30 34) !important;
+  border-color: rgb(82 82 91 / 0.85) !important;
   color: rgb(245 245 245) !important;
 }
 
