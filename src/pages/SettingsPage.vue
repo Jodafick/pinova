@@ -932,8 +932,8 @@ const submitSupportTicket = async () => {
   }
 }
 
-const handleLogout = () => {
-  logout()
+const handleLogout = async () => {
+  await logout()
   router.push('/login')
 }
 
@@ -1050,7 +1050,9 @@ watch(
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+  <div
+    class="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col h-full min-h-0 pt-8 sm:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[calc(100svh-12.5rem-env(safe-area-inset-bottom,0px))] sm:min-h-[calc(100dvh-11rem)]"
+  >
     <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">{{ t('settings.title') }}</h1>
     <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-5">{{ t('settings.subtitle') }}</p>
 
@@ -1071,7 +1073,7 @@ watch(
 
     <nav
       :aria-label="t('settings.navLabel')"
-      class="sticky top-14 z-20 mb-8 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,.5)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
+      class="sticky z-20 mb-8 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,.5)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] max-sm:top-[calc(3.5rem+env(safe-area-inset-top,0px))] sm:top-14"
     >
       <div class="flex gap-1.5 overflow-x-auto px-3 py-2.5 no-scrollbar scroll-pl-1 scroll-pr-6 touch-pan-x">
         <button
@@ -1093,24 +1095,6 @@ watch(
       </div>
     </nav>
 
-    <div
-      v-if="scheduledAccountDeletion"
-      class="mb-6 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-4 text-sm text-rose-950"
-    >
-      <p class="font-semibold">{{ t('settings.danger.delete.bannerTitle') }}</p>
-      <p class="mt-1 text-xs leading-relaxed">
-        {{ t('settings.danger.delete.bannerBody', { date: scheduledAccountDeletionLabel }) }}
-      </p>
-      <button
-        type="button"
-        class="mt-3 app-btn app-btn-secondary app-btn-sm border-rose-200 dark:border-rose-700/70 text-rose-900 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/30"
-        :disabled="accountDeletionBusy"
-        @click="cancelAccountDeletion()"
-      >
-        {{ t('settings.danger.delete.cancelSchedule') }}
-      </button>
-    </div>
-
     <!-- Success message -->
     <div
       v-if="saved"
@@ -1120,7 +1104,8 @@ watch(
       {{ t('settings.saved') }}
     </div>
 
-    <div class="space-y-8">
+    <div class="flex-1 flex flex-col min-h-0">
+      <div class="space-y-8">
       <!-- Profile section -->
       <section id="settings-profile" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
@@ -2018,11 +2003,31 @@ watch(
           </div>
         </div>
       </section>
+      </div>
 
-      <!-- Danger zone -->
-      <section id="settings-danger" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl border-pink-300/55 overflow-hidden">
+      <section
+        id="settings-danger"
+        class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl border-pink-300/55 overflow-hidden mt-auto pt-8"
+      >
         <div class="px-6 py-5 border-b border-pink-300/50 dark:border-pink-700/50">
           <h2 class="text-lg font-semibold text-pink-600 dark:text-pink-300">{{ t('settings.danger.title') }}</h2>
+        </div>
+        <div
+          v-if="scheduledAccountDeletion"
+          class="p-6 border-b border-rose-200/60 dark:border-rose-800/50 bg-rose-50/90 dark:bg-rose-950/30"
+        >
+          <p class="font-semibold text-sm text-rose-950 dark:text-rose-100">{{ t('settings.danger.delete.bannerTitle') }}</p>
+          <p class="mt-1 text-xs leading-relaxed text-rose-900 dark:text-rose-100/90">
+            {{ t('settings.danger.delete.bannerBody', { date: scheduledAccountDeletionLabel }) }}
+          </p>
+          <button
+            type="button"
+            class="mt-3 app-btn app-btn-secondary app-btn-sm border-rose-200 dark:border-rose-700/70 text-rose-900 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/30"
+            :disabled="accountDeletionBusy"
+            @click="cancelAccountDeletion()"
+          >
+            {{ t('settings.danger.delete.cancelSchedule') }}
+          </button>
         </div>
         <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-200/45 dark:border-pink-800/40">
           <div>

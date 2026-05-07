@@ -16,16 +16,13 @@ app.use(GoogleSignInPlugin, {
   clientId: GOOGLE_CLIENT_ID,
 })
 
-// Session : refresh proactif si JWT court expiré, puis profil utilisateur.
-// Toujours monter l’app ensuite : sinon le splash statique de index.html reste à l’infini
-// si l’API ne répond pas (CORS, mauvaise URL, backend down) ou si une promesse rejette.
+// Monter l’app tout de suite : l’UI ne doit pas rester bloquée sur le splash si l’API est lente ou injoignable.
+// Session : refresh proactif + profil en arrière-plan (App.vue relance aussi fetchCurrentUser au besoin).
 const { fetchCurrentUser } = useAuth()
+app.use(router)
+app.mount('#app')
 void proactiveRefreshIfStale()
   .catch((err) => console.warn('[Pinova] proactiveRefreshIfStale', err))
   .then(() =>
     fetchCurrentUser().catch((err) => console.warn('[Pinova] fetchCurrentUser (bootstrap)', err)),
   )
-  .finally(() => {
-    app.use(router)
-    app.mount('#app')
-  })

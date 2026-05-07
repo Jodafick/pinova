@@ -165,25 +165,17 @@ const router = createRouter({
   ],
 })
 
-import { watch } from 'vue'
-
 // Navigation Guard
 router.beforeEach(async (to, from) => {
   devLog(`🧭 Navigating from ${String(from.name)} to ${String(to.name)}`)
-  const { isAuthenticated, isInitializing } = useAuth()
-  
-  // Attendre l'initialisation de l'auth si elle est en cours
-  if (isInitializing.value) {
-    devLog('⏳ Auth is initializing, waiting...')
-    // On attend que fetchCurrentUser soit terminé via une promesse sur watch
-    await new Promise<void>((resolve) => {
-      const unwatch = watch(isInitializing, (val) => {
-        if (!val) {
-          unwatch()
-          resolve()
-        }
-      }, { immediate: true })
-    })
+  const { isAuthenticated, fetchCurrentUser } = useAuth()
+
+  const hasStoredToken =
+    typeof window !== 'undefined' && !!window.localStorage.getItem('pinova_token')
+
+  // Une seule requête silencieuse si un JWT est stocké mais le profil pas encore hydraté (pas d’écran de chargement global).
+  if (!isAuthenticated.value && hasStoredToken && (to.meta.requiresAuth || to.meta.guest)) {
+    await fetchCurrentUser({ silent: true }).catch(() => undefined)
   }
 
   // Si la route demande d'être authentifié et que l'utilisateur n'est pas connecté
@@ -194,7 +186,6 @@ router.beforeEach(async (to, from) => {
 
   /* Profil serveur à jour (ex. date de naissance) avant la création — sans écran de chargement global. */
   if ((to.name === 'create' || to.name === 'edit-pin') && isAuthenticated.value) {
-    const { fetchCurrentUser } = useAuth()
     await fetchCurrentUser({ silent: true })
   }
   

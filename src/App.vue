@@ -8,7 +8,7 @@ import AppAlertModal from './components/AppAlertModal.vue'
 import { devLog } from './devLog'
 
 const route = useRoute()
-const { fetchCurrentUser, isAuthenticated, isInitializing, currentUser } = useAuth()
+const { fetchCurrentUser, isAuthenticated, currentUser } = useAuth()
 const { t, setLang, currentLang, languages } = useI18n()
 // Apply current language on app start (sets html lang/dir attributes).
 setLang(currentLang.value)
@@ -66,31 +66,23 @@ const isAuthPage = computed(() => {
 
 <template>
   <div class="min-h-screen flex flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-200">
-    <!-- Full screen loading while initializing -->
-    <div v-if="isInitializing" class="fixed inset-0 z-50 bg-white dark:bg-neutral-950 flex flex-col items-center justify-center">
-      <img
-        src="./assets/logo.png"
-        alt="Pinova"
-        class="w-16 h-16 rounded-2xl object-cover shadow-sm animate-pulse mb-4"
-      />
-      <p class="text-neutral-500 dark:text-neutral-400 font-medium">{{ t('app.loading') }}</p>
-    </div>
+    <GlobalHeader v-if="!isAuthPage" />
 
-    <GlobalHeader v-if="!isAuthPage && !isInitializing" />
-
-    <main class="flex-1" v-if="!isInitializing">
+    <main class="flex-1 flex flex-col min-h-0">
+      <div class="flex-1 flex flex-col min-h-0 w-full">
       <router-view v-slot="{ Component, route: r }">
         <KeepAlive>
           <component :is="Component" v-if="r.meta.keepAlive" />
         </KeepAlive>
         <component :is="Component" v-if="!r.meta.keepAlive" />
       </router-view>
+      </div>
     </main>
 
     <AppAlertModal />
 
     <!-- Footer -->
-    <footer v-if="!isInitializing && !(route.meta as any).guest" class="border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-6 px-6 sm:px-10 transition-colors">
+    <footer v-if="!(route.meta as any).guest" class="border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-6 px-6 sm:px-10 transition-colors">
       <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-2">
           <div class="w-6 h-6 rounded-full bg-pink-600 flex items-center justify-center overflow-hidden">

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Pinova</title>
     <link
       rel="stylesheet"
@@ -11,32 +11,7 @@
     />
   </head>
   <body>
-    <div id="app">
-      <style>
-        .boot-splash {
-          position: fixed;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #fff;
-        }
-        .boot-splash__logo {
-          width: 72px;
-          height: 72px;
-          border-radius: 18px;
-          object-fit: cover;
-          animation: boot-pulse 1.2s ease-in-out infinite;
-        }
-        @keyframes boot-pulse {
-          0%, 100% { opacity: 0.78; transform: scale(0.98); }
-          50% { opacity: 1; transform: scale(1); }
-        }
-      </style>
-      <div class="boot-splash" aria-label="Chargement initial">
-        <img src="/logo.png" alt="Pinova" class="boot-splash__logo" />
-      </div>
-    </div>
+    <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

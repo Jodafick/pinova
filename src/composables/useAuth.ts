@@ -6,6 +6,10 @@ import { clearPinClientCaches } from '../pinClientCache'
 import { devLog } from '../devLog'
 import { API_BASE_URL } from '../env'
 import { extractMeHydrationFromApiPayload } from '../utils/mePayload'
+import {
+  resyncWebPushSubscriptionForCurrentUser,
+  unregisterWebPushFromBackend,
+} from '../utils/webPushBackendSync'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 
 export { DEFAULT_AVATAR_COLOR_CLASS }
@@ -46,7 +50,8 @@ const defaultUser: User = {
 
 const currentUser = ref<User | null>(null)
 const isAuthenticated = computed(() => currentUser.value !== null)
-const isInitializing = ref(true)
+/** Plus utilisé pour bloquer l’UI ; conservé pour compat éventuelle (toujours false). */
+const isInitializing = ref(false)
 const inMemoryAccessToken = ref<string | null>(
   typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null,
 )
@@ -349,7 +354,6 @@ export function useAuth() {
   }
 
   async function fetchCurrentUser(opts?: { silent?: boolean; force?: boolean }) {
-    const silent = !!opts?.silent
     const force = !!opts?.force
     if (
       !force &&
@@ -360,17 +364,8 @@ export function useAuth() {
       return
     }
     if (currentUserFetchPromise) {
-      try {
-        await currentUserFetchPromise
-      } finally {
-        if (!silent) {
-          isInitializing.value = false
-        }
-      }
+      await currentUserFetchPromise
       return
-    }
-    if (!silent) {
-      isInitializing.value = true
     }
     currentUserFetchPromise = (async () => {
       devLog('📡 Fetching user from API...')
@@ -381,6 +376,7 @@ export function useAuth() {
           currentUser.value = mapDjangoUserToFrontend(response.data)
           persistMePayloadFromApi(response.data)
           currentUserLastFetchAt = Date.now()
+          void resyncWebPushSubscriptionForCurrentUser(api).catch(() => undefined)
         }
       } catch (err) {
         if (!currentUser.value) {
@@ -388,9 +384,6 @@ export function useAuth() {
         }
         console.warn('❌ Session absente ou expirée.')
       } finally {
-        if (!silent) {
-          isInitializing.value = false
-        }
         currentUserFetchPromise = null
       }
     })()
@@ -611,9 +604,12 @@ export function useAuth() {
     }
   }
 
-  function logout() {
+  async function logout() {
     const hadToken = !!inMemoryAccessToken.value
     const refreshToken = typeof window !== 'undefined' ? window.localStorage.getItem('pinova_refresh_token') : null
+    if (hadToken) {
+      await unregisterWebPushFromBackend(api).catch(() => undefined)
+    }
     clearAuthState()
     if (hadToken) {
       api.post('auth/logout/', refreshToken ? { refresh: refreshToken } : undefined).catch(() => undefined)

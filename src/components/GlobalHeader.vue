@@ -263,9 +263,9 @@ const handleSearch = () => {
   router.push(q ? { path: '/explore', query: { q } } : { path: '/explore' })
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
   closeDropdowns()
-  logout()
+  await logout()
   router.push('/')
 }
 
