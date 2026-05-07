@@ -54,6 +54,12 @@ let hasAuthInvalidationListener = false
 const CURRENT_USER_CACHE_TTL_MS = 60_000
 let currentUserLastFetchAt = 0
 let currentUserFetchPromise: Promise<void> | null = null
+let updateProfileInFlight:
+  | {
+      signature: string
+      promise: Promise<unknown>
+    }
+  | null = null
 
 /** Réponse brute `GET me/` pour réhydrater la session hors ligne / avant le premier round-trip. */
 const PINOVA_ME_PAYLOAD_KEY = 'pinova_me_payload_v1'
@@ -251,6 +257,58 @@ export type FetchUserProfileResult = {
 }
 
 export function useAuth() {
+  function buildUpdateProfileSignature(data: {
+    displayName?: string
+    bio?: string
+    email?: string
+    avatar?: File
+    preferredLanguage?: string
+    preferredCurrency?: string
+    birthDate?: string | null
+    adAdsEnabled?: boolean
+    partnerAdsEnabled?: boolean
+    tipsEnabled?: boolean
+    tipsUrl?: string
+    privateProfile?: boolean
+    discoverableProfile?: boolean
+    notificationsFollowers?: boolean
+    notificationsSaves?: boolean
+    notificationsRecommendations?: boolean
+    notificationsDigestCreatorWeekly?: boolean
+    sensitiveMediaBlurByDefault?: boolean
+    hideSensitivePins?: boolean
+  }) {
+    const avatar = data.avatar
+      ? {
+          name: data.avatar.name,
+          size: data.avatar.size,
+          type: data.avatar.type,
+          lastModified: data.avatar.lastModified,
+        }
+      : null
+    return JSON.stringify({
+      displayName: data.displayName,
+      bio: data.bio,
+      email: data.email,
+      avatar,
+      preferredLanguage: data.preferredLanguage,
+      preferredCurrency: data.preferredCurrency,
+      birthDate: data.birthDate ?? null,
+      adAdsEnabled: data.adAdsEnabled,
+      partnerAdsEnabled: data.partnerAdsEnabled,
+      tipsEnabled: data.tipsEnabled,
+      tipsUrl: data.tipsUrl,
+      privateProfile: data.privateProfile,
+      discoverableProfile: data.discoverableProfile,
+      notificationsFollowers: data.notificationsFollowers,
+      notificationsSaves: data.notificationsSaves,
+      notificationsRecommendations: data.notificationsRecommendations,
+      notificationsDigestCreatorWeekly: data.notificationsDigestCreatorWeekly,
+      sensitiveMediaBlurByDefault: data.sensitiveMediaBlurByDefault,
+      hideSensitivePins: data.hideSensitivePins,
+    })
+  }
+
   function clearAuthState() {
     currentUserFetchPromise = null
     currentUserLastFetchAt = 0
@@ -262,6 +320,7 @@ export function useAuth() {
       clearMePayloadCache()
     }
     currentUser.value = null
+    isInitializing.value = false
     clearPinClientCaches()
   }
 
@@ -301,7 +360,13 @@ export function useAuth() {
       return
     }
     if (currentUserFetchPromise) {
-      await currentUserFetchPromise
+      try {
+        await currentUserFetchPromise
+      } finally {
+        if (!silent) {
+          isInitializing.value = false
+        }
+      }
       return
     }
     if (!silent) {
@@ -360,7 +425,12 @@ export function useAuth() {
   }
 
   async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean, hideSensitivePins?: boolean }) {
+    const signature = buildUpdateProfileSignature(data)
+    if (updateProfileInFlight && updateProfileInFlight.signature === signature) {
+      return updateProfileInFlight.promise
+    }
     try {
+      const requestPromise = (async () => {
       const formData = new FormData()
       if (data.displayName) formData.append('display_name', data.displayName)
       if (data.bio !== undefined) formData.append('bio', data.bio)
@@ -403,9 +473,17 @@ export function useAuth() {
         currentUserLastFetchAt = Date.now()
       }
       return response.data
+      })()
+      updateProfileInFlight = { signature, promise: requestPromise }
+      const out = await requestPromise
+      return out
     } catch (err) {
       console.error('Error updating profile:', err)
       throw err
+    } finally {
+      if (updateProfileInFlight?.signature === signature) {
+        updateProfileInFlight = null
+      }
     }
   }
 

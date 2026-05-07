@@ -9,6 +9,7 @@ import {
 export const AUTH_INVALIDATED_EVENT = 'pinova-auth-invalidated'
 
 const REFRESH_LEEWAY_SEC = 120
+let refreshInFlightPromise: Promise<string | null> | null = null
 
 function decodeJwtExp(token: string): number | null {
   try {
@@ -62,6 +63,42 @@ function clearStoredTokens() {
   window.dispatchEvent(new Event(AUTH_INVALIDATED_EVENT))
 }
 
+async function refreshAccessWithSingleFlight(refreshToken: string): Promise<string | null> {
+  if (refreshInFlightPromise) return refreshInFlightPromise
+  refreshInFlightPromise = (async () => {
+    try {
+      const { data } = await axios.post<{ access?: string; refresh?: string }>(
+        `${API_URL}auth/token/refresh/`,
+        { refresh: refreshToken },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: API_REQUEST_TIMEOUT_MS,
+        },
+      )
+      const newAccess = data?.access
+      const newRefresh = data?.refresh
+      if (!newAccess) {
+        clearStoredTokens()
+        return null
+      }
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('pinova_token', newAccess)
+        if (newRefresh) {
+          window.localStorage.setItem('pinova_refresh_token', newRefresh)
+        }
+      }
+      api.defaults.headers.common.Authorization = `Bearer ${newAccess}`
+      return newAccess
+    } catch {
+      clearStoredTokens()
+      return null
+    } finally {
+      refreshInFlightPromise = null
+    }
+  })()
+  return refreshInFlightPromise
+}
+
 /**
  * Avant le premier `me/`, rafraîchit l’accès si le JWT est absent, expiré ou proche de l’expiration.
  * Utilise une requête axios « nue » pour éviter une boucle avec l’intercepteur 401.
@@ -76,29 +113,7 @@ export async function proactiveRefreshIfStale(): Promise<void> {
   const exp = access ? decodeJwtExp(access) : null
   if (access && exp !== null && exp > now + REFRESH_LEEWAY_SEC) return
 
-  try {
-    const { data } = await axios.post<{ access?: string; refresh?: string }>(
-      `${API_URL}auth/token/refresh/`,
-      { refresh },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: API_REQUEST_TIMEOUT_MS,
-      },
-    )
-    const newAccess = data?.access
-    const newRefresh = data?.refresh
-    if (!newAccess) {
-      clearStoredTokens()
-      return
-    }
-    window.localStorage.setItem('pinova_token', newAccess)
-    if (newRefresh) {
-      window.localStorage.setItem('pinova_refresh_token', newRefresh)
-    }
-    api.defaults.headers.common.Authorization = `Bearer ${newAccess}`
-  } catch {
-    clearStoredTokens()
-  }
+  await refreshAccessWithSingleFlight(refresh)
 }
 
 api.interceptors.request.use((config) => {
@@ -160,23 +175,11 @@ api.interceptors.response.use(
       }
 
       originalRequest._retry = true
+      const newAccess = await refreshAccessWithSingleFlight(refreshToken)
+      if (!newAccess) {
+        return Promise.reject(error)
+      }
       try {
-        const refreshResponse = await api.post('auth/token/refresh/', { refresh: refreshToken })
-        const newAccess = refreshResponse.data?.access
-        const newRefresh = refreshResponse.data?.refresh
-
-        if (!newAccess) {
-          clearStoredTokens()
-          return Promise.reject(error)
-        }
-
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem('pinova_token', newAccess)
-          if (newRefresh) {
-            window.localStorage.setItem('pinova_refresh_token', newRefresh)
-          }
-        }
-        api.defaults.headers.common.Authorization = `Bearer ${newAccess}`
         originalRequest.headers = originalRequest.headers || {}
         originalRequest.headers.Authorization = `Bearer ${newAccess}`
         return api.request(originalRequest)

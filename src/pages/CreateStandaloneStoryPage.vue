@@ -106,7 +106,9 @@ onMounted(async () => {
     router.push('/login')
     return
   }
-  await fetchCurrentUser({ silent: true })
+  if (!currentUser.value) {
+    await fetchCurrentUser({ silent: true })
+  }
   if (!canPremium.value) {
     await showAlert(t('story.standalone.needPlus'), { variant: 'info', title: t('story.standalone.title') })
     router.push('/premium')

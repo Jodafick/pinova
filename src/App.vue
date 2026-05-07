@@ -79,7 +79,12 @@ const isAuthPage = computed(() => {
     <GlobalHeader v-if="!isAuthPage && !isInitializing" />
 
     <main class="flex-1" v-if="!isInitializing">
-      <router-view />
+      <router-view v-slot="{ Component, route: r }">
+        <KeepAlive>
+          <component :is="Component" v-if="r.meta.keepAlive" />
+        </KeepAlive>
+        <component :is="Component" v-if="!r.meta.keepAlive" />
+      </router-view>
     </main>
 
     <AppAlertModal />

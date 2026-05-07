@@ -12,7 +12,7 @@ export const ar: Record<string, string> = {
   'common.more': 'المزيد',
   'common.suggestions': 'اقتراحات',
 
-  'app.loading': 'جارٍ تحميل بينوفا...',
+  'app.loading': 'بينوفا',
   'app.offline': 'وضع عدم الاتصال',
   'app.copyright': '© 2026 بينوفا. جميع الحقوق محفوظة.',
 

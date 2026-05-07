@@ -12,7 +12,7 @@ export const de: Record<string, string> = {
   'common.more': 'Mehr',
   'common.suggestions': 'Vorschläge',
 
-  'app.loading': 'Pinova wird geladen...',
+  'app.loading': 'Pinova',
   'app.offline': 'OFFLINE-MODUS',
   'app.copyright': '© 2026 Pinova. Alle Rechte vorbehalten.',
 

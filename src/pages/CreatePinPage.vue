@@ -85,6 +85,9 @@ watch(canSchedulePublish, (ok) => {
 }, { immediate: true })
 type TopicOption = { name: string; originalName: string; icon?: string; color?: string }
 const dynamicTopics = ref<TopicOption[]>([])
+type CachedTopics = { at: number; rows: TopicOption[] }
+const TOPICS_QUERY_CACHE = new Map<string, CachedTopics>()
+const TOPICS_CACHE_TTL_MS = 10 * 60 * 1000
 const boardsLoading = ref(false)
 const showCategoryDropdown = ref(false)
 const categoryAnchorRef = ref<HTMLElement | null>(null)
@@ -172,17 +175,25 @@ const filteredTopics = computed(() => {
 })
 
 const loadTopics = async (query = '') => {
+  const key = `${currentLang.value}:${query.trim().toLowerCase()}`
+  const hit = TOPICS_QUERY_CACHE.get(key)
+  if (hit && Date.now() - hit.at < TOPICS_CACHE_TTL_MS) {
+    dynamicTopics.value = hit.rows
+    return
+  }
   try {
     const response = await api.get('pins/topics/', {
       params: { lang: currentLang.value, q: query, limit: 20 },
     })
     const payload = Array.isArray(response.data) ? response.data : []
-    dynamicTopics.value = payload.map((item: any) => ({
+    const rows = payload.map((item: any) => ({
       name: item?.name || '',
       originalName: item?.originalName || item?.name || '',
       icon: item?.icon || 'category',
       color: item?.color || '#6B7280',
     })).filter((item: TopicOption) => item.name)
+    dynamicTopics.value = rows
+    TOPICS_QUERY_CACHE.set(key, { at: Date.now(), rows })
   } catch (err) {
     console.warn('Impossible de charger les catégories dynamiques', err)
   }
@@ -205,7 +216,7 @@ const loadBoards = async () => {
 }
 
 onMounted(async () => {
-  if (isAuthenticated.value) {
+  if (isAuthenticated.value && !currentUser.value) {
     await fetchCurrentUser({ silent: true })
   }
   await loadTopics('')

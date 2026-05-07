@@ -17,7 +17,7 @@ export const en: Record<string, string> = {
   'modal.errorTitle': 'Error',
   'modal.confirm.ok': 'Confirm',
 
-  'app.loading': 'Loading Pinova...',
+  'app.loading': 'Pinova',
   'app.offline': 'OFFLINE MODE',
   'app.copyright': '© 2026 Pinova. All rights reserved.',
   'app.footer.privacy': 'Privacy',
