@@ -72,9 +72,18 @@ const isAuthPage = computed(() => {
       <div class="flex-1 flex flex-col min-h-0 w-full">
       <router-view v-slot="{ Component, route: r }">
         <KeepAlive>
-          <component :is="Component" v-if="r.meta.keepAlive" />
+          <!-- fullPath : une entrée de cache par URL — évite de réutiliser la même instance pour /pin/a vs /pin/b ou deux profils. -->
+          <component
+            :is="Component"
+            v-if="r.meta.keepAlive"
+            :key="r.fullPath"
+          />
         </KeepAlive>
-        <component :is="Component" v-if="!r.meta.keepAlive" />
+        <component
+          :is="Component"
+          v-if="!r.meta.keepAlive"
+          :key="r.fullPath"
+        />
       </router-view>
       </div>
     </main>
