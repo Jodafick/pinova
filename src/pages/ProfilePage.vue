@@ -965,14 +965,41 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 </script>
 
 <template>
-  <div v-if="loading" class="app-skeleton-wave max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+  <div
+    v-if="loading"
+    class="app-skeleton-wave w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12"
+  >
     <ProfileHeaderSkeleton />
-    <PinGrid class="mt-4" :pins="[]" loading-initial />
+
+    <section class="mb-10 w-full" aria-hidden="true">
+      <div class="h-6 w-36 sm:w-40 bg-neutral-200 rounded-lg mb-4 animate-pulse" />
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div
+          v-for="i in 4"
+          :key="'profile-board-skel-' + i"
+          class="rounded-2xl aspect-[4/3] bg-neutral-200 animate-pulse"
+        />
+      </div>
+    </section>
+
+    <div
+      class="flex items-stretch justify-center gap-1 sm:gap-2 mb-6 border-b border-neutral-200 dark:border-neutral-800"
+      aria-hidden="true"
+    >
+      <div
+        class="h-12 flex-1 max-w-[9rem] sm:max-w-[10rem] rounded-t-lg bg-neutral-200 animate-pulse -mb-px border-b-2 border-transparent"
+      />
+      <div
+        class="h-12 flex-1 max-w-[9rem] sm:max-w-[10rem] rounded-t-lg bg-neutral-100 animate-pulse -mb-px border-b-2 border-transparent opacity-80"
+      />
+    </div>
+
+    <PinGrid class="w-full" :pins="[]" loading-initial />
   </div>
 
-  <div v-else-if="profileUser" class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+  <div v-else-if="profileUser" class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <!-- Profile header -->
-    <section class="flex flex-col items-center text-center mb-10">
+    <section class="flex flex-col items-center text-center mb-10 w-full">
       <button
         v-if="currentUser && activeStories.length > 0"
         type="button"
@@ -1026,34 +1053,36 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </div>
       <p class="text-neutral-500 text-sm mb-3">@{{ profileUser.username }}</p>
 
-      <p v-if="profileUser.bio" class="text-neutral-600 text-sm max-w-md mb-4">
+      <p v-if="profileUser.bio" class="text-neutral-600 dark:text-neutral-300 text-sm max-w-md mx-auto mb-4 px-1">
         {{ profileUser.bio }}
       </p>
-      <p v-else class="text-neutral-400 text-sm mb-4 italic">
+      <p v-else class="text-neutral-400 dark:text-neutral-500 text-sm mb-4 italic max-w-md mx-auto px-1">
         {{ t('profile.noBio') }}
       </p>
 
-      <div class="flex items-center gap-6 text-sm text-neutral-600 mb-6">
-        <button class="hover:text-pink-600 transition" @click="openFollowersModal">
-          <strong class="text-neutral-900">{{ profileUser.followers }}</strong> {{ t('profile.followers') }}
+      <div
+        class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 px-1"
+      >
+        <button class="hover:text-pink-600 dark:hover:text-pink-400 transition" @click="openFollowersModal">
+          <strong class="text-neutral-900 dark:text-neutral-100">{{ profileUser.followers }}</strong> {{ t('profile.followers') }}
         </button>
-        <span class="w-1 h-1 rounded-full bg-neutral-300"></span>
-        <button class="hover:text-pink-600 transition" @click="openFollowingModal">
-          <strong class="text-neutral-900">{{ profileUser.following }}</strong> {{ t('profile.following') }}
+        <span class="w-1 h-1 rounded-full bg-neutral-300 dark:bg-neutral-600 shrink-0" aria-hidden="true"></span>
+        <button class="hover:text-pink-600 dark:hover:text-pink-400 transition" @click="openFollowingModal">
+          <strong class="text-neutral-900 dark:text-neutral-100">{{ profileUser.following }}</strong> {{ t('profile.following') }}
         </button>
-        <span class="w-1 h-1 rounded-full bg-neutral-300"></span>
+        <span class="w-1 h-1 rounded-full bg-neutral-300 dark:bg-neutral-600 shrink-0" aria-hidden="true"></span>
         <span class="inline-flex items-center gap-1">
-          <strong v-if="!profilePinsTotalDisplay.pending" class="text-neutral-900">{{ profilePinsTotalDisplay.n }}</strong>
+          <strong v-if="!profilePinsTotalDisplay.pending" class="text-neutral-900 dark:text-neutral-100">{{ profilePinsTotalDisplay.n }}</strong>
           <span
             v-else
-            class="inline-block h-5 w-8 rounded-md bg-neutral-200 animate-pulse"
+            class="inline-block h-5 w-8 rounded-md bg-neutral-200 dark:bg-neutral-700 animate-pulse"
             aria-hidden="true"
           />
           {{ t('profile.pinsCount') }}
         </span>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center justify-center gap-3 w-full">
         <template v-if="isMyProfile">
           <router-link
             to="/settings"
@@ -1584,7 +1613,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     />
   </div>
 
-  <div v-else class="max-w-md mx-auto px-6 py-20 text-center space-y-4">
+  <div v-else class="w-full min-w-0 max-w-md mx-auto px-6 py-20 text-center space-y-4">
     <span class="material-symbols-outlined text-6xl text-neutral-300">person_off</span>
     <h1 class="text-xl font-bold text-neutral-900 dark:text-neutral-100">{{ profileUnavailableTitle }}</h1>
     <p class="text-sm text-neutral-600 leading-relaxed">{{ profileUnavailableDesc }}</p>
