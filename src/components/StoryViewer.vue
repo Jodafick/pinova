@@ -587,10 +587,7 @@ onUnmounted(() => {
               v-if="current?.slug"
               type="button"
               class="w-full px-3 py-2 text-left text-white text-sm hover:bg-white/10 flex items-center gap-2"
-              @click.stop="
-                storyMoreOpen = false
-                handleShareStory()
-              "
+              @click.stop="storyMoreOpen = false; handleShareStory()"
             >
               <span class="material-symbols-outlined text-[18px]">share</span>
               {{ t('pin.shareLink') }}
@@ -599,10 +596,7 @@ onUnmounted(() => {
               v-if="isAuthenticated && current?.username !== currentUser?.username"
               type="button"
               class="w-full px-3 py-2 text-left text-white text-sm hover:bg-white/10 flex items-center gap-2"
-              @click.stop="
-                storyMoreOpen = false
-                handleReportStory()
-              "
+              @click.stop="storyMoreOpen = false; handleReportStory()"
             >
               <span class="material-symbols-outlined text-[18px]">flag</span>
               {{ t('moderation.report') }}
