@@ -17,7 +17,7 @@ import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismis
 
 type LangSwitcherInstance = ComponentPublicInstance & { close?: () => void }
 
-const { t } = useI18n()
+const { t, currentLang } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -182,7 +182,9 @@ const fetchNotifications = async (reset = true) => {
   if (!isAuthenticated.value) return
   const page = reset ? 1 : notifPage.value + 1
   try {
-    const response = await api.get('notifications/', { params: { page, page_size: 20 } })
+    const response = await api.get('notifications/', {
+      params: { page, page_size: 20, lang: currentLang.value },
+    })
     const data = response.data
     if (Array.isArray(data)) {
       notifications.value = data
@@ -342,6 +344,12 @@ let unsubscribeNotifications: (() => void) | null = null
 
 watch(showNotifications, (open) => {
   if (open && isAuthenticated.value) {
+    void fetchNotifications(true)
+  }
+})
+
+watch(currentLang, () => {
+  if (showNotifications.value && isAuthenticated.value) {
     void fetchNotifications(true)
   }
 })

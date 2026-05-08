@@ -4,6 +4,8 @@ export type ContestSettingsDto = {
   end_at: string
   timezone: string
   max_winners: number
+  /** Nombre de lignes classement (meilleur pin / créateur) affichées côté live. */
+  leaderboard_display_pins: number
   refresh_interval: number
   now: string
 }
@@ -25,6 +27,14 @@ export type ContestPinRow = {
   comments?: number
   /** ❤️+👁+↗+📌+💬 (cumul agrégé, plus lisible que le bruit événements bruts). */
   engagement_total?: number
+}
+
+/** Position du viewer connecté (hors ou dans le top affiché). */
+export type ContestViewerDto = {
+  ranked: boolean
+  rank: number | null
+  in_displayed_top: boolean
+  pin: ContestPinRow | null
 }
 
 export type ContestCreatorRow = {

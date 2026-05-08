@@ -5,7 +5,7 @@ import { useI18n } from '../../i18n'
 import type { ContestPinRow } from '../../types/contest'
 
 const { t } = useI18n()
-const props = defineProps<{ row: ContestPinRow; index: number }>()
+const props = defineProps<{ row: ContestPinRow; index: number; isYou?: boolean }>()
 
 const rankDelta = computed(() => {
   const prev = props.row.previous_rank || props.row.rank
@@ -26,6 +26,9 @@ const medalClass = computed(() => {
 })
 
 const cardClass = computed(() => {
+  if (props.isYou) {
+    return 'border-fuchsia-400 dark:border-fuchsia-500 ring-2 ring-fuchsia-300/80 dark:ring-fuchsia-600/60 bg-fuchsia-50/80 dark:bg-fuchsia-950/30'
+  }
   if (props.row.rank === 1) {
     return 'border-amber-300/80 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100 dark:from-amber-900/20 dark:via-yellow-900/10 dark:to-amber-800/20'
   }
@@ -42,9 +45,16 @@ const cardClass = computed(() => {
 <template>
   <router-link
     :to="`/pin/${encodeURIComponent(row.pin_slug)}`"
-    class="group rounded-2xl border p-4 flex items-center gap-3 transition hover:shadow-xl hover:-translate-y-0.5"
+    class="group rounded-2xl border p-4 flex items-center gap-3 transition hover:shadow-xl hover:-translate-y-0.5 relative"
     :class="cardClass"
+    @contextmenu.prevent
   >
+    <span
+      v-if="isYou"
+      class="absolute top-3 right-3 text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full bg-fuchsia-600 text-white shadow"
+    >
+      {{ t('contest.live.youBadge') }}
+    </span>
     <div
       class="w-11 h-11 rounded-full font-black flex items-center justify-center ring-2 bg-gradient-to-br"
       :class="medalClass"
@@ -56,7 +66,8 @@ const cardClass = computed(() => {
         v-if="row.pin_image_url"
         :src="row.pin_image_url"
         :alt="row.pin_title"
-        class="w-full h-full object-cover"
+        class="w-full h-full object-cover pointer-events-none"
+        draggable="false"
       />
       <div v-else class="w-full h-full flex items-center justify-center text-[11px] font-bold text-neutral-400">
         {{ t('contest.row.pinPlaceholder') }}

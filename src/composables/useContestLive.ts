@@ -1,9 +1,21 @@
-import { computed, onMounted, onUnmounted, reactive, readonly } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, readonly, ref, watchEffect } from 'vue'
 
 import api from '../api'
+import { buildContestSelfRankCue, type ContestSelfRankCue } from './contestRankCue'
+import { useAuth } from './useAuth'
 import { API_BASE_URL } from '../env'
 import { useI18n } from '../i18n'
-import type { ContestPinRow, ContestSettingsDto } from '../types/contest'
+import type { ContestPinRow, ContestSettingsDto, ContestViewerDto } from '../types/contest'
+
+const DEFAULT_LEADERBOARD_PINS_CAP = 10
+
+function leaderboardPinsCap(): number {
+  const raw = contestState.settings?.leaderboard_display_pins
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return Math.max(1, Math.min(Math.floor(raw), 500))
+  }
+  return DEFAULT_LEADERBOARD_PINS_CAP
+}
 
 const { t } = useI18n()
 
@@ -21,6 +33,9 @@ type ContestLiveState = {
   error: string
   settings: ContestSettingsDto | null
   topPins: ContestPinRow[]
+  viewer: ContestViewerDto | null
+  /** Bannière concours réservée au créateur dont le pin bouge au classement affiché. */
+  selfRankCue: ContestSelfRankCue | null
   lastSequence: number
   reconnectAttempts: number
 }
@@ -32,6 +47,8 @@ const contestState = reactive<ContestLiveState>({
   error: '',
   settings: null,
   topPins: [],
+  viewer: null,
+  selfRankCue: null,
   lastSequence: 0,
   reconnectAttempts: 0,
 })
@@ -40,14 +57,31 @@ let ws: WebSocket | null = null
 let wsReconnectTimer: ReturnType<typeof setTimeout> | null = null
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+/** Anti-spam bannière (le serveur notif déjà sous contrôle). */
+let lastSelfContestCueAt = 0
+const CLIENT_CONTEST_CUE_GAP_MS = 52000
+let selfCueDismissTimer: ReturnType<typeof setTimeout> | null = null
+
 let activeConsumers = 0
+
+function scheduleContestSelfCueDismiss() {
+  if (selfCueDismissTimer) clearTimeout(selfCueDismissTimer)
+  selfCueDismissTimer = setTimeout(() => {
+    contestState.selfRankCue = null
+    selfCueDismissTimer = null
+  }, 6500)
+}
 const wsUrl = `${API_BASE_URL.replace(/^http/i, 'ws').replace(/\/$/, '')}/api/contest/leaderboard/events/ws`
 const tabChannel =
   typeof window !== 'undefined' && 'BroadcastChannel' in window
     ? new BroadcastChannel('pinova-contest-live')
     : null
 
+/** Mis à jour chaque seconde pour que `contestRemainingMs` et le template se rafraîchissent (Date.now seul n'est pas réactif). */
+const contestClockTick = ref(0)
+
 const contestRemainingMs = computed(() => {
+  contestClockTick.value
   if (!contestState.settings) return 0
   return Math.max(0, new Date(contestState.settings.end_at).getTime() - Date.now())
 })
@@ -68,6 +102,27 @@ function dedupeBestPinPerCreator(rows: ContestPinRow[]): ContestPinRow[] {
   return Array.from(best.values())
     .sort((a, b) => b.score - a.score || a.pin_id - b.pin_id)
     .map((r, i) => ({ ...r, rank: i + 1 }))
+}
+
+function tryContestSelfRankCueFromWs(event: ContestEvent, payload: Record<string, unknown>, viewerUid: number | null) {
+  if (event.event_type !== 'pin_rank_updated') return
+  if (viewerUid == null || viewerUid !== Number(payload.creator_id || 0)) return
+  if (payload.display_rank == null) return
+  const nextDisplay = Number(payload.display_rank)
+  if (!(nextDisplay >= 1)) return
+  const rawPrev = payload.previous_display_rank
+  const prevDisplay =
+    rawPrev === undefined || rawPrev === null || rawPrev === '' ? null : Number(rawPrev)
+  if (!(prevDisplay === null || prevDisplay >= 1)) return
+  if (prevDisplay === nextDisplay) return
+  const now = Date.now()
+  if (now - lastSelfContestCueAt < CLIENT_CONTEST_CUE_GAP_MS) return
+  const pinTitle = String(payload.pin_title || 'Pin')
+  const cue = buildContestSelfRankCue(t, { prevDisplay, nextDisplay, pinTitle })
+  if (!cue) return
+  lastSelfContestCueAt = now
+  contestState.selfRankCue = cue
+  scheduleContestSelfCueDismiss()
 }
 
 function upsertPinFromEvent(payload: Record<string, unknown>) {
@@ -125,12 +180,13 @@ function upsertPinFromEvent(payload: Record<string, unknown>) {
       engagement_total,
     }
   }
-  contestState.topPins = dedupeBestPinPerCreator(contestState.topPins)
+  contestState.topPins = dedupeBestPinPerCreator(contestState.topPins).slice(0, leaderboardPinsCap())
 }
 
 function pushEvent(event: ContestEvent) {
   contestState.lastSequence = Math.max(contestState.lastSequence, event.sequence || 0)
   const payload = (event.payload || {}) as Record<string, unknown>
+  tryContestSelfRankCueFromWs(event, payload, contestLiveViewerUid)
   if (event.entity_type === 'pin' || event.event_type.includes('pin_')) {
     upsertPinFromEvent(payload)
   }
@@ -139,14 +195,24 @@ function pushEvent(event: ContestEvent) {
 
 async function fetchCurrentContest() {
   const { data } = await api.get<ContestSettingsDto>('contest/current')
-  contestState.settings = data
+  contestState.settings = {
+    ...data,
+    leaderboard_display_pins: data.leaderboard_display_pins ?? DEFAULT_LEADERBOARD_PINS_CAP,
+    max_winners: data.max_winners ?? 0,
+  }
 }
 
 async function fetchBoardsSnapshot() {
-  const pinsResp = await api.get<{ contest_key: string; results: ContestPinRow[] }>('contest/leaderboard/pins', {
-    params: { limit: 100 },
+  type PinsPayload = {
+    contest_key: string
+    results: ContestPinRow[]
+    viewer?: ContestViewerDto | null
+  }
+  const pinsResp = await api.get<PinsPayload>('contest/leaderboard/pins', {
+    params: { limit: leaderboardPinsCap() },
   })
-  contestState.topPins = dedupeBestPinPerCreator(pinsResp.data.results || [])
+  contestState.topPins = dedupeBestPinPerCreator(pinsResp.data.results || []).slice(0, leaderboardPinsCap())
+  contestState.viewer = pinsResp.data.viewer ?? null
 }
 
 async function fetchEventDeltas() {
@@ -210,6 +276,7 @@ function startPollingFallback() {
   if (pollTimer) return
   pollTimer = setInterval(() => {
     void fetchEventDeltas().catch(() => undefined)
+    void fetchBoardsSnapshot().catch(() => undefined)
   }, 60_000)
 }
 
@@ -230,7 +297,13 @@ async function initContestLive() {
     startPollingFallback()
     if (!countdownTimer) {
       countdownTimer = setInterval(() => {
-        if (contestRemainingMs.value <= 0) {
+        contestClockTick.value += 1
+        if (!contestState.settings) return
+        const ms = Math.max(
+          0,
+          new Date(contestState.settings.end_at).getTime() - Date.now(),
+        )
+        if (ms <= 0) {
           void fetchCurrentContest().catch(() => undefined)
         }
       }, 1_000)
@@ -247,6 +320,11 @@ function teardownContestLive() {
   ws?.close()
   ws = null
   stopPollingFallback()
+  contestState.selfRankCue = null
+  if (selfCueDismissTimer) {
+    clearTimeout(selfCueDismissTimer)
+    selfCueDismissTimer = null
+  }
   if (wsReconnectTimer) {
     clearTimeout(wsReconnectTimer)
     wsReconnectTimer = null
@@ -254,6 +332,17 @@ function teardownContestLive() {
   if (countdownTimer) {
     clearInterval(countdownTimer)
     countdownTimer = null
+  }
+}
+
+/** UID du viewer connecté (mis à jour par `useContestLive()`). */
+let contestLiveViewerUid: number | null = null
+
+export function clearContestRankCue() {
+  contestState.selfRankCue = null
+  if (selfCueDismissTimer) {
+    clearTimeout(selfCueDismissTimer)
+    selfCueDismissTimer = null
   }
 }
 
@@ -268,6 +357,11 @@ tabChannel?.addEventListener('message', (event: MessageEvent) => {
 })
 
 export function useContestLive() {
+  const { currentUser } = useAuth()
+  watchEffect(() => {
+    contestLiveViewerUid = currentUser.value?.id ?? null
+  })
+
   onMounted(() => {
     activeConsumers += 1
     if (activeConsumers === 1) {
@@ -285,6 +379,7 @@ export function useContestLive() {
   return {
     contestState: readonly(contestState),
     contestRemainingMs,
+    dismissContestRankCue: clearContestRankCue,
     refreshContestNow: async () => {
       await fetchCurrentContest()
       await fetchBoardsSnapshot()
