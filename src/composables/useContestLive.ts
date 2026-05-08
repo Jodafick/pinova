@@ -125,7 +125,7 @@ function upsertPinFromEvent(payload: Record<string, unknown>) {
       engagement_total,
     }
   }
-  sortPins()
+  contestState.topPins = dedupeBestPinPerCreator(contestState.topPins)
 }
 
 function pushEvent(event: ContestEvent) {
