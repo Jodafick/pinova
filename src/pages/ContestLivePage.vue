@@ -48,15 +48,44 @@ const skeletonGridCols = computed(() => Math.min(displayPins.value, 24))
 const viewer = computed(() => contestState.viewer)
 const viewerPin = computed(() => (viewer.value?.ranked ? viewer.value?.pin ?? null : null))
 
+/**
+ * Hors du bloc affiché (top N configuré serveur via `leaderboard_display_pins`) : bandeau fixe avec rang + pin.
+ */
 const showMyRankDock = computed(
-  () => isAuthenticated.value && viewer.value?.ranked === true && viewer.value?.in_displayed_top === false && !!viewerPin.value,
+  () =>
+    isAuthenticated.value &&
+    viewer.value?.ranked === true &&
+    viewer.value?.in_displayed_top === false &&
+    !!viewerPin.value,
 )
 
 function isYourCreatorRow(creatorId: number) {
   return isAuthenticated.value && currentUser.value != null && currentUser.value.id === creatorId
 }
 
-const stickyPadClass = computed(() => (showMyRankDock.value ? 'pb-32 sm:pb-28' : ''))
+/** Badge / surbrillance sur la carte du classement quand ta ligne fait partie du top affiché. */
+function showYouHighlightForRow(row: { creator_id: number }) {
+  return viewer.value?.ranked === true && isYourCreatorRow(row.creator_id)
+}
+
+const stickyPadClass = computed(
+  () => (showMyRankDock.value && !contestState.loading ? 'pb-32 sm:pb-28' : ''),
+)
+
+/** Bandeau « hors top » : au-delà de ce rang, afficher « Non classé » au lieu du numéro. */
+const MY_RANK_DOCK_NUMERIC_MAX = 100
+
+const myRankDockRankLabel = computed(() => {
+  const r = viewer.value?.rank
+  if (r == null) return ''
+  if (r > MY_RANK_DOCK_NUMERIC_MAX) return t('contest.live.myRankUnranked')
+  return String(r)
+})
+
+const myRankDockRankIsNumeric = computed(() => {
+  const r = viewer.value?.rank
+  return r != null && r <= MY_RANK_DOCK_NUMERIC_MAX
+})
 </script>
 
 <template>
@@ -268,7 +297,7 @@ const stickyPadClass = computed(() => (showMyRankDock.value ? 'pb-32 sm:pb-28' :
           :key="row.pin_id"
           :row="row"
           :index="idx"
-          :is-you="isYourCreatorRow(row.creator_id) && viewer?.in_displayed_top === true"
+          :is-you="showYouHighlightForRow(row)"
         />
       </div>
       <div v-else class="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-5 items-stretch auto-rows-fr">
@@ -276,19 +305,20 @@ const stickyPadClass = computed(() => (showMyRankDock.value ? 'pb-32 sm:pb-28' :
           v-for="row in topPins"
           :key="row.pin_id"
           :row="row"
-          :is-you="isYourCreatorRow(row.creator_id) && viewer?.in_displayed_top === true"
+          :is-you="showYouHighlightForRow(row)"
         />
       </div>
     </template>
 
     <div
-      v-if="showMyRankDock && viewerPin && viewer?.rank != null"
-      class="fixed bottom-0 left-0 right-0 z-[50] px-4 pb-[max(env(safe-area-inset-bottom,0px),16px)] pt-3 pointer-events-none"
+      v-if="!contestState.loading && showMyRankDock && viewerPin && viewer?.rank != null"
+      class="fixed bottom-0 left-0 right-0 z-[60] px-4 pb-[max(env(safe-area-inset-bottom,0px),16px)] pt-3 pointer-events-none"
+      aria-label="Ma position hors top affiché"
     >
       <div class="w-full min-w-0 max-w-6xl mx-auto pointer-events-auto">
         <router-link
           :to="`/pin/${encodeURIComponent(viewerPin.pin_slug)}`"
-          class="flex items-center gap-3 rounded-2xl border border-fuchsia-300 dark:border-fuchsia-600 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-[0_-8px_30px_-10px_rgba(168,85,247,0.55)] px-4 py-3"
+          class="flex items-center gap-3 rounded-2xl border border-fuchsia-300 dark:border-fuchsia-600 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-[0_-8px_30px_-10px_rgba(168,85,247,0.55)] px-4 py-3 min-h-[4.75rem]"
         >
           <div class="w-14 h-14 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 shrink-0 border border-fuchsia-200/60">
             <img v-if="viewerPin.pin_image_url" :src="viewerPin.pin_image_url" alt="" class="w-full h-full object-cover" />
@@ -298,14 +328,17 @@ const stickyPadClass = computed(() => (showMyRankDock.value ? 'pb-32 sm:pb-28' :
             <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate">
               {{
                 t('contest.live.myRankDetail', {
-                  rank: viewer.rank,
+                  rank: myRankDockRankLabel,
                   points: viewerPin.score.toFixed(2),
                   title: viewerPin.pin_title,
                 })
               }}
             </p>
           </div>
-          <span class="shrink-0 text-2xl font-black text-fuchsia-600">{{ viewer.rank }}</span>
+          <span
+            class="shrink-0 font-black text-fuchsia-600 text-right leading-tight"
+            :class="myRankDockRankIsNumeric ? 'text-2xl' : 'text-xs sm:text-sm max-w-[6.5rem]'"
+          >{{ myRankDockRankLabel }}</span>
         </router-link>
       </div>
     </div>

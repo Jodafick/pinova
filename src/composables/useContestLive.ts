@@ -1,4 +1,14 @@
-import { computed, onMounted, onUnmounted, reactive, readonly, ref, watchEffect } from 'vue'
+import {
+  computed,
+  onActivated,
+  onDeactivated,
+  onMounted,
+  onUnmounted,
+  reactive,
+  readonly,
+  ref,
+  watchEffect,
+} from 'vue'
 
 import api from '../api'
 import { buildContestSelfRankCue, type ContestSelfRankCue } from './contestRankCue'
@@ -63,7 +73,20 @@ let lastSelfContestCueAt = 0
 const CLIENT_CONTEST_CUE_GAP_MS = 52000
 let selfCueDismissTimer: ReturnType<typeof setTimeout> | null = null
 
-let activeConsumers = 0
+/** Polling / WebSocket uniquement lorsque la page concours live est visible (inclut prise en charge du KeepAlive : onDeactivated stoppe le transport). */
+let contestLiveTransportActive = false
+
+function startContestLiveTransport() {
+  if (contestLiveTransportActive) return
+  contestLiveTransportActive = true
+  void initContestLive()
+}
+
+function stopContestLiveTransport() {
+  if (!contestLiveTransportActive) return
+  contestLiveTransportActive = false
+  teardownContestLive()
+}
 
 function scheduleContestSelfCueDismiss() {
   if (selfCueDismissTimer) clearTimeout(selfCueDismissTimer)
@@ -185,6 +208,7 @@ function upsertPinFromEvent(payload: Record<string, unknown>) {
 }
 
 function pushEvent(event: ContestEvent) {
+  if (!contestLiveTransportActive) return
   contestState.lastSequence = Math.max(contestState.lastSequence, event.sequence || 0)
   const payload = (event.payload || {}) as Record<string, unknown>
   tryContestSelfRankCueFromWs(event, payload, contestLiveViewerUid)
@@ -229,6 +253,7 @@ async function fetchEventDeltas() {
 }
 
 function scheduleWsReconnect() {
+  if (!contestLiveTransportActive) return
   if (wsReconnectTimer) clearTimeout(wsReconnectTimer)
   const delay = Math.min(20_000, 1_000 * (contestState.reconnectAttempts + 1))
   wsReconnectTimer = setTimeout(() => {
@@ -238,7 +263,7 @@ function scheduleWsReconnect() {
 }
 
 function connectWebSocket() {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined' || !contestLiveTransportActive) return
   try {
     ws?.close()
     ws = new WebSocket(`${wsUrl}?since=${contestState.lastSequence}`)
@@ -265,7 +290,7 @@ function connectWebSocket() {
       contestState.connected = false
       contestState.reconnectAttempts += 1
       contestState.usingPollingFallback = true
-      scheduleWsReconnect()
+      if (contestLiveTransportActive) scheduleWsReconnect()
     }
   } catch {
     contestState.connected = false
@@ -274,8 +299,9 @@ function connectWebSocket() {
 }
 
 function startPollingFallback() {
-  if (pollTimer) return
+  if (!contestLiveTransportActive || pollTimer) return
   pollTimer = setInterval(() => {
+    if (!contestLiveTransportActive) return
     void fetchEventDeltas().catch(() => undefined)
     void fetchBoardsSnapshot().catch(() => undefined)
   }, 60_000)
@@ -348,6 +374,7 @@ export function clearContestRankCue() {
 }
 
 tabChannel?.addEventListener('message', (event: MessageEvent) => {
+  if (!contestLiveTransportActive) return
   const payload = event.data || {}
   if (payload?.type === 'contest-pin-event' && payload.event) {
     const evt = payload.event as ContestEvent
@@ -364,17 +391,20 @@ export function useContestLive() {
   })
 
   onMounted(() => {
-    activeConsumers += 1
-    if (activeConsumers === 1) {
-      void initContestLive()
-    }
+    startContestLiveTransport()
+  })
+
+  /** KeepAlive : premier affichage = `onMounted` puis `onActivated` — le second est ignoré (transport déjà actif). À la navigation : stop ici puis restart au retour. */
+  onActivated(() => {
+    startContestLiveTransport()
+  })
+
+  onDeactivated(() => {
+    stopContestLiveTransport()
   })
 
   onUnmounted(() => {
-    activeConsumers = Math.max(0, activeConsumers - 1)
-    if (activeConsumers === 0) {
-      teardownContestLive()
-    }
+    stopContestLiveTransport()
   })
 
   return {

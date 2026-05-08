@@ -1024,6 +1024,7 @@ export const en: Record<string, string> = {
   'contest.live.rankedPinsHint': 'Showing the top {count} ranked rows.',
   'contest.live.myRankTitle': 'Your position',
   'contest.live.myRankDetail': 'Rank {rank} · {points} pts · {title}',
+  'contest.live.myRankUnranked': 'Unranked',
   'contest.live.notRanked': 'No qualifying non-story pin in this contest for your account.',
   'contest.rankCue.title': 'Your Pinova Contest ranking',
   'contest.rankCue.close': 'OK',
