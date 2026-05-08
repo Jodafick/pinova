@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -16,6 +16,7 @@ const { currentUser, toggleSavePin } = useAuth()
 
 const searchQuery = ref('')
 const activeTopic = ref<string | null>(null)
+const isPageActive = ref(false)
 let searchTrackTimer: ReturnType<typeof setTimeout> | null = null
 
 const filteredPins = computed(() => {
@@ -32,6 +33,7 @@ const filteredPins = computed(() => {
 })
 
 function maybeLoadMoreOnScroll() {
+  if (!isPageActive.value) return
   const root = document.scrollingElement ?? document.documentElement
   const scrollTop = root.scrollTop
   const scrollHeight = root.scrollHeight
@@ -42,18 +44,39 @@ function maybeLoadMoreOnScroll() {
   }
 }
 
-onMounted(() => {
-  void fetchHomeFeed(true, activeTopic.value)
+function startPageActivity() {
+  if (isPageActive.value) return
+  isPageActive.value = true
   window.addEventListener('scroll', maybeLoadMoreOnScroll, { passive: true })
+}
+
+function stopPageActivity() {
+  if (!isPageActive.value) return
+  isPageActive.value = false
+  window.removeEventListener('scroll', maybeLoadMoreOnScroll)
+}
+
+onMounted(() => {
+  startPageActivity()
+  void fetchHomeFeed(true, activeTopic.value)
+})
+
+onActivated(() => {
+  startPageActivity()
+})
+
+onDeactivated(() => {
+  stopPageActivity()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', maybeLoadMoreOnScroll)
+  stopPageActivity()
 })
 
 watch(
   () => [filteredPins.value.length, hasNextPage.value, isFetchingNextPage.value, activeTopic.value],
   () => {
+    if (!isPageActive.value) return
     // Si le viewport est plus grand que le contenu, enchaîner automatiquement les pages.
     maybeLoadMoreOnScroll()
   },
@@ -61,6 +84,7 @@ watch(
 )
 
 const selectTopic = (topic: string | null) => {
+  if (!isPageActive.value) return
   activeTopic.value = topic
   void fetchHomeFeed(true, topic)
 }
@@ -75,6 +99,7 @@ watch(searchQuery, (value) => {
 })
 
 watch(currentLang, () => {
+  if (!isPageActive.value) return
   void fetchHomeFeed(true, activeTopic.value)
 })
 

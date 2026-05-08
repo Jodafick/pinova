@@ -14,16 +14,6 @@ import {
 } from '../pinClientCache'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 
-const pins = ref<Pin[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
-const currentPage = ref(1)
-const hasNextPage = ref(true)
-const isFetchingNextPage = ref(false)
-const savePendingBySlug = ref<Record<string, boolean>>({})
-const likePendingBySlug = ref<Record<string, boolean>>({})
-const followPendingByUsername = ref<Record<string, boolean>>({})
-
 type PaginatedResponse<T> = {
   count: number
   next: string | null
@@ -107,6 +97,18 @@ export function isAlreadyReportedError(err: unknown): boolean {
 
 export function usePins() {
   const { currentLang } = useI18n()
+  // État local par instance de composant/page.
+  // Évite les fuites d'état cross-page avec KeepAlive (feeds qui se remplacent mutuellement).
+  const pins = ref<Pin[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+  const currentPage = ref(1)
+  const hasNextPage = ref(true)
+  const isFetchingNextPage = ref(false)
+  const savePendingBySlug = ref<Record<string, boolean>>({})
+  const likePendingBySlug = ref<Record<string, boolean>>({})
+  const followPendingByUsername = ref<Record<string, boolean>>({})
+
   const setPendingFlag = (store: Record<string, boolean>, key: string, value: boolean) => {
     if (!key) return
     if (value) {

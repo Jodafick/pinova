@@ -13,6 +13,9 @@ self.addEventListener('push', (event) => {
     badge: '/pwa-192x192.png',
     data: {
       action_url: payload.action_url || '/',
+      pin_slug: payload.pin_slug || '',
+      notification_type: payload.notification_type || '',
+      metadata_json: payload.metadata_json || '',
       notification_id: payload.notification_id,
     },
   }
@@ -22,11 +25,18 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const targetPath = (event.notification.data && event.notification.data.action_url) || '/'
+  const payload = (event.notification && event.notification.data) || {}
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientsArr) => {
       for (const client of clientsArr) {
         if ('focus' in client) {
-          client.postMessage({ type: 'pinova_push_click', action_url: targetPath })
+          client.postMessage({
+            type: 'pinova_push_click',
+            action_url: targetPath,
+            pin_slug: payload.pin_slug || '',
+            notification_type: payload.notification_type || '',
+            metadata_json: payload.metadata_json || '',
+          })
           return client.focus()
         }
       }

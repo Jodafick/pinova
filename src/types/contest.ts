@@ -12,6 +12,7 @@ export type ContestPinRow = {
   pin_id: number
   pin_slug: string
   pin_title: string
+  pin_image_url?: string
   creator_id: number
   creator_username: string
   rank: number
@@ -22,6 +23,8 @@ export type ContestPinRow = {
   shares?: number
   saves?: number
   comments?: number
+  total_interactions?: number
+  eligible_interactions?: number
 }
 
 export type ContestCreatorRow = {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -34,6 +34,7 @@ const selectedCategory = ref<string | null>(null)
 const categorySearch = ref('')
 const categoryVisibleCount = ref(10)
 const categoriesModalOpen = ref(false)
+const isPageActive = ref(false)
 /** Recherche locale dans la modale uniquement — n’actualise pas l’API. */
 const modalCategorySearch = ref('')
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
@@ -94,6 +95,7 @@ const loadBoards = async (query = '') => {
 }
 
 const handleScroll = () => {
+  if (!isPageActive.value) return
   const root = document.scrollingElement ?? document.documentElement
   const scrollTop = root.scrollTop
   const scrollHeight = root.scrollHeight
@@ -106,16 +108,36 @@ const handleScroll = () => {
   }
 }
 
+function startPageActivity() {
+  if (isPageActive.value) return
+  isPageActive.value = true
+  window.addEventListener('scroll', handleScroll, { passive: true })
+}
+
+function stopPageActivity() {
+  if (!isPageActive.value) return
+  isPageActive.value = false
+  window.removeEventListener('scroll', handleScroll)
+}
+
 onMounted(async () => {
+  startPageActivity()
   pageSearchInput.value = exploreTextQuery.value ?? ''
   await loadCategories('')
   await loadBoards(exploreTextQuery.value ?? '')
   await fetchDiscoverPins(true, null, exploreTextQuery.value)
-  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onActivated(() => {
+  startPageActivity()
+})
+
+onDeactivated(() => {
+  stopPageActivity()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
+  stopPageActivity()
 })
 
 const selectCategory = (topic: string) => {
@@ -123,6 +145,7 @@ const selectCategory = (topic: string) => {
 }
 
 watch(categorySearch, (value) => {
+  if (!isPageActive.value) return
   if (categorySearchTimer) clearTimeout(categorySearchTimer)
   categorySearchTimer = setTimeout(() => {
     void loadCategories(value.trim())
@@ -130,16 +153,19 @@ watch(categorySearch, (value) => {
 })
 
 watch(selectedCategory, async (topic) => {
+  if (!isPageActive.value) return
   await fetchDiscoverPins(true, topic, exploreTextQuery.value)
 })
 
 watch(exploreTextQuery, async () => {
+  if (!isPageActive.value) return
   pageSearchInput.value = exploreTextQuery.value ?? ''
   await loadBoards(exploreTextQuery.value ?? '')
   await fetchDiscoverPins(true, selectedCategory.value, exploreTextQuery.value)
 })
 
 watch(currentLang, async () => {
+  if (!isPageActive.value) return
   await loadCategories(categorySearch.value.trim())
   await loadBoards(exploreTextQuery.value ?? '')
   await fetchDiscoverPins(true, selectedCategory.value, exploreTextQuery.value)

@@ -122,24 +122,6 @@ const router = createRouter({
       meta: { requiresAuth: false, keepAlive: true },
     },
     {
-      path: '/contest/creators',
-      name: 'contest-creators',
-      component: () => import('../pages/ContestCreatorsPage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
-    },
-    {
-      path: '/contest/history',
-      name: 'contest-history',
-      component: () => import('../pages/ContestHistoryPage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
-    },
-    {
-      path: '/contest/notifications',
-      name: 'contest-notifications',
-      component: () => import('../pages/ContestNotificationsPage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
-    },
-    {
       path: '/login',
       name: 'login',
       component: () => import('../pages/LoginPage.vue'),

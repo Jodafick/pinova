@@ -236,9 +236,12 @@ const handleNotificationClick = async (notification: any) => {
   }
 
   const meta = notification.metadata && typeof notification.metadata === 'object' ? notification.metadata : {}
+  const metadataKind = String((meta as Record<string, unknown>).kind || '').trim().toLowerCase()
   const isStoryPin = Boolean(meta.is_story && notification.pin_slug)
 
-  if (isStoryPin && notification.pin_slug) {
+  if (metadataKind === 'contest_rank_update') {
+    router.push('/contest/live')
+  } else if (isStoryPin && notification.pin_slug) {
     const query: Record<string, string> = { story: String(notification.pin_slug) }
     if (notification.comment_id) {
       query.commentId = String(notification.comment_id)
@@ -272,7 +275,29 @@ const handleLogout = async () => {
 
 const handleWorkerMessage = (event: MessageEvent) => {
   const payload = event.data || {}
-  if (payload.type === 'pinova_push_click' && payload.action_url) {
+  if (payload.type !== 'pinova_push_click') return
+  const rawMeta = typeof payload.metadata_json === 'string' ? payload.metadata_json.trim() : ''
+  let meta: Record<string, unknown> = {}
+  if (rawMeta) {
+    try {
+      const parsed = JSON.parse(rawMeta) as unknown
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        meta = parsed as Record<string, unknown>
+      }
+    } catch {
+      meta = {}
+    }
+  }
+  const metadataKind = String(meta.kind || '').trim().toLowerCase()
+  if (metadataKind === 'contest_rank_update') {
+    router.push('/contest/live')
+    return
+  }
+  if (typeof payload.pin_slug === 'string' && payload.pin_slug.trim()) {
+    router.push(`/pin/${encodeURIComponent(payload.pin_slug.trim())}`)
+    return
+  }
+  if (payload.action_url) {
     router.push(String(payload.action_url))
   }
 }

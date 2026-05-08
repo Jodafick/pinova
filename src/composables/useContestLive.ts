@@ -2,12 +2,14 @@ import { computed, onMounted, onUnmounted, reactive, readonly } from 'vue'
 
 import api from '../api'
 import { API_BASE_URL } from '../env'
-import type {
-  ContestCreatorRow,
-  ContestLeaderboardEvent,
-  ContestPinRow,
-  ContestSettingsDto,
-} from '../types/contest'
+import type { ContestPinRow, ContestSettingsDto } from '../types/contest'
+
+type ContestEvent = {
+  sequence: number
+  event_type: string
+  entity_type: string
+  payload: Record<string, unknown>
+}
 
 type ContestLiveState = {
   loading: boolean
@@ -16,8 +18,6 @@ type ContestLiveState = {
   error: string
   settings: ContestSettingsDto | null
   topPins: ContestPinRow[]
-  topCreators: ContestCreatorRow[]
-  liveEvents: ContestLeaderboardEvent[]
   lastSequence: number
   reconnectAttempts: number
 }
@@ -29,8 +29,6 @@ const contestState = reactive<ContestLiveState>({
   error: '',
   settings: null,
   topPins: [],
-  topCreators: [],
-  liveEvents: [],
   lastSequence: 0,
   reconnectAttempts: 0,
 })
@@ -58,30 +56,40 @@ function sortPins() {
   })
 }
 
-function sortCreators() {
-  contestState.topCreators.sort((a, b) => {
-    if (a.rank && b.rank) return a.rank - b.rank
-    return b.score - a.score
-  })
-}
-
 function upsertPinFromEvent(payload: Record<string, unknown>) {
   const pinId = Number(payload.pin_id || payload.entity_id || 0)
   if (!pinId) return
+  const creatorId = Number(payload.creator_id || 0)
+  const score = Number(payload.score || 0)
+  if (creatorId > 0) {
+    const sameCreatorIdx = contestState.topPins.findIndex((row) => row.creator_id === creatorId && row.pin_id !== pinId)
+    if (sameCreatorIdx >= 0) {
+      const current = contestState.topPins[sameCreatorIdx]
+      if ((current?.score || 0) >= score) return
+      contestState.topPins.splice(sameCreatorIdx, 1)
+    }
+  }
   const index = contestState.topPins.findIndex((row) => row.pin_id === pinId)
   const rank = Number(payload.rank || 0)
   const previousRank = Number(payload.previous_rank || 0)
-  const score = Number(payload.score || 0)
   if (index === -1) {
     contestState.topPins.push({
       pin_id: pinId,
       pin_slug: String(payload.pin_slug || ''),
       pin_title: String(payload.pin_title || 'Pin'),
+      pin_image_url: String(payload.pin_image_url || ''),
       creator_id: Number(payload.creator_id || 0),
       creator_username: String(payload.creator_username || 'creator'),
       rank,
       previous_rank: previousRank,
       score,
+      likes: Number(payload.likes || 0),
+      views: Number(payload.views || 0),
+      shares: Number(payload.shares || 0),
+      saves: Number(payload.saves || 0),
+      comments: Number(payload.comments || 0),
+      total_interactions: Number(payload.total_interactions || 0),
+      eligible_interactions: Number(payload.eligible_interactions || 0),
     })
   } else {
     contestState.topPins[index] = {
@@ -89,48 +97,26 @@ function upsertPinFromEvent(payload: Record<string, unknown>) {
       rank,
       previous_rank: previousRank,
       score,
+      pin_image_url: String(payload.pin_image_url || contestState.topPins[index].pin_image_url || ''),
+      likes: Number(payload.likes || contestState.topPins[index].likes || 0),
+      views: Number(payload.views || contestState.topPins[index].views || 0),
+      shares: Number(payload.shares || contestState.topPins[index].shares || 0),
+      saves: Number(payload.saves || contestState.topPins[index].saves || 0),
+      comments: Number(payload.comments || contestState.topPins[index].comments || 0),
+      total_interactions: Number(payload.total_interactions || contestState.topPins[index].total_interactions || 0),
+      eligible_interactions: Number(payload.eligible_interactions || contestState.topPins[index].eligible_interactions || 0),
     }
   }
   sortPins()
 }
 
-function upsertCreatorFromEvent(payload: Record<string, unknown>) {
-  const creatorId = Number(payload.creator_id || payload.entity_id || 0)
-  if (!creatorId) return
-  const index = contestState.topCreators.findIndex((row) => row.creator_id === creatorId)
-  const rank = Number(payload.rank || 0)
-  const previousRank = Number(payload.previous_rank || 0)
-  const score = Number(payload.score || 0)
-  if (index === -1) {
-    contestState.topCreators.push({
-      creator_id: creatorId,
-      creator_username: String(payload.creator_username || `creator-${creatorId}`),
-      rank,
-      previous_rank: previousRank,
-      score,
-    })
-  } else {
-    contestState.topCreators[index] = {
-      ...contestState.topCreators[index],
-      rank,
-      previous_rank: previousRank,
-      score,
-    }
-  }
-  sortCreators()
-}
-
-function pushEvent(event: ContestLeaderboardEvent) {
-  contestState.liveEvents = [...contestState.liveEvents.slice(-99), event]
+function pushEvent(event: ContestEvent) {
   contestState.lastSequence = Math.max(contestState.lastSequence, event.sequence || 0)
   const payload = (event.payload || {}) as Record<string, unknown>
   if (event.entity_type === 'pin' || event.event_type.includes('pin_')) {
     upsertPinFromEvent(payload)
   }
-  if (event.entity_type === 'creator' || event.event_type.includes('creator_')) {
-    upsertCreatorFromEvent(payload)
-  }
-  tabChannel?.postMessage({ type: 'contest-event', event })
+  tabChannel?.postMessage({ type: 'contest-pin-event', event })
 }
 
 async function fetchCurrentContest() {
@@ -139,22 +125,15 @@ async function fetchCurrentContest() {
 }
 
 async function fetchBoardsSnapshot() {
-  const [pinsResp, creatorsResp] = await Promise.all([
-    api.get<{ contest_key: string; results: ContestPinRow[] }>('contest/leaderboard/pins', {
-      params: { limit: 100 },
-    }),
-    api.get<{ contest_key: string; results: ContestCreatorRow[] }>('contest/leaderboard/creators', {
-      params: { limit: 100 },
-    }),
-  ])
+  const pinsResp = await api.get<{ contest_key: string; results: ContestPinRow[] }>('contest/leaderboard/pins', {
+    params: { limit: 100 },
+  })
   contestState.topPins = pinsResp.data.results || []
-  contestState.topCreators = creatorsResp.data.results || []
   sortPins()
-  sortCreators()
 }
 
 async function fetchEventDeltas() {
-  const { data } = await api.get<{ contest_key: string; results: ContestLeaderboardEvent[] }>(
+  const { data } = await api.get<{ contest_key: string; results: ContestEvent[] }>(
     'contest/leaderboard/events',
     {
       params: { since: contestState.lastSequence, limit: 300 },
@@ -186,8 +165,8 @@ function connectWebSocket() {
     }
     ws.onmessage = (messageEvent) => {
       const payload = JSON.parse(String(messageEvent.data || '{}')) as {
-        event?: ContestLeaderboardEvent
-        events?: ContestLeaderboardEvent[]
+        event?: ContestEvent
+        events?: ContestEvent[]
       }
       if (payload.event) {
         pushEvent(payload.event)
@@ -214,7 +193,7 @@ function startPollingFallback() {
   if (pollTimer) return
   pollTimer = setInterval(() => {
     void fetchEventDeltas().catch(() => undefined)
-  }, Math.max(2_000, Number(contestState.settings?.refresh_interval || 3) * 1_000))
+  }, 300_000)
 }
 
 function stopPollingFallback() {
@@ -239,7 +218,7 @@ async function initContestLive() {
         }
       }, 1_000)
     }
-  } catch (err) {
+  } catch {
     contestState.error = 'Impossible de charger le concours pour le moment.'
     contestState.usingPollingFallback = true
   } finally {
@@ -263,8 +242,8 @@ function teardownContestLive() {
 
 tabChannel?.addEventListener('message', (event: MessageEvent) => {
   const payload = event.data || {}
-  if (payload?.type === 'contest-event' && payload.event) {
-    const evt = payload.event as ContestLeaderboardEvent
+  if (payload?.type === 'contest-pin-event' && payload.event) {
+    const evt = payload.event as ContestEvent
     if (evt.sequence > contestState.lastSequence) {
       pushEvent(evt)
     }
