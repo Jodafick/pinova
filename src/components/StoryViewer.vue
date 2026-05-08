@@ -589,7 +589,7 @@ onUnmounted(() => {
               class="w-full px-3 py-2 text-left text-white text-sm hover:bg-white/10 flex items-center gap-2"
               @click.stop="
                 storyMoreOpen = false
-                void handleShareStory()
+                handleShareStory()
               "
             >
               <span class="material-symbols-outlined text-[18px]">share</span>
@@ -601,7 +601,7 @@ onUnmounted(() => {
               class="w-full px-3 py-2 text-left text-white text-sm hover:bg-white/10 flex items-center gap-2"
               @click.stop="
                 storyMoreOpen = false
-                void handleReportStory()
+                handleReportStory()
               "
             >
               <span class="material-symbols-outlined text-[18px]">flag</span>
