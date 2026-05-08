@@ -340,7 +340,7 @@ function menuDelete() {
             :class="{ 'text-pink-600': comment.liked }"
             @click="emit('like', comment.id)"
           >
-            <span class="material-symbols-outlined text-base" :class="{ 'fill-1': comment.liked }">
+            <span class="material-symbols-outlined text-base">
               favorite
             </span>
             {{ comment.likes }}
@@ -432,7 +432,7 @@ function menuDelete() {
                   :class="{ 'text-pink-600': reply.liked }"
                   @click="emit('like', reply.id)"
                 >
-                  <span class="material-symbols-outlined text-sm" :class="{ 'fill-1': reply.liked }">
+                  <span class="material-symbols-outlined text-sm">
                     favorite
                   </span>
                   {{ reply.likes }}

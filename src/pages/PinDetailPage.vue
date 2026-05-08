@@ -954,7 +954,7 @@ async function deletePinFromMenu() {
                   @click="handleLike"
                 >
                   <span v-if="likingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-                  <span v-else class="material-symbols-outlined fill-1" :class="pin.liked ? 'text-pink-600' : 'text-neutral-700'" aria-hidden="true">favorite</span>
+                  <span v-else class="material-symbols-outlined" :class="pin.liked ? 'text-pink-600' : 'text-neutral-700'" aria-hidden="true">favorite</span>
                 </button>
                 <button
                   type="button"
@@ -1120,14 +1120,14 @@ async function deletePinFromMenu() {
                 @click="storyLikersOpen = true"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <span class="material-symbols-outlined text-lg fill-1 text-pink-500" aria-hidden="true">favorite</span>
+                <span class="material-symbols-outlined text-lg text-pink-500" aria-hidden="true">favorite</span>
               </button>
               <span
                 v-else-if="!pin.isStory"
                 class="flex items-center gap-1.5"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <span class="material-symbols-outlined text-lg fill-1" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
+                <span class="material-symbols-outlined text-lg" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
               </span>
               <span class="flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-lg">sell</span>

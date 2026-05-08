@@ -15,7 +15,12 @@ import {
   isVerifiedAdultFromBirthDate,
   hasRequiredBirthDateForMediaPublish,
 } from '../composables/useModeration'
-import { formatDrfErrorMessages, drfErrorTouchesFields } from '../utils/apiValidationErrors'
+import {
+  extractDrfFieldErrors,
+  firstErroredField,
+  formatDrfErrorMessages,
+  drfErrorTouchesFields,
+} from '../utils/apiValidationErrors'
 import { escapeHtml } from '../utils/escapeHtml'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
@@ -71,6 +76,12 @@ const privateTags = ref<string[]>([])
 const publicTagsInput = ref('')
 const selectedBoardIds = ref<number[]>([])
 const myBoards = ref<{ id: number; name: string; is_private?: boolean }[]>([])
+const fieldErrors = ref<Record<string, string>>({})
+const titleInput = ref<HTMLInputElement | null>(null)
+const descriptionInput = ref<HTMLTextAreaElement | null>(null)
+const linkInput = ref<HTMLInputElement | null>(null)
+const categoryInput = ref<HTMLInputElement | null>(null)
+const publicTagsInputRef = ref<HTMLInputElement | null>(null)
 
 const currentPlan = computed<'free' | 'plus' | 'pro'>(() => currentUser.value?.subscription?.plan || 'free')
 
@@ -429,6 +440,7 @@ const clearStep2Media = () => {
 }
 
 const submitPin = async () => {
+  fieldErrors.value = {}
   if (!title.value) return
   const hasRemoteMedia =
     !!existingImageUrl.value || !!(existingStoryVideoUrl.value || '').trim()
@@ -519,9 +531,27 @@ const submitPin = async () => {
     const ax = err as { response?: { data?: Record<string, unknown> } }
     const data = ax.response?.data
     if (data && typeof data === 'object' && !Array.isArray(data)) {
+      const extracted = extractDrfFieldErrors(data)
+      fieldErrors.value = Object.fromEntries(
+        Object.entries(extracted).map(([k, v]) => [k, v[0] || '']),
+      )
       if (drfErrorTouchesFields(data, CREATE_PIN_STEP_1_FIELD_KEYS)) {
         createStep.value = 1
       }
+      const first = firstErroredField(extracted, [
+        'title',
+        'description',
+        'link',
+        'topic',
+        'public_tags_input',
+      ])
+      requestAnimationFrame(() => {
+        if (first === 'title') titleInput.value?.focus()
+        if (first === 'description') descriptionInput.value?.focus()
+        if (first === 'link') linkInput.value?.focus()
+        if (first === 'topic') categoryInput.value?.focus()
+        if (first === 'public_tags_input') publicTagsInputRef.value?.focus()
+      })
       const lines = formatDrfErrorMessages(data)
       await showAlert(lines.slice(0, 8).join('\n') || t('create.publish.error'), {
         variant: 'danger',
@@ -736,22 +766,36 @@ const selectCategory = (selected: TopicOption) => {
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.title') }}</label>
             <input
+              ref="titleInput"
               v-model="title"
               type="text"
               :placeholder="t('create.field.title.placeholder')"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-base focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
+              :class="[
+                'w-full px-4 py-3 rounded-xl border text-base focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
+                fieldErrors.title
+                  ? 'border-red-400 focus:ring-red-400'
+                  : 'border-neutral-200 focus:ring-pink-500',
+              ]"
             />
+            <p v-if="fieldErrors.title" class="mt-1 text-xs text-red-600">{{ fieldErrors.title }}</p>
           </div>
 
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.description') }}</label>
             <textarea
+              ref="descriptionInput"
               v-model="description"
               maxlength="1000"
               rows="4"
               :placeholder="t('create.field.description.placeholder')"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition resize-none placeholder:text-neutral-400"
+              :class="[
+                'w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:border-transparent transition resize-none placeholder:text-neutral-400',
+                fieldErrors.description
+                  ? 'border-red-400 focus:ring-red-400'
+                  : 'border-neutral-200 focus:ring-pink-500',
+              ]"
             />
+            <p v-if="fieldErrors.description" class="mt-1 text-xs text-red-600">{{ fieldErrors.description }}</p>
           </div>
 
           <div>
@@ -759,22 +803,35 @@ const selectCategory = (selected: TopicOption) => {
             <div class="relative">
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-lg">link</span>
               <input
+                ref="linkInput"
                 v-model="link"
                 type="url"
                 :placeholder="t('create.field.link.placeholder')"
-                class="w-full pl-11 pr-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
+                :class="[
+                  'w-full pl-11 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
+                  fieldErrors.link
+                    ? 'border-red-400 focus:ring-red-400'
+                    : 'border-neutral-200 focus:ring-pink-500',
+                ]"
               />
             </div>
+            <p v-if="fieldErrors.link" class="mt-1 text-xs text-red-600">{{ fieldErrors.link }}</p>
           </div>
 
           <div class="relative z-40 isolate">
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.category') }}</label>
             <div ref="categoryAnchorRef" class="relative">
               <input
+                ref="categoryInput"
                 v-model="categorySearch"
                 type="text"
                 :placeholder="t('create.field.category.placeholder')"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
+                :class="[
+                  'w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
+                  fieldErrors.topic
+                    ? 'border-red-400 focus:ring-red-400'
+                    : 'border-neutral-200 focus:ring-pink-500',
+                ]"
                 @focus="showCategoryDropdown = true"
               />
               <button
@@ -815,16 +872,26 @@ const selectCategory = (selected: TopicOption) => {
                 </button>
               </div>
             </Teleport>
+            <p v-if="fieldErrors.topic" class="mt-1 text-xs text-red-600">{{ fieldErrors.topic }}</p>
           </div>
 
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.publicTags') }}</label>
             <input
+              ref="publicTagsInputRef"
               v-model="publicTagsInput"
               type="text"
               :placeholder="t('create.field.publicTags.placeholder')"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition placeholder:text-neutral-400"
+              :class="[
+                'w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
+                fieldErrors.public_tags_input
+                  ? 'border-red-400 focus:ring-red-400'
+                  : 'border-neutral-200 focus:ring-pink-500',
+              ]"
             />
+            <p v-if="fieldErrors.public_tags_input" class="mt-1 text-xs text-red-600">
+              {{ fieldErrors.public_tags_input }}
+            </p>
           </div>
           </template>
 

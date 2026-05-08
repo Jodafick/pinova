@@ -15,3 +15,7 @@ export const GOOGLE_SIGN_IN_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
 ].join(' ')
+
+/** Publicite web (AdSense). */
+export const ADSENSE_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | undefined)?.trim() ?? ''
+export const ADSENSE_ENABLED = (import.meta.env.VITE_ADSENSE_ENABLED as string | undefined) !== 'false'

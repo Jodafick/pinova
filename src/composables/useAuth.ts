@@ -538,6 +538,7 @@ export function useAuth() {
         success: false as const,
         error: errorMsg,
         code,
+        raw: body,
       }
     }
   }

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useTokenClient } from 'vue3-google-signin'
 import { GOOGLE_SIGN_IN_SCOPES } from '../env'
 import { useI18n } from '../i18n'
 import { EMAIL_DELIVERY_UNAVAILABLE_CODE } from '../constants/authErrors'
+import { extractDrfFieldErrors, firstErroredField } from '../utils/apiValidationErrors'
 
 const router = useRouter()
 const { register, socialLogin } = useAuth()
@@ -20,9 +21,39 @@ const suggestGoogleForEmail = ref(false)
 const loading = ref(false)
 const showPassword = ref(false)
 const acceptTerms = ref(false)
+const fieldErrors = ref<Record<string, string>>({})
+
+const displayNameInput = ref<HTMLInputElement | null>(null)
+const emailInput = ref<HTMLInputElement | null>(null)
+const passwordInput = ref<HTMLInputElement | null>(null)
+const confirmPasswordInput = ref<HTMLInputElement | null>(null)
+const termsInput = ref<HTMLInputElement | null>(null)
+
+const FIELD_ORDER = ['display_name', 'username', 'email', 'password1', 'password2'] as const
+
+async function focusField(field: string | null) {
+  await nextTick()
+  if (field === 'display_name' || field === 'username') {
+    displayNameInput.value?.focus()
+    return
+  }
+  if (field === 'email') {
+    emailInput.value?.focus()
+    return
+  }
+  if (field === 'password1') {
+    passwordInput.value?.focus()
+    return
+  }
+  if (field === 'password2') {
+    confirmPasswordInput.value?.focus()
+    return
+  }
+}
 
 const handleRegister = async () => {
   error.value = ''
+  fieldErrors.value = {}
   suggestGoogleForEmail.value = false
   if (!displayName.value || !email.value || !password.value) {
     error.value = t('register.error.empty')
@@ -38,6 +69,7 @@ const handleRegister = async () => {
   }
   if (!acceptTerms.value) {
     error.value = t('register.error.acceptTerms')
+    termsInput.value?.focus()
     return
   }
 
@@ -51,6 +83,12 @@ const handleRegister = async () => {
 
   if (!result.success) {
     suggestGoogleForEmail.value = result.code === EMAIL_DELIVERY_UNAVAILABLE_CODE
+    const maybeRaw = (result as { raw?: unknown }).raw
+    const extracted = extractDrfFieldErrors(maybeRaw)
+    fieldErrors.value = Object.fromEntries(
+      Object.entries(extracted).map(([k, v]) => [k, v[0] || '']),
+    )
+    await focusField(firstErroredField(extracted, FIELD_ORDER))
     error.value = suggestGoogleForEmail.value
       ? t('auth.emailDeliveryBlocked.message')
       : result.error || t('register.error.generic')
@@ -135,24 +173,40 @@ const { login: googleLogin } = useTokenClient({
               <div class="relative group">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">person</span>
                 <input
+                  ref="displayNameInput"
                   v-model="displayName"
                   type="text"
                   :placeholder="t('register.fullName.placeholder')"
-                  class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                  :class="[
+                    'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all',
+                    fieldErrors.display_name || fieldErrors.username
+                      ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
+                      : 'border-neutral-200 dark:border-neutral-700',
+                  ]"
                 />
               </div>
+              <p v-if="fieldErrors.display_name || fieldErrors.username" class="mt-1 ml-1 text-xs text-red-600">
+                {{ fieldErrors.display_name || fieldErrors.username }}
+              </p>
             </div>
             <div>
               <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('login.email') }}</label>
               <div class="relative group">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">mail</span>
                 <input
+                  ref="emailInput"
                   v-model="email"
                   type="email"
                   :placeholder="t('register.email.placeholder')"
-                  class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                  :class="[
+                    'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all',
+                    fieldErrors.email
+                      ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
+                      : 'border-neutral-200 dark:border-neutral-700',
+                  ]"
                 />
               </div>
+              <p v-if="fieldErrors.email" class="mt-1 ml-1 text-xs text-red-600">{{ fieldErrors.email }}</p>
             </div>
           </div>
 
@@ -161,10 +215,16 @@ const { login: googleLogin } = useTokenClient({
             <div class="relative group">
               <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">lock</span>
               <input
+                ref="passwordInput"
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 :placeholder="t('register.password.placeholder')"
-                class="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                :class="[
+                  'w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all',
+                  fieldErrors.password1
+                    ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
+                    : 'border-neutral-200 dark:border-neutral-700',
+                ]"
               />
               <button
                 type="button"
@@ -174,6 +234,7 @@ const { login: googleLogin } = useTokenClient({
                 <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
               </button>
             </div>
+            <p v-if="fieldErrors.password1" class="mt-1 ml-1 text-xs text-red-600">{{ fieldErrors.password1 }}</p>
           </div>
 
           <div>
@@ -181,17 +242,25 @@ const { login: googleLogin } = useTokenClient({
             <div class="relative group">
               <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">verified_user</span>
               <input
+                ref="confirmPasswordInput"
                 v-model="confirmPassword"
                 type="password"
                 :placeholder="t('register.confirmPassword.placeholder')"
-                class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                :class="[
+                  'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all',
+                  fieldErrors.password2
+                    ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
+                    : 'border-neutral-200 dark:border-neutral-700',
+                ]"
               />
             </div>
+            <p v-if="fieldErrors.password2" class="mt-1 ml-1 text-xs text-red-600">{{ fieldErrors.password2 }}</p>
           </div>
 
           <label class="flex items-start gap-3 cursor-pointer group px-1 py-1">
             <div class="relative flex items-center mt-1">
               <input
+                ref="termsInput"
                 v-model="acceptTerms"
                 type="checkbox"
                 class="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border-2 border-neutral-300 transition-all checked:bg-pink-600 checked:border-pink-600 hover:border-pink-400"

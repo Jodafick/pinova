@@ -16,8 +16,10 @@ const props = withDefaults(
     /** Pour la double vérification frontend lors de l'affichage */
     mediaUrl?: string
     mediaType?: 'image' | 'video'
+    /** Active la double verification locale NSFW (plus stricte que le backend). */
+    enableClientScan?: boolean
   }>(),
-  { blurByDefault: true },
+  { blurByDefault: true, enableClientScan: true },
 )
 
 const { t } = useI18n()
@@ -54,6 +56,10 @@ const canRevealClientBlock = computed(() => {
 })
 
 async function runClientScan() {
+  if (!props.enableClientScan) {
+    clientSideLevel.value = 'ok'
+    return
+  }
   if (!props.mediaUrl || isScanning.value) return
   
   isScanning.value = true

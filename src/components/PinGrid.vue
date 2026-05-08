@@ -11,6 +11,7 @@ import { useDataSaver } from '../composables/useDataSaver'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 import { useAppModal } from '../composables/useAppModal'
+import FeedSponsoredCard from './ads/FeedSponsoredCard.vue'
 import {
   PIN_MEDIA_ANTI_LEAK_CLASS,
   pinMediaAntiLeakImgBindings,
@@ -43,6 +44,7 @@ const blurSensitiveByDefault = computed(() =>
 
 type GridCell =
   | { kind: 'pin'; pin: Pin }
+  | { kind: 'ad'; key: string }
   | { kind: 'skeleton'; key: string }
 
 const props = withDefaults(
@@ -52,10 +54,12 @@ const props = withDefaults(
     loadingInitial?: boolean
     /** Suite de chargement (infinite scroll / page suivante). */
     loadingMore?: boolean
+    adFrequency?: number
   }>(),
   {
     loadingInitial: false,
     loadingMore: false,
+    adFrequency: 8,
   },
 )
 
@@ -91,7 +95,13 @@ const skeletonPlaceholders = computed(() => {
 
 const columns = computed(() => {
   const n = columnCount.value
-  const cells: GridCell[] = props.pins.map((pin) => ({ kind: 'pin', pin }))
+  const cells: GridCell[] = []
+  props.pins.forEach((pin, index) => {
+    cells.push({ kind: 'pin', pin })
+    if ((index + 1) % props.adFrequency === 0) {
+      cells.push({ kind: 'ad', key: `sponsored-${index + 1}` })
+    }
+  })
   const sk = skeletonPlaceholders.value
   for (let i = 0; i < sk; i++) {
     cells.push({ kind: 'skeleton', key: `pin-skeleton-${i}` })
@@ -287,6 +297,7 @@ onUnmounted(() => {
             :sensitive="!!cell.pin.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
             :blur-by-default="blurSensitiveByDefault"
+            :enable-client-scan="false"
             :media-url="cell.pin.imageUrl"
             media-type="image"
             wrapper-class="w-full"
@@ -312,6 +323,7 @@ onUnmounted(() => {
             :sensitive="!!cell.pin.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
             :blur-by-default="blurSensitiveByDefault"
+            :enable-client-scan="false"
             :media-url="cell.pin.storyVideoUrl"
             media-type="video"
             wrapper-class="w-full"
@@ -388,6 +400,10 @@ onUnmounted(() => {
         </div>
 
       </article>
+      <FeedSponsoredCard
+        v-else-if="cell.kind === 'ad'"
+        slot="1234567890"
+      />
 
       <!-- Placeholder masonry : même shell que les cartes pour suivre les colonnes. -->
       <div

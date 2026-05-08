@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -7,12 +7,17 @@ import { useI18n } from '../i18n'
 import TopicScroller from '../components/TopicScroller.vue'
 import HomeStoriesStrip from '../components/HomeStoriesStrip.vue'
 import PinGrid from '../components/PinGrid.vue'
+import SidebarAd from '../components/ads/SidebarAd.vue'
+import InContentAd from '../components/ads/InContentAd.vue'
+import MobileStickyAd from '../components/ads/MobileStickyAd.vue'
+import { useAds } from '../composables/useAds'
 
 const { t, currentLang } = useI18n()
 
 const router = useRouter()
 const { pins, topics, loading, fetchHomeFeed, trackSearchInteraction, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
 const { currentUser, toggleSavePin } = useAuth()
+const { consent, setConsent, adBlocked } = useAds()
 
 const searchQuery = ref('')
 const activeTopic = ref<string | null>(null)
@@ -31,53 +36,33 @@ const filteredPins = computed(() => {
   })
 })
 
-const loadMoreSentinel = ref<HTMLElement | null>(null)
-let loadMoreObserver: IntersectionObserver | null = null
-
-/** Même condition d’affichage que PinGrid : nécessaire pour monter le sentinel. */
-const feedScrollActive = computed(
-  () =>
-    filteredPins.value.length > 0 ||
-    (loading.value && filteredPins.value.length === 0) ||
-    (isFetchingNextPage.value && filteredPins.value.length > 0),
-)
-
-function disconnectLoadMoreObserver() {
-  loadMoreObserver?.disconnect()
-  loadMoreObserver = null
-}
-
-function connectLoadMoreObserver() {
-  disconnectLoadMoreObserver()
-  if (!feedScrollActive.value || !hasNextPage.value) return
-  const el = loadMoreSentinel.value
-  if (!el) return
-  loadMoreObserver = new IntersectionObserver(
-    (entries) => {
-      if (!entries[0]?.isIntersecting) return
-      if (hasNextPage.value && !isFetchingNextPage.value && !loading.value) {
-        void fetchHomeFeed(false, activeTopic.value)
-      }
-    },
-    { root: null, rootMargin: '480px', threshold: 0 },
-  )
-  loadMoreObserver.observe(el)
+function maybeLoadMoreOnScroll() {
+  const root = document.scrollingElement ?? document.documentElement
+  const scrollTop = root.scrollTop
+  const scrollHeight = root.scrollHeight
+  const clientHeight = root.clientHeight
+  if (scrollTop + clientHeight < scrollHeight - 220) return
+  if (hasNextPage.value && !isFetchingNextPage.value && !loading.value) {
+    void fetchHomeFeed(false, activeTopic.value)
+  }
 }
 
 onMounted(() => {
   void fetchHomeFeed(true, activeTopic.value)
+  window.addEventListener('scroll', maybeLoadMoreOnScroll, { passive: true })
 })
 
 onUnmounted(() => {
-  disconnectLoadMoreObserver()
+  window.removeEventListener('scroll', maybeLoadMoreOnScroll)
 })
 
 watch(
-  () => [feedScrollActive.value, hasNextPage.value, filteredPins.value.length, activeTopic.value],
+  () => [filteredPins.value.length, hasNextPage.value, isFetchingNextPage.value, activeTopic.value],
   () => {
-    nextTick(() => connectLoadMoreObserver())
+    // Si le viewport est plus grand que le contenu, enchaîner automatiquement les pages.
+    maybeLoadMoreOnScroll()
   },
-  { flush: 'post', immediate: true },
+  { flush: 'post' },
 )
 
 const selectTopic = (topic: string | null) => {
@@ -121,6 +106,31 @@ const openPin = (slug: string) => {
 
 <template>
   <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-4 sm:py-6">
+    <div
+      v-if="consent === null"
+      class="mb-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+    >
+      <p class="text-sm text-neutral-600 dark:text-neutral-300 flex-1">
+        Nous utilisons des cookies publicitaires pour afficher des contenus sponsorises.
+      </p>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="px-3 py-2 rounded-full text-sm font-semibold bg-neutral-100 dark:bg-neutral-800"
+          @click="setConsent(false)"
+        >
+          Refuser
+        </button>
+        <button
+          type="button"
+          class="px-3 py-2 rounded-full text-sm font-semibold bg-pink-600 text-white"
+          @click="setConsent(true)"
+        >
+          Accepter
+        </button>
+      </div>
+    </div>
+
     <!-- Welcome section -->
     <section class="mb-6 sm:mb-8">
       <div class="flex items-center justify-between gap-4">
@@ -168,6 +178,9 @@ const openPin = (slug: string) => {
     </div>
 
     <TopicScroller :topics="topics" :active-topic="activeTopic" @select="selectTopic" />
+    <div class="mt-4 mb-2">
+      <InContentAd slot="1234567890" />
+    </div>
 
     <template
       v-if="filteredPins.length > 0 || (loading && filteredPins.length === 0) || (isFetchingNextPage && filteredPins.length > 0)"
@@ -180,7 +193,6 @@ const openPin = (slug: string) => {
         @toggle-save="handleToggleSave"
         @open-pin="openPin"
       />
-      <div ref="loadMoreSentinel" class="h-1 w-full shrink-0" aria-hidden="true" />
     </template>
 
     <!-- Empty state -->
@@ -209,4 +221,6 @@ const openPin = (slug: string) => {
       <span class="material-symbols-outlined text-2xl">add</span>
     </router-link>
   </div>
+  <SidebarAd slot="1234567890" />
+  <MobileStickyAd slot="1234567890" :enabled="!adBlocked" />
 </template>

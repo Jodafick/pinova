@@ -301,6 +301,7 @@ function openStoryLikersModal() {
 }
 
 const reportStoryOpen = ref(false)
+const storyMoreOpen = ref(false)
 
 async function handleReportStory() {
   const pin = current.value
@@ -314,6 +315,31 @@ async function handleReportStory() {
     return
   }
   reportStoryOpen.value = true
+}
+
+async function handleShareStory() {
+  const slug = current.value?.slug?.trim()
+  if (!slug) return
+  const url = `${window.location.origin}/pin/${encodeURIComponent(slug)}`
+  const shareData = {
+    title: (current.value?.title || 'Pinova').trim() || 'Pinova',
+    text: `@${current.value?.username ?? ''}`.trim(),
+    url,
+  }
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData)
+      return
+    }
+  } catch {
+    /* ignore and fallback */
+  }
+  try {
+    await navigator.clipboard.writeText(url)
+    await showAlert(t('pin.share.copied'), { variant: 'success' })
+  } catch {
+    await showAlert(`${t('pin.share.manualBody')}\n\n${url}`, { variant: 'info', title: t('pin.share.manualTitle') })
+  }
 }
 
 async function handleSubmitStoryReport(payload: { category: string; details: string }) {
@@ -335,6 +361,7 @@ async function handleSubmitStoryReport(payload: { category: string; details: str
 
 function close() {
   clearAdvance()
+  storyMoreOpen.value = false
   emit('update:modelValue', false)
 }
 
@@ -450,6 +477,10 @@ function openPinPage() {
 function onKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return
   if (e.key === 'Escape') {
+    if (storyMoreOpen.value) {
+      storyMoreOpen.value = false
+      return
+    }
     if (storyLikersOpen.value) {
       storyLikersOpen.value = false
       return
@@ -538,15 +569,46 @@ onUnmounted(() => {
         >
           <span class="material-symbols-outlined text-[22px]">{{ storySoundOn ? 'volume_up' : 'volume_off' }}</span>
         </button>
-        <button
-          v-if="isAuthenticated && current?.username !== currentUser?.username"
-          type="button"
-          class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"
-          :title="t('moderation.report')"
-          @click.stop="handleReportStory"
-        >
-          <span class="material-symbols-outlined text-[22px]">flag</span>
-        </button>
+        <div class="relative">
+          <button
+            v-if="current?.slug || (isAuthenticated && current?.username !== currentUser?.username)"
+            type="button"
+            class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"
+            title="Plus"
+            @click.stop="storyMoreOpen = !storyMoreOpen"
+          >
+            <span class="material-symbols-outlined text-[22px]">more_vert</span>
+          </button>
+          <div
+            v-if="storyMoreOpen"
+            class="absolute right-0 top-[3.1rem] min-w-[11rem] rounded-xl bg-black/80 border border-white/15 backdrop-blur-md py-1.5"
+          >
+            <button
+              v-if="current?.slug"
+              type="button"
+              class="w-full px-3 py-2 text-left text-white text-sm hover:bg-white/10 flex items-center gap-2"
+              @click.stop="
+                storyMoreOpen = false
+                void handleShareStory()
+              "
+            >
+              <span class="material-symbols-outlined text-[18px]">share</span>
+              {{ t('pin.shareLink') }}
+            </button>
+            <button
+              v-if="isAuthenticated && current?.username !== currentUser?.username"
+              type="button"
+              class="w-full px-3 py-2 text-left text-white text-sm hover:bg-white/10 flex items-center gap-2"
+              @click.stop="
+                storyMoreOpen = false
+                void handleReportStory()
+              "
+            >
+              <span class="material-symbols-outlined text-[18px]">flag</span>
+              {{ t('moderation.report') }}
+            </button>
+          </div>
+        </div>
         <button
           type="button"
           class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"
@@ -661,7 +723,7 @@ onUnmounted(() => {
             >
               <span
                 class="material-symbols-outlined text-[26px] transition-colors"
-                :class="currentStoryLiked ? 'story-ms-heart-on text-pink-400' : 'text-white'"
+                  :class="currentStoryLiked ? 'text-pink-400' : 'text-white'"
               >favorite</span>
             </button>
             <button
@@ -671,7 +733,7 @@ onUnmounted(() => {
               :aria-label="t('story.likers.title', { count: currentStoryReactions })"
               @click.stop="openStoryLikersModal"
             >
-              <span class="material-symbols-outlined text-[24px] story-ms-heart-on text-pink-300">favorite</span>
+                <span class="material-symbols-outlined text-[24px] text-pink-300">favorite</span>
               <span class="text-xs font-semibold tabular-nums min-w-[1.25rem]">{{ currentStoryReactions }}</span>
             </button>
 
@@ -680,9 +742,7 @@ onUnmounted(() => {
                 v-if="heartBurst"
                 class="pointer-events-none absolute inset-0 flex items-center justify-center z-[45]"
               >
-                <span
-                  class="material-symbols-outlined story-ms-heart-on text-pink-300 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]"
-                >
+                <span class="material-symbols-outlined text-pink-300 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]">
                   favorite
                 </span>
               </div>
@@ -725,10 +785,6 @@ onUnmounted(() => {
 .fade-leave-to {
   opacity: 0;
 }
-.story-ms-heart-on {
-  font-variation-settings: 'FILL' 1, 'wght' 600;
-}
-
 /** Cœur like / double-tap : bien plus visible qu’à l’écran précédent. */
 .story-heart-burst {
   font-size: clamp(7rem, 38vw, 15rem);
