@@ -69,7 +69,7 @@ const followSuggestedUser = async (username: string) => {
 </script>
 
 <template>
-  <div class="px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8">
+  <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8">
     <section class="mb-8">
       <h1 class="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('following.title') }}</h1>
       <p class="text-base text-neutral-500 dark:text-neutral-400 max-w-lg">{{ t('following.subtitle') }}</p>
@@ -77,6 +77,7 @@ const followSuggestedUser = async (username: string) => {
 
     <PinGrid
       v-if="displayPins.length > 0 || (loading && displayPins.length === 0) || (isFetchingNextPage && displayPins.length > 0)"
+      class="w-full"
       :pins="displayPins"
       :loading-initial="loading && displayPins.length === 0"
       :loading-more="isFetchingNextPage && displayPins.length > 0"
@@ -96,11 +97,11 @@ const followSuggestedUser = async (username: string) => {
 
       <div class="mt-6 text-left max-w-2xl mx-auto">
         <p class="text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-3">{{ t('following.suggest') }}</p>
-        <div v-if="suggestionsLoading" class="app-skeleton-wave grid grid-cols-1 sm:grid-cols-2 gap-3 animate-pulse" aria-hidden="true">
+        <div v-if="suggestionsLoading" class="app-skeleton-wave w-full min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3" aria-hidden="true">
           <div
             v-for="s in 4"
             :key="s"
-            class="border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 flex items-center justify-between gap-3"
+            class="border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 flex items-center justify-between gap-3 animate-pulse"
           >
             <div class="flex gap-3 min-w-0 flex-1">
               <div class="w-9 h-9 rounded-full bg-neutral-200 shrink-0" />

@@ -5,8 +5,8 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="app-skeleton-wave min-h-screen" role="status" :aria-label="t('common.loading')">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+  <div class="app-skeleton-wave w-full min-w-0 min-h-screen" role="status" :aria-label="t('common.loading')">
+    <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       <div class="h-9 w-28 rounded-lg bg-neutral-200 animate-pulse mb-6" />
       <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col lg:flex-row lg:max-h-[80vh]">
         <div class="flex-1 lg:w-1/2 min-h-[220px] lg:min-h-[360px] bg-gradient-to-br from-neutral-200 via-neutral-100 to-neutral-200 animate-pulse" />

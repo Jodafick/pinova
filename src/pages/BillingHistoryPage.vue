@@ -139,9 +139,9 @@ onMounted(async () => {
 
 <template>
   <div
-    class="min-h-[70vh] bg-gradient-to-b from-neutral-50 via-white to-[#fdf8fb] dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 selection:bg-pink-100 selection:text-pink-900"
+    class="min-h-[70vh] w-full min-w-0 bg-gradient-to-b from-neutral-50 via-white to-[#fdf8fb] dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 selection:bg-pink-100 selection:text-pink-900"
   >
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-14 pb-16">
+    <div class="w-full min-w-0 max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-14 pb-16">
       <button
         type="button"
         class="app-btn app-btn-secondary group mb-8 text-sm"

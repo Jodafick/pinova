@@ -83,7 +83,7 @@ function goBack() {
 </script>
 
 <template>
-  <div class="px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8 space-y-6">
+  <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8 space-y-6">
     <div class="flex flex-wrap items-center gap-3">
       <button
         type="button"
@@ -113,7 +113,7 @@ function goBack() {
 
     <p v-if="error" class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
 
-    <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div v-if="loading" class="app-skeleton-wave w-full min-w-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
       <div
         v-for="i in 8"
         :key="i"
@@ -121,7 +121,7 @@ function goBack() {
       />
     </div>
 
-    <div v-else-if="boards.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div v-else-if="boards.length" class="w-full min-w-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
       <router-link
         v-for="board in boards"
         :key="`explore-all-board-${board.id}`"

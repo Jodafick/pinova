@@ -87,7 +87,7 @@ watch(currentLang, load, { immediate: true })
 </script>
 
 <template>
-  <div class="min-h-[60vh] max-w-3xl mx-auto px-4 py-10 sm:py-14 pb-24">
+  <div class="min-h-[60vh] w-full min-w-0 max-w-3xl mx-auto px-4 py-10 sm:py-14 pb-24">
     <nav class="mb-8 flex items-center gap-2 text-sm">
       <router-link
         to="/"
@@ -115,7 +115,7 @@ watch(currentLang, load, { immediate: true })
 
     <div
       v-if="loading"
-      class="app-skeleton-wave app-card rounded-3xl p-8 animate-pulse space-y-6"
+      class="app-skeleton-wave w-full min-w-0 app-card rounded-3xl p-8 animate-pulse space-y-6"
       aria-hidden="true"
     >
       <div class="h-28 rounded-2xl bg-neutral-100" />

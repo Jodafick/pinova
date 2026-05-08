@@ -337,11 +337,11 @@ onMounted(async () => {
 
 <template>
   <main
-    class="min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-8rem)]
+    class="w-full min-w-0 min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-8rem)]
            bg-gradient-to-b from-violet-50/40 via-white to-neutral-50/80
            dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
   >
-    <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-10 lg:py-12">
+    <div class="w-full min-w-0 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-10 lg:py-12">
 
       <!-- Loading skeleton -->
       <div v-if="loading" aria-busy="true">

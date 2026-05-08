@@ -120,7 +120,7 @@ const openPin = (slug: string) => {
 </script>
 
 <template>
-  <div class="px-3 sm:px-6 lg:px-10 xl:px-16 py-4 sm:py-6">
+  <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-4 sm:py-6">
     <!-- Welcome section -->
     <section class="mb-6 sm:mb-8">
       <div class="flex items-center justify-between gap-4">
@@ -173,7 +173,7 @@ const openPin = (slug: string) => {
       v-if="filteredPins.length > 0 || (loading && filteredPins.length === 0) || (isFetchingNextPage && filteredPins.length > 0)"
     >
       <PinGrid
-        class="mt-4"
+        class="mt-4 w-full"
         :pins="filteredPins"
         :loading-initial="loading && filteredPins.length === 0"
         :loading-more="isFetchingNextPage && filteredPins.length > 0"

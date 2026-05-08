@@ -551,7 +551,7 @@ const selectCategory = (selected: TopicOption) => {
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900">
+  <div class="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900">
     <CreatePinEditSkeleton v-if="loadingEdit" />
     <template v-else>
     <div

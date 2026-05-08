@@ -286,7 +286,7 @@ watch([boardId, () => route.query.share], loadBoard)
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+  <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <button
       type="button"
       class="app-btn app-btn-secondary group mb-8 text-sm"
@@ -296,21 +296,21 @@ watch([boardId, () => route.query.share], loadBoard)
       {{ t('common.back') }}
     </button>
 
-    <div v-if="loading" class="app-skeleton-wave animate-pulse">
+    <div v-if="loading" class="app-skeleton-wave w-full min-w-0">
       <BoardHeaderSkeleton />
-      <PinGrid class="mt-8" :pins="[]" loading-initial />
+      <PinGrid class="mt-2 sm:mt-6 w-full" :pins="[]" loading-initial />
     </div>
 
-    <div v-else-if="loadError === 'not_found'" class="text-center py-16 text-neutral-600">
+    <div v-else-if="loadError === 'not_found'" class="w-full min-w-0 text-center py-16 text-neutral-600 dark:text-neutral-400">
       {{ t('board.notFound') }}
     </div>
 
-    <div v-else-if="loadError === 'generic'" class="text-center py-16 text-neutral-600">
+    <div v-else-if="loadError === 'generic'" class="w-full min-w-0 text-center py-16 text-neutral-600 dark:text-neutral-400">
       {{ t('board.loadError') }}
     </div>
 
     <template v-else>
-      <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <div class="mb-8 flex flex-wrap items-start justify-between gap-4 w-full min-w-0">
         <div class="min-w-0 flex-1">
           <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">{{ boardName }}</h1>
           <router-link
@@ -364,7 +364,7 @@ watch([boardId, () => route.query.share], loadBoard)
         </div>
       </div>
 
-      <PinGrid v-if="boardPins.length" :pins="boardPins" @open-pin="openPin" @toggle-save="onToggleSave" @pin-deleted="onPinDeletedFromGrid" />
+      <PinGrid v-if="boardPins.length" class="w-full" :pins="boardPins" @open-pin="openPin" @toggle-save="onToggleSave" @pin-deleted="onPinDeletedFromGrid" />
       <p v-else class="app-text-muted text-center py-16">{{ t('board.empty') }}</p>
     </template>
 

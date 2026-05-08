@@ -186,7 +186,7 @@ function openCategoriesModal() {
 </script>
 
 <template>
-  <div class="px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8 space-y-9">
+  <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8 space-y-9">
     <section class="rounded-3xl border border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/80 backdrop-blur-sm p-5 sm:p-7">
       <h1 class="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">{{ t('explore.title') }}</h1>
       <p class="text-base text-neutral-500 dark:text-neutral-400 max-w-2xl">
@@ -246,7 +246,7 @@ function openCategoriesModal() {
           />
         </div>
       </div>
-      <div v-if="categoriesLoading" class="app-skeleton-wave grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div v-if="categoriesLoading" class="app-skeleton-wave w-full min-w-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <div
           v-for="i in 10"
           :key="i"
@@ -466,6 +466,7 @@ function openCategoriesModal() {
       
       <PinGrid
         v-if="displayPins.length > 0 || (loading && displayPins.length === 0) || (isFetchingNextPage && displayPins.length > 0)"
+        class="w-full"
         :pins="displayPins"
         :loading-initial="loading && displayPins.length === 0"
         :loading-more="isFetchingNextPage && displayPins.length > 0"
@@ -485,6 +486,7 @@ function openCategoriesModal() {
 
       <PinGrid
         v-if="displayPins.length > 0 || (loading && displayPins.length === 0) || (isFetchingNextPage && displayPins.length > 0)"
+        class="w-full"
         :pins="displayPins"
         :loading-initial="loading && displayPins.length === 0"
         :loading-more="isFetchingNextPage && displayPins.length > 0"

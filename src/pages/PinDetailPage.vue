@@ -821,7 +821,7 @@ async function deletePinFromMenu() {
 </script>
 
 <template>
-  <div class="min-h-screen">
+  <div class="min-h-screen w-full min-w-0">
     <PinDetailSkeleton v-if="pinDetailLoading" />
 
     <!-- Not found -->
@@ -843,9 +843,9 @@ async function deletePinFromMenu() {
       id="main-pin-detail"
       tabindex="-1"
       :aria-labelledby="pin.title ? 'pin-detail-title' : undefined"
-      class="min-h-screen outline-none"
+      class="min-h-screen w-full min-w-0 outline-none"
     >
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <!-- Back button -->
         <button
           type="button"
@@ -1264,9 +1264,10 @@ async function deletePinFromMenu() {
       </div>
 
       <!-- Related pins -->
-      <section v-if="relatedPins.length > 0 || pinsLoading" class="px-3 sm:px-6 lg:px-10 xl:px-16 pb-10">
+      <section v-if="relatedPins.length > 0 || pinsLoading" class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 pb-10">
         <h2 class="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-5">{{ t('pin.related') }}</h2>
         <PinGrid
+          class="w-full"
           :pins="relatedPins"
           :loading-initial="pinsLoading && relatedPins.length === 0"
           @toggle-save="handleToggleSaveRelated"

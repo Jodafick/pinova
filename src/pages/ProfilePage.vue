@@ -1515,6 +1515,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     <!-- Pins grid -->
     <PinGrid
       v-if="displayPins.length > 0 || profileGridLoadingInitial"
+      class="w-full"
       :pins="displayPins"
       :loading-initial="profileGridLoadingInitial"
       :loading-more="profileGridLoadingMore"

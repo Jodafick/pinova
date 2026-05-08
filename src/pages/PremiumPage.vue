@@ -479,7 +479,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-neutral-900 dark:text-neutral-100">
+  <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-neutral-900 dark:text-neutral-100">
     <!-- Hero -->
     <div class="text-center mb-12">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 text-xs font-semibold mb-4">
