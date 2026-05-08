@@ -1004,4 +1004,43 @@ export const fr: Record<string, string> = {
   'settings.danger.delete.bannerTitle': 'Suppression du compte en cours',
   'settings.danger.delete.bannerBody': 'Traitement automatique définitif après le {date} si vous ne revenez pas annuler depuis les paramètres.',
   'settings.danger.delete.useBannerCancel': 'Une suppression est déjà programmée — annulez depuis la bannière en haut de la page.',
+
+  // Concours mensuel (classement)
+  'nav.contest': 'Concours',
+  'contest.brand': 'Pinova Contest',
+  'contest.title': 'Top Pins du mois',
+  'contest.subtitle':
+    'Classement en direct : un pin par créateur — son meilleur score. Les métriques reflètent cette liste.',
+  'contest.live.historyLink': 'Mois précédents',
+  'contest.history.pastMonthsLead': 'Concours déjà finalisés — choisissez un mois ou saisissez AAAA-MM.',
+  'contest.live': 'En direct',
+  'contest.refresh': 'Actualiser',
+  'contest.stats.rankedPins': 'Pins classés',
+  'contest.stats.distinctCreators': 'Créateurs distincts',
+  'contest.stats.totalSignals': 'Signaux cumulés (liste)',
+  'contest.stats.signalsHint':
+    'Somme ❤️ · 👁 · partages · enregistrements · 💬 du top affiché.',
+  'contest.error.load': 'Impossible de charger le concours pour le moment.',
+  'contest.error.offline': 'Pas de connexion réseau.',
+  'contest.countdown.days': 'jours',
+  'contest.countdown.hours': 'heures',
+  'contest.countdown.minutes': 'minutes',
+  'contest.countdown.seconds': 'secondes',
+  'contest.row.pinPlaceholder': 'Pin',
+  'contest.row.points': '{points} pts',
+  'contest.row.rankChange': 'Variation',
+  'contest.history.title': 'Historique des concours',
+  'contest.history.lead': 'Consultez les résultats mensuels archivés.',
+  'contest.history.placeholder': 'AAAA-MM (ex. : 2026-05)',
+  'contest.history.load': 'Charger',
+  'contest.history.notFound': 'Aucun historique pour cette période.',
+  'contest.history.periodLabel': 'Concours',
+  'contest.history.winnerSummary':
+    '#{rank} · Créateur {creator_id} · Pin {pin_id}',
+  'contest.remain.label': 'Temps restant',
+  'contest.remain.daysShort': 'j',
+  'contest.remain.hoursShort': 'h',
+  'contest.remain.minutesShort': 'min',
+  'contest.hero.statsLine':
+    '{pins} pins · {creators} créateurs · {signals} signaux cumulés',
 }

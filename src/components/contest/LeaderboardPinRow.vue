@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+
+import { useI18n } from '../../i18n'
 import type { ContestPinRow } from '../../types/contest'
 
+const { t } = useI18n()
 const props = defineProps<{ row: ContestPinRow; index: number }>()
 
 const rankDelta = computed(() => {
@@ -56,15 +59,14 @@ const cardClass = computed(() => {
         class="w-full h-full object-cover"
       />
       <div v-else class="w-full h-full flex items-center justify-center text-[11px] font-bold text-neutral-400">
-        Pin
+        {{ t('contest.row.pinPlaceholder') }}
       </div>
     </div>
     <div class="min-w-0 flex-1">
       <p class="font-semibold truncate">{{ row.pin_title }}</p>
       <p class="text-xs text-neutral-500 truncate">@{{ row.creator_username }}</p>
-      <p class="text-sm font-black text-pink-600 mt-1">{{ row.score.toFixed(2) }} pts</p>
-      <p class="text-[11px] text-neutral-500 mt-0.5">
-        Interactions: {{ row.total_interactions ?? 0 }} · Éligibles: {{ row.eligible_interactions ?? 0 }}
+      <p class="text-sm font-black text-pink-600 mt-1">
+        {{ t('contest.row.points', { points: row.score.toFixed(2) }) }}
       </p>
       <div class="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-neutral-600 dark:text-neutral-300">
         <span class="px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800">❤ {{ row.likes ?? 0 }}</span>
@@ -75,7 +77,7 @@ const cardClass = computed(() => {
       </div>
     </div>
     <div class="text-right">
-      <p class="text-xs uppercase tracking-wide text-neutral-400">variation</p>
+      <p class="text-xs uppercase tracking-wide text-neutral-400">{{ t('contest.row.rankChange') }}</p>
       <p class="text-sm font-semibold" :class="rankClass">
         <template v-if="rankDelta > 0">↑ {{ rankDelta }}</template>
         <template v-else-if="rankDelta < 0">↓ {{ Math.abs(rankDelta) }}</template>

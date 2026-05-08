@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+
+import { useI18n } from '../../i18n'
 import type { ContestCreatorRow } from '../../types/contest'
 
+const { t } = useI18n()
 const props = defineProps<{ row: ContestCreatorRow; index: number }>()
 const rankDelta = computed(() => (props.row.previous_rank || props.row.rank) - props.row.rank)
 </script>
@@ -16,7 +19,7 @@ const rankDelta = computed(() => (props.row.previous_rank || props.row.rank) - p
     </div>
     <div class="min-w-0 flex-1">
       <p class="font-semibold truncate">@{{ row.creator_username }}</p>
-      <p class="text-sm font-bold text-pink-600">{{ row.score.toFixed(2) }} pts</p>
+      <p class="text-sm font-bold text-pink-600">{{ t('contest.row.points', { points: row.score.toFixed(2) }) }}</p>
     </div>
     <p
       class="text-sm font-semibold"

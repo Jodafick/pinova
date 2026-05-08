@@ -23,8 +23,8 @@ export type ContestPinRow = {
   shares?: number
   saves?: number
   comments?: number
-  total_interactions?: number
-  eligible_interactions?: number
+  /** ❤️+👁+↗+📌+💬 (cumul agrégé, plus lisible que le bruit événements bruts). */
+  engagement_total?: number
 }
 
 export type ContestCreatorRow = {
