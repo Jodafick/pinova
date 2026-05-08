@@ -11,7 +11,6 @@ import { useDataSaver } from '../composables/useDataSaver'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 import { useAppModal } from '../composables/useAppModal'
-import FeedSponsoredCard from './ads/FeedSponsoredCard.vue'
 import {
   PIN_MEDIA_ANTI_LEAK_CLASS,
   pinMediaAntiLeakImgBindings,
@@ -400,10 +399,7 @@ onUnmounted(() => {
         </div>
 
       </article>
-      <FeedSponsoredCard
-        v-else-if="cell.kind === 'ad'"
-        slot="1234567890"
-      />
+
 
       <!-- Placeholder masonry : même shell que les cartes pour suivre les colonnes. -->
       <div

@@ -7,17 +7,12 @@ import { useI18n } from '../i18n'
 import TopicScroller from '../components/TopicScroller.vue'
 import HomeStoriesStrip from '../components/HomeStoriesStrip.vue'
 import PinGrid from '../components/PinGrid.vue'
-import SidebarAd from '../components/ads/SidebarAd.vue'
-import InContentAd from '../components/ads/InContentAd.vue'
-import MobileStickyAd from '../components/ads/MobileStickyAd.vue'
-import { useAds } from '../composables/useAds'
 
 const { t, currentLang } = useI18n()
 
 const router = useRouter()
 const { pins, topics, loading, fetchHomeFeed, trackSearchInteraction, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
 const { currentUser, toggleSavePin } = useAuth()
-const { consent, setConsent, adBlocked } = useAds()
 
 const searchQuery = ref('')
 const activeTopic = ref<string | null>(null)
@@ -106,31 +101,6 @@ const openPin = (slug: string) => {
 
 <template>
   <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-4 sm:py-6">
-    <div
-      v-if="consent === null"
-      class="mb-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 flex flex-col sm:flex-row sm:items-center gap-3"
-    >
-      <p class="text-sm text-neutral-600 dark:text-neutral-300 flex-1">
-        Nous utilisons des cookies publicitaires pour afficher des contenus sponsorises.
-      </p>
-      <div class="flex gap-2">
-        <button
-          type="button"
-          class="px-3 py-2 rounded-full text-sm font-semibold bg-neutral-100 dark:bg-neutral-800"
-          @click="setConsent(false)"
-        >
-          Refuser
-        </button>
-        <button
-          type="button"
-          class="px-3 py-2 rounded-full text-sm font-semibold bg-pink-600 text-white"
-          @click="setConsent(true)"
-        >
-          Accepter
-        </button>
-      </div>
-    </div>
-
     <!-- Welcome section -->
     <section class="mb-6 sm:mb-8">
       <div class="flex items-center justify-between gap-4">
@@ -178,9 +148,6 @@ const openPin = (slug: string) => {
     </div>
 
     <TopicScroller :topics="topics" :active-topic="activeTopic" @select="selectTopic" />
-    <div class="mt-4 mb-2">
-      <InContentAd slot="1234567890" />
-    </div>
 
     <template
       v-if="filteredPins.length > 0 || (loading && filteredPins.length === 0) || (isFetchingNextPage && filteredPins.length > 0)"
@@ -221,6 +188,4 @@ const openPin = (slug: string) => {
       <span class="material-symbols-outlined text-2xl">add</span>
     </router-link>
   </div>
-  <SidebarAd slot="1234567890" />
-  <MobileStickyAd slot="1234567890" :enabled="!adBlocked" />
 </template>
