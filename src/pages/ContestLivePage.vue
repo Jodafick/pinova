@@ -60,36 +60,119 @@ const stickyPadClass = computed(() => (showMyRankDock.value ? 'pb-32 sm:pb-28' :
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8" :class="stickyPadClass">
+  <!-- w-full min-w-0 : comme les autres pages, évite que le flex parent rétrécisse la colonne (skeleton plus étroit que le contenu réel). -->
+  <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8" :class="stickyPadClass">
     <template v-if="contestState.loading">
-      <div class="rounded-3xl border border-neutral-200/60 dark:border-neutral-700/80 bg-neutral-100/80 dark:bg-neutral-900/80 p-5 sm:p-7 mb-6 animate-pulse">
-        <div class="h-3 w-32 rounded bg-neutral-300/80 dark:bg-neutral-700" />
-        <div class="mt-4 h-8 w-2/3 max-w-md rounded-lg bg-neutral-300/80 dark:bg-neutral-700" />
-        <div class="mt-2 h-4 w-full max-w-lg rounded bg-neutral-200/70 dark:bg-neutral-800" />
-        <div class="mt-5 flex gap-2">
-          <div v-for="i in 4" :key="'cd-' + i" class="flex-1 h-16 rounded-xl bg-neutral-200/70 dark:bg-neutral-800" />
+      <!-- Gabarit voisin du hero réel : mêmes paddings + hauteurs proches (titre 2xl/3xl, countdown, stats avec ligne hint). -->
+      <div
+        class="w-full min-w-0 rounded-3xl border border-neutral-200/60 dark:border-neutral-700/80 bg-neutral-100/80 dark:bg-neutral-900/80 p-5 sm:p-7 mb-6 shadow-[0_18px_60px_-22px_rgba(0,0,0,0.12)] dark:shadow-[0_18px_60px_-22px_rgba(0,0,0,0.35)]"
+      >
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 w-full min-w-0">
+          <div class="min-w-0 flex-1 w-full space-y-2 sm:space-y-2.5">
+            <div class="h-3.5 w-32 sm:w-40 rounded bg-neutral-300/85 dark:bg-neutral-700 animate-pulse" />
+            <div class="h-10 sm:h-[2.75rem] w-full rounded-lg bg-neutral-300/85 dark:bg-neutral-700 animate-pulse" />
+            <div class="h-5 w-full rounded-md bg-neutral-200/78 dark:bg-neutral-800 animate-pulse" />
+            <div class="h-4 w-full sm:w-[90%] rounded-md bg-neutral-200/75 dark:bg-neutral-800 animate-pulse" />
+          </div>
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end shrink-0 pt-1">
+            <div class="h-8 w-[5.5rem] rounded-full bg-neutral-200/80 dark:bg-neutral-800 hidden sm:block animate-pulse" />
+            <div class="h-8 w-28 rounded-full bg-neutral-200/80 dark:bg-neutral-800 hidden sm:block animate-pulse" />
+            <div class="h-8 w-24 rounded-full bg-neutral-200/80 dark:bg-neutral-800 hidden sm:block animate-pulse" />
+          </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-          <div v-for="i in 3" :key="'st-' + i" class="h-20 rounded-2xl bg-neutral-200/70 dark:bg-neutral-800" />
+        <div class="mt-5 sm:mt-6 grid grid-cols-4 gap-2 sm:gap-3 w-full min-w-0">
+          <div
+            v-for="i in 4"
+            :key="'cd-' + i"
+            class="min-h-[5.5rem] sm:min-h-[6rem] min-w-0 rounded-xl border border-neutral-200/50 dark:border-neutral-600/60 bg-neutral-200/80 dark:bg-neutral-800 p-2 flex flex-col justify-center gap-2 animate-pulse"
+          >
+            <div class="h-7 w-12 mx-auto rounded-md bg-neutral-300/90 dark:bg-neutral-600/80" />
+            <div class="h-2.5 w-10 mx-auto rounded bg-neutral-300/70 dark:bg-neutral-600/60" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 sm:mt-5 w-full min-w-0">
+          <div
+            v-for="i in 3"
+            :key="'st-' + i"
+            class="min-h-[6.75rem] min-w-0 rounded-2xl border border-neutral-200/50 dark:border-neutral-600/50 bg-neutral-200/72 dark:bg-neutral-800 px-3.5 py-3 flex flex-col justify-start gap-2 animate-pulse"
+          >
+            <div class="h-3 w-24 rounded bg-neutral-300/80 dark:bg-neutral-700" />
+            <div class="h-8 w-16 rounded-md bg-neutral-300/85 dark:bg-neutral-700" />
+            <div v-if="i !== 1" class="h-2.5 w-full rounded bg-neutral-300/70 dark:bg-neutral-600 mt-auto" />
+          </div>
         </div>
       </div>
-      <div class="flex flex-wrap gap-2 mb-4">
-        <div class="h-9 w-24 rounded-full bg-neutral-200/80 dark:bg-neutral-800 animate-pulse" />
-        <div class="h-9 w-24 rounded-full bg-neutral-200/80 dark:bg-neutral-800 animate-pulse" />
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4 w-full min-w-0">
+        <div class="inline-flex rounded-full border border-neutral-200 dark:border-neutral-600 p-0.5 bg-neutral-50 dark:bg-neutral-900/60">
+          <button
+            type="button"
+            class="px-4 py-1.5 rounded-full text-sm font-semibold transition"
+            :class="layoutMode === 'list' ? 'bg-white dark:bg-neutral-800 shadow-sm' : 'text-neutral-500'"
+            @click="layoutMode = 'list'"
+          >
+            {{ t('contest.layout.list') }}
+          </button>
+          <button
+            type="button"
+            class="px-4 py-1.5 rounded-full text-sm font-semibold transition"
+            :class="layoutMode === 'grid' ? 'bg-white dark:bg-neutral-800 shadow-sm' : 'text-neutral-500'"
+            @click="layoutMode = 'grid'"
+          >
+            {{ t('contest.layout.grid') }}
+          </button>
+        </div>
       </div>
-      <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+
+      <!-- Squelettes alignés sur le mode d’affichage (liste = rangées desktop, grille = cartes comme le rendu réel). -->
+      <div v-if="layoutMode === 'list'" class="grid gap-3">
         <div
           v-for="i in skeletonGridCols"
-          :key="'sk-' + i"
-          class="h-36 rounded-2xl bg-neutral-200/70 dark:bg-neutral-800 animate-pulse"
-        />
+          :key="'sk-row-' + i"
+          class="rounded-2xl border border-neutral-200/60 dark:border-neutral-700/80 bg-white dark:bg-neutral-900 p-4 flex items-center gap-3 min-h-[7rem] sm:min-h-[8.5rem] animate-pulse"
+        >
+          <div class="w-11 h-11 shrink-0 rounded-full bg-neutral-200/90 dark:bg-neutral-700 animate-pulse" />
+          <div class="w-14 h-14 shrink-0 rounded-xl bg-neutral-200/85 dark:bg-neutral-700 self-center animate-pulse" />
+          <div class="min-w-0 flex-1 py-0.5 space-y-2 w-full">
+            <div class="h-[1.05rem] w-full rounded bg-neutral-200/90 dark:bg-neutral-700 animate-pulse" />
+            <div class="h-3.5 w-full max-w-[14rem] rounded bg-neutral-200/80 dark:bg-neutral-800 animate-pulse" />
+            <div class="h-4 w-40 max-w-[50%] rounded bg-neutral-200/82 dark:bg-neutral-800 animate-pulse" />
+            <div class="mt-1.5 flex flex-wrap gap-1.5">
+              <span
+                v-for="j in 5"
+                :key="j"
+                class="h-[1.375rem] w-11 rounded-md bg-neutral-100 dark:bg-neutral-800 ring-1 ring-neutral-200/80 dark:ring-neutral-700/80 animate-pulse"
+              />
+            </div>
+          </div>
+          <div class="hidden sm:flex shrink-0 w-20 flex-col items-end gap-2 self-center">
+            <div class="h-3 w-14 rounded bg-neutral-200/75 dark:bg-neutral-800 animate-pulse" />
+            <div class="h-[1.125rem] w-9 rounded-md bg-neutral-200/88 dark:bg-neutral-700 animate-pulse" />
+          </div>
+        </div>
+      </div>
+      <!-- Même structure que LeaderboardPinGridCard : image carrée + pied ~min-h du composant réel -->
+      <div v-else class="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-5 items-stretch auto-rows-fr w-full min-w-0">
+        <div
+          v-for="i in skeletonGridCols"
+          :key="'sk-card-' + i"
+          class="w-full min-w-0 rounded-2xl border border-neutral-200/70 dark:border-neutral-700/80 bg-white dark:bg-neutral-900 overflow-hidden flex flex-col min-h-0"
+        >
+          <div class="aspect-square w-full bg-neutral-200/75 dark:bg-neutral-800 shrink-0" />
+          <div class="p-2.5 flex flex-col gap-2 min-h-[5.25rem] flex-1 justify-between">
+            <div class="space-y-2">
+              <div class="h-3.5 w-full rounded-md bg-neutral-200/85 dark:bg-neutral-700" />
+              <div class="h-3 w-4/5 rounded-md bg-neutral-200/78 dark:bg-neutral-800" />
+            </div>
+            <div class="h-3.5 w-28 rounded-md bg-neutral-200/82 dark:bg-neutral-800 shrink-0" />
+          </div>
+        </div>
       </div>
     </template>
 
     <template v-else>
-      <div class="rounded-3xl border border-white/20 bg-gradient-to-br from-[#d946ef] via-[#db2777] to-[#7e22ce] text-white p-5 sm:p-7 mb-6 shadow-[0_18px_60px_-22px_rgba(126,34,206,0.7)]">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
+      <div class="w-full min-w-0 rounded-3xl border border-white/20 bg-gradient-to-br from-[#d946ef] via-[#db2777] to-[#7e22ce] text-white p-5 sm:p-7 mb-6 shadow-[0_18px_60px_-22px_rgba(126,34,206,0.7)]">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 w-full min-w-0">
+          <div class="min-w-0 flex-1">
             <p class="text-xs uppercase tracking-[0.24em] text-pink-100/95">{{ t('contest.brand') }}</p>
             <h1 class="text-2xl sm:text-3xl font-black">{{ t('contest.title') }}</h1>
             <p class="text-sm text-pink-100 mt-1">{{ t('contest.subtitle') }}</p>
@@ -111,17 +194,17 @@ const stickyPadClass = computed(() => (showMyRankDock.value ? 'pb-32 sm:pb-28' :
         <div class="mt-5">
           <ContestCountdown :remaining-ms="contestRemainingMs" />
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-          <div class="rounded-2xl bg-white/12 border border-white/25 px-3.5 py-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 w-full min-w-0">
+          <div class="rounded-2xl bg-white/12 border border-white/25 px-3.5 py-3 min-w-0">
             <p class="text-[11px] uppercase tracking-wide text-pink-100/90">{{ t('contest.stats.rankedPins') }}</p>
             <p class="text-xl font-black mt-0.5">{{ topPins.length }}</p>
           </div>
-          <div class="rounded-2xl bg-white/12 border border-white/25 px-3.5 py-3">
+          <div class="rounded-2xl bg-white/12 border border-white/25 px-3.5 py-3 min-w-0">
             <p class="text-[11px] uppercase tracking-wide text-pink-100/90">{{ t('contest.stats.rewardsSlots') }}</p>
             <p class="text-xl font-black mt-0.5">{{ rewardsCount }}</p>
             <p class="text-[10px] text-pink-100/80 mt-0.5">{{ t('contest.stats.rewardsSlotsHint') }}</p>
           </div>
-          <div class="rounded-2xl bg-white/12 border border-white/25 px-3.5 py-3">
+          <div class="rounded-2xl bg-white/12 border border-white/25 px-3.5 py-3 min-w-0">
             <p class="text-[11px] uppercase tracking-wide text-pink-100/90">{{ t('contest.stats.totalSignals') }}</p>
             <p class="text-xl font-black mt-0.5">{{ overview.engagement }}</p>
             <p class="text-[10px] text-pink-100/80 mt-0.5">{{ t('contest.stats.signalsHint') }}</p>
@@ -154,7 +237,7 @@ const stickyPadClass = computed(() => (showMyRankDock.value ? 'pb-32 sm:pb-28' :
         </button>
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4 w-full min-w-0">
         <div class="inline-flex rounded-full border border-neutral-200 dark:border-neutral-600 p-0.5 bg-neutral-50 dark:bg-neutral-900/60">
           <button
             type="button"
@@ -175,11 +258,11 @@ const stickyPadClass = computed(() => (showMyRankDock.value ? 'pb-32 sm:pb-28' :
         </div>
       </div>
 
-      <p v-if="contestState.error" class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3">
+      <p v-if="contestState.error" class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 w-full min-w-0">
         {{ contestState.error }}
       </p>
 
-      <div v-if="layoutMode === 'list'" class="grid gap-3">
+      <div v-if="layoutMode === 'list'" class="grid gap-3 w-full min-w-0">
         <LeaderboardPinRow
           v-for="(row, idx) in topPins"
           :key="row.pin_id"
@@ -202,7 +285,7 @@ const stickyPadClass = computed(() => (showMyRankDock.value ? 'pb-32 sm:pb-28' :
       v-if="showMyRankDock && viewerPin && viewer?.rank != null"
       class="fixed bottom-0 left-0 right-0 z-[50] px-4 pb-[max(env(safe-area-inset-bottom,0px),16px)] pt-3 pointer-events-none"
     >
-      <div class="max-w-6xl mx-auto pointer-events-auto">
+      <div class="w-full min-w-0 max-w-6xl mx-auto pointer-events-auto">
         <router-link
           :to="`/pin/${encodeURIComponent(viewerPin.pin_slug)}`"
           class="flex items-center gap-3 rounded-2xl border border-fuchsia-300 dark:border-fuchsia-600 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-[0_-8px_30px_-10px_rgba(168,85,247,0.55)] px-4 py-3"

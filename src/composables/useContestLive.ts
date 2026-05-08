@@ -41,7 +41,8 @@ type ContestLiveState = {
 }
 
 const contestState = reactive<ContestLiveState>({
-  loading: false,
+  /** True au démarrage : évite un premier rendu « concours chargé » vide (hero + 0 pin) avant le mount. */
+  loading: true,
   connected: false,
   usingPollingFallback: false,
   error: '',
