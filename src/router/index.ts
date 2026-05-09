@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuth } from '../composables/useAuth'
 import { devLog } from '../devLog'
+import { maybeRedirectWebToApp } from '../utils/appDeepLink'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,19 +14,19 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('../pages/HomePage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/explore',
       name: 'explore',
       component: () => import('../pages/ExplorePage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/explore/boards',
       name: 'explore-boards',
       component: () => import('../pages/ExploreBoardsPage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/stories',
@@ -47,7 +48,7 @@ const router = createRouter({
       path: '/pin/:slug',
       name: 'pin-detail',
       component: () => import('../pages/PinDetailPage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/create',
@@ -65,13 +66,13 @@ const router = createRouter({
       path: '/profile/:username/board/:boardId',
       name: 'board',
       component: () => import('../pages/BoardPage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/profile/:username?',
       name: 'profile',
       component: () => import('../pages/ProfilePage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/settings',
@@ -89,7 +90,7 @@ const router = createRouter({
       path: '/premium',
       name: 'premium',
       component: () => import('../pages/PremiumPage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/legal/:slug',
@@ -119,19 +120,19 @@ const router = createRouter({
       path: '/contest/live',
       name: 'contest-live',
       component: () => import('../pages/ContestLivePage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/contest/history',
       name: 'contest-history',
       component: () => import('../pages/ContestHistoryPage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/referrals/contest',
       name: 'referral-contest-live',
       component: () => import('../pages/ReferralContestLivePage.vue'),
-      meta: { requiresAuth: false, keepAlive: true },
+      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/referrals/invite',
@@ -155,7 +156,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../pages/LoginPage.vue'),
-      meta: { guest: true },
+      meta: { guest: true, preferAppRedirect: true },
     },
     {
       path: '/auth/mobile/google',
@@ -167,7 +168,7 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: () => import('../pages/RegisterPage.vue'),
-      meta: { guest: true },
+      meta: { guest: true, preferAppRedirect: true },
     },
     {
       path: '/forgot-password',
@@ -234,6 +235,7 @@ router.beforeEach(async (to, from) => {
 
 router.afterEach((to) => {
   devLog(`✅ Navigated to ${String(to.name)}`)
+  maybeRedirectWebToApp(to)
 })
 
 router.onError((error) => {
