@@ -225,6 +225,9 @@ export const ar: Record<string, string> = {
   'home.empty.title': 'لا توجد نتائج',
   'home.empty.desc': 'جرّب بحثاً آخر أو استكشف فئات أخرى للحصول على الإلهام.',
   'home.fab.aria': 'إنشاء بِن',
+  'home.sidebar.sponsored': 'إعلان',
+  'home.sidebar.loading': 'جارٍ التحميل…',
+  'home.sidebar.ctaDefault': 'اكتشف',
 
   'explore.title': 'استكشاف',
   'explore.subtitle': 'اكتشف الاتجاهات الحالية واستكشف حسب الفئات',

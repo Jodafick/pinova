@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:pwa-icons": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate-pwa-icons.ps1"
   },
   "dependencies": {
     "@floating-ui/vue": "^1.1.11",

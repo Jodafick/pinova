@@ -1,10 +1,13 @@
 import { createApp } from 'vue'
+import { registerSW } from 'virtual:pwa-register'
 import './style.css'
 import App from './App.vue'
 import router from './router'
 import { initAppearance } from './composables/useAppearance'
 
 initAppearance()
+
+registerSW({ immediate: true })
 import GoogleSignInPlugin from 'vue3-google-signin'
 import { useAuth } from './composables/useAuth'
 import { proactiveRefreshIfStale } from './api'

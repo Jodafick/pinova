@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true">
+  <!-- Monochrome pour Safari (onglet épinglé) : uniquement du noir + transparence -->
+  <path
+    fill="#000"
+    fill-rule="evenodd"
+    d="M2 1h6.2c2.35 0 3.8 1.55 3.8 3.85 0 1.95-1.35 3.55-3.35 3.75L12 15H9.25L6.35 9H4.15V15H2V1Zm4.15 2.15v3.7h1.95c1.05 0 1.65-.65 1.65-1.85 0-1.15-.6-1.85-1.75-1.85H6.15Z"
+  />
+</svg>

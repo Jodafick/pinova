@@ -225,6 +225,9 @@ export const it: Record<string, string> = {
   'home.empty.title': 'Nessun risultato',
   'home.empty.desc': 'Prova un\'altra ricerca o esplora altre categorie per trovare ispirazione.',
   'home.fab.aria': 'Crea un pin',
+  'home.sidebar.sponsored': 'Sponsorizzato',
+  'home.sidebar.loading': 'Caricamento…',
+  'home.sidebar.ctaDefault': 'Scopri',
 
   'explore.title': 'Esplora',
   'explore.subtitle': 'Scopri le tendenze del momento ed esplora per categoria',

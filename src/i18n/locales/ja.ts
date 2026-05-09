@@ -225,6 +225,9 @@ export const ja: Record<string, string> = {
   'home.empty.title': '結果なし',
   'home.empty.desc': '別の検索を試すか、他のカテゴリを探してインスピレーションを見つけましょう。',
   'home.fab.aria': 'ピンを作成',
+  'home.sidebar.sponsored': '広告',
+  'home.sidebar.loading': '読み込み中…',
+  'home.sidebar.ctaDefault': '詳しく見る',
 
   'explore.title': '探す',
   'explore.subtitle': '今のトレンドを発見し、カテゴリーから探そう',

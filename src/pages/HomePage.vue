@@ -7,6 +7,7 @@ import { useI18n } from '../i18n'
 import TopicScroller from '../components/TopicScroller.vue'
 import HomeStoriesStrip from '../components/HomeStoriesStrip.vue'
 import PinGrid from '../components/PinGrid.vue'
+import HomeWebSidebarAd from '../components/HomeWebSidebarAd.vue'
 
 const { t, currentLang } = useI18n()
 
@@ -125,7 +126,8 @@ const openPin = (slug: string) => {
 </script>
 
 <template>
-  <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-4 sm:py-6">
+  <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-4 sm:py-6 xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-10 xl:items-start">
+    <div class="min-w-0">
     <!-- Welcome section -->
     <section class="mb-6 sm:mb-8">
       <div class="flex items-center justify-between gap-4">
@@ -212,5 +214,12 @@ const openPin = (slug: string) => {
     >
       <span class="material-symbols-outlined text-2xl">add</span>
     </router-link>
+    </div>
+
+    <aside class="hidden xl:block w-full max-w-[300px] shrink-0 pt-1" aria-label="Publicité">
+      <div class="sticky top-24">
+        <HomeWebSidebarAd />
+      </div>
+    </aside>
   </div>
 </template>

@@ -225,6 +225,9 @@ export const zh: Record<string, string> = {
   'home.empty.title': '没有结果',
   'home.empty.desc': '试试其他搜索或浏览其他分类来寻找灵感。',
   'home.fab.aria': '创建 Pin',
+  'home.sidebar.sponsored': '赞助',
+  'home.sidebar.loading': '加载中…',
+  'home.sidebar.ctaDefault': '了解更多',
 
   'explore.title': '探索',
   'explore.subtitle': '发现当前热门并按分类浏览',
