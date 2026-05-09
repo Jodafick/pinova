@@ -104,8 +104,6 @@ export type User = {
     renewalAt?: string | null
     translationQuotaMonthly: number
     translationUsedMonthly: number
-    adAdsEnabled?: boolean
-    partnerAdsEnabled?: boolean
     tipsEnabled?: boolean
     tipsUrl?: string
     cancelAtPeriodEnd?: boolean

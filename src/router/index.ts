@@ -120,19 +120,19 @@ const router = createRouter({
       path: '/contest/live',
       name: 'contest-live',
       component: () => import('../pages/ContestLivePage.vue'),
-      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
+      meta: { requiresAuth: true, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/contest/history',
       name: 'contest-history',
       component: () => import('../pages/ContestHistoryPage.vue'),
-      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
+      meta: { requiresAuth: true, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/referrals/contest',
       name: 'referral-contest-live',
       component: () => import('../pages/ReferralContestLivePage.vue'),
-      meta: { requiresAuth: false, keepAlive: true, preferAppRedirect: true },
+      meta: { requiresAuth: true, keepAlive: true, preferAppRedirect: true },
     },
     {
       path: '/referrals/invite',
@@ -218,7 +218,10 @@ router.beforeEach(async (to, from) => {
   // Si la route demande d'être authentifié et que l'utilisateur n'est pas connecté
   if (to.meta.requiresAuth && !isAuthenticated.value) {
     console.warn('🔒 Route requires auth, redirecting to login...')
-    return { name: 'login' }
+    return {
+      name: 'login',
+      query: { redirect: encodeURIComponent(to.fullPath) },
+    }
   }
 
   /* Profil serveur à jour (ex. date de naissance) avant la création — sans écran de chargement global. */

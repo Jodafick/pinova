@@ -227,9 +227,6 @@ export const fon: Record<string, string> = {
   'home.empty.title': 'Nǔ ɖè è mɔ ǎ',
   'home.empty.desc': 'Tɛ́n ba ɖevo alǒ kpɔ́n catégorie ɖevo lɛ ɖó nǎ mɔ inspiration.',
   'home.fab.aria': 'Bló pin ɖokpó',
-  'home.sidebar.sponsored': 'Gan lɔ',
-  'home.sidebar.loading': 'Wɔ zãna…',
-  'home.sidebar.ctaDefault': 'Kpɔe',
 
   'explore.title': 'Ba kpɔ́n',
   'explore.subtitle': 'Mɔ tendance e ɖè jí lɛ, bo kpɔ́n catégorie lɛ',

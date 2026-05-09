@@ -216,8 +216,6 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       renewalAt: djangoUser.subscription?.renewal_at || profile.subscription_renewal_at || null,
       translationQuotaMonthly: djangoUser.subscription?.translation_quota_monthly || profile.translation_quota_monthly || 5,
       translationUsedMonthly: djangoUser.subscription?.translation_used_monthly || profile.translation_used_monthly || 0,
-      adAdsEnabled: djangoUser.subscription?.ad_ads_enabled ?? profile.ad_ads_enabled ?? true,
-      partnerAdsEnabled: djangoUser.subscription?.partner_ads_enabled ?? profile.partner_ads_enabled ?? true,
       tipsEnabled: djangoUser.subscription?.tips_enabled ?? profile.tips_enabled ?? false,
       tipsUrl: djangoUser.subscription?.tips_url ?? profile.tips_url ?? '',
       cancelAtPeriodEnd: djangoUser.subscription?.cancel_at_period_end ?? profile.subscription_cancel_at_period_end ?? false,
@@ -271,8 +269,6 @@ export function useAuth() {
     preferredLanguage?: string
     preferredCurrency?: string
     birthDate?: string | null
-    adAdsEnabled?: boolean
-    partnerAdsEnabled?: boolean
     tipsEnabled?: boolean
     tipsUrl?: string
     privateProfile?: boolean
@@ -300,8 +296,6 @@ export function useAuth() {
       preferredLanguage: data.preferredLanguage,
       preferredCurrency: data.preferredCurrency,
       birthDate: data.birthDate ?? null,
-      adAdsEnabled: data.adAdsEnabled,
-      partnerAdsEnabled: data.partnerAdsEnabled,
       tipsEnabled: data.tipsEnabled,
       tipsUrl: data.tipsUrl,
       privateProfile: data.privateProfile,
@@ -418,7 +412,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, adAdsEnabled?: boolean, partnerAdsEnabled?: boolean, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean, hideSensitivePins?: boolean }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, tipsEnabled?: boolean, tipsUrl?: string, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean, hideSensitivePins?: boolean }) {
     const signature = buildUpdateProfileSignature(data)
     if (updateProfileInFlight && updateProfileInFlight.signature === signature) {
       return updateProfileInFlight.promise
@@ -435,8 +429,6 @@ export function useAuth() {
       if (data.birthDate !== undefined && data.birthDate !== null && String(data.birthDate).trim() !== '') {
         formData.append('birth_date', String(data.birthDate).trim().slice(0, 10))
       }
-      if (data.adAdsEnabled !== undefined) formData.append('ad_ads_enabled', data.adAdsEnabled ? 'true' : 'false')
-      if (data.partnerAdsEnabled !== undefined) formData.append('partner_ads_enabled', data.partnerAdsEnabled ? 'true' : 'false')
       if (data.tipsEnabled !== undefined) formData.append('tips_enabled', data.tipsEnabled ? 'true' : 'false')
       if (data.tipsUrl !== undefined) formData.append('tips_url', data.tipsUrl)
       if (data.privateProfile !== undefined) formData.append('private_profile', data.privateProfile ? 'true' : 'false')

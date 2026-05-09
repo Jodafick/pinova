@@ -43,7 +43,6 @@ const blurSensitiveByDefault = computed(() =>
 
 type GridCell =
   | { kind: 'pin'; pin: Pin }
-  | { kind: 'ad'; key: string }
   | { kind: 'skeleton'; key: string }
 
 const props = withDefaults(
@@ -53,12 +52,10 @@ const props = withDefaults(
     loadingInitial?: boolean
     /** Suite de chargement (infinite scroll / page suivante). */
     loadingMore?: boolean
-    adFrequency?: number
   }>(),
   {
     loadingInitial: false,
     loadingMore: false,
-    adFrequency: 8,
   },
 )
 
@@ -95,11 +92,8 @@ const skeletonPlaceholders = computed(() => {
 const columns = computed(() => {
   const n = columnCount.value
   const cells: GridCell[] = []
-  props.pins.forEach((pin, index) => {
+  props.pins.forEach((pin) => {
     cells.push({ kind: 'pin', pin })
-    if ((index + 1) % props.adFrequency === 0) {
-      cells.push({ kind: 'ad', key: `sponsored-${index + 1}` })
-    }
   })
   const sk = skeletonPlaceholders.value
   for (let i = 0; i < sk; i++) {

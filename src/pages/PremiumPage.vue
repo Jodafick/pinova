@@ -215,8 +215,6 @@ const plans = computed(() => [
     cta: currentPlanId.value === 'free' ? t('premium.plan.free.cta') : t('premium.plan.free.name'),
     tierLocked: false,
     features: [
-      { label: t('premium.feature.adsEnabled'), included: true },
-      { label: t('premium.feature.partnerAdsEnabled'), included: true },
       { label: t('premium.feature.noTracking'), included: true },
       { label: t('premium.feature.moderationReport'), included: true },
       { label: t('premium.feature.nsfwClientBlur'), included: true },
@@ -246,8 +244,6 @@ const plans = computed(() => [
     tierLocked: planTierLocked('plus'),
     features: [
       { label: t('premium.feature.allFree'), included: true },
-      { label: t('premium.feature.disableAdsOnly'), included: true },
-      { label: t('premium.feature.disablePartnerAds'), included: false },
       { label: t('premium.feature.privateTagsUnlimited'), included: true },
       { label: t('premium.feature.boardsPlusLimits'), included: true },
       { label: t('premium.feature.gifs'), included: true },
@@ -277,7 +273,6 @@ const plans = computed(() => [
     tierLocked: planTierLocked('pro'),
     features: [
       { label: t('premium.feature.allPlus'), included: true },
-      { label: t('premium.feature.disableAllAds'), included: true },
       { label: t('premium.feature.collabUnlimited'), included: true },
       { label: t('premium.feature.collabInviteFlow'), included: true },
       { label: t('premium.feature.hd4k'), included: true },

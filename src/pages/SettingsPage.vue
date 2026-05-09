@@ -24,7 +24,6 @@ const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-appearance', icon: 'dark_mode', labelKey: 'settings.nav.appearance' },
   { id: 'settings-blocked', icon: 'block', labelKey: 'settings.nav.blocked' },
   { id: 'settings-access', icon: 'accessibility_new', labelKey: 'settings.nav.access' },
-  { id: 'settings-ads', icon: 'campaign', labelKey: 'settings.nav.ads' },
   { id: 'settings-tips', icon: 'payments', labelKey: 'settings.nav.tips' },
   { id: 'settings-seats', icon: 'group', labelKey: 'settings.nav.seats' },
   { id: 'settings-subscription', icon: 'workspace_premium', labelKey: 'settings.nav.subscription' },
@@ -101,10 +100,6 @@ const initialPw2 = ref('')
 const initialPwBusy = ref(false)
 const initialPwError = ref('')
 const initialPwAutoOpened = ref(false)
-const adPrefsSaving = ref(false)
-const adAdsEnabled = ref(true)
-const partnerAdsEnabled = ref(true)
-const adPrefsSaved = ref(false)
 const tipsEnabled = ref(false)
 const tipsUrl = ref('')
 const tipsSaving = ref(false)
@@ -355,8 +350,6 @@ onMounted(() => {
     birthDate.value = currentUser.value.birthDate ? String(currentUser.value.birthDate).slice(0, 10) : ''
     avatarPreview.value = currentUser.value.avatarUrl || null
     currentPlan.value = currentUser.value.subscription?.plan || 'free'
-    adAdsEnabled.value = currentUser.value.subscription?.adAdsEnabled ?? true
-    partnerAdsEnabled.value = currentUser.value.subscription?.partnerAdsEnabled ?? true
     tipsEnabled.value = currentUser.value.subscription?.tipsEnabled ?? false
     tipsUrl.value = currentUser.value.subscription?.tipsUrl || ''
     preferredCurrency.value = currentUser.value.preferredCurrency || 'XOF'
@@ -380,7 +373,6 @@ onMounted(() => {
     })
     .catch(() => undefined)
   syncWebNotificationState().catch(() => undefined)
-  enforceAdPreferencesByPlan()
   void loadSupportTickets()
   void loadBillingInvoices()
   void loadSeatHub()
@@ -486,7 +478,6 @@ const leaveSeatGroup = async () => {
     await loadSeatHub()
     await fetchCurrentUser({ silent: true })
     currentPlan.value = currentUser.value?.subscription?.plan || 'free'
-    enforceAdPreferencesByPlan()
   } catch {
     await showAlert(t('settings.seats.error'), { variant: 'danger' })
   } finally {
@@ -510,46 +501,10 @@ const revokeAllSeatGroup = async () => {
     await loadSeatHub()
     await fetchCurrentUser({ silent: true })
     currentPlan.value = currentUser.value?.subscription?.plan || 'free'
-    enforceAdPreferencesByPlan()
   } catch {
     await showAlert(t('settings.seats.error'), { variant: 'danger' })
   } finally {
     seatBusy.value = false
-  }
-}
-
-
-const canToggleAdAds = () => currentPlan.value === 'plus' || currentPlan.value === 'pro'
-const canTogglePartnerAds = () => currentPlan.value === 'pro'
-
-const enforceAdPreferencesByPlan = () => {
-  if (currentPlan.value === 'free') {
-    adAdsEnabled.value = true
-    partnerAdsEnabled.value = true
-    return
-  }
-  if (currentPlan.value === 'plus') {
-    partnerAdsEnabled.value = true
-  }
-}
-
-const persistAdPreferences = async () => {
-  adPrefsSaving.value = true
-  try {
-    enforceAdPreferencesByPlan()
-    await updateProfile({
-      adAdsEnabled: adAdsEnabled.value,
-      partnerAdsEnabled: partnerAdsEnabled.value,
-    })
-    currentPlan.value = currentUser.value?.subscription?.plan || currentPlan.value
-    adAdsEnabled.value = currentUser.value?.subscription?.adAdsEnabled ?? adAdsEnabled.value
-    partnerAdsEnabled.value = currentUser.value?.subscription?.partnerAdsEnabled ?? partnerAdsEnabled.value
-    adPrefsSaved.value = true
-    setTimeout(() => (adPrefsSaved.value = false), 2500)
-  } catch (err) {
-    console.error('Failed to save ad preferences:', err)
-  } finally {
-    adPrefsSaving.value = false
   }
 }
 
@@ -581,20 +536,11 @@ const handleSave = async () => {
     saved.value = true
     setTimeout(() => (saved.value = false), 3000)
     currentPlan.value = currentUser.value?.subscription?.plan || 'free'
-    adAdsEnabled.value = currentUser.value?.subscription?.adAdsEnabled ?? adAdsEnabled.value
-    partnerAdsEnabled.value = currentUser.value?.subscription?.partnerAdsEnabled ?? partnerAdsEnabled.value
-    enforceAdPreferencesByPlan()
   } catch (err) {
     console.error('Failed to update profile:', err)
   } finally {
     saving.value = false
   }
-}
-
-const adSectionHint = () => {
-  if (currentPlan.value === 'pro') return t('settings.ads.hint.pro')
-  if (currentPlan.value === 'plus') return t('settings.ads.hint.plus')
-  return t('settings.ads.hint.free')
 }
 
 const handlePasswordChange = async () => {
@@ -1532,58 +1478,6 @@ watch(
             </div>
             <p v-if="digestSaved" class="text-xs text-emerald-700 mt-2">{{ t('settings.access.digestSaved') }}</p>
           </div>
-        </div>
-      </section>
-
-      <!-- Ads preferences -->
-      <section id="settings-ads" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.ads.title') }}</h2>
-            <p class="text-xs text-neutral-500 mt-0.5">{{ adSectionHint() }}</p>
-          </div>
-          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
-            {{ currentPlan.toUpperCase() }}
-          </span>
-        </div>
-        <div class="p-6 space-y-4">
-          <label class="flex items-center justify-between py-2 cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-neutral-700">{{ t('settings.ads.network.title') }}</p>
-              <p class="text-xs text-neutral-500">{{ t('settings.ads.network.desc') }}</p>
-            </div>
-            <div class="relative">
-              <input v-model="adAdsEnabled" type="checkbox" class="sr-only peer" :disabled="!canToggleAdAds()" />
-              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
-              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
-            </div>
-          </label>
-
-          <label class="flex items-center justify-between py-2 cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-neutral-700">{{ t('settings.ads.partner.title') }}</p>
-              <p class="text-xs text-neutral-500">{{ t('settings.ads.partner.desc') }}</p>
-            </div>
-            <div class="relative">
-              <input v-model="partnerAdsEnabled" type="checkbox" class="sr-only peer" :disabled="!canTogglePartnerAds()" />
-              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
-              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
-            </div>
-          </label>
-
-          <div class="flex items-center justify-between pt-2">
-            <p class="text-xs text-neutral-500">
-              {{ t('settings.ads.note') }}
-            </p>
-            <button
-              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
-              :disabled="adPrefsSaving"
-              @click="persistAdPreferences"
-            >
-              {{ adPrefsSaving ? t('settings.ads.saving') : t('settings.ads.save') }}
-            </button>
-          </div>
-          <p v-if="adPrefsSaved" class="text-xs text-emerald-700">{{ t('settings.ads.saved') }}</p>
         </div>
       </section>
 

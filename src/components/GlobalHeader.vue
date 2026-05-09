@@ -152,17 +152,39 @@ const currentPlanLabel = computed(() => {
   return 'FREE'
 })
 
-const navItems = computed(() => [
+type NavItem = { name: string; label: string; to: string }
+
+const navMain = computed<NavItem[]>(() => [
   { name: 'home', label: t('nav.home'), to: '/' },
   { name: 'explore', label: t('nav.explore'), to: '/explore' },
-  { name: 'contest-live', label: t('nav.contest'), to: '/contest/live' },
-  { name: 'referral-contest-live', label: t('nav.referral'), to: '/referrals/contest' },
-  ...(isAuthenticated.value ? [{ name: 'following', label: t('nav.following'), to: '/following' }] : []),
-  ...(isAuthenticated.value && currentPlan.value === 'pro'
-    ? [{ name: 'creator', label: t('nav.creator'), to: '/creator' }]
-    : []),
-  { name: 'create', label: t('nav.create'), to: '/create' },
 ])
+
+/** Concours, parrainage, suivis — réservé compte connecté. */
+const navCommunity = computed<NavItem[]>(() => {
+  if (!isAuthenticated.value) return []
+  return [
+    { name: 'contest-live', label: t('nav.contest'), to: '/contest/live' },
+    { name: 'referral-contest-live', label: t('nav.referral'), to: '/referrals/contest' },
+    { name: 'following', label: t('nav.following'), to: '/following' },
+  ]
+})
+
+const navCreateExtras = computed<NavItem[]>(() => {
+  if (!isAuthenticated.value) return []
+  const out: NavItem[] = [{ name: 'create', label: t('nav.create'), to: '/create' }]
+  if (currentPlan.value === 'pro') {
+    out.push({ name: 'creator', label: t('nav.creator'), to: '/creator' })
+  }
+  return out
+})
+
+const navFull = computed(() => [...navMain.value, ...navCommunity.value, ...navCreateExtras.value])
+
+const navMoreRef = ref<HTMLDetailsElement | null>(null)
+
+function closeNavMoreMenu() {
+  if (navMoreRef.value) navMoreRef.value.open = false
+}
 
 watch(searchQuery, (value) => {
   if (searchTrackTimer) clearTimeout(searchTrackTimer)
@@ -384,7 +406,7 @@ onUnmounted(() => {
 
 <template>
   <header
-    class="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-2 border-b border-neutral-100 dark:border-neutral-800 bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md sticky top-0 z-30 transition-colors"
+    class="flex items-center gap-1.5 sm:gap-3 md:gap-4 px-2 sm:px-4 md:px-5 py-1.5 sm:py-2 border-b border-neutral-100 dark:border-neutral-800 bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md sticky top-0 z-30 transition-colors"
   >
     <!-- Logo -->
     <router-link
@@ -395,13 +417,13 @@ onUnmounted(() => {
       <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
     </router-link>
 
-    <!-- Navigation -->
-    <nav class="hidden md:flex items-center gap-0.5 ml-1">
+    <!-- Navigation desktop : pleine ligne xl+, menu « Plus » md–lg pour alléger (mobile web & tablette). -->
+    <nav class="hidden xl:flex items-center gap-0.5 ml-1 shrink-0">
       <router-link
-        v-for="item in navItems"
+        v-for="item in navFull"
         :key="item.name"
         :to="item.to"
-        class="px-4 py-2 rounded-full text-sm font-semibold transition-colors relative"
+        class="px-3.5 py-2 rounded-full text-sm font-semibold transition-colors relative whitespace-nowrap"
         :class="
           currentRoute === item.name
             ? 'bg-neutral-900 text-white dark:bg-pink-600 dark:text-white'
@@ -413,7 +435,58 @@ onUnmounted(() => {
 
       <div
         v-if="isOffline"
-        class="ml-4 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1 animate-pulse"
+        class="ml-3 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1 animate-pulse"
+      >
+        <span class="material-symbols-outlined text-sm">cloud_off</span>
+        {{ t('app.offline') }}
+      </div>
+    </nav>
+
+    <nav class="hidden md:flex xl:hidden items-center gap-0.5 ml-1 shrink-0">
+      <router-link
+        v-for="item in navMain"
+        :key="item.name"
+        :to="item.to"
+        class="px-3 py-2 rounded-full text-sm font-semibold transition-colors whitespace-nowrap"
+        :class="
+          currentRoute === item.name
+            ? 'bg-neutral-900 text-white dark:bg-pink-600 dark:text-white'
+            : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+        "
+      >
+        {{ item.label }}
+      </router-link>
+
+      <details
+        v-if="navCommunity.length || navCreateExtras.length"
+        ref="navMoreRef"
+        class="relative group"
+      >
+        <summary
+          class="list-none cursor-pointer px-3 py-2 rounded-full text-sm font-semibold text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800 flex items-center gap-1 [&::-webkit-details-marker]:hidden"
+        >
+          <span class="material-symbols-outlined text-lg leading-none">apps</span>
+          <span class="sr-only md:not-sr-only">{{ t('header.nav.more') }}</span>
+        </summary>
+        <div
+          class="absolute left-0 top-[calc(100%+6px)] min-w-[12.5rem] py-1.5 rounded-2xl border border-neutral-200/90 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl z-[120]"
+        >
+          <router-link
+            v-for="item in [...navCommunity, ...navCreateExtras]"
+            :key="'more-' + item.name"
+            :to="item.to"
+            class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800/80"
+            :class="currentRoute === item.name ? 'bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-200' : ''"
+            @click="closeNavMoreMenu"
+          >
+            {{ item.label }}
+          </router-link>
+        </div>
+      </details>
+
+      <div
+        v-if="isOffline"
+        class="ml-2 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1 animate-pulse"
       >
         <span class="material-symbols-outlined text-sm">cloud_off</span>
         {{ t('app.offline') }}
@@ -421,10 +494,10 @@ onUnmounted(() => {
     </nav>
 
     <!-- Search bar -->
-    <div class="flex-1 relative min-w-0">
+    <div class="flex-1 relative min-w-0 max-md:min-w-[40%]">
       <div
         ref="searchAnchorRef"
-        class="app-input-surface flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all overflow-hidden"
+        class="app-input-surface flex items-center gap-1.5 sm:gap-2 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-sm transition-all overflow-hidden"
         :class="
           showSearchResults
             ? 'shadow-lg'
@@ -436,7 +509,7 @@ onUnmounted(() => {
           v-model="searchQuery"
           type="text"
           :placeholder="t('header.search.placeholder')"
-          class="flex-1 text-sm bg-transparent border-0 shadow-none outline-none focus:ring-0"
+          class="flex-1 text-xs sm:text-sm bg-transparent border-0 shadow-none outline-none focus:ring-0 min-w-0"
           @focus="onSearchFocus"
           @keyup.enter="handleSearch"
         />
@@ -816,6 +889,22 @@ onUnmounted(() => {
                 {{ t('nav.explore') }}
               </router-link>
               <router-link
+                to="/contest/live"
+                class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
+                @click="showUserMenu = false"
+              >
+                <span class="material-symbols-outlined text-lg">emoji_events</span>
+                {{ t('nav.contest') }}
+              </router-link>
+              <router-link
+                to="/referrals/contest"
+                class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
+                @click="showUserMenu = false"
+              >
+                <span class="material-symbols-outlined text-lg">card_giftcard</span>
+                {{ t('nav.referral') }}
+              </router-link>
+              <router-link
                 to="/following"
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
                 @click="showUserMenu = false"
@@ -886,16 +975,16 @@ onUnmounted(() => {
 
       <template v-else>
         <LanguageSwitcher ref="langSwitcherRef" @popover-open-change="onLangPopoverOpen" />
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <router-link
             to="/login"
-            class="px-4 py-2 rounded-full text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
+            class="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition whitespace-nowrap"
           >
             {{ t('nav.login') }}
           </router-link>
           <router-link
             to="/register"
-            class="px-4 py-2 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition"
+            class="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-pink-600 text-white text-xs sm:text-sm font-semibold hover:bg-pink-700 transition whitespace-nowrap"
           >
             {{ t('nav.register') }}
           </router-link>

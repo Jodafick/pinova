@@ -13,9 +13,16 @@ const { t } = useI18n()
 
 function goAfterLogin() {
   const raw = route.query.redirect
-  if (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) {
-    void router.push(raw)
-    return
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const path = decodeURIComponent(raw.trim())
+      if (path.startsWith('/') && !path.startsWith('//')) {
+        void router.push(path)
+        return
+      }
+    } catch {
+      /* ignore */
+    }
   }
   void router.push('/')
 }
