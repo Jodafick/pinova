@@ -14,9 +14,9 @@ const error = ref('')
 const stats = computed(() => {
   const list = rows.value
   const active = list.filter((r) => r.status === 'active').length
-  const pending = list.filter((r) => r.status === 'pending_email').length
-  const rewarded = list.filter((r) => r.rewards_granted_at).length
-  return { total: list.length, active, pending, rewarded }
+  const rewardPoints = list.reduce((s, r) => s + Number(r.reward_points_credited ?? 0), 0)
+  const pendingPoints = list.reduce((s, r) => s + Number(r.reward_points_pending ?? 0), 0)
+  return { total: list.length, active, rewardPoints, pendingPoints }
 })
 
 function statusLabel(status: string) {
@@ -60,14 +60,21 @@ onMounted(async () => {
           <p class="text-xl font-bold text-emerald-600">{{ stats.active }}</p>
         </div>
         <div class="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3">
-          <p class="text-[10px] uppercase text-neutral-500">{{ t('referral.history.stats.pending') }}</p>
-          <p class="text-xl font-bold text-amber-600">{{ stats.pending }}</p>
+          <p class="text-[10px] uppercase text-neutral-500">{{ t('referral.history.stats.rewarded') }}</p>
+          <p class="text-xl font-bold text-violet-600">{{ Math.round(stats.rewardPoints) }}</p>
         </div>
         <div class="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3">
-          <p class="text-[10px] uppercase text-neutral-500">{{ t('referral.history.stats.rewarded') }}</p>
-          <p class="text-xl font-bold text-violet-600">{{ stats.rewarded }}</p>
+          <p class="text-[10px] uppercase text-neutral-500">{{ t('referral.history.stats.pending_points') }}</p>
+          <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ Math.round(stats.pendingPoints) }}</p>
         </div>
       </div>
+
+      <p
+        v-if="stats.pendingPoints > 0"
+        class="text-xs text-neutral-500 dark:text-neutral-400 -mt-2"
+      >
+        {{ t('referral.history.pending_points_footnote') }}
+      </p>
 
       <ul class="space-y-2">
         <li
@@ -92,6 +99,11 @@ onMounted(async () => {
             >
               {{ statusLabel(r.status) }}
             </span>
+            <template v-if="Number(r.reward_points_pending ?? 0) > 0">
+              <span class="text-xs text-amber-700 dark:text-amber-300">
+                {{ t('referral.history.reward_pending_row', { n: Math.round(Number(r.reward_points_pending)) }) }}
+              </span>
+            </template>
             <span v-if="r.rewards_granted_at" class="text-xs text-violet-600 dark:text-violet-400">
               {{ t('referral.history.rewarded') }}
             </span>

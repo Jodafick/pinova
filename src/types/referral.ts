@@ -56,4 +56,8 @@ export type ReferralRefereeRowDto = {
   activated_at: string | null
   email_verified_at: string | null
   rewards_granted_at: string | null
+  /** Points crédités pour le bloc signup/finalization quand récompense accordée */
+  reward_points_credited?: number
+  /** Points du même bloc encore soumis aux règles du concours (filleul actif, récompense non créditée) */
+  reward_points_pending?: number
 }

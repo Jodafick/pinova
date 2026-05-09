@@ -133,8 +133,6 @@ export function maybeRedirectWebToApp(route: RouteLocationNormalized): void {
   if (hasTruthyQueryFlag(route, 'web')) return
 
   const explicitOpen = hasTruthyQueryFlag(route, 'openApp')
-  const routeAllowsAutoOpen = route.meta?.preferAppRedirect === true
-  if (!explicitOpen && !routeAllowsAutoOpen) return
 
   const deepLink = buildDeepLink(route)
   if (!deepLink) return
