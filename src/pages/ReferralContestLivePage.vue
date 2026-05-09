@@ -102,7 +102,7 @@ function rankMoved(prev: number | undefined | null, rank: number) {
         <p class="text-sm text-emerald-900 dark:text-emerald-100">
           {{
             t('referral.live.rankChange', {
-              prev: referralState.lastSelfDelta.prev,
+              prev: referralState.lastSelfDelta.prev ?? '—',
               next: referralState.lastSelfDelta.next,
               score: referralState.lastSelfDelta.score.toFixed(1),
             })
@@ -167,7 +167,12 @@ function rankMoved(prev: number | undefined | null, rank: number) {
             {{ t('referral.live.you') }}
           </p>
           <p class="text-lg font-bold text-neutral-900 dark:text-white">
-            {{ t('referral.live.yourRank', { rank: referralState.viewer.rank, score: referralState.viewer.row.total_score.toFixed(1) }) }}
+            {{
+              t('referral.live.yourRank', {
+                rank: referralState.viewer.rank ?? '—',
+                score: referralState.viewer.row.total_score.toFixed(1),
+              })
+            }}
           </p>
         </div>
         <p v-if="!referralState.viewer.in_displayed_top" class="text-xs text-neutral-600 dark:text-neutral-400">
