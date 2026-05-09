@@ -128,6 +128,30 @@ const router = createRouter({
       meta: { requiresAuth: false, keepAlive: true },
     },
     {
+      path: '/referrals/contest',
+      name: 'referral-contest-live',
+      component: () => import('../pages/ReferralContestLivePage.vue'),
+      meta: { requiresAuth: false, keepAlive: true },
+    },
+    {
+      path: '/referrals/invite',
+      name: 'referral-invite',
+      component: () => import('../pages/ReferralInvitePage.vue'),
+      meta: { requiresAuth: true, keepAlive: true },
+    },
+    {
+      path: '/referrals/history',
+      name: 'referral-history',
+      component: () => import('../pages/ReferralHistoryPage.vue'),
+      meta: { requiresAuth: true, keepAlive: true },
+    },
+    {
+      path: '/referrals/notifications',
+      name: 'referral-notifications',
+      component: () => import('../pages/ReferralNotificationsPage.vue'),
+      meta: { requiresAuth: true, keepAlive: true },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../pages/LoginPage.vue'),

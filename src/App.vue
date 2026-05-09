@@ -5,6 +5,7 @@ import { useAuth } from './composables/useAuth'
 import { useI18n } from './i18n'
 import GlobalHeader from './components/GlobalHeader.vue'
 import AppAlertModal from './components/AppAlertModal.vue'
+import ReferralRouteCapture from './components/referral/ReferralRouteCapture.vue'
 import { devLog } from './devLog'
 
 const route = useRoute()
@@ -66,6 +67,7 @@ const isAuthPage = computed(() => {
 
 <template>
   <div class="min-h-screen flex flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-200">
+    <ReferralRouteCapture />
     <GlobalHeader v-if="!isAuthPage" />
 
     <main class="flex-1 flex flex-col min-h-0">

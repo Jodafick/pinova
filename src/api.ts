@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_URL } from './env';
 import { getCurrentWebLang } from './i18n';
+import { ensureDeviceBindingId } from './utils/deviceBinding';
 import {
   applyUnreadCountFromResponseHeader,
   UNREAD_NOTIFICATION_RESPONSE_HEADER,
@@ -143,6 +144,10 @@ api.interceptors.request.use((config) => {
   const token = typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  const deviceId = typeof window !== 'undefined' ? ensureDeviceBindingId() : ''
+  if (deviceId) {
+    config.headers['X-Pinova-Device-Binding'] = deviceId
   }
   return config
 })

@@ -156,6 +156,7 @@ const navItems = computed(() => [
   { name: 'home', label: t('nav.home'), to: '/' },
   { name: 'explore', label: t('nav.explore'), to: '/explore' },
   { name: 'contest-live', label: t('nav.contest'), to: '/contest/live' },
+  { name: 'referral-contest-live', label: t('nav.referral'), to: '/referrals/contest' },
   ...(isAuthenticated.value ? [{ name: 'following', label: t('nav.following'), to: '/following' }] : []),
   ...(isAuthenticated.value && currentPlan.value === 'pro'
     ? [{ name: 'creator', label: t('nav.creator'), to: '/creator' }]

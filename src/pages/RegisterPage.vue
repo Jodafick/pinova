@@ -6,6 +6,7 @@ import { useTokenClient } from 'vue3-google-signin'
 import { GOOGLE_SIGN_IN_SCOPES } from '../env'
 import { useI18n } from '../i18n'
 import { EMAIL_DELIVERY_UNAVAILABLE_CODE } from '../constants/authErrors'
+import { clearStoredReferralCode } from '../composables/useReferralIntent'
 import { extractDrfFieldErrors, firstErroredField } from '../utils/apiValidationErrors'
 
 const router = useRouter()
@@ -94,6 +95,7 @@ const handleRegister = async () => {
       : result.error || t('register.error.generic')
     return
   }
+  clearStoredReferralCode()
   // Rediriger vers la page OTP après inscription
   router.push({ name: 'verify-otp', query: { email: email.value } })
 }

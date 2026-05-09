@@ -11,6 +11,7 @@ import {
   unregisterWebPushFromBackend,
 } from '../utils/webPushBackendSync'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
+import { clearStoredReferralCode, getStoredReferralCode } from './useReferralIntent'
 
 export { DEFAULT_AVATAR_COLOR_CLASS }
 
@@ -514,12 +515,16 @@ export function useAuth() {
 
   async function register(data: any) {
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         email: data.email,
         username: data.email.split('@')[0], // Utilise le début de l'email comme username
         password1: data.password,
         password2: data.password,
-        display_name: data.displayName
+        display_name: data.displayName,
+      }
+      const refCode = getStoredReferralCode()
+      if (refCode) {
+        payload.referral_code = refCode
       }
       await api.post('auth/registration/', payload)
       // Ne pas stocker le token immédiatement car l'email doit être vérifié via OTP
@@ -577,6 +582,11 @@ export function useAuth() {
         payload.access_token = tokenValue
       }
 
+      const refCode = getStoredReferralCode()
+      if (refCode) {
+        payload.referral_code = refCode
+      }
+
       const response = await api.post(`auth/social/${provider}/`, payload)
       if (response.data?.access) {
         applyAccessToken(response.data.access)
@@ -592,6 +602,9 @@ export function useAuth() {
       if (!currentUser.value) {
         clearAuthState()
         return { success: false as const, error: 'Impossible de charger le profil.' }
+      }
+      if (refCode) {
+        clearStoredReferralCode()
       }
       return {
         success: true as const,
