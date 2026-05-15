@@ -30,7 +30,7 @@ const chain = computed(() => {
         user: event.actor,
         label: actionType === 'creation' ? t('provenance.step.creation') : actionType === 'repin' ? t('provenance.step.repin') : t('provenance.step.remix'),
         date: new Date(event.created_at).toLocaleDateString(),
-        avatar: ['bg-pink-500', 'bg-blue-500', 'bg-amber-500', 'bg-purple-500'][index % 4] || 'bg-neutral-500',
+        avatar: ['bg-pink-700 dark:bg-pink-600', 'bg-blue-500', 'bg-amber-500', 'bg-purple-500'][index % 4] || 'bg-neutral-500',
         verified: true,
       }
     })

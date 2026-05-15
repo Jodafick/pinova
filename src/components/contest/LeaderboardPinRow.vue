@@ -1,21 +1,35 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import ContestPinMetrics from './ContestPinMetrics.vue'
 import { useI18n } from '../../i18n'
 import type { ContestPinRow } from '../../types/contest'
 
 const { t } = useI18n()
 const props = defineProps<{ row: ContestPinRow; index: number; isYou?: boolean }>()
 
-const rankDelta = computed(() => {
-  const prev = props.row.previous_rank || props.row.rank
-  return prev - props.row.rank
+const trend = computed(() => {
+  const prev = props.row.previous_rank
+  const rank = props.row.rank
+  if (prev == null || prev <= 0) return { kind: 'neutral' as const }
+  const delta = prev - rank
+  if (delta === 0) return { kind: 'neutral' as const }
+  if (delta > 0) return { kind: 'up' as const, n: delta }
+  return { kind: 'down' as const, n: -delta }
 })
 
-const rankClass = computed(() => {
-  if (rankDelta.value > 0) return 'text-emerald-600'
-  if (rankDelta.value < 0) return 'text-rose-600'
-  return 'text-neutral-500'
+const trendLabel = computed(() => {
+  const tr = trend.value
+  if (tr.kind === 'neutral') return `— ${t('contest.podium.stable')}`
+  if (tr.kind === 'up') return t('contest.podium.upPlaces', { n: tr.n })
+  return t('contest.podium.downPlaces', { n: tr.n })
+})
+
+const trendClass = computed(() => {
+  const tr = trend.value
+  if (tr.kind === 'neutral') return 'text-neutral-500 dark:text-neutral-400'
+  if (tr.kind === 'up') return 'text-emerald-600 dark:text-emerald-400'
+  return 'text-rose-600 dark:text-rose-400'
 })
 
 const medalClass = computed(() => {
@@ -45,7 +59,7 @@ const cardClass = computed(() => {
 <template>
   <router-link
     :to="`/pin/${encodeURIComponent(row.pin_slug)}`"
-    class="group rounded-2xl border p-4 flex items-center gap-3 transition hover:shadow-xl hover:-translate-y-0.5 relative"
+    class="group rounded-2xl border p-3 sm:p-4 flex items-center gap-2 sm:gap-3 transition hover:shadow-xl hover:-translate-y-0.5 relative w-full max-w-[min(100%,calc(100vw-1.5rem))] sm:max-w-full mx-auto min-w-0 box-border overflow-hidden"
     :class="cardClass"
     @contextmenu.prevent
   >
@@ -76,23 +90,24 @@ const cardClass = computed(() => {
     <div class="min-w-0 flex-1">
       <p class="font-semibold truncate">{{ row.pin_title }}</p>
       <p class="text-xs text-neutral-500 truncate">@{{ row.creator_username }}</p>
-      <p class="text-sm font-black text-pink-600 mt-1">
+      <p class="text-sm font-black text-pink-700 dark:text-pink-400 mt-1">
         {{ t('contest.row.points', { points: row.score.toFixed(2) }) }}
       </p>
-      <div class="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-neutral-600 dark:text-neutral-300">
-        <span class="px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800">❤ {{ row.likes ?? 0 }}</span>
-        <span class="px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800">👁 {{ row.views ?? 0 }}</span>
-        <span class="px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800">↗ {{ row.shares ?? 0 }}</span>
-        <span class="px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800">📌 {{ row.saves ?? 0 }}</span>
-        <span class="px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800">💬 {{ row.comments ?? 0 }}</span>
-      </div>
+      <ContestPinMetrics
+        class="mt-1.5"
+        variant="row"
+        neutral-icons
+        :likes="row.likes"
+        :views="row.views"
+        :shares="row.shares"
+        :saves="row.saves"
+        :comments="row.comments"
+      />
     </div>
-    <div class="text-right">
+    <div class="text-right shrink-0 min-w-[5.5rem] sm:min-w-[6rem] self-center">
       <p class="text-xs uppercase tracking-wide text-neutral-400">{{ t('contest.row.rankChange') }}</p>
-      <p class="text-sm font-semibold" :class="rankClass">
-        <template v-if="rankDelta > 0">↑ {{ rankDelta }}</template>
-        <template v-else-if="rankDelta < 0">↓ {{ Math.abs(rankDelta) }}</template>
-        <template v-else>-</template>
+      <p class="text-sm font-semibold leading-tight mt-0.5" :class="trendClass">
+        {{ trendLabel }}
       </p>
     </div>
   </router-link>

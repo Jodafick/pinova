@@ -287,7 +287,7 @@ defineExpose({ setReply })
       class="flex items-center justify-between px-3 py-1.5 mb-2 bg-pink-50 dark:bg-pink-950/30 rounded-lg text-xs"
     >
       <span class="text-neutral-600 dark:text-neutral-300">
-        {{ t('comment.replyTo') }} <span class="text-pink-600 font-semibold">@{{ replyingTo }}</span>
+        {{ t('comment.replyTo') }} <span class="text-pink-700 font-semibold">@{{ replyingTo }}</span>
       </span>
       <button type="button" class="text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200" @click="cancelReply">
         <span class="material-symbols-outlined text-base">close</span>
@@ -295,7 +295,7 @@ defineExpose({ setReply })
     </div>
 
     <div v-if="mediaCompressing" class="mb-2 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-      <span class="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin shrink-0" />
+      <span class="w-4 h-4 border-2 border-pink-700 dark:border-pink-600 border-t-transparent rounded-full animate-spin shrink-0" />
       {{ t('common.loading') }}
     </div>
     <div v-else-if="selectedMediaPreview" class="mb-2 relative inline-block">
@@ -401,7 +401,7 @@ defineExpose({ setReply })
 
         <button
           type="button"
-          class="w-9 h-9 shrink-0 rounded-full bg-pink-600 text-white flex items-center justify-center hover:bg-pink-700 transition disabled:opacity-40"
+          class="w-9 h-9 shrink-0 rounded-full bg-pink-700 dark:bg-pink-600 text-white flex items-center justify-center hover:bg-pink-800 dark:hover:opacity-90 transition disabled:opacity-40"
           :disabled="(!text.trim() && !selectedMediaFile) || submitting || mediaCompressing"
           @click="submit"
         >
@@ -428,7 +428,7 @@ defineExpose({ setReply })
         <div class="max-h-60 overflow-y-auto py-1" @scroll="handleMentionListScroll">
           <div v-if="mentionLoading && suggestedUsers.length === 0" class="flex justify-center py-6">
             <span
-              class="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"
+              class="w-6 h-6 border-2 border-pink-700 dark:border-pink-600 border-t-transparent rounded-full animate-spin"
               aria-hidden="true"
             />
           </div>
@@ -453,7 +453,7 @@ defineExpose({ setReply })
               <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">@{{ user.username }}</p>
               <p
                 v-if="relationMentionLabel(user.relation)"
-                class="text-[10px] font-semibold text-pink-600 truncate"
+                class="text-[10px] font-semibold text-pink-700 truncate"
               >
                 {{ relationMentionLabel(user.relation) }}
               </p>

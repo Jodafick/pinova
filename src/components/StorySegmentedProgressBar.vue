@@ -10,6 +10,8 @@ defineProps<{
   activeDurationMs: number
   /** Incrémenter pour relancer l’animation du segment courant. */
   animationKey: number
+  /** Pause visuelle pendant appui long / modales. */
+  paused?: boolean
 }>()
 </script>
 
@@ -27,12 +29,12 @@ defineProps<{
       :key="si"
       class="h-1.5 flex-1 min-w-0 rounded-full bg-white/25"
     >
-      <div v-if="si - 1 < currentIndex" class="h-full w-full rounded-full bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.45)]" />
+      <div v-if="si - 1 < currentIndex" class="h-full w-full rounded-full bg-pink-700 shadow-[0_0_8px_rgba(190,24,93,0.35)] dark:bg-pink-600 dark:shadow-[0_0_8px_rgba(219,39,119,0.45)]" />
       <div
         v-else-if="si - 1 === currentIndex"
         :key="`${si - 1}-${animationKey}`"
-        class="story-segment-active h-full rounded-full bg-gradient-to-r from-pink-300 to-pink-500 shadow-[0_0_10px_rgba(244,114,182,0.5)]"
-        :style="{ animationDuration: `${activeDurationMs}ms` }"
+        class="story-segment-active h-full rounded-full bg-gradient-to-r from-pink-700 to-pink-700 shadow-[0_0_10px_rgba(190,24,93,0.45)] dark:from-pink-600 dark:to-pink-600 dark:shadow-[0_0_10px_rgba(219,39,119,0.5)]"
+        :style="{ animationDuration: `${activeDurationMs}ms`, animationPlayState: paused ? 'paused' : 'running' }"
       />
     </div>
   </div>

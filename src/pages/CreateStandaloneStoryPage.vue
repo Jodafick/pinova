@@ -1,26 +1,64 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
 import { useAuth } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
 import { useI18n } from '../i18n'
+import StoryViewer from '../components/StoryViewer.vue'
+import StoryImageCropEditor from '../components/StoryImageCropEditor.vue'
+import StoryVideoEditor from '../components/StoryVideoEditor.vue'
 import {
   hasRequiredBirthDateForMediaPublish,
   isVerifiedAdultFromBirthDate,
   moderationScanImageFile,
+  moderationScanVideoFile,
   moderationScanText,
 } from '../composables/useModeration'
+import { mapDjangoPinToFrontend } from '../composables/usePins'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
+import { consumePendingStoryCaptureFile } from '../utils/storyCaptureDraft'
+import { useIsLgDown } from '../composables/useIsLgDown'
+import { useEdgeSwipeBack } from '../composables/useEdgeSwipeBack'
+import { usePinovaHeaderSwipeDismiss } from '../composables/usePinovaHeaderSwipeDismiss'
+import { useLayer } from '../navigation/useLayer'
+import type { Pin } from '../types'
 
 const { t } = useI18n()
 const router = useRouter()
+const { isLgDown } = useIsLgDown()
+const { layer, close: closeLayer } = useLayer()
+
+function leaveStoryFlow() {
+  if (layer.value) closeLayer()
+  else void router.back()
+}
+
+const storyCreateShellRef = ref<HTMLElement | null>(null)
+const storyHeaderSwipeRef = ref<HTMLElement | null>(null)
 const { showAlert } = useAppModal()
 const { isAuthenticated, currentUser, fetchCurrentUser } = useAuth()
 
+/* 'caption' = étape 1 sur desktop (médiaquérie md+) : on saisit la légende avant
+   de choisir le media. Sur mobile, on garde le flux historique (media first). */
+const step = ref<'caption' | 'media' | 'image-edit' | 'video-edit' | 'meta'>(
+  isLgDown.value ? 'media' : 'caption',
+)
+function goCaptionToMedia() {
+  step.value = 'media'
+}
 const description = ref('')
 const imageFile = ref<File | null>(null)
 const imagePreviewUrl = ref<string | null>(null)
+const storyVideoFile = ref<File | null>(null)
+const storyVideoPreviewUrl = ref<string | null>(null)
+const editingImageFile = ref<File | null>(null)
+const editingVideoFile = ref<File | null>(null)
+const galleryInput = ref<HTMLInputElement | null>(null)
+const cameraInput = ref<HTMLInputElement | null>(null)
+const publishedStory = ref<Pin | null>(null)
+const storyViewerOpen = ref(false)
+const storyMetaMainRef = ref<HTMLElement | null>(null)
 const saving = ref(false)
 const mediaModerationPending = ref(false)
 const pendingSensitiveBlur = ref(false)
@@ -43,13 +81,50 @@ function revoke(name: string | null) {
   if (name) URL.revokeObjectURL(name)
 }
 
-function clearImageSelection() {
+function isSupportedStoryVideoFile(file: File) {
+  const contentType = (file.type || '').split(';')[0]?.trim().toLowerCase()
+  return (
+    contentType === 'video/mp4' ||
+    contentType === 'video/webm' ||
+    contentType === 'video/quicktime' ||
+    /\.(mp4|webm|mov)$/i.test(file.name)
+  )
+}
+
+function clearMediaSelection() {
   mediaScanGeneration++
   mediaModerationPending.value = false
   revoke(imagePreviewUrl.value)
+  revoke(storyVideoPreviewUrl.value)
   imagePreviewUrl.value = null
   imageFile.value = null
+  storyVideoPreviewUrl.value = null
+  storyVideoFile.value = null
+  editingImageFile.value = null
+  editingVideoFile.value = null
   pendingSensitiveBlur.value = false
+}
+
+function goMediaStep() {
+  step.value = 'media'
+}
+
+function setEditedImage(file: File) {
+  editingImageFile.value = null
+  clearMediaSelection()
+  imageFile.value = file
+  imagePreviewUrl.value = URL.createObjectURL(file)
+  void runImageModeration(file)
+  step.value = 'meta'
+}
+
+function setEditedVideo(file: File) {
+  editingVideoFile.value = null
+  clearMediaSelection()
+  storyVideoFile.value = file
+  storyVideoPreviewUrl.value = URL.createObjectURL(file)
+  void runVideoModeration(file)
+  step.value = 'meta'
 }
 
 async function runImageModeration(file: File) {
@@ -61,7 +136,7 @@ async function runImageModeration(file: File) {
     if (gen !== mediaScanGeneration) return
     if (r.level === 'block') {
       pendingSensitiveBlur.value = false
-      clearImageSelection()
+      clearMediaSelection()
       await showAlert(t('moderation.imageSensitiveBlocked'), {
         variant: 'danger',
         title: t('modal.errorTitle'),
@@ -81,11 +156,43 @@ async function runImageModeration(file: File) {
   }
 }
 
-async function pickImage(ev: Event) {
-  const input = ev.target as HTMLInputElement
-  const f = input.files?.[0] ?? null
-  input.value = ''
-  if (!f || !f.type.startsWith('image/')) return
+async function runVideoModeration(file: File) {
+  if (!isSupportedStoryVideoFile(file)) return
+  const gen = ++mediaScanGeneration
+  mediaModerationPending.value = true
+  try {
+    const r = await moderationScanVideoFile(file, 5, moderationBirthOpts.value)
+    if (gen !== mediaScanGeneration) return
+    if (r.level === 'block') {
+      pendingSensitiveBlur.value = false
+      clearMediaSelection()
+      await showAlert(t('moderation.imageSensitiveBlocked'), {
+        variant: 'danger',
+        title: t('modal.errorTitle'),
+      })
+      return
+    }
+    if (r.level === 'blur') {
+      pendingSensitiveBlur.value = true
+      await showAlert(t('moderation.blurTierPublish'), { variant: 'info' })
+      return
+    }
+    pendingSensitiveBlur.value = false
+  } catch (err) {
+    console.warn('Scan NSFW vidéo story', err)
+  } finally {
+    if (gen === mediaScanGeneration) mediaModerationPending.value = false
+  }
+}
+
+async function applyMediaFile(f: File | null) {
+  if (!f) return
+  const isImage = f.type.startsWith('image/')
+  const isVideo = isSupportedStoryVideoFile(f)
+  if (!isImage && !isVideo) {
+    await showAlert(t('create.upload.invalid'), { variant: 'warning' })
+    return
+  }
   await fetchCurrentUser({ silent: true })
   if (!hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
     await showAlert(t('moderation.publishRequiresBirthDate'), {
@@ -94,11 +201,22 @@ async function pickImage(ev: Event) {
     })
     return
   }
-  revoke(imagePreviewUrl.value)
-  imagePreviewUrl.value = null
-  imageFile.value = f
-  imagePreviewUrl.value = URL.createObjectURL(f)
-  void runImageModeration(f)
+  if (isVideo) {
+    clearMediaSelection()
+    editingVideoFile.value = f
+    step.value = 'video-edit'
+    return
+  }
+  clearMediaSelection()
+  editingImageFile.value = f
+  step.value = 'image-edit'
+}
+
+async function pickMedia(ev: Event) {
+  const input = ev.target as HTMLInputElement
+  const f = input.files?.[0] ?? null
+  input.value = ''
+  await applyMediaFile(f)
 }
 
 onMounted(async () => {
@@ -112,11 +230,17 @@ onMounted(async () => {
   if (!canPremium.value) {
     await showAlert(t('story.standalone.needPlus'), { variant: 'info', title: t('story.standalone.title') })
     router.push('/premium')
+    return
+  }
+  const capturedFile = consumePendingStoryCaptureFile()
+  if (capturedFile) {
+    await applyMediaFile(capturedFile)
   }
 })
 
 onUnmounted(() => {
   revoke(imagePreviewUrl.value)
+  revoke(storyVideoPreviewUrl.value)
 })
 
 async function submit() {
@@ -127,7 +251,7 @@ async function submit() {
     })
     return
   }
-  if (!imageFile.value) {
+  if (!imageFile.value && !storyVideoFile.value) {
     await showAlert(t('story.standalone.needImage'), { variant: 'warning' })
     return
   }
@@ -146,7 +270,8 @@ async function submit() {
     const fd = new FormData()
     if (description.value.trim()) fd.append('description', description.value.trim())
     if (blurPublish) fd.append('media_sensitive_blur', 'true')
-    fd.append('image', imageFile.value)
+    if (imageFile.value) fd.append('image', imageFile.value)
+    if (storyVideoFile.value) fd.append('story_video', storyVideoFile.value)
 
     const res = await api.post('pins/standalone-story/', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -156,7 +281,8 @@ async function submit() {
       router.push('/')
       return
     }
-    router.push({ path: '/', query: { story: slug } })
+    publishedStory.value = mapDjangoPinToFrontend(res.data)
+    storyViewerOpen.value = true
   } catch (err: unknown) {
     const lines = formatDrfErrorMessages(err)
     await showAlert(lines.length ? lines.join('\n') : t('story.standalone.error'), {
@@ -167,69 +293,403 @@ async function submit() {
     saving.value = false
   }
 }
+
+function closePublishedStory() {
+  storyViewerOpen.value = false
+  publishedStory.value = null
+  router.push('/')
+}
+
+function scrollStoryMetaToEnd() {
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      const el = storyMetaMainRef.value
+      if (!el) return
+      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+    })
+  })
+}
+
+watch(
+  step,
+  (s) => {
+    if (s === 'meta') scrollStoryMetaToEnd()
+  },
+  { flush: 'post', immediate: true },
+)
+
+function onStoryEdgeDismiss() {
+  if (step.value === 'media') {
+    leaveStoryFlow()
+    return
+  }
+  goMediaStep()
+}
+
+function storyEdgeUsesFullSlideOut() {
+  return step.value === 'media'
+}
+
+useEdgeSwipeBack(storyCreateShellRef, {
+  enabled: () => isLgDown.value,
+  fullSlideOut: storyEdgeUsesFullSlideOut,
+  onDismiss: onStoryEdgeDismiss,
+  canAcceptPointerDown: (e) => {
+    const el = e.target as HTMLElement | null
+    if (!el) return true
+    return !el.closest('[data-pinova-no-edge-back]')
+  },
+})
+
+usePinovaHeaderSwipeDismiss({
+  gestureRootRef: storyHeaderSwipeRef,
+  transformRef: storyCreateShellRef,
+  enabled: () => isLgDown.value && !layer.value,
+  onClose: () => leaveStoryFlow(),
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-pink-50 via-neutral-50 to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 pb-28">
-    <div class="mx-auto max-w-lg px-4 py-8">
-      <h1 class="text-2xl font-black text-neutral-900 dark:text-neutral-100 mb-1">{{ t('story.standalone.title') }}</h1>
-      <p class="text-sm text-neutral-600 dark:text-neutral-300 mb-6">{{ t('story.standalone.subtitle') }}</p>
+  <div ref="storyCreateShellRef" class="story-create-shell min-h-[100svh] bg-[#060408] text-white overflow-hidden">
+    <input
+      ref="galleryInput"
+      type="file"
+      accept="image/*,video/mp4,video/webm,video/quicktime,.mov"
+      class="hidden"
+      :disabled="mediaModerationPending || saving"
+      @change="(e) => void pickMedia(e)"
+    >
+    <input
+      ref="cameraInput"
+      type="file"
+      accept="image/*,video/mp4,video/webm,video/quicktime,.mov"
+      capture="environment"
+      class="hidden"
+      :disabled="mediaModerationPending || saving"
+      @change="(e) => void pickMedia(e)"
+    >
 
-      <div
-        v-if="needsBirthBanner"
-        class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-      >
-        {{ t('create.banner.birthDate') }}
-        <router-link to="/settings" class="font-semibold text-amber-800 underline underline-offset-2 ml-1">
-          {{ t('create.banner.birthDateCta') }}
-        </router-link>
+    <div v-if="step === 'caption'" class="story-caption-step relative min-h-[100svh] px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+1rem)]">
+      <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
+      <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />
+      <header class="relative z-10 flex items-center justify-between">
+        <button
+          type="button"
+          class="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white/80 active:scale-95 transition"
+          :aria-label="t('common.cancel')"
+          @click="leaveStoryFlow()"
+        >
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
+        <p class="text-sm font-black tracking-tight">{{ t('story.standalone.navShort') }}</p>
+        <span class="h-9 w-9" />
+      </header>
+      <div class="relative z-10 mx-auto mt-4 flex max-w-md items-center gap-2 px-8">
+        <span class="h-1.5 w-[22px] rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
+        <span class="h-1.5 flex-1 rounded-full bg-white/15" />
       </div>
-
-      <div class="space-y-4 rounded-3xl border border-pink-100 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 p-5 shadow-lg shadow-pink-100/60 dark:shadow-black/20">
-        <div>
-          <p class="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">{{ t('story.standalone.media') }}</p>
-          <div class="flex flex-wrap gap-2">
-            <label
-              class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition disabled:opacity-40"
-              :class="{ 'pointer-events-none': mediaModerationPending }"
-            >
-              <span class="material-symbols-outlined text-lg">photo_library</span>
-              {{ t('story.standalone.pickImage') }}
-              <input type="file" accept="image/*" class="hidden" :disabled="mediaModerationPending" @change="(e) => void pickImage(e)">
-            </label>
-          </div>
-          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-2">{{ t('story.standalone.mediaHint') }}</p>
-        </div>
-
-        <div v-if="mediaModerationPending" class="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-          <span class="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin shrink-0" />
-          {{ t('common.loading') }}
-        </div>
-
-        <div v-if="imagePreviewUrl" class="rounded-xl overflow-hidden border border-neutral-200 bg-black">
-          <img :src="imagePreviewUrl" alt="" class="max-h-[360px] w-full object-contain">
-        </div>
-
-        <div>
-          <label class="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">{{ t('story.standalone.caption') }}</label>
+      <section class="relative z-10 mx-auto mt-9 max-w-md">
+        <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[0.25em] text-white/30">{{ t('story.standalone.stepBadge') }}</p>
+        <h1 class="text-3xl sm:text-4xl font-black leading-[1.05] tracking-[-0.04em]">{{ t('story.standalone.captionFirstTitle') }}</h1>
+        <p class="mt-3 text-sm leading-6 text-white/40">{{ t('story.standalone.captionFirstHint') }}</p>
+        <div class="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <label class="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">
+            <span class="grid h-6 w-6 place-items-center rounded-lg bg-pink-700/15 dark:bg-pink-600/15 text-pink-700 dark:text-pink-600">
+              <span class="material-symbols-outlined text-sm">chat_bubble</span>
+            </span>
+            {{ t('story.standalone.caption') }}
+          </label>
           <textarea
             v-model="description"
-            rows="4"
+            rows="5"
             maxlength="1000"
-            class="mt-2 w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-pink-500 outline-none"
+            class="min-h-28 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white outline-none transition placeholder:text-white/25 focus:border-pink-700/70 focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20"
             :placeholder="t('story.standalone.captionPlaceholder')"
           />
         </div>
+        <button
+          type="button"
+          class="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 py-4 text-base font-black text-white shadow-lg shadow-pink-700/35 transition active:scale-[0.98]"
+          @click="goCaptionToMedia"
+        >
+          <span class="material-symbols-outlined text-xl">arrow_forward</span>
+          {{ t('create.step.next') }}
+        </button>
+      </section>
+    </div>
+
+    <div v-else-if="step === 'media'" class="story-media-step relative min-h-[100svh] px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
+      <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
+      <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />
+
+      <header ref="storyHeaderSwipeRef" class="relative z-10 flex items-center justify-between" data-pinova-swipe-dismiss-handle>
+        <button
+          type="button"
+          class="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white/80 active:scale-95 transition"
+          :aria-label="t('common.cancel')"
+          @click="leaveStoryFlow()"
+        >
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
+        <p class="text-sm font-black tracking-tight">{{ t('story.standalone.navShort') }}</p>
+        <span class="h-9 w-9" />
+      </header>
+
+      <div class="relative z-10 mx-auto mt-4 flex max-w-sm items-center gap-2 px-8">
+        <span class="h-1.5 flex-1 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
+        <span class="h-1.5 flex-1 rounded-full bg-white/15" />
+      </div>
+
+      <section class="relative z-10 mx-auto mt-9 max-w-sm story-enter-down">
+        <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[0.25em] text-white/30">{{ t('story.standalone.stepBadge') }}</p>
+        <h1 class="text-[2.35rem] font-black leading-[1.05] tracking-[-0.08em]">{{ t('story.standalone.mediaTitle') }}</h1>
+        <p class="mt-3 text-sm leading-6 text-white/40">{{ t('story.standalone.mediaHint') }}</p>
+      </section>
+
+      <section class="relative z-10 mx-auto mt-10 grid max-w-sm gap-3 story-enter-up">
+        <button
+          type="button"
+          class="story-pick-card story-pick-card-primary min-h-48"
+          :disabled="mediaModerationPending || saving"
+          @click="galleryInput?.click()"
+        >
+          <span class="story-pick-icon bg-white/15 text-white">
+            <span class="material-symbols-outlined text-3xl">imagesmode</span>
+          </span>
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/60">{{ t('story.standalone.galleryLabel') }}</span>
+          <span class="text-2xl font-black tracking-tight">{{ t('story.standalone.chooseFile') }}</span>
+        </button>
 
         <button
           type="button"
-          class="w-full rounded-full bg-gradient-to-r from-pink-600 to-pink-500 px-6 py-3 text-sm font-semibold text-white shadow hover:brightness-105 disabled:opacity-50 disabled:pointer-events-none transition"
-          :disabled="saving || needsBirthBanner || mediaModerationPending"
-          @click="submit()"
+          class="story-pick-card min-h-40 border border-white/10 bg-white/[0.03]"
+          :disabled="mediaModerationPending || saving"
+          @click="cameraInput?.click()"
         >
-          {{ saving ? '…' : t('story.standalone.publish') }}
+          <span class="story-pick-icon bg-white/5 text-pink-700 dark:text-pink-600">
+            <span class="material-symbols-outlined text-3xl">videocam</span>
+          </span>
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/35">{{ t('story.standalone.cameraLabel') }}</span>
+          <span class="text-[1.35rem] font-black tracking-tight">{{ t('story.standalone.captureStory') }}</span>
         </button>
+      </section>
+
+      <div v-if="needsBirthBanner" class="relative z-10 mx-auto mt-5 max-w-sm rounded-2xl border border-amber-200/30 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-100">
+        {{ t('create.banner.birthDate') }}
+        <router-link to="/settings" class="font-bold text-amber-50 underline underline-offset-2">
+          {{ t('create.banner.birthDateCta') }}
+        </router-link>
       </div>
     </div>
+
+    <StoryImageCropEditor
+      v-else-if="step === 'image-edit' && editingImageFile"
+      :file="editingImageFile"
+      @cancel="goMediaStep"
+      @apply="setEditedImage"
+    />
+
+    <StoryVideoEditor
+      v-else-if="step === 'video-edit' && editingVideoFile"
+      :file="editingVideoFile"
+      @cancel="goMediaStep"
+      @apply="setEditedVideo"
+    />
+
+    <div v-else-if="step === 'meta'" class="story-meta-step relative flex h-[100svh] flex-col overflow-hidden bg-[#060408]">
+      <div class="absolute inset-0 bg-[#0c0812]">
+        <img
+          v-if="imagePreviewUrl"
+          :src="imagePreviewUrl"
+          alt=""
+          class="h-full w-full object-contain"
+        >
+        <video
+          v-else-if="storyVideoPreviewUrl"
+          :src="storyVideoPreviewUrl"
+          class="h-full w-full object-contain"
+          autoplay
+          muted
+          loop
+          playsinline
+        />
+        <div v-else class="absolute left-1/2 top-1/4 h-52 w-52 -translate-x-1/2 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/15 via-black/30 via-45% to-[#060408] to-80%" />
+      </div>
+
+      <header ref="storyHeaderSwipeRef" class="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]" data-pinova-swipe-dismiss-handle>
+        <button
+          type="button"
+          class="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/45 text-white active:scale-95 transition"
+          :aria-label="t('common.back')"
+          @click="goMediaStep"
+        >
+          <span class="material-symbols-outlined text-xl">chevron_left</span>
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3 py-2 text-xs font-bold text-white/80 active:scale-95 transition"
+          :disabled="mediaModerationPending || saving"
+          @click="galleryInput?.click()"
+        >
+          <span class="material-symbols-outlined text-base">imagesmode</span>
+          {{ t('story.standalone.changeMedia') }}
+        </button>
+      </header>
+
+      <main
+        ref="storyMetaMainRef"
+        class="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-28"
+      >
+        <div class="flex min-h-full flex-col justify-end">
+          <div class="mx-auto w-full max-w-md space-y-3">
+          <div v-if="mediaModerationPending" class="story-glass-card flex items-center gap-2 text-xs text-white/70 story-enter-up">
+            <span class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-pink-700 border-t-transparent" />
+            {{ t('moderation.scanningMedia') }}
+          </div>
+
+          <div v-if="needsBirthBanner" class="story-glass-card border-amber-200/25 bg-amber-300/10 text-xs leading-5 text-amber-100 story-enter-up">
+            {{ t('create.banner.birthDate') }}
+            <router-link to="/settings" class="font-bold text-amber-50 underline underline-offset-2">
+              {{ t('create.banner.birthDateCta') }}
+            </router-link>
+          </div>
+
+          <div class="story-glass-card story-enter-up">
+            <label class="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">
+              <span class="grid h-6 w-6 place-items-center rounded-lg bg-pink-700/15 dark:bg-pink-600/15 text-pink-700 dark:text-pink-600">
+                <span class="material-symbols-outlined text-sm">chat_bubble</span>
+              </span>
+              {{ t('story.standalone.caption') }}
+            </label>
+            <textarea
+              v-model="description"
+              rows="4"
+              maxlength="1000"
+              class="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-medium text-white outline-none transition placeholder:text-white/25 focus:border-pink-700/70 focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20"
+              :placeholder="t('story.standalone.captionPlaceholder')"
+            />
+          </div>
+
+          <button
+            type="button"
+            class="story-publish-btn story-enter-up"
+            :disabled="saving || needsBirthBanner || mediaModerationPending"
+            @click="submit()"
+          >
+            <span v-if="saving" class="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
+            <span v-else class="material-symbols-outlined text-lg">auto_stories</span>
+            {{ saving ? t('create.publishing') : t('story.standalone.publish') }}
+          </button>
+        </div>
+        </div>
+      </main>
+    </div>
+
+    <StoryViewer
+      v-model="storyViewerOpen"
+      :pins="publishedStory ? [publishedStory] : []"
+      @update:model-value="(open) => { if (!open) closePublishedStory() }"
+    />
   </div>
 </template>
+
+<style scoped>
+.story-enter-down {
+  animation: story-enter-down 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.story-enter-up {
+  animation: story-enter-up 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.story-pick-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  padding: 1.75rem;
+  text-align: left;
+  transition: transform 0.18s ease, opacity 0.18s ease, filter 0.18s ease;
+}
+
+.story-pick-card:active {
+  transform: scale(0.98);
+  opacity: 0.88;
+}
+
+.story-pick-card-primary {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 48%, #a855f7 100%);
+  box-shadow: 0 28px 70px -28px rgb(236 72 153 / 0.78);
+}
+
+.story-pick-icon {
+  position: absolute;
+  right: 1.375rem;
+  top: 1.375rem;
+  display: grid;
+  height: 3.75rem;
+  width: 3.75rem;
+  place-items: center;
+  border-radius: 999px;
+}
+
+.story-glass-card {
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 1.5rem;
+  background: rgb(255 255 255 / 0.055);
+  padding: 1rem;
+  backdrop-filter: blur(18px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+.story-publish-btn {
+  display: inline-flex;
+  min-height: 3.25rem;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ec4899, #db2777);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 900;
+  box-shadow: 0 18px 40px -16px rgb(236 72 153 / 0.8);
+  transition: transform 0.18s ease, opacity 0.18s ease, filter 0.18s ease;
+}
+
+.story-publish-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.story-publish-btn:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+@keyframes story-enter-down {
+  from {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes story-enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

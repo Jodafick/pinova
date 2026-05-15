@@ -25,6 +25,10 @@ function buildScreenPath(route: RouteLocationNormalized): string | null {
   switch (route.name) {
     case 'home':
       return 'home'
+    case 'notifications':
+      return 'notifications'
+    case 'contest-notifications':
+      return 'contest/notifications'
     case 'explore':
       return 'explore'
     case 'explore-boards':

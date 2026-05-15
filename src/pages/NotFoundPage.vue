@@ -9,7 +9,7 @@ const { t } = useI18n()
 <template>
   <div class="min-h-[70vh] flex flex-col items-center justify-center text-center px-6">
     <div class="w-24 h-24 rounded-full bg-pink-100 flex items-center justify-center mb-6">
-      <span class="material-symbols-outlined text-5xl text-pink-400">explore_off</span>
+      <span class="material-symbols-outlined text-5xl text-pink-700 dark:text-pink-600">explore_off</span>
     </div>
     <h1 class="text-4xl font-bold text-neutral-900 mb-3">404</h1>
     <h2 class="text-xl font-semibold text-neutral-700 mb-2">{{ t('notFound.title') }}</h2>
@@ -19,7 +19,7 @@ const { t } = useI18n()
     <div class="flex items-center gap-3">
       <router-link
         :to="isAuthenticated ? '/' : '/login'"
-        class="px-6 py-3 rounded-full bg-pink-600 text-white font-semibold text-sm hover:bg-pink-700 transition"
+        class="px-6 py-3 rounded-full bg-pink-700 dark:bg-pink-600 text-white font-semibold text-sm hover:bg-pink-800 dark:hover:opacity-90 transition"
       >
         {{ t('notFound.cta.home') }}
       </router-link>

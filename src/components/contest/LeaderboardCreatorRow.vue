@@ -19,7 +19,7 @@ const rankDelta = computed(() => (props.row.previous_rank || props.row.rank) - p
     </div>
     <div class="min-w-0 flex-1">
       <p class="font-semibold truncate">@{{ row.creator_username }}</p>
-      <p class="text-sm font-bold text-pink-600">{{ t('contest.row.points', { points: row.score.toFixed(2) }) }}</p>
+      <p class="text-sm font-bold text-pink-700">{{ t('contest.row.points', { points: row.score.toFixed(2) }) }}</p>
     </div>
     <p
       class="text-sm font-semibold"

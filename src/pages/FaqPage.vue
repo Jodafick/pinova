@@ -43,8 +43,8 @@ function cardVisual(slug: string) {
   if (slug === 'contact') {
     return {
       icon: 'mail' as const,
-      ring: 'ring-pink-200/80 dark:ring-pink-500/35',
-      iconBg: 'bg-pink-500/15 dark:bg-pink-500/22 text-pink-700 dark:text-pink-300',
+      ring: 'ring-pink-200/80 dark:ring-pink-600/35',
+      iconBg: 'bg-pink-700/15 dark:bg-pink-600/15 dark:bg-pink-600/22 text-pink-700 dark:text-pink-600',
       gradient: 'from-pink-50/90 via-white to-neutral-50/80 dark:from-pink-950/25 dark:via-neutral-900 dark:to-neutral-900',
     }
   }
@@ -88,10 +88,10 @@ watch(currentLang, load, { immediate: true })
 
 <template>
   <div class="min-h-[60vh] w-full min-w-0 max-w-3xl mx-auto px-4 py-10 sm:py-14 pb-24">
-    <nav class="mb-8 flex items-center gap-2 text-sm">
+    <nav class="mb-8 max-lg:hidden flex items-center gap-2 text-sm">
       <router-link
         to="/"
-        class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-600 font-medium transition-colors"
+        class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-800 font-medium transition-colors"
       >
         <span class="material-symbols-outlined text-[18px]">arrow_back</span>
         {{ t('legal.backHome') }}
@@ -100,7 +100,7 @@ watch(currentLang, load, { immediate: true })
 
     <header class="mb-10 text-center sm:text-left">
       <div
-        class="inline-flex items-center gap-2 rounded-full border border-pink-200/80 bg-pink-50/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-pink-800 mb-4"
+        class="inline-flex items-center gap-2 rounded-full border border-pink-200/80 bg-pink-50/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-pink-700 mb-4"
       >
         <span class="material-symbols-outlined text-[16px]">quiz</span>
         {{ t('nav.faq') }}
@@ -160,12 +160,12 @@ watch(currentLang, load, { immediate: true })
                 <span class="material-symbols-outlined text-[22px]">{{ cardVisual(card.slug).icon }}</span>
               </div>
               <div class="min-w-0 flex-1">
-                <h3 class="font-bold text-neutral-900 dark:text-neutral-100 text-sm leading-snug group-hover:text-pink-700 dark:group-hover:text-pink-300 transition-colors">
+                <h3 class="font-bold text-neutral-900 dark:text-neutral-100 text-sm leading-snug group-hover:text-pink-800 dark:group-hover:text-pink-600 transition-colors">
                   {{ card.title }}
                 </h3>
               </div>
               <span
-                class="material-symbols-outlined text-neutral-300 dark:text-neutral-600 group-hover:text-pink-500 dark:group-hover:text-pink-300 text-xl shrink-0"
+                class="material-symbols-outlined text-neutral-300 dark:text-neutral-600 group-hover:text-pink-800 dark:group-hover:text-pink-600 text-xl shrink-0"
                 aria-hidden="true"
               >
                 chevron_right
@@ -176,7 +176,7 @@ watch(currentLang, load, { immediate: true })
             </p>
             <p
               v-if="card.slug === 'contact' && card.contact_email"
-              class="mt-3 text-[11px] font-semibold text-pink-700 dark:text-pink-300 truncate"
+              class="mt-3 text-[11px] font-semibold text-pink-700 dark:text-pink-600 truncate"
             >
               {{ card.contact_email }}
             </p>
@@ -198,7 +198,7 @@ watch(currentLang, load, { immediate: true })
             v-for="row in items"
             :key="row.id"
             class="app-card rounded-2xl overflow-hidden transition-all duration-200"
-            :class="openId === row.id ? 'ring-1 ring-pink-300/80 dark:ring-pink-500/40 border-pink-200/80 dark:border-pink-700/60' : ''"
+            :class="openId === row.id ? 'ring-1 ring-pink-300/80 dark:ring-pink-600/40 border-pink-200/80 dark:border-pink-700/60' : ''"
           >
             <button
               type="button"
@@ -208,7 +208,7 @@ watch(currentLang, load, { immediate: true })
               @click="toggle(row.id)"
             >
               <span
-                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-300 transition-colors"
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-700/10 dark:bg-pink-600/10 dark:bg-pink-600/20 text-pink-700 dark:text-pink-600 transition-colors"
                 aria-hidden="true"
               >
                 <span class="material-symbols-outlined text-[20px]">help</span>
@@ -218,7 +218,7 @@ watch(currentLang, load, { immediate: true })
               </span>
               <span
                 class="material-symbols-outlined text-neutral-400 dark:text-neutral-500 shrink-0 transition-all duration-200"
-                :class="{ 'rotate-180 text-pink-600 dark:text-pink-300': openId === row.id }"
+                :class="{ 'rotate-180 text-pink-700 dark:text-pink-600': openId === row.id }"
               >
                 expand_more
               </span>
@@ -241,7 +241,7 @@ watch(currentLang, load, { immediate: true })
                 <router-link
                   v-if="row.related_legal_slug"
                   :to="legalHref(row.related_legal_slug)"
-                  class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-pink-600 hover:text-pink-700 dark:text-pink-300 dark:hover:text-pink-200 transition-colors"
+                  class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-pink-700 hover:text-pink-800 dark:text-pink-600 dark:hover:text-pink-600 dark:hover:opacity-80 transition-colors"
                 >
                   {{ relatedLabel(row.related_legal_slug) }}
                   <span class="material-symbols-outlined text-[16px]">arrow_forward</span>

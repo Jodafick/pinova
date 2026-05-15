@@ -4,12 +4,17 @@ import { useI18n } from '../i18n'
 import { fetchMentionUsersPage, type SuggestUserRow } from '../composables/useUserSuggestSearch'
 import { displayInitials } from '../utils/displayInitials'
 import AvatarDisc from './AvatarDisc.vue'
+import PinovaModal from './ui/PinovaModal.vue'
+
+type InviteDisambiguationRow = { username: string; display_name: string }
 
 const props = defineProps<{
   modelValue: boolean
   title: string
   message: string
   inputPlaceholder: string
+  /** Plusieurs comptes avec le même nom affiché — choix explicite (pseudo sous le nom). */
+  disambiguationRows?: InviteDisambiguationRow[] | null
 }>()
 
 const emit = defineEmits<{
@@ -109,16 +114,11 @@ function relationLabel(rel: string) {
 
 function pickUser(username: string) {
   emit('pick', username)
-  close()
 }
 
 function onKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    close()
-    return
-  }
+  /* Escape : géré par PinovaModal — on n'intercepte plus pour éviter le double-handling. */
   if (!results.value.length && e.key !== 'Tab') return
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -155,113 +155,121 @@ function onListScroll(ev: Event) {
   if (nearBottom) void loadUsers(false)
 }
 
-function backdropClick() {
-  close()
-}
-
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <PinovaModal
+    :open="modelValue"
+    presentation="tallSheet"
+    presentation-lg="center"
+    :title="title"
+    :subtitle="message"
+    :max-width="480"
+    @update:open="(v: boolean) => emit('update:modelValue', v)"
+    @opened="() => inputRef?.focus()"
+  >
+    <div class="px-4 pt-2 pb-2">
+      <div class="app-input-surface flex items-center gap-2 rounded-2xl px-3 py-2.5 transition">
+        <span class="material-symbols-outlined text-neutral-400 text-xl" aria-hidden="true">person_search</span>
+        <input
+          ref="inputRef"
+          v-model="searchQuery"
+          type="search"
+          autocomplete="off"
+          class="flex-1 min-w-0 bg-transparent text-sm outline-none text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400"
+          :placeholder="inputPlaceholder"
+        />
+      </div>
+      <p class="mt-2 text-[11px] text-neutral-400 text-center">
+        {{ t('modal.prompt.hint') }}
+      </p>
+    </div>
+
+    <div
+      ref="listEl"
+      class="min-h-[200px] max-h-[min(320px,50vh)] overflow-y-auto px-3 py-2"
+      role="listbox"
+      :aria-activedescendant="results[selectedIndex] ? `invite-pick-${selectedIndex}` : undefined"
+      @scroll="onListScroll"
     >
       <div
-        v-if="modelValue"
-        class="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
-        role="presentation"
+        v-if="disambiguationRows && disambiguationRows.length"
+        class="mb-3 px-2 py-2 rounded-2xl bg-pink-50/90 dark:bg-pink-950/35 border border-pink-200/70 dark:border-pink-800/60"
       >
-        <div
-          class="app-modal-backdrop absolute inset-0"
-          aria-hidden="true"
-          @click="backdropClick"
-        />
-        <div
-          class="app-modal-surface relative w-full max-w-md overflow-hidden flex flex-col max-h-[min(90vh,520px)] rounded-[1.75rem]"
-          role="dialog"
-          aria-modal="true"
-          @click.stop
+        <p class="text-[11px] font-semibold text-pink-700 dark:text-pink-600 leading-snug mb-2">
+          {{ t('userSuggest.disambiguationHint') }}
+        </p>
+        <button
+          v-for="row in disambiguationRows"
+          :key="`dis-${row.username}`"
+          type="button"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition border border-transparent app-menu-item mb-1 last:mb-0"
+          @click="pickUser(row.username)"
         >
-          <div class="px-5 pt-6 pb-4 border-b border-neutral-200/70 dark:border-neutral-700/80 shrink-0">
-            <h2 class="text-base font-bold text-neutral-900 dark:text-neutral-100 tracking-tight">{{ title }}</h2>
-            <p class="text-sm text-neutral-600 dark:text-neutral-300 mt-1 leading-relaxed">{{ message }}</p>
-            <div class="mt-3 app-input-surface flex items-center gap-2 rounded-2xl px-3 py-2.5 transition">
-              <span class="material-symbols-outlined text-neutral-400 text-xl" aria-hidden="true">person_search</span>
-              <input
-                ref="inputRef"
-                v-model="searchQuery"
-                type="search"
-                autocomplete="off"
-                class="flex-1 min-w-0 bg-transparent text-sm outline-none text-neutral-900 placeholder:text-neutral-400"
-                :placeholder="inputPlaceholder"
-              />
-            </div>
-            <p class="mt-2 text-[11px] text-neutral-400 text-center">
-              {{ t('modal.prompt.hint') }}
-            </p>
-          </div>
-
-          <div
-            ref="listEl"
-            class="flex-1 min-h-[200px] max-h-[min(320px,50vh)] overflow-y-auto px-2 py-2"
-            role="listbox"
-            :aria-activedescendant="results[selectedIndex] ? `invite-pick-${selectedIndex}` : undefined"
-            @scroll="onListScroll"
+          <AvatarDisc
+            color="bg-pink-700 dark:bg-pink-600"
+            frame-class="w-10 h-10 text-xs"
+            text-class="text-white"
+            :has-image="false"
           >
-            <div v-if="loading && results.length === 0" class="flex justify-center py-12">
-              <span class="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-            </div>
-            <p v-else-if="!loading && results.length === 0" class="text-center text-sm text-neutral-500 py-10 px-4">
-              {{ t('userSuggest.empty') }}
+            <span class="avatar-text">{{ displayInitials(row.display_name || row.username) }}</span>
+          </AvatarDisc>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+              {{ row.display_name || row.username }}
             </p>
-            <button
-              v-for="(user, idx) in results"
-              :id="`invite-pick-${idx}`"
-              :key="user.username"
-              type="button"
-              role="option"
-              :data-row-index="idx"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition border border-transparent app-menu-item"
-              :class="idx === selectedIndex ? 'is-active ring-1 ring-pink-300/70 dark:ring-pink-500/45 shadow-sm' : ''"
-              @click="pickUser(user.username)"
-              @mouseenter="selectedIndex = idx"
-            >
-              <AvatarDisc
-                :color="user.avatarColor"
-                frame-class="w-10 h-10 text-xs"
-                text-class="text-white"
-                :has-image="!!user.avatarUrl"
-              >
-                <img v-if="user.avatarUrl" :src="user.avatarUrl" alt="" class="w-full h-full object-cover" />
-                <span v-else class="avatar-text">{{ displayInitials(user.name) }}</span>
-              </AvatarDisc>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-neutral-900 truncate">{{ user.name }}</p>
-                <p class="text-xs text-neutral-500 truncate">@{{ user.username }}</p>
-                <p v-if="relationLabel(user.relation)" class="text-[10px] font-semibold text-pink-600 mt-0.5 truncate">
-                  {{ relationLabel(user.relation) }}
-                </p>
-              </div>
-            </button>
-            <div v-if="loading && results.length > 0" class="flex justify-center py-3">
-              <span class="w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-            </div>
+            <p class="text-xs text-neutral-500 truncate">@{{ row.username }}</p>
           </div>
-
-          <div class="px-5 py-4 border-t border-neutral-200/70 dark:border-neutral-700/80 shrink-0 flex justify-end gap-2">
-            <button type="button" class="app-btn app-btn-secondary app-btn-sm" @click="close">
-              {{ t('common.cancel') }}
-            </button>
-          </div>
-        </div>
+        </button>
       </div>
-    </Transition>
-  </Teleport>
+      <div v-if="loading && results.length === 0" class="flex justify-center py-12">
+        <span class="w-8 h-8 border-2 border-pink-700 dark:border-pink-600 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+      </div>
+      <p v-else-if="!loading && results.length === 0" class="text-center text-sm text-neutral-500 py-10 px-4">
+        {{ t('userSuggest.empty') }}
+      </p>
+      <button
+        v-for="(user, idx) in results"
+        :id="`invite-pick-${idx}`"
+        :key="user.username"
+        type="button"
+        role="option"
+        :data-row-index="idx"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition border border-transparent app-menu-item"
+        :class="idx === selectedIndex ? 'is-active ring-1 ring-pink-300/70 dark:ring-pink-600/45 shadow-sm' : ''"
+        @click="pickUser(user.username)"
+        @mouseenter="selectedIndex = idx"
+      >
+        <AvatarDisc
+          :color="user.avatarColor"
+          frame-class="w-10 h-10 text-xs"
+          text-class="text-white"
+          :has-image="!!user.avatarUrl"
+        >
+          <img v-if="user.avatarUrl" :src="user.avatarUrl" alt="" class="w-full h-full object-cover" />
+          <span v-else class="avatar-text">{{ displayInitials(user.name) }}</span>
+        </AvatarDisc>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{{ user.name }}</p>
+          <p class="text-xs text-neutral-500 truncate">@{{ user.username }}</p>
+          <p v-if="relationLabel(user.relation)" class="text-[10px] font-semibold text-pink-700 mt-0.5 truncate">
+            {{ relationLabel(user.relation) }}
+          </p>
+        </div>
+      </button>
+      <div v-if="loading && results.length > 0" class="flex justify-center py-3">
+        <span class="w-5 h-5 border-2 border-pink-700 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end gap-2 px-2">
+        <button type="button" class="app-btn app-btn-secondary app-btn-sm" @click="close">
+          {{ t('common.cancel') }}
+        </button>
+      </div>
+    </template>
+  </PinovaModal>
 </template>

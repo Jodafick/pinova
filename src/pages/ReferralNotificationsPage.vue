@@ -88,7 +88,7 @@ function openNotif(n: NotifRow) {
       {{ t('referral.notifications.empty') }}
     </p>
 
-    <router-link to="/referrals/contest" class="block text-center text-sm font-medium text-pink-600 hover:underline">
+    <router-link to="/referrals/contest" class="block text-center text-sm font-medium text-pink-700 hover:underline">
       {{ t('referral.notifications.backContest') }}
     </router-link>
   </div>

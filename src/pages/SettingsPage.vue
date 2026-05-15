@@ -11,6 +11,7 @@ import BillingInvoicesSkeleton from '../components/BillingInvoicesSkeleton.vue'
 import BillingReceiptPdfModal from '../components/BillingReceiptPdfModal.vue'
 import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
@@ -182,6 +183,11 @@ const seatHubLoading = ref(false)
 const seatHub = ref<SeatHubResp | null>(null)
 const seatBusy = ref(false)
 const seatInviteSearchOpen = ref(false)
+const seatInviteDisambiguation = ref<Array<{ username: string; display_name: string }>>([])
+
+watch(seatInviteSearchOpen, (open) => {
+  if (!open) seatInviteDisambiguation.value = []
+})
 
 const accountDeletionBusy = ref(false)
 
@@ -412,14 +418,29 @@ const sendSeatInvite = async (username: string) => {
   seatBusy.value = true
   try {
     await api.post('subscription/seats/invites/', { username: uname })
+    seatInviteSearchOpen.value = false
+    seatInviteDisambiguation.value = []
     await showAlert(t('settings.seats.inviteSentOk'), {
       title: t('settings.seats.inviteCreatedTitle'),
       variant: 'success',
     })
     await loadSeatHub()
     await fetchCurrentUser({ silent: true })
-  } catch {
-    await showAlert(t('settings.seats.error'), { variant: 'danger', title: t('modal.errorTitle') })
+  } catch (err: unknown) {
+    const ax = err as {
+      response?: {
+        data?: {
+          code?: string
+          candidates?: Array<{ username: string; display_name: string }>
+        }
+      }
+    }
+    const d = ax.response?.data
+    if (d?.code === 'ambiguous_display_name' && Array.isArray(d.candidates) && d.candidates.length) {
+      seatInviteDisambiguation.value = d.candidates
+    } else {
+      await showAlert(t('settings.seats.error'), { variant: 'danger', title: t('modal.errorTitle') })
+    }
   } finally {
     seatBusy.value = false
   }
@@ -923,6 +944,8 @@ async function cancelAccountDeletion() {
 }
 
 const activeSectionId = ref('settings-profile')
+/** Après un clic sur un chip : on ne réécrit pas la section active avant cette date (évite de « sauter » pendant le smooth scroll). */
+const settingsNavExplicitLockUntil = ref(0)
 
 const settingsNavItems = computed(() =>
   SETTINGS_NAV_ROWS.filter((row) => row.id !== 'settings-seats' || currentUser.value).map((row) => ({
@@ -933,7 +956,9 @@ const settingsNavItems = computed(() =>
 )
 
 function scrollToSettingsSection(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  activeSectionId.value = id
+  settingsNavExplicitLockUntil.value = Date.now() + 1200
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 watch(
@@ -952,15 +977,27 @@ watch(
 let settingsNavScrollRaf: number | null = null
 
 function refreshSettingsActiveSection() {
+  if (typeof window === 'undefined') return
+  if (Date.now() < settingsNavExplicitLockUntil.value) return
+
   const ids = settingsNavItems.value.map((i) => i.id)
   if (!ids.length) return
-  const line = 120
+
+  const main = document.getElementById('main-content')
+  const mainRect = main?.getBoundingClientRect()
+  /* Ligne de lecture ~milieu de la zone scrollable (pas le bord haut). */
+  const centerY =
+    mainRect && mainRect.height > 0
+      ? mainRect.top + mainRect.height * 0.42
+      : window.innerHeight * 0.42
+
   let current = ids[0]
   if (!current) return
   for (const sid of ids) {
     const el = document.getElementById(sid)
     if (!el) continue
-    if (el.getBoundingClientRect().top <= line) current = sid
+    const top = el.getBoundingClientRect().top
+    if (top <= centerY) current = sid
   }
   if (current && activeSectionId.value !== current) activeSectionId.value = current
 }
@@ -974,15 +1011,33 @@ function scheduleRefreshSettingsActiveSection() {
   })
 }
 
-onMounted(() => {
-  window.addEventListener('scroll', scheduleRefreshSettingsActiveSection, { passive: true })
-  window.addEventListener('resize', scheduleRefreshSettingsActiveSection, { passive: true })
+function attachSettingsScrollListeners() {
+  detachSettingsScrollListeners()
+  const h = scheduleRefreshSettingsActiveSection
+  window.addEventListener('scroll', h, { passive: true })
+  document.getElementById('main-content')?.addEventListener('scroll', h, { passive: true })
+}
+
+function detachSettingsScrollListeners() {
+  const h = scheduleRefreshSettingsActiveSection
+  window.removeEventListener('scroll', h)
+  document.getElementById('main-content')?.removeEventListener('scroll', h)
+}
+
+function onResizeSettingsNav() {
+  attachSettingsScrollListeners()
   scheduleRefreshSettingsActiveSection()
+}
+
+onMounted(() => {
+  attachSettingsScrollListeners()
+  window.addEventListener('resize', onResizeSettingsNav, { passive: true })
+  void nextTick(() => scheduleRefreshSettingsActiveSection())
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', scheduleRefreshSettingsActiveSection)
-  window.removeEventListener('resize', scheduleRefreshSettingsActiveSection)
+  detachSettingsScrollListeners()
+  window.removeEventListener('resize', onResizeSettingsNav)
   if (settingsNavScrollRaf !== null) {
     cancelAnimationFrame(settingsNavScrollRaf)
     settingsNavScrollRaf = null
@@ -997,10 +1052,10 @@ watch(
 
 <template>
   <div
-    class="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col h-full min-h-0 pt-8 sm:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[calc(100svh-12.5rem-env(safe-area-inset-bottom,0px))] sm:min-h-[calc(100dvh-11rem)]"
+    class="max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col h-full min-h-0 pt-6 sm:pt-10 md:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[min(100dvh,100svh)]"
   >
-    <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">{{ t('settings.title') }}</h1>
-    <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-5">{{ t('settings.subtitle') }}</p>
+    <h1 class="text-xl min-[400px]:text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-50 mb-2 break-words">{{ t('settings.title') }}</h1>
+    <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-5 leading-relaxed">{{ t('settings.subtitle') }}</p>
 
     <div
       v-if="needsPasswordSetup"
@@ -1010,7 +1065,7 @@ watch(
       <p class="mt-1 text-xs leading-relaxed opacity-90">{{ t('settings.password.socialBannerBody') }}</p>
       <button
         type="button"
-        class="mt-3 app-btn app-btn-sm bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+        class="mt-3 app-btn app-btn-sm bg-pink-700 dark:bg-pink-600 text-white border-pink-700 dark:border-pink-600 hover:bg-pink-800 dark:hover:opacity-90"
         @click="openInitialPasswordModal"
       >
         {{ t('settings.password.socialBannerCta') }}
@@ -1019,19 +1074,19 @@ watch(
 
     <nav
       :aria-label="t('settings.navLabel')"
-      class="sticky z-20 mb-8 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,.5)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] max-sm:top-[calc(3.5rem+env(safe-area-inset-top,0px))] sm:top-14"
+      class="sticky z-[38] mb-6 sm:mb-8 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md backdrop-saturate-150 shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,.5)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] top-[var(--pinova-global-header-h,calc(3.5rem+env(safe-area-inset-top,0px)+var(--pinova-pwa-extra-top-inset,0px)))]"
     >
-      <div class="flex gap-1.5 overflow-x-auto px-3 py-2.5 no-scrollbar scroll-pl-1 scroll-pr-6 touch-pan-x">
+      <div class="flex gap-1.5 overflow-x-auto px-2 py-2 sm:px-3 sm:py-2.5 no-scrollbar scroll-pl-1 scroll-pr-6 touch-pan-x">
         <button
           v-for="item in settingsNavItems"
           :key="item.id"
           type="button"
           :aria-current="activeSectionId === item.id ? 'true' : undefined"
-          class="shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-[12px] font-semibold tracking-tight transition focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
+          class="shrink-0 inline-flex items-center gap-1 sm:gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-[12px] font-semibold tracking-tight transition focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600 focus-visible:ring-offset-2"
           :class="
             activeSectionId === item.id
-              ? 'border-pink-500 bg-pink-600 text-white shadow-md shadow-pink-600/25'
-              : 'border-neutral-200 dark:border-neutral-600 bg-neutral-50/90 dark:bg-neutral-800/90 text-neutral-700 dark:text-neutral-200 hover:bg-white dark:hover:bg-neutral-800 hover:border-pink-300 dark:hover:border-pink-500/60'
+              ? 'border-pink-700 dark:border-pink-600 bg-pink-700 dark:bg-pink-600 text-white shadow-md shadow-pink-700/25'
+              : 'border-neutral-200 dark:border-neutral-600 bg-neutral-50/90 dark:bg-neutral-800/90 text-neutral-700 dark:text-neutral-200 hover:bg-white dark:hover:bg-neutral-800 hover:border-pink-300 dark:hover:border-pink-700/60 dark:border-pink-600/60'
           "
           @click="scrollToSettingsSection(item.id)"
         >
@@ -1053,15 +1108,23 @@ watch(
     <div class="flex-1 flex flex-col min-h-0">
       <div class="space-y-8">
       <!-- Profile section -->
-      <section id="settings-profile" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
+      <section id="settings-profile" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.profile.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.profile.subtitle') }}</p>
         </div>
 
-        <div class="p-6 space-y-5">
+        <div class="p-4 sm:p-6 space-y-5">
+          <div class="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-900/40 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100">{{ t('lang.title') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('lang.description') }}</p>
+            </div>
+            <LanguageSwitcher class="shrink-0" />
+          </div>
+
           <!-- Avatar -->
-          <div class="flex items-center gap-5">
+          <div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:gap-5">
             <AvatarDisc
               v-if="currentUser"
               :color="currentUser.avatarColor"
@@ -1072,83 +1135,83 @@ watch(
               <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" />
               <span v-else class="text-center leading-none px-1">{{ displayInitials(displayName) }}</span>
             </AvatarDisc>
-            <div>
-              <input 
+            <div class="min-w-0">
+              <input
                 ref="fileInput"
-                type="file" 
-                accept="image/*" 
-                class="hidden" 
-                @change="handleFileChange" 
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="handleFileChange"
               />
               <button
-                class="app-btn app-btn-secondary app-btn-sm text-sm"
+                class="app-btn app-btn-secondary app-btn-sm text-sm w-full sm:w-auto"
                 @click="triggerFileInput"
               >
                 {{ t('settings.profile.changePhoto') }}
               </button>
-              <p class="text-xs text-neutral-400 mt-1">{{ t('settings.profile.photoHint') }}</p>
+              <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">{{ t('settings.profile.photoHint') }}</p>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.fullName') }}</label>
+              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.fullName') }}</label>
               <input
                 v-model="displayName"
                 type="text"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.username') }}</label>
+              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.username') }}</label>
               <div class="relative">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">@</span>
                 <input
                   v-model="username"
                   type="text"
-                  class="w-full pl-8 pr-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                  class="w-full pl-8 pr-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
                 />
               </div>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.bio') }}</label>
+            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.bio') }}</label>
             <textarea
               v-model="bio"
               rows="3"
               :placeholder="t('settings.profile.bioPlaceholder')"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition resize-none placeholder:text-neutral-400"
+              class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition resize-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
             />
-            <p class="text-xs text-neutral-400 mt-1">{{ t('settings.profile.bioCount', { count: bio.length }) }}</p>
+            <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">{{ t('settings.profile.bioCount', { count: bio.length }) }}</p>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.email') }}</label>
+              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.email') }}</label>
               <input
                 v-model="email"
                 type="email"
                 autocomplete="email"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.birthDate') }}</label>
+              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.birthDate') }}</label>
               <input
                 v-model="birthDate"
                 type="date"
                 autocomplete="bday"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
               />
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.profile.currency') }}</label>
+            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.currency') }}</label>
             <select
               v-model="preferredCurrency"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+              class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
             >
               <option
                 v-for="currency in supportedCurrencies"
@@ -1158,7 +1221,7 @@ watch(
                 {{ currencyOptionLabel(currency) }}
               </option>
             </select>
-            <p class="text-xs text-neutral-400 mt-1">
+            <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
               {{ t('settings.profile.detectedCountry', { country: detectedCountryCode || 'N/A' }) }}
             </p>
           </div>
@@ -1180,52 +1243,52 @@ watch(
       </section>
 
       <!-- Notifications preferences -->
-      <section id="settings-notifications" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.notifications.title') }}</h2>
-          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.notifications.subtitle') }}</p>
+      <section id="settings-notifications" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.notifications.title') }}</h2>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.notifications.subtitle') }}</p>
         </div>
-        <div class="p-6 space-y-4">
-          <label class="flex items-center justify-between py-2 cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-neutral-700">{{ t('settings.notifications.followers') }}</p>
-              <p class="text-xs text-neutral-500">{{ t('settings.notifications.followers.desc') }}</p>
+        <div class="p-4 sm:p-6 space-y-4">
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.followers') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.followers.desc') }}</p>
             </div>
-            <div class="relative">
+            <div class="relative shrink-0">
               <input v-model="notificationsFollowers" type="checkbox" class="sr-only peer" />
-              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
-          <label class="flex items-center justify-between py-2 cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-neutral-700">{{ t('settings.notifications.saves') }}</p>
-              <p class="text-xs text-neutral-500">{{ t('settings.notifications.saves.desc') }}</p>
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.saves') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.saves.desc') }}</p>
             </div>
-            <div class="relative">
+            <div class="relative shrink-0">
               <input v-model="notificationsSaves" type="checkbox" class="sr-only peer" />
-              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
-          <label class="flex items-center justify-between py-2 cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-neutral-700">{{ t('settings.notifications.recommendations') }}</p>
-              <p class="text-xs text-neutral-500">{{ t('settings.notifications.recommendations.desc') }}</p>
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.recommendations') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.recommendations.desc') }}</p>
             </div>
-            <div class="relative">
+            <div class="relative shrink-0">
               <input v-model="notificationsRecommendations" type="checkbox" class="sr-only peer" />
-              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
-          <div class="rounded-xl border border-neutral-200 p-4 flex items-center justify-between gap-4">
-            <div>
-              <p class="text-sm font-medium text-neutral-700">{{ t('settings.notifications.web.title') }}</p>
-              <p class="text-xs text-neutral-500">{{ t('settings.notifications.web.desc') }}</p>
+          <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.web.title') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.web.desc') }}</p>
             </div>
             <button
-              class="px-4 py-2 rounded-full text-xs font-semibold transition"
+              class="px-4 py-2 rounded-full text-xs font-semibold transition shrink-0 self-stretch sm:self-auto text-center sm:text-left"
               :class="webNotificationsEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-900 text-white hover:bg-neutral-800'"
               :disabled="webNotificationsLoading || webNotificationsEnabled"
               @click="activateWebNotifications"
@@ -1237,7 +1300,7 @@ watch(
               }}
             </button>
           </div>
-          <p v-if="webNotificationsError" class="text-xs text-pink-600">{{ webNotificationsError }}</p>
+          <p v-if="webNotificationsError" class="text-xs text-pink-700">{{ webNotificationsError }}</p>
           <div class="flex items-center justify-end">
             <button
               class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
@@ -1252,35 +1315,35 @@ watch(
       </section>
 
       <!-- Privacy -->
-      <section id="settings-privacy" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.privacy.title') }}</h2>
+      <section id="settings-privacy" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.privacy.title') }}</h2>
         </div>
-        <div class="p-6 space-y-4">
-          <label class="flex items-center justify-between py-2 cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-neutral-700">{{ t('settings.privacy.private') }}</p>
-              <p class="text-xs text-neutral-500">{{ t('settings.privacy.private.desc') }}</p>
+        <div class="p-4 sm:p-6 space-y-4">
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.privacy.private') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.privacy.private.desc') }}</p>
             </div>
-            <div class="relative">
+            <div class="relative shrink-0">
               <input v-model="privateProfile" type="checkbox" class="sr-only peer" />
-              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
-          <label class="flex items-center justify-between py-2 cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-neutral-700">{{ t('settings.privacy.search') }}</p>
-              <p class="text-xs text-neutral-500">{{ t('settings.privacy.search.desc') }}</p>
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.privacy.search') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.privacy.search.desc') }}</p>
             </div>
-            <div class="relative">
+            <div class="relative shrink-0">
               <input v-model="discoverableProfile" type="checkbox" class="sr-only peer" />
-              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
         </div>
-        <div class="px-6 pb-6 flex items-center justify-end gap-2">
+        <div class="px-4 pb-4 sm:px-6 sm:pb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
           <button
             class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
             :disabled="privacySaving"
@@ -1295,13 +1358,13 @@ watch(
       <!-- Apparence -->
       <section
         id="settings-appearance"
-        class="scroll-mt-40 md:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
+        class="scroll-mt-48 lg:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
       >
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.appearance.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.appearance.subtitle') }}</p>
         </div>
-        <div class="p-6 space-y-4">
+        <div class="p-4 sm:p-6 space-y-4">
           <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.appearance.modeLabel') }}</p>
           <div class="flex flex-wrap gap-2">
             <button
@@ -1309,7 +1372,7 @@ watch(
               class="px-4 py-2 rounded-full text-sm font-semibold border transition"
               :class="
                 appearanceMode === 'light'
-                  ? 'border-pink-500 bg-pink-50 text-pink-900 dark:bg-pink-950/60 dark:text-pink-50 dark:border-pink-500'
+                  ? 'border-pink-700 dark:border-pink-600 bg-pink-50 text-pink-900 dark:bg-pink-950/60 dark:text-pink-50'
                   : 'border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-200 hover:border-pink-300'
               "
               @click="setAppearanceMode('light')"
@@ -1321,7 +1384,7 @@ watch(
               class="px-4 py-2 rounded-full text-sm font-semibold border transition"
               :class="
                 appearanceMode === 'dark'
-                  ? 'border-pink-500 bg-pink-50 text-pink-900 dark:bg-pink-950/60 dark:text-pink-50 dark:border-pink-500'
+                  ? 'border-pink-700 dark:border-pink-600 bg-pink-50 text-pink-900 dark:bg-pink-950/60 dark:text-pink-50'
                   : 'border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-200 hover:border-pink-300'
               "
               @click="setAppearanceMode('dark')"
@@ -1333,12 +1396,12 @@ watch(
         </div>
       </section>
 
-      <section id="settings-blocked" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b app-divider-subtle">
+      <section id="settings-blocked" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.blocked.title') }}</h2>
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.blocked.subtitle') }}</p>
         </div>
-        <div class="p-6">
+        <div class="p-4 sm:p-6">
           <div v-if="blockedLoading" class="text-sm app-text-muted">{{ t('common.loading') }}</div>
           <p v-else-if="blockedRows.length === 0" class="text-sm app-text-muted">{{ t('settings.blocked.empty') }}</p>
           <ul v-else class="rounded-xl border app-divider-subtle overflow-hidden">
@@ -1366,12 +1429,12 @@ watch(
       </section>
 
       <!-- Accessibilité & données -->
-      <section id="settings-access" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b app-divider-subtle">
+      <section id="settings-access" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.access.title') }}</h2>
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.access.subtitle') }}</p>
         </div>
-        <div class="p-6 space-y-4">
+        <div class="p-4 sm:p-6 space-y-4">
           <div>
             <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 mb-2">{{ t('settings.access.dataSaver') }}</p>
             <p class="text-xs text-neutral-600 dark:text-neutral-300 mb-3">{{ t('settings.access.dataSaver.desc') }}</p>
@@ -1411,7 +1474,7 @@ watch(
             </div>
             <fieldset class="space-y-2">
               <legend class="sr-only">{{ t('settings.access.sensitiveMedia.title') }}</legend>
-              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'blur' ? 'border-pink-400 bg-pink-50/50 dark:bg-pink-950/35 dark:border-pink-500/70' : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/70'">
+              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'blur' ? 'border-pink-700 bg-pink-50/50 dark:bg-pink-950/35 dark:border-pink-600/70' : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/70'">
                 <input v-model="sensitiveMediaViewerPref" type="radio" value="blur" class="mt-1" />
                 <span>
                   <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">{{ t('settings.access.sensitiveMedia.optionBlur') }}</span>
@@ -1422,7 +1485,7 @@ watch(
                 class="flex gap-3 p-3 rounded-xl border transition"
                 :class="[
                   !canShowUnblurredSensitiveOption ? 'opacity-55 cursor-not-allowed' : 'cursor-pointer',
-                  sensitiveMediaViewerPref === 'show' ? 'border-pink-400 bg-pink-50/50 dark:bg-pink-950/35 dark:border-pink-500/70' : 'border-neutral-200 dark:border-neutral-700',
+                  sensitiveMediaViewerPref === 'show' ? 'border-pink-700 bg-pink-50/50 dark:bg-pink-950/35 dark:border-pink-600/70' : 'border-neutral-200 dark:border-neutral-700',
                   canShowUnblurredSensitiveOption ? 'hover:bg-neutral-50 dark:hover:bg-neutral-800/70' : '',
                 ]"
               >
@@ -1433,7 +1496,7 @@ watch(
                   <span v-if="!canShowUnblurredSensitiveOption" class="block text-[11px] text-amber-800 mt-1">{{ t('settings.access.sensitiveMedia.optionShowBadge') }}</span>
                 </span>
               </label>
-              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'hide' ? 'border-pink-400 bg-pink-50/50 dark:bg-pink-950/35 dark:border-pink-500/70' : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/70'">
+              <label class="flex gap-3 p-3 rounded-xl border cursor-pointer transition" :class="sensitiveMediaViewerPref === 'hide' ? 'border-pink-700 bg-pink-50/50 dark:bg-pink-950/35 dark:border-pink-600/70' : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/70'">
                 <input v-model="sensitiveMediaViewerPref" type="radio" value="hide" class="mt-1" />
                 <span>
                   <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">{{ t('settings.access.sensitiveMedia.optionHide') }}</span>
@@ -1455,12 +1518,12 @@ watch(
           </div>
 
           <div v-if="currentPlan === 'pro'" class="pt-2 border-t app-divider-subtle">
-            <label class="flex items-center justify-between py-2 cursor-pointer">
-              <div>
+            <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+              <div class="min-w-0 flex-1 pr-1">
                 <p class="text-sm font-medium text-neutral-800">{{ t('settings.access.digestWeekly') }}</p>
                 <p class="text-xs text-neutral-600">{{ t('settings.access.digestWeekly.desc') }}</p>
               </div>
-              <div class="relative">
+              <div class="relative shrink-0">
                 <input v-model="digestWeekly" type="checkbox" class="sr-only peer" />
                 <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-amber-500 rounded-full transition-colors"></div>
                 <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
@@ -1481,25 +1544,25 @@ watch(
         </div>
       </section>
 
-      <section id="settings-tips" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.tips.title') }}</h2>
-            <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.tips.subtitle') }}</p>
+      <section id="settings-tips" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.tips.title') }}</h2>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.tips.subtitle') }}</p>
           </div>
-          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600">
+          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600 shrink-0 self-start">
             {{ currentPlan.toUpperCase() }}
           </span>
         </div>
-        <div class="p-6 space-y-4">
-          <label class="flex items-center justify-between py-2 cursor-pointer">
-            <div>
-              <p class="text-sm font-medium text-neutral-700">{{ t('settings.tips.enable') }}</p>
-              <p class="text-xs text-neutral-500">{{ t('settings.tips.enable.desc') }}</p>
+        <div class="p-4 sm:p-6 space-y-4">
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.tips.enable') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.tips.enable.desc') }}</p>
             </div>
-            <div class="relative">
+            <div class="relative shrink-0">
               <input v-model="tipsEnabled" type="checkbox" class="sr-only peer" :disabled="currentPlan !== 'pro'" />
-              <div class="w-11 h-6 bg-neutral-200 peer-checked:bg-pink-500 rounded-full transition-colors"></div>
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
@@ -1510,13 +1573,13 @@ watch(
               type="url"
               :disabled="currentPlan !== 'pro'"
               :placeholder="t('settings.tips.url.placeholder')"
-              class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm disabled:bg-neutral-50 disabled:text-neutral-400"
+              class="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm disabled:bg-neutral-50 dark:disabled:bg-neutral-900/50 disabled:text-neutral-400"
             />
           </div>
-          <div class="flex items-center justify-between pt-1">
-            <p class="text-xs text-neutral-500">{{ t('settings.tips.note') }}</p>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 pt-1">
+            <p class="text-xs text-neutral-500 dark:text-neutral-400 min-w-0">{{ t('settings.tips.note') }}</p>
             <button
-              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
+              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition shrink-0 self-end sm:self-auto"
               :disabled="tipsSaving"
               @click="persistTipsSettings"
             >
@@ -1530,13 +1593,13 @@ watch(
       <section
         v-if="currentUser"
         id="settings-seats"
-        class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden"
+        class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
-        <div class="px-6 py-5 border-b app-divider-subtle">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.seats.title') }}</h2>
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.seats.subtitle') }}</p>
         </div>
-        <div class="p-6 space-y-4 text-sm">
+        <div class="p-4 sm:p-6 space-y-4 text-sm">
           <p v-if="seatHubLoading" class="text-xs text-neutral-400">{{ t('settings.seats.loading') }}</p>
           <template v-else-if="seatHub">
             <!-- Invitations entrantes -->
@@ -1595,7 +1658,7 @@ watch(
               <div class="space-y-2">
                 <button
                   type="button"
-                  class="app-btn app-btn-secondary w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl text-xs border-pink-300 text-pink-700 dark:text-pink-300 disabled:opacity-50"
+                  class="app-btn app-btn-secondary w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl text-xs border-pink-300 text-pink-700 dark:text-pink-600 disabled:opacity-50"
                   :disabled="seatBusy"
                   @click="seatInviteSearchOpen = true"
                 >
@@ -1608,12 +1671,12 @@ watch(
                 <li
                   v-for="m in seatHub.members"
                   :key="m.username"
-                  class="flex justify-between gap-2 text-xs py-1 border-b app-divider-subtle"
+                  class="flex flex-col gap-2 text-xs py-2 border-b app-divider-subtle sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:py-1"
                 >
-                  <span>@{{ m.username }}</span>
+                  <span class="min-w-0 truncate">@{{ m.username }}</span>
                   <button
                     type="button"
-                    class="text-pink-600 font-semibold disabled:opacity-50"
+                    class="text-pink-700 font-semibold disabled:opacity-50 self-start sm:self-auto"
                     :disabled="seatBusy"
                     @click="removeSeatMember(m.username)"
                   >
@@ -1626,12 +1689,12 @@ watch(
                 <li
                   v-for="p in seatHub.pending_invitations"
                   :key="p.id"
-                  class="flex justify-between gap-2 text-xs py-1 border-b app-divider-subtle"
+                  class="flex flex-col gap-2 text-xs py-2 border-b app-divider-subtle sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:py-1"
                 >
-                  <span>@{{ p.invitee_username }}</span>
+                  <span class="min-w-0 truncate">@{{ p.invitee_username }}</span>
                   <button
                     type="button"
-                    class="text-neutral-600 font-semibold disabled:opacity-50"
+                    class="text-neutral-600 font-semibold disabled:opacity-50 self-start sm:self-auto"
                     :disabled="seatBusy"
                     @click="revokeSeatInviteOutgoing(p.id)"
                   >
@@ -1658,12 +1721,12 @@ watch(
         </div>
       </section>
 
-      <section id="settings-subscription" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-start justify-between gap-3">
+      <section id="settings-subscription" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0">
-            <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.subscription.title') }}</h2>
-            <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
-            <router-link to="/billing" class="inline-flex mt-2 text-xs font-semibold text-pink-600 hover:underline">
+            <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.subscription.title') }}</h2>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
+            <router-link to="/billing" class="inline-flex mt-2 text-xs font-semibold text-pink-700 hover:underline">
               {{ t('settings.subscription.viewBillingPage') }} →
             </router-link>
           </div>
@@ -1671,8 +1734,8 @@ watch(
             {{ currentPlan.toUpperCase() }}
           </span>
         </div>
-        <div class="p-6 space-y-3">
-          <p class="text-xs text-neutral-500">
+        <div class="p-4 sm:p-6 space-y-3">
+          <p class="text-xs text-neutral-500 dark:text-neutral-400">
             {{ t('settings.subscription.renewal', { date: subscriptionRenewalLabel }) }}
           </p>
           <p v-if="subscriptionScheduleHint" class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-2">
@@ -1681,12 +1744,12 @@ watch(
           <div class="flex flex-wrap gap-2">
             <router-link
               to="/premium"
-              class="px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 transition inline-flex items-center"
+              class="px-4 py-2 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-xs font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition inline-flex items-center"
             >
               {{ t('settings.subscription.managePlans') }}
             </router-link>
             <button
-              class="px-4 py-2 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 disabled:opacity-50 transition"
+              class="px-4 py-2 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-xs font-semibold hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-50 transition"
               :disabled="subscriptionActionPending || currentPlan === 'free'"
               @click="handleCancelAtPeriodEnd"
             >
@@ -1721,7 +1784,7 @@ watch(
           <div class="pt-4 mt-4 border-t border-neutral-100">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
               <p class="text-xs font-semibold text-neutral-800">{{ t('settings.subscription.billingHistory') }}</p>
-              <router-link to="/billing" class="text-[11px] font-semibold text-pink-600 hover:underline">
+              <router-link to="/billing" class="text-[11px] font-semibold text-pink-700 hover:underline">
                 {{ t('settings.subscription.viewBillingPage') }}
               </router-link>
             </div>
@@ -1737,10 +1800,10 @@ watch(
                 class="rounded-xl border border-neutral-200 px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
               >
                 <div>
-                  <p class="text-xs font-semibold text-neutral-800">
+                  <p class="text-xs font-semibold text-neutral-800 dark:text-neutral-100 break-words">
                     {{ inv.plan.toUpperCase() }} · {{ inv.billing_cycle }} · {{ invoiceAmountLabel(inv) }}
                   </p>
-                  <p class="text-[11px] text-neutral-500">
+                  <p class="text-[11px] text-neutral-500 dark:text-neutral-400 break-words">
                     {{ formatInvoiceWhen(inv.created_at) }} · {{ inv.status }}
                     <span v-if="inv.promo_bundle && inv.promo_bundle !== 'solo'"> · {{ inv.promo_bundle }}</span>
                   </p>
@@ -1749,7 +1812,7 @@ watch(
                   <template v-if="inv.status === 'approved'">
                     <button
                       type="button"
-                      class="text-[11px] font-semibold text-pink-600 hover:underline disabled:opacity-50"
+                      class="text-[11px] font-semibold text-pink-700 hover:underline disabled:opacity-50"
                       :disabled="billingReceiptLoadingId === inv.id"
                       @click="viewBillingReceipt(inv)"
                     >
@@ -1778,23 +1841,23 @@ watch(
         </div>
       </section>
 
-      <section id="settings-support" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900">{{ t('settings.support.title') }}</h2>
-          <p class="text-xs text-neutral-500 mt-0.5">{{ t('settings.support.subtitle') }}</p>
+      <section id="settings-support" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.support.title') }}</h2>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.support.subtitle') }}</p>
         </div>
-        <div class="p-6 space-y-3">
+        <div class="p-4 sm:p-6 space-y-3">
           <input
             v-model="supportSubject"
             type="text"
             :placeholder="t('settings.support.subject')"
-            class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm"
+            class="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
           />
           <textarea
             v-model="supportMessage"
             rows="3"
             :placeholder="t('settings.support.message')"
-            class="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm resize-none"
+            class="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 resize-none"
           />
           <div class="flex items-center justify-end">
             <button
@@ -1822,21 +1885,21 @@ watch(
       </section>
 
       <!-- Password section -->
-      <section id="settings-password" class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-          <div>
+      <section id="settings-password" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0 flex-1">
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.password.title') }}</h2>
             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {{ needsPasswordSetup ? t('settings.password.socialSubtitle') : t('settings.password.subtitle') }}
             </p>
           </div>
-          <div v-if="passwordSaved" class="text-green-600 flex items-center gap-1 text-xs font-bold animate-fade-in">
+          <div v-if="passwordSaved" class="text-green-600 flex items-center gap-1 text-xs font-bold animate-fade-in shrink-0">
             <span class="material-symbols-outlined text-sm">check_circle</span>
             {{ t('settings.password.saved') }}
           </div>
         </div>
 
-        <div v-if="needsPasswordSetup" class="p-6 space-y-4">
+        <div v-if="needsPasswordSetup" class="p-4 sm:p-6 space-y-4">
           <p class="text-sm text-neutral-600 dark:text-neutral-300">{{ t('settings.password.socialSectionLead') }}</p>
           <button
             type="button"
@@ -1847,37 +1910,37 @@ watch(
           </button>
         </div>
 
-        <div v-else class="p-6 space-y-5">
-          <div v-if="passwordError" class="px-4 py-3 rounded-xl bg-pink-50 border border-pink-100 text-pink-600 text-xs">
+        <div v-else class="p-4 sm:p-6 space-y-5">
+          <div v-if="passwordError" class="px-4 py-3 rounded-xl bg-pink-50 border border-pink-100 text-pink-700 text-xs">
             {{ passwordError }}
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.password.current') }}</label>
+              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.password.current') }}</label>
               <input
                 v-model="oldPassword"
                 type="password"
                 placeholder="••••••••"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.password.new') }}</label>
+              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.password.new') }}</label>
               <input
                 v-model="newPassword"
                 type="password"
                 placeholder="••••••••"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1.5">{{ t('settings.password.confirm') }}</label>
+              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.password.confirm') }}</label>
               <input
                 v-model="confirmNewPassword"
                 type="password"
                 placeholder="••••••••"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
               />
             </div>
           </div>
@@ -1901,14 +1964,14 @@ watch(
 
       <section
         id="settings-danger"
-        class="app-card scroll-mt-40 md:scroll-mt-44 rounded-2xl border-pink-300/55 overflow-hidden mt-auto pt-8"
+        class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl border-pink-300/55 overflow-hidden mt-auto pt-8"
       >
-        <div class="px-6 py-5 border-b border-pink-300/50 dark:border-pink-700/50">
-          <h2 class="text-lg font-semibold text-pink-600 dark:text-pink-300">{{ t('settings.danger.title') }}</h2>
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-pink-300/50 dark:border-pink-700/50">
+          <h2 class="text-lg font-semibold text-pink-700 dark:text-pink-600">{{ t('settings.danger.title') }}</h2>
         </div>
         <div
           v-if="scheduledAccountDeletion"
-          class="p-6 border-b border-rose-200/60 dark:border-rose-800/50 bg-rose-50/90 dark:bg-rose-950/30"
+          class="p-4 sm:p-6 border-b border-rose-200/60 dark:border-rose-800/50 bg-rose-50/90 dark:bg-rose-950/30"
         >
           <p class="font-semibold text-sm text-rose-950 dark:text-rose-100">{{ t('settings.danger.delete.bannerTitle') }}</p>
           <p class="mt-1 text-xs leading-relaxed text-rose-900 dark:text-rose-100/90">
@@ -1923,20 +1986,20 @@ watch(
             {{ t('settings.danger.delete.cancelSchedule') }}
           </button>
         </div>
-        <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-200/45 dark:border-pink-800/40">
+        <div class="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-200/45 dark:border-pink-800/40">
           <div>
-            <p class="text-sm font-medium text-neutral-700">{{ t('settings.danger.logout') }}</p>
-            <p class="text-xs text-neutral-500">{{ t('settings.danger.logout.desc') }}</p>
+            <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.danger.logout') }}</p>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.danger.logout.desc') }}</p>
           </div>
           <button
             type="button"
-            class="app-btn app-btn-secondary text-sm border-pink-300 text-pink-600 dark:text-pink-300"
+            class="app-btn app-btn-secondary text-sm border-pink-300 text-pink-700 dark:text-pink-600"
             @click="handleLogout"
           >
             {{ t('settings.danger.logout.cta') }}
           </button>
         </div>
-        <div class="p-6 flex flex-col sm:flex-row items-start gap-4 bg-rose-50/45 dark:bg-rose-950/20">
+        <div class="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4 bg-rose-50/45 dark:bg-rose-950/20">
           <div class="max-w-xl flex-1 space-y-2">
             <p class="text-sm font-bold text-rose-900">{{ t('settings.danger.delete.title') }}</p>
             <p class="text-xs text-neutral-700 leading-relaxed">{{ t('settings.danger.delete.warningBody') }}</p>
@@ -1969,7 +2032,7 @@ watch(
       @click.self="closeInitialPasswordModal"
     >
       <div
-        class="w-full max-w-md rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl p-6 space-y-4"
+        class="w-full max-w-md rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl p-4 sm:p-6 space-y-4"
         @click.stop
       >
         <div class="flex items-start justify-between gap-3">
@@ -2038,6 +2101,7 @@ watch(
     :title="t('settings.seats.invitePickTitle')"
     :message="t('settings.seats.invitePickMessage')"
     :input-placeholder="t('settings.seats.invitePlaceholder')"
+    :disambiguation-rows="seatInviteDisambiguation"
     @pick="onSeatInviteUserPick"
   />
 </template>

@@ -71,7 +71,7 @@ const docVisual = computed(() => {
       icon: 'mail',
       articleClass: 'from-pink-50 via-white to-neutral-50/90 dark:from-pink-950/25 dark:via-neutral-900 dark:to-neutral-900',
       badgeClass: 'bg-pink-100 text-pink-900 border-pink-200/80',
-      iconBg: 'bg-pink-500/15 text-pink-700',
+      iconBg: 'bg-pink-700/15 dark:bg-pink-600/15 text-pink-700',
     }
   }
   return {
@@ -111,10 +111,10 @@ watch([slug, currentLang], load, { immediate: true })
 
 <template>
   <div class="min-h-[60vh] w-full min-w-0 max-w-3xl mx-auto px-4 py-10 sm:py-14 pb-24">
-    <nav class="mb-8 flex items-center gap-2 text-sm">
+    <nav class="mb-8 max-lg:hidden flex items-center gap-2 text-sm">
       <router-link
         to="/"
-        class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-600 font-medium transition-colors"
+        class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-800 font-medium transition-colors"
       >
         <span class="material-symbols-outlined text-[18px]">arrow_back</span>
         {{ t('legal.backHome') }}
@@ -235,7 +235,7 @@ watch([slug, currentLang], load, { immediate: true })
               class="mb-5 text-[15px] sm:text-base text-neutral-700 dark:text-neutral-200 leading-[1.75] text-pretty whitespace-pre-wrap"
               :class="{
                 'text-neutral-900 dark:text-neutral-100 font-semibold tracking-tight mb-6 text-[17px] sm:text-xl': i === 0 && isHeroLine(para),
-                'border-l-[3px] border-pink-300/90 dark:border-pink-500/70 pl-4 py-0.5 my-6 text-neutral-600 dark:text-neutral-300 italic text-sm bg-pink-50/40 dark:bg-pink-950/25 rounded-r-lg rounded-l-none':
+                'border-l-[3px] border-pink-300/90 dark:border-pink-600/70 pl-4 py-0.5 my-6 text-neutral-600 dark:text-neutral-300 italic text-sm bg-pink-50/40 dark:bg-pink-950/25 rounded-r-lg rounded-l-none':
                   para.includes('⚠️') || para.toLowerCase().includes('attention'),
               }"
             >
@@ -255,7 +255,7 @@ watch([slug, currentLang], load, { immediate: true })
             <span class="material-symbols-outlined text-xl">outgoing_mail</span>
             {{ t('contact.emailCta') }}
           </a>
-          <p class="mt-3 text-sm text-pink-700 dark:text-pink-300 font-medium break-all">
+          <p class="mt-3 text-sm text-pink-700 dark:text-pink-600 font-medium break-all">
             {{ contactEmail.trim() || FALLBACK_EMAIL }}
           </p>
         </div>

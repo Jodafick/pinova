@@ -16,7 +16,7 @@ export function isCssColorValue(raw: string): boolean {
 }
 
 /** Classe Tailwind de fond, ou chaîne vide si la couleur sera en `style` inline. */
-export function avatarBgTailwindClass(color: string | null | undefined, fallback = 'bg-neutral-400'): string {
+export function avatarBgTailwindClass(color: string | null | undefined, fallback = 'bg-violet-500'): string {
   const raw = (color ?? '').trim()
   if (!raw) return fallback
   if (isCssColorValue(raw)) return ''

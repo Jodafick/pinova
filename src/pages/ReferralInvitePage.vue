@@ -87,7 +87,7 @@ function shareNative() {
       <div class="grid grid-cols-2 gap-3">
         <div class="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
           <p class="text-[10px] uppercase text-neutral-500 font-semibold">{{ t('referral.invite.stats.referees') }}</p>
-          <p class="text-2xl font-bold text-pink-600">{{ refereeCount }}</p>
+          <p class="text-2xl font-bold text-pink-700">{{ refereeCount }}</p>
         </div>
         <div class="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
           <p class="text-[10px] uppercase text-neutral-500 font-semibold">{{ t('referral.invite.stats.rank') }}</p>
@@ -106,15 +106,15 @@ function shareNative() {
       <div class="rounded-2xl border border-pink-200/70 dark:border-pink-900/50 bg-gradient-to-br from-pink-50 to-white dark:from-pink-950/30 dark:to-neutral-900 p-6 space-y-4">
         <div>
           <p class="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{{ t('referral.invite.codeLabel') }}</p>
-          <p class="text-3xl font-mono font-bold tracking-widest text-pink-600 dark:text-pink-400 mt-1">{{ myCode }}</p>
+          <p class="text-3xl font-mono font-bold tracking-widest text-pink-700 dark:text-pink-600 mt-1">{{ myCode }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-full bg-pink-600 text-white px-4 py-2 text-sm font-semibold hover:bg-pink-700 transition"
+            class="inline-flex items-center gap-2 rounded-full bg-pink-700 dark:bg-pink-600 text-white px-4 py-2 text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition"
             @click="shareNative"
           >
-            <span class="material-symbols-outlined text-lg">share</span>
+            <i class="fa-solid fa-share-nodes text-lg" aria-hidden="true" />
             {{ t('referral.invite.share') }}
           </button>
           <button
@@ -122,7 +122,7 @@ function shareNative() {
             class="inline-flex items-center gap-2 rounded-full border border-neutral-300 dark:border-neutral-600 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
             @click="copyText(myCode, 'code')"
           >
-            <span class="material-symbols-outlined text-lg">content_copy</span>
+            <i class="fa-solid fa-copy text-lg" aria-hidden="true" />
             {{ t('referral.invite.copyCode') }}
           </button>
           <button
@@ -130,7 +130,7 @@ function shareNative() {
             class="inline-flex items-center gap-2 rounded-full border border-neutral-300 dark:border-neutral-600 px-4 py-2 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
             @click="copyText(linkWeb, 'link')"
           >
-            <span class="material-symbols-outlined text-lg">link</span>
+            <i class="fa-solid fa-link text-lg" aria-hidden="true" />
             {{ t('referral.invite.copyLink') }}
           </button>
         </div>
@@ -150,7 +150,7 @@ function shareNative() {
 
       <router-link
         to="/referrals/contest"
-        class="block text-center text-sm font-medium text-pink-600 hover:underline"
+        class="block text-center text-sm font-medium text-pink-700 hover:underline"
       >
         {{ t('referral.invite.seeContest') }}
       </router-link>

@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
+import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { useI18n } from '../i18n'
 import api from '../api'
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const { toggleSavePin, toggleFollow } = useAuth()
 const { pins, loading, isFetchingNextPage, fetchFollowingPins, toggleSave } = usePins()
 const followingPins = ref<any[]>([])
@@ -47,7 +49,7 @@ const handleToggleSave = async (slug: string) => {
 }
 
 const openPin = (slug: string) => {
-  router.push(`/pin/${slug}`)
+  router.push({ path: route.path, query: { ...route.query, pin: slug } })
 }
 
 function onPinDeletedFromGrid(slug: string) {
@@ -88,7 +90,7 @@ const followSuggestedUser = async (username: string) => {
 
     <div v-else-if="displayPins.length === 0" class="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-8 text-center">
       <p class="text-neutral-700 dark:text-neutral-300 mb-3">{{ t('following.empty') }}</p>
-      <router-link to="/explore" class="inline-flex items-center px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition">
+      <router-link to="/explore" class="inline-flex items-center px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition">
         {{ t('nav.explore') }}
       </router-link>
       <button class="ml-3 inline-flex items-center px-5 py-2.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 text-sm font-semibold hover:bg-neutral-200 dark:hover:bg-neutral-700 transition" @click="loadFollowingFeed">
@@ -134,7 +136,7 @@ const followSuggestedUser = async (username: string) => {
                 <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">@{{ suggestion.username }}</p>
               </div>
             </button>
-            <button class="px-3 py-1.5 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700" @click="followSuggestedUser(suggestion.username)">
+            <button class="px-3 py-1.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-xs font-semibold hover:bg-pink-800 dark:hover:opacity-90" @click="followSuggestedUser(suggestion.username)">
               {{ t('pin.follow') }}
             </button>
           </div>
@@ -142,5 +144,6 @@ const followSuggestedUser = async (username: string) => {
       </div>
     </div>
 
+    <PinDetailOverlayHost :pins="displayPins" />
   </div>
 </template>

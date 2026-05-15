@@ -11,6 +11,7 @@ import { useDataSaver } from '../composables/useDataSaver'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 import { useAppModal } from '../composables/useAppModal'
+import { elementToPinOverlayOriginRect, setPinOverlayOrigin } from '../utils/pinOverlayOrigin'
 import {
   PIN_MEDIA_ANTI_LEAK_CLASS,
   pinMediaAntiLeakImgBindings,
@@ -155,6 +156,16 @@ function clearMediaTimer(pinId: number) {
   mediaTapTimers.delete(pinId)
 }
 
+function pinOpenOriginFromEvent(e: Event): ReturnType<typeof elementToPinOverlayOriginRect> {
+  const target = e.currentTarget instanceof Element ? e.currentTarget : null
+  return elementToPinOverlayOriginRect(target?.closest('.lux-pin-card') ?? target)
+}
+
+function emitOpenPin(pin: Pin, originRect: ReturnType<typeof elementToPinOverlayOriginRect>) {
+  setPinOverlayOrigin(pin.slug, originRect)
+  emit('open-pin', pin.slug)
+}
+
 async function doubleTapLike(pin: Pin) {
   if (!isAuthenticated.value) {
     router.push('/login')
@@ -164,7 +175,8 @@ async function doubleTapLike(pin: Pin) {
   await toggleLike(pin.slug)
 }
 
-function onPinMediaTap(pin: Pin) {
+function onPinMediaTap(pin: Pin, e: MouseEvent) {
+  const originRect = pinOpenOriginFromEvent(e)
   const existing = mediaTapTimers.get(pin.id)
   if (existing) {
     clearMediaTimer(pin.id)
@@ -173,7 +185,7 @@ function onPinMediaTap(pin: Pin) {
   }
   const t = setTimeout(() => {
     mediaTapTimers.delete(pin.id)
-    emit('open-pin', pin.slug)
+    emitOpenPin(pin, originRect)
   }, 320)
   mediaTapTimers.set(pin.id, t)
 }
@@ -186,7 +198,7 @@ function onPinMediaDblClick(pin: Pin) {
 function onArticleClick(pin: Pin, e: MouseEvent) {
   const el = e.target as HTMLElement | null
   if (el?.closest('[data-pin-media]')) return
-  emit('open-pin', pin.slug)
+  emitOpenPin(pin, pinOpenOriginFromEvent(e))
 }
 
 function pinCardLabel(pin: Pin) {
@@ -196,7 +208,7 @@ function pinCardLabel(pin: Pin) {
 function onCardKeydown(pin: Pin, ev: KeyboardEvent) {
   if (ev.key === 'Enter' || ev.key === ' ') {
     ev.preventDefault()
-    emit('open-pin', pin.slug)
+    emitOpenPin(pin, null)
   }
 }
 
@@ -277,8 +289,8 @@ onUnmounted(() => {
         <!-- Image container : hauteur naturelle après chargement -->
         <div
           data-pin-media
-          class="relative overflow-hidden rounded-3xl bg-neutral-100/90 dark:bg-neutral-800 min-h-[140px]"
-          @click.stop="onPinMediaTap(cell.pin)"
+          class="relative overflow-hidden rounded-3xl bg-neutral-100/90 dark:bg-neutral-800"
+          @click.stop="onPinMediaTap(cell.pin, $event)"
           @dblclick.stop.prevent="onPinMediaDblClick(cell.pin)"
         >
           <div
@@ -401,7 +413,7 @@ onUnmounted(() => {
         class="lux-pin-skeleton-card"
         aria-hidden="true"
       >
-        <div class="relative overflow-hidden rounded-3xl bg-neutral-100 dark:bg-neutral-900/80 min-h-[140px]">
+        <div class="relative overflow-hidden rounded-3xl bg-neutral-100 dark:bg-neutral-900/80">
           <div class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200 dark:from-neutral-800 dark:via-neutral-900 dark:to-neutral-800" />
         </div>
       </div>
@@ -421,16 +433,16 @@ onUnmounted(() => {
         <button
           type="button"
           role="menuitem"
-          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-pink-50/60 transition-colors"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="gridOwnerMenuSlug ? goGridOwnerEdit(gridOwnerMenuSlug) : null"
         >
-          <span class="material-symbols-outlined text-lg text-neutral-500" aria-hidden="true">edit</span>
+          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">edit</span>
           {{ t('pin.ownerMenu.edit') }}
         </button>
         <button
           type="button"
           role="menuitem"
-          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50/90 transition-colors"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-400 hover:bg-red-50/90 dark:hover:bg-red-950/35 transition-colors"
           @click="gridOwnerMenuSlug ? confirmDeleteGridOwnedPin(gridOwnerMenuSlug) : null"
         >
           <span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>

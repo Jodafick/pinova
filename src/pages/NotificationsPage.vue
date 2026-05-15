@@ -1,0 +1,346 @@
+<script setup lang="ts">
+import { computed, onActivated, onDeactivated, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import api from '../api'
+import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
+import { useI18n } from '../i18n'
+import AvatarDisc from '../components/AvatarDisc.vue'
+import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
+import { displayInitials } from '../utils/displayInitials'
+import { subscribeUnreadCountFromHeader } from '../notificationRefresh'
+import {
+  setMobileHeaderSubtitle,
+  setMobileMarkAllReadTrailing,
+} from '../composables/mobileHeaderContext'
+
+const { t, currentLang } = useI18n()
+const route = useRoute()
+const router = useRouter()
+const { isAuthenticated } = useAuth()
+
+type NotificationRow = {
+  id: number
+  title?: string
+  message: string
+  sender_username?: string
+  sender_avatar_url?: string | null
+  sender_avatar_color?: string | null
+  is_read: boolean
+  pin_slug?: string | null
+  pin_id?: number | null
+  comment_id?: number | null
+  action_url?: string | null
+  metadata?: Record<string, unknown> | null
+}
+
+const notifications = ref<NotificationRow[]>([])
+const page = ref(1)
+const hasNext = ref(false)
+const loading = ref(false)
+const loadingMore = ref(false)
+const error = ref(false)
+const unreadCount = ref(0)
+const loadedOnce = ref(false)
+let unsubscribe: (() => void) | null = null
+
+const hasItems = computed(() => notifications.value.length > 0)
+
+async function markAllAsRead() {
+  try {
+    await api.post('notifications/mark_all_as_read/')
+    notifications.value.forEach((n) => (n.is_read = true))
+    unreadCount.value = 0
+    syncNotificationsMobileHeader()
+  } catch (err) {
+    console.error('NotificationsPage: mark all read error', err)
+  }
+}
+
+function syncNotificationsMobileHeader() {
+  if (!isAuthenticated.value) {
+    setMobileHeaderSubtitle(null)
+    setMobileMarkAllReadTrailing(null)
+    return
+  }
+  setMobileHeaderSubtitle(
+    unreadCount.value > 0 ? t('notifications.unreadCount', { count: unreadCount.value }) : null,
+  )
+  setMobileMarkAllReadTrailing(
+    unreadCount.value > 0
+      ? {
+          ariaLabel: t('header.notifications.markAllRead'),
+          onClick: () => {
+            void markAllAsRead()
+          },
+        }
+      : null,
+  )
+}
+
+async function load(reset = true) {
+  if (!isAuthenticated.value) return
+  const nextPage = reset ? 1 : page.value + 1
+  if (reset) {
+    loading.value = true
+    error.value = false
+  } else {
+    loadingMore.value = true
+  }
+  try {
+    const response = await api.get('notifications/', {
+      params: { page: nextPage, page_size: 20, lang: currentLang.value },
+    })
+    const data = response.data
+    if (Array.isArray(data)) {
+      notifications.value = data
+      hasNext.value = false
+      page.value = 1
+    } else {
+      const chunk = (data?.results ?? []) as NotificationRow[]
+      notifications.value = reset ? chunk : [...notifications.value, ...chunk]
+      hasNext.value = !!data?.next
+      page.value = nextPage
+    }
+    loadedOnce.value = true
+  } catch (err) {
+    console.error('NotificationsPage: load error', err)
+    if (reset) {
+      notifications.value = []
+      hasNext.value = false
+    }
+    error.value = true
+  } finally {
+    loading.value = false
+    loadingMore.value = false
+    syncNotificationsMobileHeader()
+  }
+}
+
+async function handleClick(notification: NotificationRow) {
+  if (!notification.is_read) {
+    try {
+      await api.post(`notifications/${notification.id}/mark_as_read/`)
+      notification.is_read = true
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+      syncNotificationsMobileHeader()
+    } catch (err) {
+      console.error('NotificationsPage: mark read error', err)
+    }
+  }
+  const meta = (notification.metadata && typeof notification.metadata === 'object'
+    ? notification.metadata
+    : {}) as Record<string, unknown>
+  const metadataKind = String(meta.kind || '').trim().toLowerCase()
+  const isStoryPin = Boolean(meta.is_story && notification.pin_slug)
+
+  if (metadataKind === 'contest_rank_update') {
+    router.push('/contest/live')
+  } else if (isStoryPin && notification.pin_slug) {
+    const query: Record<string, string> = { story: String(notification.pin_slug) }
+    if (notification.comment_id) query.commentId = String(notification.comment_id)
+    router.push({ path: '/', query })
+  } else if (notification.pin_slug) {
+    const query: Record<string, string> = {
+      pin: String(notification.pin_slug),
+    }
+    if (notification.comment_id) query.commentId = String(notification.comment_id)
+    router.push({ path: route.path, query })
+  } else if (notification.pin_id) {
+    router.push('/')
+  } else if (notification.action_url) {
+    router.push(String(notification.action_url))
+  }
+}
+
+onMounted(() => {
+  unsubscribe = subscribeUnreadCountFromHeader((n) => {
+    unreadCount.value = n
+    syncNotificationsMobileHeader()
+  })
+  void load(true)
+})
+
+onActivated(() => {
+  syncNotificationsMobileHeader()
+  if (loadedOnce.value) {
+    void load(true)
+  }
+})
+
+onDeactivated(() => {
+  setMobileHeaderSubtitle(null)
+  setMobileMarkAllReadTrailing(null)
+})
+
+onUnmounted(() => {
+  unsubscribe?.()
+  unsubscribe = null
+  setMobileHeaderSubtitle(null)
+  setMobileMarkAllReadTrailing(null)
+})
+
+watch(currentLang, () => {
+  if (loadedOnce.value) void load(true)
+  syncNotificationsMobileHeader()
+})
+
+watch(isAuthenticated, (auth) => {
+  if (!auth) {
+    notifications.value = []
+    hasNext.value = false
+    page.value = 1
+    unreadCount.value = 0
+    loadedOnce.value = false
+    setMobileHeaderSubtitle(null)
+    setMobileMarkAllReadTrailing(null)
+  } else if (!loadedOnce.value) {
+    void load(true)
+  } else {
+    syncNotificationsMobileHeader()
+  }
+})
+</script>
+
+<template>
+  <div
+    class="w-full min-w-0 bg-gradient-to-b from-pink-50/40 via-transparent to-transparent px-3 py-4 sm:px-6 sm:py-8 lg:px-10 xl:px-16 dark:from-pink-950/25"
+  >
+    <div class="mx-auto max-w-3xl">
+      <!-- Desktop : titre + compteur + action (le mobile utilise `AppMobilePageHeader` via contexte). -->
+      <header class="mb-5 hidden items-center justify-between gap-3 sm:mb-7 lg:flex">
+        <div class="min-w-0">
+          <h1 class="text-2xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-3xl">
+            {{ t('header.notifications') }}
+          </h1>
+          <p
+            v-if="unreadCount > 0"
+            class="mt-1 text-xs font-semibold text-neutral-900 dark:text-neutral-100 sm:text-sm"
+          >
+            {{ t('notifications.unreadCount', { count: unreadCount }) }}
+          </p>
+        </div>
+        <button
+          v-if="unreadCount > 0"
+          type="button"
+          class="inline-flex shrink-0 items-center gap-2 rounded-full border border-pink-200/90 bg-white/80 px-4 py-2 text-xs font-semibold text-pink-700 shadow-sm backdrop-blur-md transition hover:bg-pink-50/90 dark:border-pink-800/60 dark:bg-neutral-900/60 dark:text-pink-600 dark:hover:bg-pink-950/40 sm:text-sm"
+          @click="markAllAsRead"
+        >
+          <span class="material-symbols-outlined text-base leading-none">done_all</span>
+          {{ t('header.notifications.markAllRead') }}
+        </button>
+      </header>
+
+      <div v-if="loading && notifications.length === 0" class="app-skeleton-wave space-y-3" aria-hidden="true">
+        <div
+          v-for="i in 6"
+          :key="`notif-skel-${i}`"
+          class="flex items-start gap-3 rounded-2xl border border-white/40 bg-white/45 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/40"
+        >
+          <div class="h-10 w-10 shrink-0 animate-pulse rounded-full bg-neutral-200/80 dark:bg-neutral-700/80" />
+          <div class="flex-1 space-y-2">
+            <div class="h-3 w-1/3 animate-pulse rounded bg-neutral-200/80 dark:bg-neutral-700/80" />
+            <div class="h-3 w-3/4 animate-pulse rounded bg-neutral-100/90 dark:bg-neutral-800/80" />
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-else-if="error && !hasItems"
+        class="rounded-2xl border border-white/50 bg-white/55 p-8 text-center shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50"
+      >
+        <span class="material-symbols-outlined mb-2 text-4xl text-neutral-400">cloud_off</span>
+        <p class="mb-3 text-sm text-neutral-600 dark:text-neutral-300">
+          {{ t('notifications.loadError') }}
+        </p>
+        <button
+          type="button"
+          class="rounded-full bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800 dark:bg-pink-600 dark:hover:opacity-90"
+          @click="load(true)"
+        >
+          {{ t('common.retry') }}
+        </button>
+      </div>
+
+      <div
+        v-else-if="!hasItems"
+        class="rounded-2xl border border-dashed border-neutral-200/90 bg-white/50 p-10 text-center backdrop-blur-xl dark:border-neutral-700/80 dark:bg-neutral-900/45"
+      >
+        <span class="material-symbols-outlined mb-3 text-5xl text-neutral-300 dark:text-neutral-600">notifications_off</span>
+        <p class="mb-1 text-base font-semibold text-neutral-700 dark:text-neutral-200">
+          {{ t('header.notifications.empty') }}
+        </p>
+        <p class="mx-auto max-w-sm text-xs text-neutral-500 dark:text-neutral-400">
+          {{ t('notifications.emptyHint') }}
+        </p>
+      </div>
+
+      <ul v-else class="space-y-3">
+        <li
+          v-for="notification in notifications"
+          :key="notification.id"
+          class="rounded-2xl border border-white/50 bg-white/55 shadow-sm backdrop-blur-xl transition dark:border-white/10 dark:bg-neutral-900/45 dark:shadow-none"
+          :class="
+            !notification.is_read
+              ? 'ring-1 ring-pink-300/50 dark:ring-pink-700/40'
+              : 'hover:border-pink-200/70 dark:hover:border-pink-800/50'
+          "
+        >
+          <button
+            type="button"
+            class="flex w-full items-start gap-3 rounded-2xl p-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600"
+            @click="handleClick(notification)"
+          >
+            <AvatarDisc
+              :color="notification.sender_avatar_color || DEFAULT_AVATAR_COLOR_CLASS"
+              frame-class="w-11 h-11 text-xs shrink-0"
+              text-class="text-white"
+              :has-image="!!notification.sender_avatar_url"
+            >
+              <img
+                v-if="notification.sender_avatar_url"
+                :src="notification.sender_avatar_url"
+                alt=""
+                class="h-full w-full object-cover"
+              />
+              <span v-else>{{ displayInitials(notification.sender_username) }}</span>
+            </AvatarDisc>
+            <div class="min-w-0 flex-1">
+              <p
+                v-if="notification.title"
+                class="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400"
+              >
+                {{ notification.title }}
+              </p>
+              <p class="text-sm leading-snug text-neutral-900 dark:text-neutral-100">
+                {{ notification.message }}
+              </p>
+              <p v-if="notification.sender_username" class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                @{{ notification.sender_username }}
+              </p>
+            </div>
+            <span
+              v-if="!notification.is_read"
+              class="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-pink-700 dark:bg-pink-600"
+              aria-hidden="true"
+            />
+          </button>
+        </li>
+      </ul>
+
+      <div v-if="hasNext && hasItems" class="mt-6 flex justify-center">
+        <button
+          type="button"
+          class="rounded-full border border-white/60 bg-white/70 px-5 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm backdrop-blur-md transition hover:bg-white/90 disabled:opacity-60 dark:border-white/10 dark:bg-neutral-900/55 dark:text-neutral-200 dark:hover:bg-neutral-900/75"
+          :disabled="loadingMore"
+          @click="load(false)"
+        >
+          <span v-if="loadingMore" class="material-symbols-outlined animate-spin text-base">progress_activity</span>
+          <span v-else>{{ t('header.notifications.loadMore') }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Fiche pin en surcouche (même mécanisme que home / profil) sans quitter la page. -->
+    <PinDetailOverlayHost :pins="[]" />
+  </div>
+</template>

@@ -2,18 +2,38 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      viewport-fit=cover : safe areas iOS (Dynamic Island, Home Indicator).
+      interactive-widget=resizes-content : iOS 17+ — le clavier ne redimensionne
+      plus le layout brutalement, on gère via visualViewport.
+      minimum-scale / maximum-scale : empêche pinch-zoom natif (PWA premium iOS).
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <meta name="description" content="Pinova — votre source d'inspiration visuelle." />
+    <meta name="format-detection" content="telephone=no" />
 
     <title>Pinova</title>
 
-    <meta name="theme-color" content="#000000" />
-    <meta name="color-scheme" content="dark light" />
+    <!--
+      theme-color : différent en light vs dark (iOS 15+ supporte media queries).
+      Initial : blanc pour éviter flash sombre au premier paint sur iOS Safari.
+      Le composable usePwaTheme prend ensuite le relais dynamiquement.
+    -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
 
     <!-- Installation PWA / écran d’accueil (iOS & Android) -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Pinova" />
+    <!--
+      black-translucent : la status bar overlap le contenu (PWA premium).
+      Combiné à env(safe-area-inset-top) → contenu sous Dynamic Island.
+    -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -22,14 +42,66 @@
     <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
     <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
-    <link rel="mask-icon" href="/mask-icon.svg" color="#ec4899" />
+    <link rel="mask-icon" href="/mask-icon.svg" color="#e0245e" />
 
-    <!-- Même logo que l’app (favicon haute résolution pour onglets HD) -->
+    <!-- Favicon HD pour onglets desktop. -->
     <link rel="icon" type="image/png" sizes="512x512" href="/logo.png" />
+
+    <!--
+      Splash screens iOS (générés via PWA Builder ou similaire).
+      NOTE : iOS ne supporte qu'un seul splash via apple-touch-startup-image.
+      Si tu génères les variantes (iPhone 14 Pro / iPhone SE / iPad / etc.), pose-les ici.
+      En attendant, le PwaSplash.vue couvre le boot une fois le HTML rendu.
+    -->
+    <link rel="apple-touch-startup-image" href="/logo.png" />
+
+    <!--
+      DNS prefetch / preconnect pour réduire la latence du premier paint en
+      mode standalone (iOS Safari ne supporte pas les Resource Hints aussi
+      activement que Chrome mais ça aide quand même).
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300..500;1,9..40,300&display=swap"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+    />
+
+    <!--
+      Anti flash blanc au boot : on pose le background dès le HTML (avant CSS).
+      `usePwaTheme` synchronise ensuite avec le mode dark/light de l'utilisateur.
+    -->
+    <style>
+      :root { color-scheme: light dark; }
+      html, body { background-color: #faf7f9; }
+      @media (prefers-color-scheme: dark) {
+        html, body { background-color: #050506; }
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        /* iOS rubber band scrolling : on contraint au document root. */
+        overscroll-behavior-y: none;
+        /* Empêche le tap-highlight bleu Safari sur le body. */
+        -webkit-tap-highlight-color: transparent;
+        /* Désactive le callout iOS sur long-press image global (on autorise localement). */
+        -webkit-touch-callout: none;
+        /* Évite le décalage du body lié à la safe-area top en standalone. */
+        padding: 0;
+      }
+      /* En standalone, on désactive le user-select au niveau global pour un feel natif.
+         Les composants qui ont besoin de sélection (input, textarea, contenteditable) le réactivent. */
+      @media all and (display-mode: standalone) {
+        body { -webkit-user-select: none; user-select: none; }
+        input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+      }
+      #app { min-height: 100dvh; }
+    </style>
   </head>
   <body>
     <div id="app"></div>

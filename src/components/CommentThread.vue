@@ -177,7 +177,7 @@ const renderRichText = (str: string) => {
   const safe = escapeHtml(str)
   return safe.replace(
     /@([A-Za-z0-9_.]+)/g,
-    '<span class="text-pink-600 font-semibold">@$1</span>',
+    '<span class="text-pink-700 dark:text-pink-600 font-semibold">@$1</span>',
   )
 }
 
@@ -287,17 +287,19 @@ function menuDelete() {
       </AvatarDisc>
 
       <div class="flex-1 min-w-0">
-        <div class="bg-neutral-100 dark:bg-neutral-800 rounded-2xl px-4 pt-2.5 pb-2">
+        <div
+          class="rounded-2xl border border-white/70 bg-white/80 px-4 pt-2.5 pb-2 shadow-sm shadow-neutral-900/5 backdrop-blur-md backdrop-saturate-150 dark:border-neutral-800/80 dark:bg-neutral-950/85 dark:shadow-none dark:backdrop-blur-xl"
+        >
           <div class="flex items-start justify-between gap-2 mb-1">
             <div class="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <span class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{{ comment.user }}</span>
-              <span class="text-xs text-neutral-400">@{{ comment.username }}</span>
+              <span class="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">@{{ comment.username }}</span>
             </div>
             <div v-if="hasOverflowMenu(comment)" class="relative shrink-0 -mr-1 -mt-1">
               <button
                 type="button"
                 data-comment-menu-trigger
-                class="p-1.5 rounded-full text-neutral-500 hover:bg-neutral-200/70 transition shrink-0"
+                class="p-1.5 rounded-full text-neutral-500 hover:bg-neutral-200/80 dark:text-neutral-400 dark:hover:bg-neutral-700/80 transition shrink-0"
                 :aria-label="t('comment.menu.more')"
                 :aria-expanded="menuOpenCommentId === comment.id"
                 aria-haspopup="menu"
@@ -311,20 +313,20 @@ function menuDelete() {
           </div>
           <p
             v-if="comment.contentMasked"
-            class="text-sm text-neutral-500 italic leading-snug pr-8"
+            class="text-sm text-neutral-500 dark:text-neutral-400 italic leading-snug pr-8"
           >
             {{ t('comment.hiddenPlaceholder') }}
           </p>
           <p
             v-else-if="comment.text || comment.translatedText"
-          class="text-sm text-neutral-700 dark:text-neutral-300 leading-snug break-words pr-1"
+            class="text-sm text-neutral-600 dark:text-neutral-400 leading-snug break-words pr-1"
             v-html="renderRichText(comment.translated && comment.translatedText ? comment.translatedText : comment.text)"
           />
           <img v-if="!comment.contentMasked && comment.gif" :src="comment.gif" class="mt-2 max-h-40 rounded-lg" alt="" />
           <img v-if="!comment.contentMasked && comment.media" :src="comment.media" class="mt-2 max-h-40 rounded-lg" alt="" />
           <div
             v-if="!comment.contentMasked && comment.translated"
-            class="mt-1 text-[11px] text-neutral-400 italic flex items-center gap-1"
+            class="mt-1 text-[11px] text-neutral-500 dark:text-neutral-500 italic flex items-center gap-1"
           >
             <span class="material-symbols-outlined text-xs">translate</span>
             {{ t('translate.auto') }}
@@ -336,11 +338,15 @@ function menuDelete() {
           <button
             v-if="!comment.contentMasked"
             type="button"
-            class="shrink-0 font-semibold hover:text-neutral-800 transition flex items-center gap-1"
-            :class="{ 'text-pink-600': comment.liked }"
+            class="shrink-0 font-semibold transition flex items-center gap-1 rounded-md px-1 -mx-1 py-0.5 min-h-[32px]"
+            :class="
+              comment.liked
+                ? 'text-pink-700 dark:text-pink-600 hover:text-pink-800 dark:hover:text-pink-600 dark:hover:opacity-80'
+                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-100/90 dark:hover:bg-neutral-800/80'
+            "
             @click="emit('like', comment.id)"
           >
-            <span class="material-symbols-outlined text-base">
+            <span class="material-symbols-outlined text-base comment-thread-heart-icon" aria-hidden="true">
               favorite
             </span>
             {{ comment.likes }}
@@ -360,7 +366,7 @@ function menuDelete() {
 
         <div
           v-if="comment.replies && comment.replies.length"
-          class="mt-3 pl-4 border-l-2 border-neutral-100 dark:border-neutral-700 space-y-3"
+          class="mt-3 pl-4 border-l-2 border-neutral-200 dark:border-neutral-700 space-y-3"
         >
           <div
             v-for="reply in comment.replies"
@@ -379,17 +385,19 @@ function menuDelete() {
               <span v-else>{{ reply.user[0] }}</span>
             </AvatarDisc>
             <div class="flex-1 min-w-0">
-              <div class="bg-neutral-100 dark:bg-neutral-800 rounded-2xl px-3 pt-2 pb-1.5">
+              <div
+                class="rounded-2xl border border-white/70 bg-white/80 px-3 pt-2 pb-1.5 shadow-sm shadow-neutral-900/5 backdrop-blur-md backdrop-saturate-150 dark:border-neutral-800/80 dark:bg-neutral-950/85 dark:shadow-none dark:backdrop-blur-xl"
+              >
                 <div class="flex items-start justify-between gap-2 mb-0.5">
                   <div class="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-100">{{ reply.user }}</span>
-                    <span class="text-[10px] text-neutral-400">@{{ reply.username }}</span>
+                    <span class="text-[10px] text-neutral-500 dark:text-neutral-400 tabular-nums">@{{ reply.username }}</span>
                   </div>
                   <div v-if="hasOverflowMenu(reply)" class="relative shrink-0 -mr-0.5 -mt-0.5">
                     <button
                       type="button"
                       data-comment-menu-trigger
-                      class="p-1 rounded-full text-neutral-500 hover:bg-neutral-200/70 transition shrink-0"
+                      class="p-1 rounded-full text-neutral-500 hover:bg-neutral-200/80 dark:text-neutral-400 dark:hover:bg-neutral-700/80 transition shrink-0"
                       :aria-label="t('comment.menu.more')"
                       :aria-expanded="menuOpenCommentId === reply.id"
                       aria-haspopup="menu"
@@ -403,20 +411,20 @@ function menuDelete() {
                 </div>
                 <p
                   v-if="reply.contentMasked"
-                  class="text-sm text-neutral-500 italic leading-snug pr-6"
+                  class="text-sm text-neutral-500 dark:text-neutral-400 italic leading-snug pr-6"
                 >
                   {{ t('comment.hiddenPlaceholder') }}
                 </p>
                 <p
                   v-else
-                  class="text-sm text-neutral-700 dark:text-neutral-300 leading-snug break-words pr-0.5"
+                  class="text-sm text-neutral-600 dark:text-neutral-400 leading-snug break-words pr-0.5"
                   v-html="renderRichText(reply.translated && reply.translatedText ? reply.translatedText : reply.text)"
                 />
                 <img v-if="!reply.contentMasked && reply.gif" :src="reply.gif" class="mt-2 max-h-32 rounded-lg" alt="" />
                 <img v-if="!reply.contentMasked && reply.media" :src="reply.media" class="mt-2 max-h-32 rounded-lg" alt="" />
                 <div
                   v-if="!reply.contentMasked && reply.translated"
-                  class="mt-1 text-[11px] text-neutral-400 italic flex items-center gap-1"
+                  class="mt-1 text-[11px] text-neutral-500 dark:text-neutral-500 italic flex items-center gap-1"
                 >
                   <span class="material-symbols-outlined text-xs">translate</span>
                   {{ t('translate.auto') }}
@@ -428,11 +436,15 @@ function menuDelete() {
                 <button
                   v-if="!reply.contentMasked"
                   type="button"
-                  class="shrink-0 font-semibold hover:text-neutral-800 transition flex items-center gap-1"
-                  :class="{ 'text-pink-600': reply.liked }"
+                  class="shrink-0 font-semibold transition flex items-center gap-1 rounded-md px-1 -mx-1 py-0.5 min-h-[28px]"
+                  :class="
+                    reply.liked
+                      ? 'text-pink-700 dark:text-pink-600 hover:text-pink-800 dark:hover:text-pink-600 dark:hover:opacity-80'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-100/90 dark:hover:bg-neutral-800/80'
+                  "
                   @click="emit('like', reply.id)"
                 >
-                  <span class="material-symbols-outlined text-sm">
+                  <span class="material-symbols-outlined text-sm comment-thread-heart-icon" aria-hidden="true">
                     favorite
                   </span>
                   {{ reply.likes }}
@@ -445,7 +457,7 @@ function menuDelete() {
 
         <div v-if="comment.repliesNextPage" class="mt-2 pl-4">
           <button
-            class="text-xs font-semibold text-pink-600 hover:text-pink-700"
+            class="text-xs font-semibold text-pink-700 hover:text-pink-800 dark:text-pink-600 dark:hover:text-pink-600 dark:hover:opacity-80"
             @click="emit('load-more-replies', comment.id)"
           >
             {{ t('comment.loadMoreReplies') }}
@@ -517,7 +529,7 @@ function menuDelete() {
             v-if="floatingMenuComment && canDelete(floatingMenuComment)"
             type="button"
             role="menuitem"
-            class="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
+            class="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2"
             @click="menuDelete"
           >
             <span class="material-symbols-outlined text-lg">delete</span>
@@ -528,4 +540,11 @@ function menuDelete() {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+/* Cœur plein (Material Symbols) — aligné PinDetailDesktopModal / mobile */
+.comment-thread-heart-icon {
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+}
+</style>
 

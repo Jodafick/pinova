@@ -5,6 +5,7 @@ import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins, mapDjangoPinToFrontend, isAlreadyReportedError } from '../composables/usePins'
 import type { User, Pin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
+import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
 import ProfileHeaderSkeleton from '../components/ProfileHeaderSkeleton.vue'
 import UserListSkeleton from '../components/UserListSkeleton.vue'
 import CreatorStatsSkeleton from '../components/CreatorStatsSkeleton.vue'
@@ -12,10 +13,18 @@ import StoryViewer from '../components/StoryViewer.vue'
 import StoryRingCover from '../components/StoryRingCover.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import UserSearchPickModal from '../components/UserSearchPickModal.vue'
+import PinovaModal from '../components/ui/PinovaModal.vue'
 import ReportContentModal from '../components/ReportContentModal.vue'
+import ProfileMobileNavDrawer from '../components/ProfileMobileNavDrawer.vue'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import api from '../api'
+import { getCachedProfileUser, profileDetailCacheKey } from '../entityClientCache'
+import {
+  getCachedProfileCreatedFirstPage,
+  profileCreatedPinsCacheKey,
+  setCachedProfileCreatedFirstPage,
+} from '../pinClientCache'
 import { displayInitials } from '../utils/displayInitials'
 import { shareUrlWithFallback } from '../utils/shareFallback'
 import {
@@ -24,6 +33,8 @@ import {
 } from '../composables/mediaAntiLeak'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
+import { useMobileCreateChooser } from '../composables/useMobileCreateChooser'
+import { setMobileProfileTrailing } from '../composables/mobileHeaderContext'
 import {
   initialStoryIndexForUser,
   isStoryRingAllCaughtUp,
@@ -35,6 +46,7 @@ const PROFILE_PINS_PAGE_SIZE = 24
 
 const { t, currentLang } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
+const { openMobileCreateChooser } = useMobileCreateChooser()
 
 const router = useRouter()
 const route = useRoute()
@@ -54,7 +66,8 @@ const {
 const { pins, toggleSave, fetchPins, fetchCreatorStats, reportProfile, blockUser } = usePins()
 
 const profileUser = ref<User | null>(null)
-const loading = ref(true)
+/** False dès qu'on peut afficher l'identité (cache RAM/disk, ou `currentUser` pour mon profil). Le reste charge en tâche de fond. */
+const loading = ref(false)
 /** Dernier code HTTP si le chargement `profiles/:user/` a échoué (ex. 403, 404). */
 const profileHttpStatus = ref<number | undefined>(undefined)
 /** Profil masqué par blocage mutuel (API `user_blocked`). */
@@ -101,6 +114,15 @@ const profilePinsNextPage = ref(1)
 
 async function loadProfilePins(username: string, reset: boolean) {
   if (reset) {
+    const pinsCacheKey = profileCreatedPinsCacheKey(username, currentLang.value)
+    const warmPins = getCachedProfileCreatedFirstPage(pinsCacheKey)
+    if (warmPins) {
+      profilePins.value = warmPins.pins
+      profilePinsHasMore.value = warmPins.hasMore
+      profilePinsNextPage.value = warmPins.nextPage
+      profilePinsLoading.value = false
+      return
+    }
     profilePins.value = []
     profilePinsNextPage.value = 1
     profilePinsHasMore.value = true
@@ -124,6 +146,15 @@ async function loadProfilePins(username: string, reset: boolean) {
     const hasMore = !!res.data.next
     profilePinsHasMore.value = hasMore && batch.length > 0
     if (hasMore && batch.length > 0) profilePinsNextPage.value = page + 1
+
+    if (reset && page === 1) {
+      setCachedProfileCreatedFirstPage(
+        profileCreatedPinsCacheKey(username, currentLang.value),
+        [...profilePins.value],
+        profilePinsHasMore.value,
+        profilePinsNextPage.value,
+      )
+    }
   } catch (err) {
     console.error('Erreur chargement pins du profil:', err)
     if (reset) profilePins.value = []
@@ -215,6 +246,11 @@ const pendingInvitesLoading = ref(false)
 const profileBoardsLoading = ref(false)
 const collaboratorInviteOpen = ref(false)
 const collaboratorInviteBoardId = ref<number | null>(null)
+const collaboratorInviteDisambiguation = ref<Array<{ username: string; display_name: string }>>([])
+
+watch(collaboratorInviteOpen, (open) => {
+  if (!open) collaboratorInviteDisambiguation.value = []
+})
 
 async function loadPendingBoardInvites() {
   if (!currentUser.value || !isMyProfile.value) {
@@ -258,7 +294,6 @@ async function handleDeclineBoardInvite(inv: BoardInviteRow) {
 }
 
 const loadProfile = async () => {
-  loading.value = true
   resetSavedPinsState()
   profileBoardsLoading.value = false
   const shareQuery = typeof route.query.share === 'string' ? route.query.share : ''
@@ -267,12 +302,22 @@ const loadProfile = async () => {
   profileHttpStatus.value = undefined
   profileLoadBlocked.value = false
 
+  /** Hydrate `currentUser` une fois si JWT présent — nécessaire pour savoir si `/profile/:user` est « mon » profil. */
+  const hasToken =
+    typeof window !== 'undefined' && !!window.localStorage.getItem('pinova_token')
+  if (hasToken && !currentUser.value) {
+    loading.value = true
+    await fetchCurrentUser({ silent: true }).catch(() => undefined)
+  }
+
   /** Mon profil sans lien de partage secret : `me/` + boards, pas `profiles/:user/`. */
   const useLocalOwnProfile =
     !route.params.username ||
     (!!currentUser.value &&
       route.params.username === currentUser.value.username &&
       !profileShareOpts)
+
+  let hasImmediateHeader = false
 
   if (useLocalOwnProfile) {
     if (!currentUser.value) {
@@ -281,36 +326,57 @@ const loadProfile = async () => {
       void router.replace({ name: 'login', query: { redirect: '/profile' } })
       return
     }
-    const cuOwn = currentUser.value
-    profileUser.value = cuOwn
-    profileBoardsLoading.value = true
-    try {
-      /** `GET me/` inclut déjà `me_boards_page` (page 1) avec les boards mappés — pas de 2e requête boards. */
-      const boardsFromMeBundle =
-        cuOwn.meCreatedPinsPage != null || cuOwn.meSavedPinsPage != null
-      if (!boardsFromMeBundle) {
-        const myBoards = await fetchMyBoards()
-        profileUser.value.boards = myBoards.map((board: any) => ({
-          id: board.id,
-          name: board.name,
-          pinCount: board.pin_count ?? board.pinCount ?? 0,
-          isPrivate: board.is_private ?? board.isPrivate ?? false,
-          isOwner: board.is_owner !== false,
-          ownerUsername:
-            board.owner_username ?? board.ownerUsername ?? profileUser.value?.username,
-          collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
-          previewImages: board.preview_images ?? board.previewImages ?? [],
-          shareToken: board.share_token ?? board.shareToken ?? undefined,
-        }))
-      }
-    } catch (err) {
-      console.error('Erreur chargement tableaux:', err)
-    } finally {
+    profileUser.value = currentUser.value
+    hasImmediateHeader = true
+  } else {
+    const usernameParam = String(route.params.username || '').trim()
+    const cachedUser = getCachedProfileUser(profileDetailCacheKey(usernameParam, shareQuery))
+    if (cachedUser) {
+      profileUser.value = cachedUser
+      hasImmediateHeader = true
+    } else {
+      profileUser.value = null
+    }
+  }
+
+  loading.value = !hasImmediateHeader
+
+  if (useLocalOwnProfile) {
+    const cuOwn = currentUser.value!
+    const boardsFromMeBundle =
+      cuOwn.meCreatedPinsPage != null || cuOwn.meSavedPinsPage != null
+    const alreadyHasBoards = Array.isArray(cuOwn.boards) && cuOwn.boards.length > 0
+
+    if (boardsFromMeBundle || alreadyHasBoards) {
       profileBoardsLoading.value = false
+    } else {
+      profileBoardsLoading.value = true
+      try {
+        const myBoards = await fetchMyBoards()
+        if (profileUser.value) {
+          profileUser.value.boards = myBoards.map((board: any) => ({
+            id: board.id,
+            name: board.name,
+            pinCount: board.pin_count ?? board.pinCount ?? 0,
+            isPrivate: board.is_private ?? board.isPrivate ?? false,
+            isOwner: board.is_owner !== false,
+            ownerUsername:
+              board.owner_username ?? board.ownerUsername ?? profileUser.value?.username,
+            collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
+            previewImages: board.preview_images ?? board.previewImages ?? [],
+            shareToken: board.share_token ?? board.shareToken ?? undefined,
+          }))
+        }
+      } catch (err) {
+        console.error('Erreur chargement tableaux:', err)
+      } finally {
+        profileBoardsLoading.value = false
+      }
     }
     isFollowing.value = false
   } else {
-    const result = await fetchUserProfile(route.params.username as string, profileShareOpts)
+    const usernameParam = String(route.params.username || '').trim()
+    const result = await fetchUserProfile(usernameParam, profileShareOpts)
     profileUser.value = result.user
     profileHttpStatus.value = result.httpStatus
     profileLoadBlocked.value = !!result.blocked
@@ -351,6 +417,12 @@ const loadProfile = async () => {
       profilePinsHasMore.value = !!cu!.meCreatedPinsPage!.next
       profilePinsNextPage.value = profilePinsHasMore.value ? 2 : 1
       profilePinsLoading.value = false
+      setCachedProfileCreatedFirstPage(
+        profileCreatedPinsCacheKey(uname, currentLang.value),
+        [...profilePins.value],
+        profilePinsHasMore.value,
+        profilePinsNextPage.value,
+      )
     } else {
       await loadProfilePins(uname, true)
     }
@@ -570,7 +642,12 @@ watch([activeTab, () => displayPins.value.length, profilePinsHasMore, savedPinsH
   nextTick(() => attachInfiniteScroll())
 })
 
-onUnmounted(() => disconnectInfiniteScroll())
+onUnmounted(() => {
+  disconnectInfiniteScroll()
+  setMobileProfileTrailing(null)
+  organizeTouchDragging.value = false
+  organizeTouchFrom.value = null
+})
 
 const boards = computed(() => profileUser.value?.boards ?? [])
 const currentPlan = computed<'free' | 'plus' | 'pro'>(() => {
@@ -582,6 +659,31 @@ const currentPlanLabel = computed(() => {
   if (plan === 'plus') return 'PLUS'
   return 'FREE'
 })
+const profileNavDrawerOpen = ref(false)
+
+watch(
+  () =>
+    ({
+      routeName: route.name,
+      mine: isMyProfile.value,
+      loggedIn: !!currentUser.value,
+    }) as const,
+  ({ routeName, mine, loggedIn }) => {
+    if (routeName !== 'profile' || !mine || !loggedIn) {
+      setMobileProfileTrailing(null)
+      return
+    }
+    setMobileProfileTrailing({
+      ariaLabel: t('header.nav.more'),
+      icon: 'menu',
+      onClick: () => {
+        profileNavDrawerOpen.value = true
+      },
+    })
+  },
+  { immediate: true },
+)
+
 const boardLimits = computed(() => {
   if (currentPlan.value === 'pro') return { private: Number.POSITIVE_INFINITY, public: Number.POSITIVE_INFINITY }
   if (currentPlan.value === 'plus') return { private: 10, public: Number.POSITIVE_INFINITY }
@@ -676,7 +778,7 @@ const handleToggleSave = async (slug: string) => {
 }
 
 const openPin = (slug: string) => {
-  router.push(`/pin/${slug}`)
+  router.push({ path: route.path, query: { ...route.query, pin: slug } })
 }
 
 function onPinDeletedFromGrid(slug: string) {
@@ -733,7 +835,9 @@ async function submitBoardCollaboratorInvite(usernameRaw: string) {
   if (!boardId || !username) return
   try {
     const result = await addBoardCollaborator(boardId, username)
+    collaboratorInviteOpen.value = false
     collaboratorInviteBoardId.value = null
+    collaboratorInviteDisambiguation.value = []
     if ((result as { status?: string })?.status === 'invited') {
       await showAlert(t('profile.boards.inviteSent'), { variant: 'success' })
     } else {
@@ -745,8 +849,21 @@ async function submitBoardCollaboratorInvite(usernameRaw: string) {
     }
   } catch (err: unknown) {
     console.error('Erreur invitation collaborateur:', err)
-    const ax = err as { response?: { data?: { error?: string } } }
-    await showAlert(ax.response?.data?.error || t('profile.boards.inviteError'), {
+    const ax = err as {
+      response?: {
+        data?: {
+          code?: string
+          candidates?: Array<{ username: string; display_name: string }>
+          error?: string
+        }
+      }
+    }
+    const d = ax.response?.data
+    if (d?.code === 'ambiguous_display_name' && Array.isArray(d.candidates) && d.candidates.length) {
+      collaboratorInviteDisambiguation.value = d.candidates
+      return
+    }
+    await showAlert(d?.error || t('profile.boards.inviteError'), {
       variant: 'danger',
       title: t('modal.errorTitle'),
     })
@@ -807,6 +924,8 @@ const organizePins = ref<
 const organizeLoading = ref(false)
 const organizeSaving = ref(false)
 const dragOrganizeIndex = ref<number | null>(null)
+const organizeTouchDragging = ref(false)
+const organizeTouchFrom = ref<number | null>(null)
 
 async function loadActiveStories() {
   if (!currentUser.value || !profileUser.value?.username) {
@@ -832,6 +951,8 @@ async function loadBoardSuggestions() {
 }
 
 async function openOrganizeBoard(boardId: number) {
+  organizeTouchDragging.value = false
+  organizeTouchFrom.value = null
   organizeBoardId.value = boardId
   organizeLoading.value = true
   organizePins.value = []
@@ -842,14 +963,80 @@ async function openOrganizeBoard(boardId: number) {
   } catch (err) {
     console.error(err)
     organizeBoardId.value = null
+    organizeTouchDragging.value = false
+    organizeTouchFrom.value = null
   } finally {
     organizeLoading.value = false
   }
 }
 
 function closeOrganizeBoard() {
+  organizeTouchDragging.value = false
+  organizeTouchFrom.value = null
+  dragOrganizeIndex.value = null
   organizeBoardId.value = null
   organizePins.value = []
+}
+
+function onOrganizeSheetOpenUpdate(open: boolean) {
+  if (!open) closeOrganizeBoard()
+}
+
+function endOrganizeTouchDragFromRowProfile(e: PointerEvent) {
+  const el = e.currentTarget
+  if (el instanceof HTMLElement) {
+    try {
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
+    } catch {
+      /* */
+    }
+  }
+  organizeTouchDragging.value = false
+  organizeTouchFrom.value = null
+}
+
+function onOrganizeHandlePointerDownProfile(e: PointerEvent, idx: number) {
+  if (e.pointerType === 'mouse') return
+  organizeTouchDragging.value = true
+  organizeTouchFrom.value = idx
+  const row = (e.currentTarget as HTMLElement | null)?.closest?.('[data-organize-index]') ?? null
+  if (row instanceof HTMLElement) {
+    try {
+      row.setPointerCapture(e.pointerId)
+    } catch {
+      /* */
+    }
+  }
+}
+
+function reorderOrganizePinRowsProfile(from: number, to: number) {
+  if (from === to) return
+  const arr = [...organizePins.value]
+  const moved = arr.splice(from, 1)[0]
+  if (moved === undefined) return
+  arr.splice(to, 0, moved)
+  organizePins.value = arr
+}
+
+function onOrganizeRowPointerMoveProfile(e: PointerEvent) {
+  if (!organizeTouchDragging.value || organizeTouchFrom.value === null) return
+  if (e.cancelable) e.preventDefault()
+  const el = document.elementFromPoint(e.clientX, e.clientY)
+  const row = el?.closest('[data-organize-index]') as HTMLElement | null
+  const raw = row?.dataset.organizeIndex
+  if (raw === undefined) return
+  const to = Number.parseInt(raw, 10)
+  if (!Number.isFinite(to)) return
+  const from = organizeTouchFrom.value
+  if (from === to) return
+  reorderOrganizePinRowsProfile(from, to)
+  organizeTouchFrom.value = to
+}
+
+function onOrganizeRowPointerUpProfile(e: PointerEvent) {
+  if (organizeTouchDragging.value) {
+    endOrganizeTouchDragFromRowProfile(e)
+  }
 }
 
 async function saveBoardOrder() {
@@ -870,23 +1057,31 @@ async function saveBoardOrder() {
   }
 }
 
-function onOrganizeDragStart(index: number) {
+function onOrganizeDragStart(index: number, event: DragEvent) {
   dragOrganizeIndex.value = index
+  try {
+    event.dataTransfer?.setData('text/plain', `pinova-organize:${index}`)
+    event.dataTransfer?.setData('application/x-pinova-board-organize', String(index))
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+  } catch {
+    /* ignore */
+  }
+}
+
+function onOrganizeDragEnd() {
+  dragOrganizeIndex.value = null
 }
 
 function onOrganizeDragOver(event: DragEvent) {
   event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
 }
 
 function onOrganizeDrop(index: number) {
   const from = dragOrganizeIndex.value
   dragOrganizeIndex.value = null
   if (from === null || from === index) return
-  const arr = [...organizePins.value]
-  const moved = arr.splice(from, 1)[0]
-  if (moved === undefined) return
-  arr.splice(index, 0, moved)
-  organizePins.value = arr
+  reorderOrganizePinRowsProfile(from, index)
 }
 
 function applyBoardSuggestionName(name: string) {
@@ -998,18 +1193,24 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
   </div>
 
   <div v-else-if="profileUser" class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <ProfileMobileNavDrawer
+      v-if="currentUser && isMyProfile"
+      v-model="profileNavDrawerOpen"
+      @create-pin="openMobileCreateChooser"
+    />
+
     <!-- Profile header -->
     <section class="flex flex-col items-center text-center mb-10 w-full">
       <button
         v-if="currentUser && activeStories.length > 0"
         type="button"
-        class="relative mb-4 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
+        class="relative mb-4 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600 focus-visible:ring-offset-2"
         :aria-label="t('profile.stories.openRing')"
         @click="openStoryViewer()"
       >
         <span
           v-if="!profileStoryRingAllCaughtUp"
-          class="absolute -inset-1 rounded-full bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500 p-[3px]"
+          class="absolute -inset-1 rounded-full bg-gradient-to-tr from-pink-700 dark:from-pink-600 via-amber-400 to-violet-500 p-[3px]"
           aria-hidden="true"
         />
         <span
@@ -1040,18 +1241,18 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         <span v-else class="avatar-text">{{ displayInitials(profileUser.displayName) }}</span>
       </AvatarDisc>
 
-      <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">
-        <span v-if="profileUser.subscription?.plan === 'pro'" class="material-symbols-outlined text-amber-500 text-base align-middle mr-1">verified</span>
+      <h1 class="text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-1">
+        <span
+          v-if="profileUser.subscription?.plan === 'pro'"
+          class="inline-block align-middle mr-1 text-blue-500"
+          role="img"
+          :aria-label="t('profile.proBadgeAria')"
+        >
+          <i class="fa-solid fa-certificate text-base leading-none" aria-hidden="true"></i>
+        </span>
         {{ profileUser.displayName }}
       </h1>
-      <div
-        v-if="isMyProfile && currentPlan === 'pro'"
-        class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold mb-2"
-      >
-        <span class="material-symbols-outlined text-sm">verified</span>
-        Badge Créateur certifié
-      </div>
-      <p class="text-neutral-500 text-sm mb-3">@{{ profileUser.username }}</p>
+      <p class="text-neutral-500 dark:text-neutral-400 text-sm mb-3">@{{ profileUser.username }}</p>
 
       <p v-if="profileUser.bio" class="text-neutral-600 dark:text-neutral-300 text-sm max-w-md mx-auto mb-4 px-1">
         {{ profileUser.bio }}
@@ -1063,11 +1264,11 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       <div
         class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 px-1"
       >
-        <button class="hover:text-pink-600 dark:hover:text-pink-400 transition" @click="openFollowersModal">
+        <button class="hover:text-pink-800 dark:hover:text-pink-800 transition" @click="openFollowersModal">
           <strong class="text-neutral-900 dark:text-neutral-100">{{ profileUser.followers }}</strong> {{ t('profile.followers') }}
         </button>
         <span class="w-1 h-1 rounded-full bg-neutral-300 dark:bg-neutral-600 shrink-0" aria-hidden="true"></span>
-        <button class="hover:text-pink-600 dark:hover:text-pink-400 transition" @click="openFollowingModal">
+        <button class="hover:text-pink-800 dark:hover:text-pink-800 transition" @click="openFollowingModal">
           <strong class="text-neutral-900 dark:text-neutral-100">{{ profileUser.following }}</strong> {{ t('profile.following') }}
         </button>
         <span class="w-1 h-1 rounded-full bg-neutral-300 dark:bg-neutral-600 shrink-0" aria-hidden="true"></span>
@@ -1134,21 +1335,21 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     </section>
 
     <section class="mb-10" v-if="boards.length > 0 || isMyProfile">
-      <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">{{ t('profile.boards') }}</h2>
+      <h2 class="text-lg font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-4">{{ t('profile.boards') }}</h2>
 
       <div
         v-if="isMyProfile && boardSuggestions && (boardSuggestions.new_board_hints?.length || boardSuggestions.existing_boards?.length)"
-        class="app-card mb-4 rounded-2xl p-4"
+        class="hidden lg:block app-card mb-4 rounded-2xl p-4"
       >
-        <p class="text-xs font-semibold text-neutral-800 mb-2">{{ t('profile.boards.suggestionsTitle') }}</p>
+        <p class="text-xs font-semibold text-neutral-800 dark:text-neutral-100 mb-2">{{ t('profile.boards.suggestionsTitle') }}</p>
         <div v-if="boardSuggestions.new_board_hints?.length" class="mb-3">
-          <p class="text-[11px] text-neutral-500 mb-1">{{ t('profile.boards.suggestionsNew') }}</p>
+          <p class="text-[11px] text-neutral-500 dark:text-neutral-400 mb-1">{{ t('profile.boards.suggestionsNew') }}</p>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="hint in boardSuggestions.new_board_hints"
               :key="hint.topic_slug + hint.name"
               type="button"
-              class="app-btn app-btn-sm app-btn-secondary text-xs border-pink-300 text-pink-700 dark:text-pink-300"
+              class="app-btn app-btn-sm app-btn-secondary text-xs border-pink-300 text-pink-700 dark:text-pink-600"
               @click="applyBoardSuggestionName(hint.name)"
             >
               + {{ hint.name }}
@@ -1156,7 +1357,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           </div>
         </div>
         <div v-if="boardSuggestions.existing_boards?.length">
-          <p class="text-[11px] text-neutral-500 mb-1">{{ t('profile.boards.suggestionsExisting') }}</p>
+          <p class="text-[11px] text-neutral-500 dark:text-neutral-400 mb-1">{{ t('profile.boards.suggestionsExisting') }}</p>
           <div class="flex flex-wrap gap-2">
             <span
               v-for="b in boardSuggestions.existing_boards"
@@ -1207,20 +1408,29 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         </ul>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" v-if="profileBoardsLoading && isMyProfile">
+      <div class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 scroll-smooth" v-if="profileBoardsLoading && isMyProfile">
         <div
           v-for="i in 4"
           :key="'bsk-' + i"
-          class="rounded-2xl aspect-[4/3] bg-neutral-200 animate-pulse"
+          class="shrink-0 w-56 sm:w-64 rounded-2xl aspect-[4/3] bg-neutral-200 dark:bg-neutral-700 animate-pulse"
           aria-hidden="true"
         />
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" v-else>
+      <div class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 scroll-smooth" v-else>
+        <!-- Create new board (positioned first) -->
+        <button
+          v-if="isMyProfile"
+          class="app-card-soft shrink-0 w-56 sm:w-64 snap-start border-2 border-dashed rounded-2xl aspect-[4/3] flex flex-col items-center justify-center gap-2 app-text-muted hover:border-pink-300 hover:text-pink-800 transition"
+          @click="showCreateBoard = true"
+        >
+          <span class="material-symbols-outlined text-3xl">add</span>
+          <span class="text-sm font-medium">{{ t('profile.boards.new') }}</span>
+        </button>
         <div
           v-for="board in boards"
           :key="board.id"
-          class="app-card app-card-hover group relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer transition ring-1 ring-black/5"
+          class="app-card app-card-hover group relative shrink-0 w-56 sm:w-64 snap-start rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer transition ring-1 ring-black/5 dark:ring-white/5"
           role="button"
           tabindex="0"
           @click="goToBoard(board)"
@@ -1293,104 +1503,132 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           </button>
         </div>
 
-        <!-- Create new board -->
-        <button
-          v-if="isMyProfile"
-          class="app-card-soft border-2 border-dashed rounded-2xl aspect-[4/3] flex flex-col items-center justify-center gap-2 app-text-muted hover:border-pink-300 hover:text-pink-500 transition"
-          @click="showCreateBoard = true"
-        >
-          <span class="material-symbols-outlined text-3xl">add</span>
-          <span class="text-sm font-medium">{{ t('profile.boards.new') }}</span>
-        </button>
       </div>
     </section>
 
-    <!-- Réorganiser pins du board -->
-    <div v-if="organizeBoardId !== null" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
-      <div class="app-modal-surface rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
-        <div class="px-5 py-4 border-b app-divider-subtle flex items-center justify-between">
-          <h3 class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ t('profile.boards.organizeTitle') }}</h3>
-          <button type="button" class="text-neutral-500 hover:text-neutral-800" @click="closeOrganizeBoard">
-            <span class="material-symbols-outlined">close</span>
-          </button>
+    <!-- Réorganiser pins du board — même PinovaModal que sur la page tableau -->
+    <PinovaModal
+      :open="organizeBoardId !== null"
+      presentation="tallSheet"
+      presentation-lg="center"
+      :presentation-lg-min-width="1280"
+      disable-gesture
+      :title="t('profile.boards.organizeTitle')"
+      @update:open="onOrganizeSheetOpenUpdate"
+    >
+      <template #headerEnd>
+        <button
+          type="button"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 hover:bg-black/[0.06] dark:text-neutral-300 dark:hover:bg-white/[0.08] transition"
+          :aria-label="t('common.close')"
+          @click="closeOrganizeBoard"
+        >
+          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+        </button>
+      </template>
+
+      <p class="text-xs app-text-muted -mt-1 mb-3">{{ t('profile.boards.organizeHint') }}</p>
+      <div class="min-h-[120px] touch-pan-y">
+        <div v-if="organizeLoading" class="min-h-[140px]">
+          <UserListSkeleton :rows="7" thumb="rounded" :divided="false" />
         </div>
-        <p class="text-xs text-neutral-500 px-5 pt-3">{{ t('profile.boards.organizeHint') }}</p>
-        <div class="flex-1 overflow-y-auto px-5 py-4 min-h-[120px]">
-          <div v-if="organizeLoading">
-            <UserListSkeleton :rows="6" thumb="rounded" :divided="false" />
-          </div>
-          <ul v-else class="space-y-2">
-            <li
-              v-for="(p, idx) in organizePins"
-              :key="p.id"
+        <ul v-else class="space-y-2 touch-pan-y">
+          <li
+            v-for="(p, idx) in organizePins"
+            :key="p.id"
+            :data-organize-index="idx"
+            class="lux-organize-row !cursor-default touch-pan-y"
+            :class="
+              organizeTouchDragging && organizeTouchFrom === idx
+                ? 'ring-2 ring-pink-700/45 dark:ring-pink-600/35 opacity-90'
+                : ''
+            "
+            @pointermove="onOrganizeRowPointerMoveProfile($event)"
+            @pointerup="onOrganizeRowPointerUpProfile($event)"
+            @pointercancel="onOrganizeRowPointerUpProfile($event)"
+            @dragover="onOrganizeDragOver($event)"
+            @dragenter.prevent="onOrganizeDragOver($event)"
+            @drop.prevent="onOrganizeDrop(idx)"
+          >
+            <img
+              :src="p.image"
+              alt=""
+              draggable="false"
+              class="w-12 h-12 shrink-0 rounded-lg object-cover bg-neutral-200 dark:bg-neutral-700 pointer-events-none"
+            />
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{{ p.title }}</p>
+              <p v-if="p.scheduled_publish_at" class="text-[10px] text-amber-700 dark:text-amber-400">{{ t('pin.scheduledBadge') }}</p>
+            </div>
+            <button
+              type="button"
               draggable="true"
-              class="app-card-soft flex items-center gap-3 p-2 rounded-xl cursor-grab active:cursor-grabbing"
-              @dragstart="onOrganizeDragStart(idx)"
-              @dragover="onOrganizeDragOver($event)"
-              @drop.prevent="onOrganizeDrop(idx)"
+              class="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl border-2 border-neutral-200/95 bg-gradient-to-b from-white to-neutral-50 text-neutral-500 shadow-sm touch-none cursor-grab select-none active:cursor-grabbing active:scale-[0.98] dark:border-neutral-600 dark:from-neutral-800 dark:to-neutral-900 dark:text-neutral-300 dark:shadow-black/20"
+              :aria-label="t('board.organizeDragHandle')"
+              @pointerdown.stop="onOrganizeHandlePointerDownProfile($event, idx)"
+              @dragstart.stop="onOrganizeDragStart(idx, $event)"
+              @dragend="onOrganizeDragEnd"
             >
-              <img :src="p.image" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0 bg-neutral-200" />
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-neutral-900 truncate">{{ p.title }}</p>
-                <p v-if="p.scheduled_publish_at" class="text-[10px] text-amber-700">{{ t('pin.scheduledBadge') }}</p>
-              </div>
-              <span class="material-symbols-outlined text-neutral-400 text-lg shrink-0">drag_indicator</span>
-            </li>
-          </ul>
-        </div>
-        <div class="px-5 py-4 border-t app-divider-subtle flex gap-2 justify-end">
-          <button type="button" class="px-4 py-2 rounded-full text-sm font-semibold bg-neutral-100 text-neutral-800" @click="closeOrganizeBoard">
+              <span class="material-symbols-outlined text-[30px] leading-none" aria-hidden="true">drag_indicator</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <template #footer>
+        <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganizeBoard">
             {{ t('profile.boards.organizeClose') }}
           </button>
           <button
             type="button"
-            class="px-4 py-2 rounded-full text-sm font-semibold bg-pink-600 text-white disabled:opacity-50"
+            class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px] sm:min-w-[9rem] disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="organizeSaving || organizeLoading || organizePins.length === 0"
             @click="saveBoardOrder"
           >
             {{ organizeSaving ? t('common.loading') : t('profile.boards.organizeSave') }}
           </button>
         </div>
-      </div>
-    </div>
+      </template>
+    </PinovaModal>
 
     <section
       v-if="isMyProfile && currentPlan === 'pro'"
-      class="mb-10 bg-white rounded-2xl border border-amber-200 p-5 sm:p-6"
+      class="mb-10 rounded-2xl border border-amber-200/70 dark:border-amber-300/30 bg-white/70 dark:bg-neutral-900/55 backdrop-blur-xl shadow-sm p-5 sm:p-6"
     >
       <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 class="text-lg font-semibold text-neutral-900">{{ t('creator.profileStatsTitle') }}</h2>
+        <h2 class="text-lg font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ t('creator.profileStatsTitle') }}</h2>
         <div class="flex items-center gap-2 flex-wrap justify-end">
           <router-link
             to="/creator"
-            class="text-xs font-semibold text-pink-700 hover:text-pink-800 whitespace-nowrap"
+            class="text-xs font-semibold text-pink-700 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-300 whitespace-nowrap"
           >
             {{ t('creator.openDashboard') }} →
           </router-link>
-          <span class="text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-1 rounded-full">PRO</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-300 px-2 py-1 rounded-full">PRO</span>
         </div>
       </div>
       <CreatorStatsSkeleton v-if="creatorStatsLoading" />
       <div v-else class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
-        <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">{{ t('creator.kpiPins') }}</p>
-          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.pins ?? 0 }}</p>
+        <div class="rounded-xl bg-neutral-50/80 dark:bg-neutral-800/60 backdrop-blur-md ring-1 ring-black/5 dark:ring-white/5 py-3">
+          <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('creator.kpiPins') }}</p>
+          <p class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ creatorStats?.totals?.pins ?? 0 }}</p>
         </div>
-        <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">{{ t('creator.kpiViews') }}</p>
-          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.views ?? 0 }}</p>
+        <div class="rounded-xl bg-neutral-50/80 dark:bg-neutral-800/60 backdrop-blur-md ring-1 ring-black/5 dark:ring-white/5 py-3">
+          <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('creator.kpiViews') }}</p>
+          <p class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ creatorStats?.totals?.views ?? 0 }}</p>
         </div>
-        <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">{{ t('creator.kpiSaves') }}</p>
-          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.saves ?? 0 }}</p>
+        <div class="rounded-xl bg-neutral-50/80 dark:bg-neutral-800/60 backdrop-blur-md ring-1 ring-black/5 dark:ring-white/5 py-3">
+          <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('creator.kpiSaves') }}</p>
+          <p class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ creatorStats?.totals?.saves ?? 0 }}</p>
         </div>
-        <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">{{ t('creator.kpiLikes') }}</p>
-          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.likes ?? 0 }}</p>
+        <div class="rounded-xl bg-neutral-50/80 dark:bg-neutral-800/60 backdrop-blur-md ring-1 ring-black/5 dark:ring-white/5 py-3">
+          <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('creator.kpiLikes') }}</p>
+          <p class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ creatorStats?.totals?.likes ?? 0 }}</p>
         </div>
-        <div class="rounded-xl bg-neutral-50 py-3">
-          <p class="text-xs text-neutral-500">{{ t('creator.kpiComments') }}</p>
-          <p class="text-lg font-bold text-neutral-900">{{ creatorStats?.totals?.comments ?? 0 }}</p>
+        <div class="rounded-xl bg-neutral-50/80 dark:bg-neutral-800/60 backdrop-blur-md ring-1 ring-black/5 dark:ring-white/5 py-3">
+          <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('creator.kpiComments') }}</p>
+          <p class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ creatorStats?.totals?.comments ?? 0 }}</p>
         </div>
       </div>
     </section>
@@ -1406,7 +1644,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               v-model="newBoardName"
               type="text"
               :placeholder="t('profile.boards.modal.namePlaceholder')"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
+              class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 transition"
             />
           </div>
           <div class="flex items-center gap-3">
@@ -1414,7 +1652,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               v-model="newBoardPrivate"
               type="checkbox"
               id="is_private"
-              class="w-5 h-5 accent-pink-600 rounded cursor-pointer"
+              class="w-5 h-5 accent-pink-700 dark:accent-pink-600 rounded cursor-pointer"
               :disabled="isPrivateLimitReached"
             />
             <label for="is_private" class="text-sm text-neutral-700 cursor-pointer">
@@ -1443,8 +1681,9 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </div>
     </div>
 
-      <div v-if="showFollowersModal || showFollowingModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 app-modal-backdrop">
-      <div class="app-modal-surface rounded-2xl w-full max-w-md overflow-hidden">
+      <div v-if="showFollowersModal || showFollowingModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:px-4 app-modal-backdrop" @click.self="showFollowersModal = false; showFollowingModal = false">
+      <div class="app-modal-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] sm:max-h-[80vh] flex flex-col">
+        <div class="sm:hidden mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-neutral-300 dark:bg-neutral-600" aria-hidden="true" />
         <div class="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <h3 class="font-semibold text-neutral-900 dark:text-neutral-100">
             {{ showFollowersModal ? t('profile.followers') : t('profile.following') }}
@@ -1453,7 +1692,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
-        <div class="max-h-96 overflow-y-auto">
+        <div class="flex-1 overflow-y-auto">
           <template v-if="relationsLoading">
             <UserListSkeleton :rows="10" />
           </template>
@@ -1492,7 +1731,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     <!-- Tabs -->
     <div class="flex items-center justify-center gap-1 mb-6 border-b border-neutral-100 dark:border-neutral-800">
       <button
-        class="px-6 py-3 text-sm font-auth-title transition-colors border-b-2"
+        class="px-4 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-auth-title transition-colors border-b-2"
         :class="activeTab === 'created'
           ? 'font-auth-title--black border-neutral-900 dark:border-neutral-200 text-neutral-900 dark:text-neutral-100'
           : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'"
@@ -1502,7 +1741,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </button>
       <button
         v-if="isMyProfile"
-        class="px-6 py-3 text-sm font-auth-title transition-colors border-b-2"
+        class="px-4 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-auth-title transition-colors border-b-2"
         :class="activeTab === 'saved'
           ? 'font-auth-title--black border-neutral-900 dark:border-neutral-200 text-neutral-900 dark:text-neutral-100'
           : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'"
@@ -1537,14 +1776,14 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       <router-link
         v-if="activeTab === 'created'"
         to="/create"
-        class="px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition"
+        class="px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition"
       >
         {{ t('home.createPin') }}
       </router-link>
       <router-link
         v-else
         to="/explore"
-        class="px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition"
+        class="px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition"
       >
         {{ t('nav.explore') }}
       </router-link>
@@ -1556,6 +1795,8 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       class="w-full py-6 min-h-[40px]"
       aria-hidden="true"
     />
+
+    <PinDetailOverlayHost :pins="displayPins" />
 
     <StoryViewer
       v-if="currentUser && activeStories.length > 0"
@@ -1604,6 +1845,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       :title="t('profile.boards.invitePromptTitle')"
       :message="t('profile.boards.inviteSearchMessage')"
       :input-placeholder="t('profile.boards.invitePlaceholder')"
+      :disambiguation-rows="collaboratorInviteDisambiguation"
       @pick="onCollaboratorInvitePick"
     />
 
@@ -1616,12 +1858,12 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
   <div v-else class="w-full min-w-0 max-w-md mx-auto px-6 py-20 text-center space-y-4">
     <span class="material-symbols-outlined text-6xl text-neutral-300">person_off</span>
-    <h1 class="text-xl font-bold text-neutral-900 dark:text-neutral-100">{{ profileUnavailableTitle }}</h1>
+    <h1 class="text-xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ profileUnavailableTitle }}</h1>
     <p class="text-sm text-neutral-600 leading-relaxed">{{ profileUnavailableDesc }}</p>
     <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
       <router-link
         to="/"
-        class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition"
+        class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition"
       >
         {{ t('profile.unavailable.goHome') }}
       </router-link>

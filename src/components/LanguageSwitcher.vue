@@ -89,7 +89,7 @@ function toggle() {
             class="app-menu-item w-full flex items-center gap-3 px-4 py-2.5 transition text-sm"
             :class="
               currentLangMeta.code === lang.code
-                ? 'is-active text-pink-600 dark:text-pink-300 font-semibold'
+                ? 'is-active text-pink-700 dark:text-pink-600 font-semibold'
                 : 'text-neutral-700 dark:text-neutral-200'
             "
             @click="select(lang.code)"
@@ -98,7 +98,7 @@ function toggle() {
             <span class="flex-1 text-left">{{ lang.label }}</span>
             <span
               v-if="currentLangMeta.code === lang.code"
-              class="material-symbols-outlined text-base text-pink-600"
+              class="material-symbols-outlined text-base text-pink-700"
             >
               check
             </span>

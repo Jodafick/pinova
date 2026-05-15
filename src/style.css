@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Tokens canoniques 1:1 avec `Pinova-Mobile/src/theme/tokens.ts` — préfixe `--pn-*`. */
+@import "./theme/tokens.css";
 
 /** Thème sombre : classe `dark` sur `<html>` (paramètres Pinova). */
 @variant dark (.dark &);
@@ -85,64 +87,75 @@
 }
 
 .dark {
-  --input-bg: rgb(38 38 43);
-  --input-border: rgb(82 82 91 / 0.9);
-  --input-text: rgb(244 244 245);
-  --input-placeholder: rgb(161 161 170);
-  --input-hover-border: rgb(113 113 122 / 0.95);
+  /* Fond champs / surfaces : proche noir OLED, bordures discrètes (plus « gris zinc »). */
+  --input-bg: rgb(10 10 13);
+  --input-border: rgb(42 42 52 / 0.92);
+  --input-text: rgb(244 244 246);
+  --input-placeholder: rgb(130 130 145);
+  --input-hover-border: rgb(58 58 72 / 0.95);
   --input-focus-border: rgb(244 114 182 / 0.85);
-  --input-focus-ring: rgb(244 114 182 / 0.25);
-  --input-disabled-bg: rgb(30 30 34);
-  --input-disabled-border: rgb(63 63 70 / 0.8);
-  --input-disabled-text: rgb(113 113 122);
-  --btn-primary-bg: rgb(244 114 182);
+  --input-focus-ring: rgb(244 114 182 / 0.22);
+  --input-disabled-bg: rgb(8 8 11);
+  --input-disabled-border: rgb(40 40 50 / 0.75);
+  --input-disabled-text: rgb(100 100 118);
+  --btn-primary-bg: rgb(219 39 119);
   --btn-primary-bg-hover: rgb(236 72 153);
-  --btn-primary-bg-active: rgb(219 39 119);
+  --btn-primary-bg-active: rgb(190 24 93);
   --btn-primary-text: rgb(255 255 255);
-  --btn-primary-border: rgb(244 114 182 / 0.9);
-  --btn-secondary-bg: rgb(39 39 42);
-  --btn-secondary-bg-hover: rgb(63 63 70);
-  --btn-secondary-bg-active: rgb(82 82 91);
-  --btn-secondary-text: rgb(244 244 245);
-  --btn-secondary-border: rgb(82 82 91 / 0.95);
+  --btn-primary-border: rgb(190 24 93 / 0.9);
+  --btn-secondary-bg: rgb(14 14 18);
+  --btn-secondary-bg-hover: rgb(24 24 30);
+  --btn-secondary-bg-active: rgb(32 32 40);
+  --btn-secondary-text: rgb(244 244 246);
+  --btn-secondary-border: rgb(48 48 58 / 0.95);
   --btn-ghost-bg: transparent;
-  --btn-ghost-bg-hover: rgb(63 63 70 / 0.9);
-  --btn-ghost-bg-active: rgb(82 82 91 / 0.95);
-  --btn-ghost-text: rgb(228 228 231);
-  --btn-ghost-border: rgb(82 82 91 / 0.85);
+  --btn-ghost-bg-hover: rgb(24 24 30 / 0.95);
+  --btn-ghost-bg-active: rgb(34 34 42 / 0.95);
+  --btn-ghost-text: rgb(214 214 224);
+  --btn-ghost-border: rgb(48 48 58 / 0.75);
   --btn-danger-bg: rgb(251 113 133);
   --btn-danger-bg-hover: rgb(244 63 94);
   --btn-danger-bg-active: rgb(225 29 72);
   --btn-danger-text: rgb(255 255 255);
   --btn-danger-border: rgb(251 113 133 / 0.95);
-  --btn-disabled-bg: rgb(39 39 42);
-  --btn-disabled-border: rgb(63 63 70);
-  --btn-disabled-text: rgb(113 113 122);
-  --surface-floating-bg: rgb(34 34 39 / 0.96);
-  --surface-floating-border: rgb(82 82 91 / 0.9);
-  --surface-floating-shadow: 0 22px 46px -18px rgb(0 0 0 / 0.5);
-  --surface-floating-item-hover: rgb(63 63 70 / 0.82);
-  --surface-floating-item-active: rgb(91 42 67 / 0.65);
-  --surface-modal-bg: rgb(32 30 36 / 0.97);
-  --surface-modal-border: rgb(82 82 91 / 0.88);
-  --surface-modal-shadow: 0 44px 84px -28px rgb(0 0 0 / 0.58);
-  --surface-backdrop: rgb(28 25 32 / 0.66);
-  --card-bg: rgb(37 37 42 / 0.96);
-  --card-bg-soft: rgb(44 44 50 / 0.9);
-  --card-border: rgb(82 82 91 / 0.86);
-  --card-divider: rgb(82 82 91 / 0.72);
-  --card-shadow: 0 16px 38px -20px rgb(0 0 0 / 0.48);
-  --card-shadow-hover: 0 24px 46px -22px rgb(0 0 0 / 0.56);
-  --card-text: rgb(244 244 245);
-  --card-text-muted: rgb(196 196 204);
-  --skeleton-base: rgb(63 63 70);
-  --skeleton-base-soft: rgb(82 82 91);
+  --btn-disabled-bg: rgb(12 12 16);
+  --btn-disabled-border: rgb(40 40 50);
+  --btn-disabled-text: rgb(95 95 110);
+  --surface-floating-bg: rgb(8 8 11 / 0.94);
+  --surface-floating-border: rgb(44 44 54 / 0.88);
+  --surface-floating-shadow: 0 28px 56px -22px rgb(0 0 0 / 0.72);
+  --surface-floating-item-hover: rgb(28 28 36 / 0.92);
+  --surface-floating-item-active: rgb(72 22 48 / 0.55);
+  --surface-modal-bg: rgb(6 6 9 / 0.94);
+  --surface-modal-border: rgb(44 44 54 / 0.85);
+  --surface-modal-shadow: 0 48px 96px -32px rgb(0 0 0 / 0.72);
+  --surface-backdrop: rgb(0 0 0 / 0.78);
+  --card-bg: rgb(10 10 13 / 0.97);
+  --card-bg-soft: rgb(16 16 20 / 0.94);
+  --card-border: rgb(44 44 54 / 0.82);
+  --card-divider: rgb(40 40 50 / 0.75);
+  --card-shadow: 0 20px 44px -22px rgb(0 0 0 / 0.62);
+  --card-shadow-hover: 0 28px 56px -24px rgb(0 0 0 / 0.72);
+  --card-text: rgb(244 244 246);
+  --card-text-muted: rgb(154 154 172);
+  --skeleton-base: rgb(28 28 34);
+  --skeleton-base-soft: rgb(36 36 44);
   --skeleton-shimmer: linear-gradient(
     100deg,
     transparent 0%,
-    rgb(255 255 255 / 0.12) 38%,
+    rgb(255 255 255 / 0.06) 38%,
     transparent 72%
   );
+
+  /*
+   * Neutres Tailwind (700–950) : sous `html.dark`, les utilitaires
+   * `dark:bg-neutral-800` etc. pointent vers ces variables — on les tire vers
+   * un gris quasi noir pour éviter les panneaux « zinc 38 » trop clairs.
+   */
+  --color-neutral-700: oklch(0.2 0 0);
+  --color-neutral-800: oklch(0.145 0 0);
+  --color-neutral-900: oklch(0.105 0 0);
+  --color-neutral-950: oklch(0.065 0 0);
 }
 
 @layer base {
@@ -151,12 +164,44 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /*
+   * Fond page global (dégradé `--pn-feed-wash`) : fixe au viewport pendant le scroll.
+   * `body::before` évite les bugs iOS de `background-attachment: fixed` sur `html`.
+   */
   body {
-    @apply bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100;
+    @apply text-neutral-900 dark:text-neutral-100;
+    position: relative;
+    background: transparent;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 
-  button, 
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    /* Fixe au viewport ; sous #app (z-index:1) pour transparaître à travers la coque. */
+    z-index: 0;
+    pointer-events: none;
+    background: var(--pn-feed-wash);
+    background-color: var(--pn-bg-page);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    min-height: 100dvh;
+  }
+
+  .dark body {
+    background: transparent;
+    color: rgb(244 244 246);
+  }
+
+  #app {
+    @apply min-h-screen;
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+  }
+
+  button,
   [role="button"],
   a {
     cursor: pointer;
@@ -167,12 +212,8 @@
     cursor: default;
   }
 
-  #app {
-    @apply min-h-screen;
-  }
-
   ::selection {
-    @apply bg-pink-100 text-pink-900 dark:bg-pink-900 dark:text-pink-100;
+    @apply bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-600;
   }
 
   ::-webkit-scrollbar {
@@ -311,6 +352,17 @@
  * Pins, tableaux, modales — esthétique plus « premium » (ombres stratifiées, dégradés discrets).
  */
 @layer components {
+  .pinova-sticky-below-global-header {
+    top: var(
+      --pinova-global-header-h,
+      calc(3.5rem + env(safe-area-inset-top, 0px) + var(--pinova-pwa-extra-top-inset, 0px))
+    );
+  }
+
+  .pinova-header-chrome {
+    @apply bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md border-b border-neutral-200/80 dark:border-neutral-800/80;
+  }
+
   .lux-pin-card {
     @apply rounded-3xl overflow-hidden cursor-pointer;
     border: 1px solid rgb(228 228 231 / 0.45);
@@ -417,6 +469,22 @@
     background: linear-gradient(172deg, #ffffff 0%, #fcfcfd 60%, #f6f6f7 100%);
   }
 
+  .pin-detail-heart-burst {
+    position: absolute;
+    inset: 0;
+    z-index: 35;
+    display: grid;
+    place-items: center;
+    color: #f9a8d4;
+    text-shadow: 0 18px 50px rgb(0 0 0 / 0.55);
+  }
+
+  .pin-detail-heart-burst .material-symbols-outlined {
+    font-size: clamp(7rem, 34vw, 15rem);
+    line-height: 1;
+    animation: pin-detail-heart-pop 0.88s cubic-bezier(0.2, 0.88, 0.34, 1.02) forwards;
+  }
+
   .lux-btn-secondary {
     @apply inline-flex items-center justify-center gap-2 font-semibold text-neutral-800 text-sm;
     padding: 0.625rem 1.25rem;
@@ -481,7 +549,8 @@
 
   .lux-dropdown-panel {
     @apply fixed w-[min(240px,calc(100vw-1rem))] rounded-2xl py-1.5;
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px) saturate(1.12);
+    -webkit-backdrop-filter: blur(20px) saturate(1.12);
     background: rgb(255 255 255 / 0.94);
     border: 1px solid rgb(255 255 255 / 0.75);
     box-shadow:
@@ -659,6 +728,11 @@
     backdrop-filter: blur(14px);
   }
 
+  .dark .app-floating-panel {
+    backdrop-filter: saturate(200%) blur(22px);
+    -webkit-backdrop-filter: saturate(200%) blur(22px);
+  }
+
   .app-menu-item {
     color: var(--btn-ghost-text);
     transition: background-color 0.16s ease, color 0.16s ease;
@@ -681,9 +755,20 @@
     backdrop-filter: blur(16px);
   }
 
+  .dark .app-modal-surface {
+    backdrop-filter: saturate(200%) blur(28px);
+    -webkit-backdrop-filter: saturate(200%) blur(28px);
+  }
+
   .app-modal-backdrop {
     background: radial-gradient(circle at 35% -10%, rgb(244 114 182 / 0.2), transparent 44%), var(--surface-backdrop);
     backdrop-filter: blur(10px);
+  }
+
+  .dark .app-modal-backdrop {
+    background: radial-gradient(circle at 35% -10%, rgb(244 114 182 / 0.12), transparent 46%), var(--surface-backdrop);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
   }
 
   .app-card {
@@ -817,18 +902,20 @@
 }
 
 .dark .lux-btn-detail-saved {
-  background: #3f3f46;
-  border-color: rgb(82 82 91 / 0.8);
+  background: rgb(12 12 16);
+  border-color: rgb(48 48 58 / 0.85);
+  box-shadow: 0 10px 28px -6px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
 .dark .lux-btn-pin-save {
   background: #ec4899;
-  box-shadow: 0 8px 24px -10px rgb(236 72 153 / 0.55);
+  box-shadow: 0 8px 24px -10px rgb(236 72 153 / 0.5);
 }
 
 .dark .lux-btn-pin-save-saved {
-  background: #3f3f46;
-  border-color: rgb(82 82 91 / 0.8);
+  background: rgb(12 12 16);
+  border-color: rgb(48 48 58 / 0.88);
+  box-shadow: 0 8px 28px -4px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
 .dark .lux-icon-ring-btn {
@@ -851,6 +938,188 @@
     0 14px 36px -16px rgb(190 24 93 / 0.15);
 }
 
+@keyframes pin-detail-heart-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.28);
+    filter: blur(4px);
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1.14);
+    filter: blur(0);
+  }
+  48% {
+    transform: scale(0.9);
+  }
+  74% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+    filter: blur(1px);
+  }
+}
+
+@media (max-width: 1023px) {
+  .pin-detail-page-wrap {
+    max-width: none;
+    padding: 0;
+  }
+
+  .pin-detail-back {
+    position: fixed;
+    left: 0.875rem;
+    top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+    z-index: 60;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 999px;
+    color: white;
+    background: rgb(0 0 0 / 0.45);
+    border-color: rgb(255 255 255 / 0.12);
+    backdrop-filter: blur(12px);
+  }
+
+  .pin-detail-back .material-symbols-outlined {
+    font-size: 1.25rem;
+  }
+
+  .pin-detail-back {
+    font-size: 0;
+  }
+
+  .pin-detail-mobile-card {
+    position: relative;
+    min-height: 100svh;
+    border: 0;
+    border-radius: 0;
+    background: #060408;
+    box-shadow: none;
+  }
+
+  .pin-detail-media-pane {
+    position: absolute;
+    inset: 0;
+    min-height: 100svh;
+    max-height: none;
+    width: 100%;
+    background: #000;
+  }
+
+  .pin-detail-media-wrap {
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pin-detail-media {
+    width: 100%;
+    height: 100svh;
+    max-height: none;
+    object-fit: contain;
+    background: #000;
+  }
+
+  .pin-detail-info-pane {
+    position: relative;
+    z-index: 20;
+    min-height: 100svh;
+    max-height: none;
+    justify-content: flex-end;
+    overflow: visible;
+    padding: calc(env(safe-area-inset-top, 0px) + 4.5rem) 5rem calc(env(safe-area-inset-bottom, 0px) + 1rem) 1rem;
+    color: white;
+    background: linear-gradient(180deg, rgb(0 0 0 / 0.05) 0%, rgb(0 0 0 / 0.14) 44%, rgb(0 0 0 / 0.72) 100%);
+  }
+
+  .pin-detail-info-pane > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  .pin-detail-actions {
+    position: absolute;
+    right: 0.75rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 7.5rem);
+    z-index: 40;
+    margin: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .pin-detail-actions > div:first-child {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .pin-detail-actions .lux-icon-ring-btn,
+  .pin-detail-save {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    border-color: rgb(255 255 255 / 0.14);
+    background: rgb(0 0 0 / 0.42);
+    color: white;
+    box-shadow: none;
+    backdrop-filter: blur(12px);
+  }
+
+  .pin-detail-actions .lux-icon-ring-btn:hover:not(:disabled),
+  .pin-detail-save:hover:not(:disabled) {
+    background: rgb(0 0 0 / 0.58);
+    border-color: rgb(255 255 255 / 0.2);
+  }
+
+  .pin-detail-save {
+    padding: 0;
+    font-size: 0;
+  }
+
+  .pin-detail-save .pin-detail-save-icon {
+    font-size: 1.35rem;
+  }
+
+  .pin-detail-info-pane a,
+  .pin-detail-info-pane p,
+  .pin-detail-info-pane h1,
+  .pin-detail-info-pane h2,
+  .pin-detail-info-pane h3,
+  .pin-detail-info-pane span {
+    color: inherit;
+  }
+
+  .pin-detail-info-pane #pin-detail-title {
+    color: #fff;
+    text-shadow: 0 2px 18px rgb(0 0 0 / 0.55);
+  }
+
+  .pin-detail-info-pane .text-neutral-800,
+  .pin-detail-info-pane .text-neutral-900,
+  .pin-detail-info-pane .text-neutral-950,
+  .pin-detail-info-pane .text-neutral-700,
+  .pin-detail-info-pane .text-neutral-600,
+  .pin-detail-info-pane .text-neutral-500 {
+    color: rgb(255 255 255 / 0.78);
+  }
+
+  .pin-detail-comments-pane {
+    margin-top: 1rem;
+    max-height: 45svh;
+    overflow: auto;
+    border-radius: 1.25rem;
+    background: rgb(255 255 255 / 0.92);
+    padding: 1rem;
+    color: #171717;
+  }
+}
+
 .dark .lux-btn-secondary {
   @apply text-neutral-100;
   background: linear-gradient(180deg, rgb(48 48 52) 0%, rgb(34 34 38) 100%);
@@ -864,11 +1133,13 @@
 }
 
 .dark .lux-dropdown-panel {
-  background: rgb(30 30 34 / 0.96);
-  border-color: rgb(63 63 70 / 0.9);
+  background: rgb(12 12 16 / 0.94);
+  border-color: rgb(48 48 54 / 0.95);
+  backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
   box-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.35),
-    0 28px 56px -12px rgb(0 0 0 / 0.55);
+    0 0 0 1px rgb(0 0 0 / 0.5),
+    0 28px 56px -12px rgb(0 0 0 / 0.65);
 }
 
 .dark .lux-modal-panel {
@@ -1006,4 +1277,1730 @@
   ) {
     font-size: max(16px, 1em) !important;
   }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Layer Navigation System — utilitaires iOS-first.
+   - Safe-area helpers (notch / dynamic island / home indicator)
+   - GPU-friendly transform classes
+   - Reduced-motion global
+─────────────────────────────────────────────────────────────────────────── */
+
+/*
+  Utilitaires safe-area : `pinova-safe-top`, `pinova-safe-bottom`, etc.
+  Permettent d'ajouter du padding sans dépendre du composable JS.
+  Toujours utiliser `max()` pour assurer un minimum sur les écrans sans notch.
+*/
+.pinova-safe-top { padding-top: env(safe-area-inset-top, 0px); }
+.pinova-safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pinova-safe-left { padding-left: env(safe-area-inset-left, 0px); }
+.pinova-safe-right { padding-right: env(safe-area-inset-right, 0px); }
+.pinova-safe-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.pinova-safe-y {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pinova-safe-all {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/*
+  Padding / min-height des chrome fixes (`GlobalHeader`, `AppMobilePageHeader`).
+  — `constant()` : iOS 11.0–11.2 (pré-env).
+  — `env()` + `var(--pinova-pwa-extra-top-inset)` : secours pose par `utils/pwaSafeTopInset.ts`
+    quand l’inset CSS reste quasi nulle en standalone (Android / rares WebView).
+*/
+.pinova-app-chrome-safe-pt {
+  padding-top: calc(0.375rem + constant(safe-area-inset-top));
+  padding-top: calc(
+    0.375rem + env(safe-area-inset-top, 0px) + var(--pinova-pwa-extra-top-inset, 0px)
+  );
+}
+
+.pinova-app-chrome-safe-inner-min-h {
+  min-height: calc(2.75rem + constant(safe-area-inset-top));
+  min-height: calc(
+    2.75rem + env(safe-area-inset-top, 0px) + var(--pinova-pwa-extra-top-inset, 0px)
+  );
+}
+
+/*
+  GPU-friendly base : à composer sur un élément animé pour forcer la
+  composition GPU sans surcharge de `will-change` permanent.
+  Le `will-change` doit être posé/retiré via JS pour les animations longues.
+*/
+.pinova-gpu {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/*
+  Élément qui sera animé en transform : promote sur le compositor.
+  À ne pas mettre partout : coûteux en mémoire.
+*/
+.pinova-gpu-animate {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/*
+  Désactive le tap highlight iOS et le 300ms delay.
+  À appliquer sur tous les éléments interactifs.
+*/
+.pinova-tap {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/*
+  Spring CSS de base utilisable comme transition (équivalent
+  Reanimated `withSpring` damping 18 stiffness 320).
+*/
+.pinova-spring {
+  transition-property: transform, opacity, background-color, border-color, color;
+  transition-duration: 240ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pinova-spring-soft {
+  transition-property: transform, opacity, background-color, border-color, color;
+  transition-duration: 380ms;
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/*
+  prefers-reduced-motion : courte-circuite TOUTES les animations.
+  Critique pour a11y (Apple HIG, WCAG 2.3.3).
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+  Empêche les rebonds iOS sur le body racine quand on est en plein écran
+  immersif (layer fullscreen). Le scroll body est verrouillé par layerManager
+  via la classe `.pinova-layer-scroll-lock` (cf. LayerHost.vue).
+*/
+html, body {
+  /* overscroll en chaîne : la couche du dessus reçoit le scroll en premier. */
+  overscroll-behavior-y: contain;
+}
+
+/*
+  Variables CSS partagées par les presenters de couche.
+  Permettent à des composants externes de cibler la palette des couches.
+*/
+:root {
+  --pinova-bg-surface: rgb(255 255 255);
+  --pinova-bg-surface-dark: rgb(18 16 20);
+  --pinova-page-bg: rgb(250 247 249);
+  --pinova-page-bg-dark: rgb(7 5 6);
+  --pinova-pink-border: rgba(219, 39, 119, 0.22);
+  --pinova-pink-border-dark: rgba(219, 39, 119, 0.35);
+  --pinova-border-soft: rgb(234 221 229);
+  --pinova-border-dark: rgb(45 38 43);
+
+  /* ───── Motion tokens (CSS) — miroirs de src/theme/motion.ts ───── */
+  --pinova-dur-ultra-fast: 120ms;
+  --pinova-dur-fast: 180ms;
+  --pinova-dur-medium: 260ms;
+  --pinova-dur-slow: 380ms;
+  --pinova-dur-ambient: 640ms;
+
+  --pinova-ease-ios-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --pinova-ease-ios-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pinova-ease-ios-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+  --pinova-ease-ios-snappy: cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Motion System — utilitaires CSS.
+   À utiliser en complément du moteur JS (useSpring / useGestureEngine) pour
+   les cas simples où la physique n'est pas nécessaire.
+─────────────────────────────────────────────────────────────────────────── */
+
+/*
+  Press feedback CSS fallback (sans JS).
+  Préférer la directive `v-press` qui apporte le retour spring physique.
+*/
+.pinova-press {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition:
+    transform var(--pinova-dur-ultra-fast) var(--pinova-ease-ios-out),
+    filter var(--pinova-dur-fast) var(--pinova-ease-ios-out);
+}
+
+@media (hover: hover) {
+  .pinova-press:hover:not(:disabled):not([aria-disabled="true"]) {
+    filter: brightness(1.04);
+  }
+}
+
+.pinova-press:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: scale3d(0.92, 0.92, 1);
+  filter: brightness(0.97);
+}
+
+/*
+  Spring approximations (CSS-only) — pour les éléments qui ne peuvent pas
+  utiliser useSpring (svg, images, transitions simples).
+*/
+.pinova-spring-out {
+  transition-property: transform, opacity;
+  transition-duration: var(--pinova-dur-medium);
+  transition-timing-function: var(--pinova-ease-ios-out);
+}
+
+.pinova-spring-overshoot {
+  transition-property: transform, opacity;
+  transition-duration: var(--pinova-dur-slow);
+  transition-timing-function: var(--pinova-ease-ios-overshoot);
+}
+
+/*
+  iOS scroll feel : momentum + overscroll contain.
+  À appliquer sur les conteneurs scrollables internes.
+*/
+.pinova-scroll-ios {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  /* Permet le scroll vertical seul (drag horizontal ne déclenche pas le scroll). */
+  touch-action: pan-y;
+}
+
+.pinova-scroll-ios-x {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  touch-action: pan-x;
+}
+
+/*
+  Désactive les transitions du sélecteur durant un drag (pour follow finger 1:1).
+  Le composable bottom-sheet ajoute cette classe pendant `isDragging`.
+*/
+.pinova-no-transition,
+.pinova-no-transition * {
+  transition: none !important;
+  animation-duration: 0 !important;
+}
+
+/*
+  Skeleton local (perception performance) :
+  - apparaît instantanément (animation 0ms)
+  - shimmer subtil pour signaler "en cours"
+  À utiliser pour les zones d'attente API : `class="pinova-skel"`.
+*/
+.pinova-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--skeleton-base, rgb(229 231 235));
+  border-radius: 12px;
+  isolation: isolate;
+}
+
+.pinova-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.6) 38%,
+    transparent 72%
+  );
+  animation: pinova-shimmer 1.4s linear infinite;
+  pointer-events: none;
+}
+
+.dark .pinova-skel {
+  background: var(--skeleton-base, rgb(63 63 70));
+}
+
+.dark .pinova-skel::after {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.12) 38%,
+    transparent 72%
+  );
+}
+
+@keyframes pinova-shimmer {
+  from { transform: translate3d(-100%, 0, 0); }
+  to   { transform: translate3d(100%, 0, 0); }
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Pinova Design System — Tokens unifiés (sync src/theme/*.ts)
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ *  Variables sémantiques exposées en CSS pour usage direct dans :
+ *    - composants .vue
+ *    - utilitaires Tailwind via [class*='-var']
+ *    - inline styles ad-hoc
+ *
+ *  Toutes les vars suivent le pattern : --pinova-<group>-<role>
+ *
+ *  Modes dark/light : commutation automatique via .dark sur <html>.
+ */
+
+:root {
+  /* ── Surfaces (élévations) ── */
+  --pinova-surface-base:      #f9f8f9;
+  --pinova-surface-elevated:  #ffffff;
+  --pinova-surface-floating:  #fdfcfd;
+  --pinova-surface-overlay:   #ffffff;
+  --pinova-surface-popover:   #ffffff;
+
+  /* ── Texte ── */
+  --pinova-text-primary:      #161417;
+  --pinova-text-secondary:    #56525a;
+  --pinova-text-tertiary:     #75717a;
+  --pinova-text-disabled:     #a8a4a9;
+  --pinova-text-link:         #e0245e;
+  --pinova-text-on-accent:    #ffffff;
+
+  /* ── Bordures ── */
+  --pinova-border-subtle:     #e6e4e7;
+  --pinova-border-default:    #d3d0d4;
+  --pinova-border-rose:       #ffc2d6;
+  --pinova-border-focus:      #ff4d7d;
+
+  /* ── Accent rose Pinova ── */
+  --pinova-accent:            #e0245e;
+  --pinova-accent-hover:      #ff4d7d;
+  --pinova-accent-pressed:    #c11550;
+  --pinova-accent-subtle:     #fff1f5;
+  --pinova-accent-strong:     #ffe1eb;
+
+  /* ── Skeletons ── */
+  --pinova-skel-base:         #f1f0f2;
+  --pinova-skel-highlight:    #e6e4e7;
+
+  /* ── Backdrops ── */
+  --pinova-backdrop-soft:     rgba(0, 0, 0, 0.12);
+  --pinova-backdrop-default:  rgba(0, 0, 0, 0.32);
+  --pinova-backdrop-strong:   rgba(0, 0, 0, 0.52);
+
+  /* ── Shadows stratifiées (multi-layer, GPU-friendly) ── */
+  --pinova-shadow-ambient:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.05);
+  --pinova-shadow-directional:
+    0 2px 4px rgba(15, 23, 42, 0.05),
+    0 10px 24px rgba(15, 23, 42, 0.09),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  --pinova-shadow-floating:
+    0 4px 10px rgba(15, 23, 42, 0.08),
+    0 18px 42px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  --pinova-shadow-modal:
+    0 8px 16px rgba(15, 23, 42, 0.10),
+    0 36px 70px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.45) inset;
+  --pinova-shadow-elevated:
+    0 12px 22px rgba(15, 23, 42, 0.14),
+    0 44px 90px rgba(15, 23, 42, 0.22),
+    0 14px 32px rgba(224, 36, 94, 0.10),
+    0 0 0 1px rgba(255, 255, 255, 0.42) inset;
+  --pinova-shadow-pressed:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 4px 8px rgba(15, 23, 42, 0.08);
+
+  /* ── Glow accents ── */
+  --pinova-glow-rose-soft:    0 0 32px rgba(255, 95, 145, 0.18);
+  --pinova-glow-rose-medium:  0 0 48px rgba(224, 36, 94, 0.28);
+  --pinova-glow-rose-strong:  0 0 72px rgba(224, 36, 94, 0.42);
+  --pinova-focus-ring:        0 0 0 3px rgba(224, 36, 94, 0.32);
+
+  /* ── Radius unifiés ── */
+  --pinova-radius-xs:         4px;
+  --pinova-radius-sm:         8px;
+  --pinova-radius-ms:         12px;
+  --pinova-radius-md:         16px;
+  --pinova-radius-card:       22px;
+  --pinova-radius-floating:   24px;
+  --pinova-radius-sheet:      28px;
+  --pinova-radius-fullscreen: 38px;
+  --pinova-radius-full:       9999px;
+
+  /* ── Spacing échelle 4px ── */
+  --pinova-space-hairline:    2px;
+  --pinova-space-xs:          4px;
+  --pinova-space-sm:          8px;
+  --pinova-space-ms:          12px;
+  --pinova-space-md:          16px;
+  --pinova-space-ml:          20px;
+  --pinova-space-lg:          24px;
+  --pinova-space-xl:          32px;
+  --pinova-space-xxl:         40px;
+  --pinova-space-xxxl:        56px;
+  --pinova-space-hero:        72px;
+}
+
+.dark {
+  /* ── Surfaces OLED-friendly (jamais gris plat) ── */
+  --pinova-surface-base:      #030304;
+  --pinova-surface-elevated:  #08080b;
+  --pinova-surface-floating:  #0c0c10;
+  --pinova-surface-overlay:   #101014;
+  --pinova-surface-popover:   #141418;
+
+  /* ── Texte OLED ── */
+  --pinova-text-primary:      #f6f5f7;
+  --pinova-text-secondary:    #bab7bf;
+  --pinova-text-tertiary:     #8f8c96;
+  --pinova-text-disabled:     #3d3941;
+  --pinova-text-link:         #ff4d7d;
+
+  /* ── Bordures dark ── */
+  --pinova-border-subtle:     #1f1e24;
+  --pinova-border-default:    #2a2830;
+  --pinova-border-rose:       rgba(255, 145, 180, 0.22);
+  --pinova-border-focus:      #ff4d7d;
+
+  /* ── Accent dark (un poil plus clair que light pour contraste sur fonds sombres) ── */
+  --pinova-accent:            #ff4d7d;
+  --pinova-accent-hover:      #ff8aae;
+  --pinova-accent-pressed:    #e0245e;
+  --pinova-accent-subtle:     rgba(224, 36, 94, 0.12);
+  --pinova-accent-strong:     rgba(224, 36, 94, 0.22);
+
+  /* ── Skeletons dark ── */
+  --pinova-skel-base:         #0e0e12;
+  --pinova-skel-highlight:    #141418;
+
+  /* ── Backdrops dark ── */
+  --pinova-backdrop-soft:     rgba(0, 0, 0, 0.52);
+  --pinova-backdrop-default:  rgba(0, 0, 0, 0.68);
+  --pinova-backdrop-strong:   rgba(0, 0, 0, 0.82);
+
+  /* ── Shadows dark (atténuées en bordure highlight, plus profondes) ── */
+  --pinova-shadow-ambient:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 4px 14px rgba(0, 0, 0, 0.34);
+  --pinova-shadow-directional:
+    0 2px 6px rgba(0, 0, 0, 0.36),
+    0 12px 26px rgba(0, 0, 0, 0.44),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  --pinova-shadow-floating:
+    0 6px 14px rgba(0, 0, 0, 0.45),
+    0 22px 48px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  --pinova-shadow-modal:
+    0 12px 24px rgba(0, 0, 0, 0.55),
+    0 44px 80px rgba(0, 0, 0, 0.62),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  --pinova-shadow-elevated:
+    0 16px 30px rgba(0, 0, 0, 0.60),
+    0 56px 100px rgba(0, 0, 0, 0.70),
+    0 14px 32px rgba(224, 36, 94, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Classes utilitaires Premium — Cards / surfaces / boutons / chips
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ *  Préfixe `.pds-` (Pinova Design System) pour éviter collision avec
+ *  les classes legacy `.lux-*` et `.app-*` (qu'on conserve par migration).
+ */
+
+/* ── Cards ── */
+.pds-card {
+  background-color: var(--pinova-surface-elevated);
+  border: 1px solid var(--pinova-border-subtle);
+  border-radius: var(--pinova-radius-card);
+  box-shadow: var(--pinova-shadow-ambient);
+  color: var(--pinova-text-primary);
+  transition:
+    box-shadow var(--pinova-dur-medium, 260ms) var(--pinova-ease-ios-out, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform var(--pinova-dur-medium, 260ms) var(--pinova-ease-ios-out, cubic-bezier(0.22, 1, 0.36, 1)),
+    border-color var(--pinova-dur-fast, 180ms) ease;
+}
+
+@media (hover: hover) {
+  .pds-card:hover {
+    box-shadow: var(--pinova-shadow-directional);
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+.pds-card-floating {
+  background-color: var(--pinova-surface-floating);
+  border: 1px solid var(--pinova-border-subtle);
+  border-radius: var(--pinova-radius-floating);
+  box-shadow: var(--pinova-shadow-floating);
+  color: var(--pinova-text-primary);
+}
+
+.pds-card-elevated {
+  background-color: var(--pinova-surface-elevated);
+  border: 1px solid var(--pinova-border-subtle);
+  border-radius: var(--pinova-radius-card);
+  box-shadow: var(--pinova-shadow-elevated);
+  color: var(--pinova-text-primary);
+}
+
+/* ── Surface (générique : sections, panels) ── */
+.pds-surface {
+  background-color: var(--pinova-surface-base);
+  color: var(--pinova-text-primary);
+}
+.pds-surface-elevated {
+  background-color: var(--pinova-surface-elevated);
+  color: var(--pinova-text-primary);
+}
+
+/* ── Pills / Chips ── */
+.pds-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pinova-space-xs);
+  padding: 6px 14px;
+  border-radius: var(--pinova-radius-full);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background-color: var(--pinova-accent-subtle);
+  color: var(--pinova-accent);
+  border: 1px solid var(--pinova-border-rose);
+  -webkit-tap-highlight-color: transparent;
+}
+.pds-pill--neutral {
+  background-color: var(--pinova-surface-elevated);
+  color: var(--pinova-text-secondary);
+  border-color: var(--pinova-border-subtle);
+}
+
+/* ── Boutons premium ── */
+.pds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pinova-space-sm);
+  padding: 12px 20px;
+  border-radius: var(--pinova-radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transform-origin: center;
+  transition:
+    transform var(--pinova-dur-ultra-fast, 120ms) var(--pinova-ease-ios-out, cubic-bezier(0.22, 1, 0.36, 1)),
+    filter var(--pinova-dur-fast, 180ms) ease,
+    box-shadow var(--pinova-dur-fast, 180ms) ease,
+    background-color var(--pinova-dur-fast, 180ms) ease;
+}
+.pds-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--pinova-focus-ring);
+}
+.pds-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none !important;
+  filter: none !important;
+}
+.pds-btn:active:not(:disabled) {
+  transform: scale3d(0.96, 0.96, 1);
+}
+
+/* Primary — Rose Pinova glossy avec gradient + inset highlight. */
+.pds-btn--primary {
+  color: white;
+  background: linear-gradient(135deg, #ff4d7d 0%, #e0245e 55%, #c11550 100%);
+  box-shadow:
+    0 6px 18px rgba(224, 36, 94, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.22) inset;
+}
+@media (hover: hover) {
+  .pds-btn--primary:hover:not(:disabled) {
+    filter: brightness(1.05);
+    box-shadow:
+      0 10px 24px rgba(224, 36, 94, 0.42),
+      0 1px 0 rgba(255, 255, 255, 0.25) inset;
+  }
+}
+.pds-btn--primary:active:not(:disabled) {
+  background: linear-gradient(135deg, #e0245e 0%, #c11550 55%, #9d1245 100%);
+  box-shadow:
+    0 3px 10px rgba(224, 36, 94, 0.42),
+    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+}
+
+/* Secondary — surface card + glow rose subtil. */
+.pds-btn--secondary {
+  color: var(--pinova-text-primary);
+  background-color: var(--pinova-surface-elevated);
+  border-color: var(--pinova-border-subtle);
+  box-shadow: var(--pinova-shadow-ambient);
+}
+@media (hover: hover) {
+  .pds-btn--secondary:hover:not(:disabled) {
+    background-color: var(--pinova-surface-floating);
+    border-color: var(--pinova-border-default);
+    box-shadow: var(--pinova-shadow-directional);
+  }
+}
+
+/* Ghost — transparent avec hover subtil. */
+.pds-btn--ghost {
+  color: var(--pinova-text-primary);
+  background-color: transparent;
+  border-color: transparent;
+}
+@media (hover: hover) {
+  .pds-btn--ghost:hover:not(:disabled) {
+    background-color: var(--pinova-accent-subtle);
+    color: var(--pinova-accent);
+  }
+}
+
+/* Floating — bouton flottant glassmorphisme. */
+.pds-btn--floating {
+  color: var(--pinova-text-primary);
+  background-color: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border);
+  box-shadow: var(--pinova-shadow-floating);
+  border-radius: var(--pinova-radius-full);
+}
+
+/* Danger — rouge accent. */
+.pds-btn--danger {
+  color: white;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.32), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+}
+
+/* Sizes */
+.pds-btn--sm    { padding: 8px 14px; font-size: 0.875rem; border-radius: var(--pinova-radius-ms); }
+.pds-btn--lg    { padding: 14px 24px; font-size: 1.0625rem; border-radius: var(--pinova-radius-md); }
+.pds-btn--icon  { padding: 0; width: 40px; height: 40px; border-radius: var(--pinova-radius-full); }
+
+/* Typography utility classes (correspondent à src/theme/typography.ts) */
+.pds-display-3xl { font-size: 2.5rem;    line-height: 1.15; letter-spacing: -0.02em;  font-weight: 700; }
+.pds-display-2xl { font-size: 2rem;      line-height: 1.18; letter-spacing: -0.02em;  font-weight: 700; }
+.pds-display-xl  { font-size: 1.625rem;  line-height: 1.22; letter-spacing: -0.015em; font-weight: 700; }
+.pds-title-lg    { font-size: 1.25rem;   line-height: 1.3;  letter-spacing: -0.01em;  font-weight: 600; }
+.pds-title-md    { font-size: 1.0625rem; line-height: 1.35; letter-spacing: -0.005em; font-weight: 600; }
+.pds-title-sm    { font-size: 0.9375rem; line-height: 1.35; font-weight: 600; }
+.pds-body-lg     { font-size: 1.0625rem; line-height: 1.5;  font-weight: 400; }
+.pds-body-md     { font-size: 1rem;      line-height: 1.5;  font-weight: 400; }
+.pds-body-sm     { font-size: 0.875rem;  line-height: 1.45; font-weight: 400; }
+.pds-caption     { font-size: 0.8125rem; line-height: 1.4;  letter-spacing: 0.01em; font-weight: 500; }
+.pds-metadata    { font-size: 0.75rem;   line-height: 1.3;  letter-spacing: 0.02em; font-weight: 500; }
+.pds-overline    { font-size: 0.6875rem; line-height: 1.2;  letter-spacing: 0.08em; font-weight: 600; text-transform: uppercase; }
+
+/* Semantic color utilities */
+.pds-text-primary    { color: var(--pinova-text-primary); }
+.pds-text-secondary  { color: var(--pinova-text-secondary); }
+.pds-text-tertiary   { color: var(--pinova-text-tertiary); }
+.pds-text-accent     { color: var(--pinova-accent); }
+.pds-text-link       { color: var(--pinova-text-link); }
+.pds-bg-base         { background-color: var(--pinova-surface-base); }
+.pds-bg-elevated     { background-color: var(--pinova-surface-elevated); }
+.pds-bg-floating     { background-color: var(--pinova-surface-floating); }
+.pds-bg-accent-subtle { background-color: var(--pinova-accent-subtle); }
+
+.pds-border-subtle  { border: 1px solid var(--pinova-border-subtle); }
+.pds-border-default { border: 1px solid var(--pinova-border-default); }
+.pds-border-rose    { border: 1px solid var(--pinova-border-rose); }
+
+/* Shadow utilities */
+.pds-shadow-ambient     { box-shadow: var(--pinova-shadow-ambient); }
+.pds-shadow-directional { box-shadow: var(--pinova-shadow-directional); }
+.pds-shadow-floating    { box-shadow: var(--pinova-shadow-floating); }
+.pds-shadow-modal       { box-shadow: var(--pinova-shadow-modal); }
+.pds-shadow-elevated    { box-shadow: var(--pinova-shadow-elevated); }
+.pds-glow-rose          { box-shadow: var(--pinova-glow-rose-soft); }
+
+/* Radius utilities */
+.pds-radius-card    { border-radius: var(--pinova-radius-card); }
+.pds-radius-md      { border-radius: var(--pinova-radius-md); }
+.pds-radius-floating { border-radius: var(--pinova-radius-floating); }
+.pds-radius-sheet   { border-radius: var(--pinova-radius-sheet); }
+.pds-radius-full    { border-radius: var(--pinova-radius-full); }
+
+/*
+  Reduced motion : on neutralise shimmer et springs CSS.
+  (Le moteur JS `useSpring` checke lui-même prefers-reduced-motion.)
+*/
+@media (prefers-reduced-motion: reduce) {
+  .pinova-press:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: none !important;
+  }
+  .pinova-spring-out,
+  .pinova-spring-overshoot {
+    transition: opacity var(--pinova-dur-fast) ease !important;
+  }
+  .pinova-skel::after { animation: none !important; }
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Glass tokens (sync src/theme/glass.ts) — usage via classes utilitaires
+ *  ou via les composants `PinovaModal` / `ModalHeader`.
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+:root {
+  --glass-fill-light: rgba(255, 255, 255, 0.78);
+  --glass-fill-strong-light: rgba(255, 255, 255, 0.92);
+  --glass-fill-rose-light: rgba(255, 232, 240, 0.88);
+  --glass-border-light: rgba(255, 255, 255, 0.42);
+  --glass-highlight-light: rgba(255, 255, 255, 0.62);
+  --glass-shadow-md-light: 0 -10px 40px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.45) inset;
+  --glass-shadow-lg-light: 0 18px 52px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  --glass-scrim-default-light: rgba(0, 0, 0, 0.32);
+  --glass-scrim-strong-light: rgba(0, 0, 0, 0.52);
+
+  --glass-fill: var(--glass-fill-light);
+  --glass-fill-strong: var(--glass-fill-strong-light);
+  --glass-fill-rose: var(--glass-fill-rose-light);
+  --glass-border: var(--glass-border-light);
+  --glass-highlight: var(--glass-highlight-light);
+  --glass-shadow-md: var(--glass-shadow-md-light);
+  --glass-shadow-lg: var(--glass-shadow-lg-light);
+  --glass-scrim: var(--glass-scrim-default-light);
+  --glass-scrim-strong: var(--glass-scrim-strong-light);
+  --glass-blur: saturate(180%) blur(20px);
+  --glass-blur-strong: saturate(200%) blur(28px);
+
+  /* Accent rose Pinova : conservé tel quel dans toutes les modales. */
+  --pinova-rose-500: #e0245e;
+  --pinova-rose-400: #ff4d7d;
+  --pinova-rose-300: #ff79a3;
+  --pinova-rose-50: #fff1f5;
+}
+
+.dark {
+  --glass-fill: rgba(8, 8, 11, 0.78);
+  --glass-fill-strong: rgba(5, 5, 8, 0.92);
+  --glass-fill-rose: rgba(38, 10, 22, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-highlight: rgba(255, 255, 255, 0.1);
+  --glass-shadow-md: 0 -14px 48px rgba(0, 0, 0, 0.62), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --glass-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.78), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --glass-scrim: rgba(0, 0, 0, 0.66);
+  --glass-scrim-strong: rgba(0, 0, 0, 0.82);
+  --glass-blur: saturate(200%) blur(26px);
+  --glass-blur-strong: saturate(210%) blur(34px);
+}
+
+/*
+ * Classes utilitaires glass — pour styles directs (cards, popovers, etc.).
+ * Les modales utilisent les composants `PinovaModal` qui appliquent ces
+ * tokens directement via inline styles (plus précis selon le variant).
+ */
+.pinova-glass {
+  background-color: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-md);
+}
+
+.pinova-glass-strong {
+  background-color: var(--glass-fill-strong);
+  backdrop-filter: var(--glass-blur-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.pinova-glass-rose {
+  background-color: var(--glass-fill-rose);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-md);
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Transitions <router-view> iOS-like (push / pop horizontal)
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Activées via App.vue + `pageTransitionName` (`routerViewTransition` + adaptatif).
+ *  Sur hard refresh / entrée app → `page-initial` (fondu).
+ *  `meta.noTransition` → `page-none` (instantané).
+ *
+ *  - Forward (push) : nouvelle page entre depuis la droite, ancienne sort à gauche.
+ *  - Back (pop)     : nouvelle page entre depuis la gauche, ancienne sort à droite.
+ *
+ *  On utilise `position: absolute` pendant la transition pour permettre la
+ *  superposition (sinon Vue ajoute les 2 vues en flow vertical).
+ */
+.page-forward-enter-active,
+.page-forward-leave-active,
+.page-back-enter-active,
+.page-back-leave-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition:
+    transform var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1)),
+    opacity var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.page-forward-enter-from {
+  transform: translate3d(100%, 0, 0);
+  opacity: 1;
+}
+.page-forward-enter-to {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+.page-forward-leave-from {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+.page-forward-leave-to {
+  transform: translate3d(-22%, 0, 0);
+  opacity: 0.6;
+}
+
+.page-back-enter-from {
+  transform: translate3d(-22%, 0, 0);
+  opacity: 0.6;
+}
+.page-back-enter-to {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+.page-back-leave-from {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+.page-back-leave-to {
+  transform: translate3d(100%, 0, 0);
+  opacity: 1;
+}
+
+/* Container ancrage : main doit être en position relative pour permettre l'absolu. */
+main {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-forward-enter-active,
+  .page-forward-leave-active,
+  .page-back-enter-active,
+  .page-back-leave-active {
+    transition: opacity var(--pinova-dur-fast, 180ms) ease !important;
+    transform: none !important;
+  }
+  .page-forward-enter-from,
+  .page-back-enter-from { transform: none !important; opacity: 0; }
+  .page-forward-leave-to,
+  .page-back-leave-to   { transform: none !important; opacity: 0; }
+}
+
+/* Première entrée app / hard refresh — fondu simple (pas de glisse plein écran). */
+.page-initial-enter-active,
+.page-initial-leave-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+  will-change: opacity;
+}
+.page-initial-enter-from,
+.page-initial-leave-to {
+  opacity: 0;
+}
+.page-initial-enter-to,
+.page-initial-leave-from {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-initial-enter-active,
+  .page-initial-leave-active {
+    transition: opacity 140ms ease !important;
+  }
+}
+
+/* Désactivé via route.meta.noTransition — aucun délai perceptible. */
+.page-none-enter-active,
+.page-none-leave-active {
+  transition: none !important;
+}
+.page-none-enter-from,
+.page-none-enter-to,
+.page-none-leave-from,
+.page-none-leave-to {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Micro-feedback tactile — pulse visuel synchronisé (useMicroFeedback)
+ *  + cibles tactiles iOS (latence, pas de double-tap zoom accidentel)
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+
+html.pinova-micro-feedback-pulse::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 42%,
+    rgba(255, 95, 145, 0.07) 0%,
+    rgba(224, 36, 94, 0.04) 38%,
+    transparent 62%
+  );
+  opacity: 0;
+  animation: pinova-micro-feedback-pulse-anim 260ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes pinova-micro-feedback-pulse-anim {
+  0%   { opacity: 0; transform: scale3d(0.98, 0.98, 1); }
+  35%  { opacity: 1; }
+  100% { opacity: 0; transform: scale3d(1.02, 1.02, 1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.pinova-micro-feedback-pulse::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* Cible interactive iOS : supprime le délai 300ms legacy, pas de zoom double-tap. */
+.pinova-interactive {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Glow léger au focus visible (succès / navigation clavier) — reste subtil. */
+.pinova-interactive-glow:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(224, 36, 94, 0.35),
+    0 0 24px rgba(255, 95, 145, 0.18);
+}
+
+/* Ripple logiciel discret (à combiner avec .pinova-interactive sur un bouton). */
+.pinova-soft-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.pinova-soft-ripple::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255, 255, 255, 0.22), transparent 55%);
+  transform: scale(0.2);
+  pointer-events: none;
+}
+.pinova-soft-ripple.is-rippling::after {
+  animation: pinova-soft-ripple-anim 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes pinova-soft-ripple-anim {
+  0%   { opacity: 0.55; transform: scale(0.2); }
+  100% { opacity: 0; transform: scale(2.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pinova-soft-ripple.is-rippling::after { animation: none; opacity: 0; }
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Performance Safari iOS — règles GPU-safe globales
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Objectifs :
+ *   - Tout élément qui se déplace utilise transform/opacity (compositing GPU)
+ *   - Containment (`contain: layout`) sur les blocs qui n'affectent pas leur parent
+ *   - Élimination du tap-delay iOS sur les éléments interactifs
+ *   - Limite des `filter:` et `box-shadow` animés (jank Safari)
+ *   - `overscroll-behavior: contain` sur scrollers pour empêcher la propagation
+ *
+ *  Aucune règle ici ne dépend d'une classe métier : elles s'appliquent partout
+ *  où on a posé `.pinova-gpu`, `.pinova-scroller`, etc.
+ */
+
+/* Promotion GPU pour conteneurs animés explicitement. */
+.pinova-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Scrollers internes : empêche les "scroll chain" sur Safari iOS. */
+.pinova-scroller {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  /* Contain : limite les reflows au scroller lui-même. */
+  contain: paint;
+}
+
+/* Cartes virtualisées : containment fort pour qu'un changement d'un item
+   ne force pas tout le feed à relayouter. */
+.pinova-virtual-item {
+  contain: layout paint style;
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 280px;
+}
+
+/* Couches frozen / sleeping : on coupe pointer-events + animations,
+   et on supprime les filtres lourds pour libérer le compositor. */
+.pinova-layer-frozen,
+.pinova-layer-sleeping {
+  pointer-events: none !important;
+}
+.pinova-layer-frozen *,
+.pinova-layer-sleeping * {
+  animation-play-state: paused !important;
+}
+.pinova-layer-sleeping {
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Mode "motion saver" global : on coupe les filtres animés, les transitions courtes restent. */
+html.pinova-motion-saver *,
+html.pinova-motion-saver *::before,
+html.pinova-motion-saver *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 120ms !important;
+}
+html.pinova-motion-saver .pinova-glass,
+html.pinova-motion-saver .pinova-glass-strong,
+html.pinova-motion-saver .pinova-glass-rose {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Adaptive Quality Mode (Prompt 14) — data-pinova-quality="low|medium|high"
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ *  Géré par `src/core/performanceEngine.ts`. L'engine pose l'attribut sur
+ *  `<html>` selon FPS rolling avg + memory pressure + tier device.
+ *
+ *  high   : aucun override — comportement nominal.
+ *  medium : blur cap (12px max), durations -25%, glow rose plus discret.
+ *  low    : aucun blur, transitions ultra-courtes, ombres simples, glow off.
+ *
+ *  Tous les composants existants en bénéficient sans modification : ils
+ *  consomment `var(--pinova-dur-*)` et `backdrop-filter: var(--glass-blur)`,
+ *  qu'on neutralise ici.
+ */
+
+/* ── medium : compromis fluidité / esthétique ── */
+html[data-pinova-quality="medium"] {
+  --pinova-dur-fast: 140ms;
+  --pinova-dur-medium: 200ms;
+  --pinova-dur-slow: 280ms;
+  --glass-blur: saturate(160%) blur(12px);
+  --glass-blur-strong: saturate(160%) blur(14px);
+  --pinova-glow-rose-soft: 0 0 18px rgba(255, 95, 145, 0.10);
+  --pinova-glow-rose-medium: 0 0 28px rgba(224, 36, 94, 0.16);
+  --pinova-glow-rose-strong: 0 0 40px rgba(224, 36, 94, 0.22);
+}
+html[data-pinova-quality="medium"] .pinova-glass,
+html[data-pinova-quality="medium"] .pinova-glass-strong,
+html[data-pinova-quality="medium"] .pinova-glass-rose {
+  /* `var()` est déjà ré-écrit ci-dessus mais on s'assure qu'aucun composant
+     n'a un blur > 12px en valeur littérale. */
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+/* ── low : on coupe les filtres lourds, on raccourcit les transitions ── */
+html[data-pinova-quality="low"] {
+  --pinova-dur-ultra-fast: 80ms;
+  --pinova-dur-fast: 100ms;
+  --pinova-dur-medium: 140ms;
+  --pinova-dur-slow: 180ms;
+  --pinova-dur-ambient: 240ms;
+  --glass-blur: none;
+  --glass-blur-strong: none;
+  --pinova-glow-rose-soft: none;
+  --pinova-glow-rose-medium: none;
+  --pinova-glow-rose-strong: none;
+  --pinova-shadow-hover-glow: none;
+}
+html[data-pinova-quality="low"] .pinova-glass,
+html[data-pinova-quality="low"] .pinova-glass-strong,
+html[data-pinova-quality="low"] .pinova-glass-rose {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* Coupe les keyframes décoratives (heart pop, shimmer, pulse) en low. */
+html[data-pinova-quality="low"] .pinova-soft-ripple.is-rippling::after,
+html[data-pinova-quality="low"] .pin-detail-heart-burst .material-symbols-outlined,
+html[data-pinova-quality="low"] .pinova-skel::after,
+html[data-pinova-quality="low"] html.pinova-micro-feedback-pulse::after {
+  animation: none !important;
+  opacity: 0 !important;
+}
+/* On garde les transitions structurelles courtes mais on tue les
+   transitions long-running cosmétiques. */
+html[data-pinova-quality="low"] .pds-btn,
+html[data-pinova-quality="low"] .pds-card {
+  transition-duration: var(--pinova-dur-fast) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Si l'utilisateur exige reduced-motion, on force la mécanique low en plus
+     du floor déjà appliqué côté JS. */
+  html {
+    --glass-blur: none;
+    --glass-blur-strong: none;
+  }
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Navigation adaptative (Prompt 11) — transitions router-view
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Noms produits par `getPageTransitionNames()` dans `adaptiveNavigator.ts`.
+ *  Le conteneur `main` reste `position: relative` (cf. transitions page-forward).
+ */
+
+.desktop-fade-forward-enter-active,
+.desktop-fade-forward-leave-active,
+.desktop-fade-back-enter-active,
+.desktop-fade-back-leave-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition:
+    opacity 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.desktop-fade-forward-enter-from,
+.desktop-fade-back-leave-to {
+  opacity: 0;
+  transform: translate3d(0, 6px, 0);
+}
+.desktop-fade-forward-enter-to,
+.desktop-fade-forward-leave-from,
+.desktop-fade-back-enter-to,
+.desktop-fade-back-leave-from {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.desktop-fade-forward-leave-to,
+.desktop-fade-back-enter-from {
+  opacity: 0;
+  transform: translate3d(0, -4px, 0);
+}
+
+.material-forward-enter-active,
+.material-forward-leave-active,
+.material-back-enter-active,
+.material-back-leave-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition:
+    opacity 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.material-forward-enter-from {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(0.97);
+}
+.material-forward-enter-to,
+.material-forward-leave-from {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+.material-forward-leave-to {
+  opacity: 0.55;
+  transform: translate3d(-5%, 0, 0) scale(0.985);
+}
+
+.material-back-enter-from {
+  opacity: 0.55;
+  transform: translate3d(5%, 0, 0) scale(0.985);
+}
+.material-back-enter-to,
+.material-back-leave-from {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+.material-back-leave-to {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop-fade-forward-enter-active,
+  .desktop-fade-forward-leave-active,
+  .desktop-fade-back-enter-active,
+  .desktop-fade-back-leave-active,
+  .material-forward-enter-active,
+  .material-forward-leave-active,
+  .material-back-enter-active,
+  .material-back-leave-active {
+    transition: opacity 120ms ease !important;
+    transform: none !important;
+  }
+}
+
+/* Android Material : ombre modale un peu plus « elevation » (léger). */
+html[data-pinova-motion="material"] .pinova-layer-modal__card {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.05) inset,
+    0 4px 8px -2px rgba(0, 0, 0, 0.12),
+    0 40px 80px -24px rgba(15, 23, 42, 0.38),
+    0 20px 40px -16px rgba(190, 24, 93, 0.12);
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Cross-platform Design System adaptatif (Prompt 12)
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ *  Tokens définis dans `src/theme/platformTokens.ts`, miroirs CSS ici.
+ *  Le sélecteur `html[data-pinova-motion="..."]` permet à TOUS les composants
+ *  (`pds-btn`, `pds-card`, etc.) de s'adapter visuellement sans changer leur
+ *  API. Même classe utilitaire, rendu différent.
+ *
+ *  Trois axes :
+ *   1. iOS      → glass + spring heavy + airy padding + radius doux
+ *   2. Material → elevation harde + ripple + radius rectangulaires
+ *   3. Desktop  → densité + hover glow + transitions rapides
+ *
+ *  Toutes les valeurs sont des fallbacks : on ne casse jamais iOS si on
+ *  oublie un override.
+ */
+
+/* Defaults (iOS) — explicitement déclarés pour permettre `var(--pinova-btn-padding)`
+   dans les composants même quand `applyPlatformTokens()` n'a pas été appelé. */
+:root {
+  --pinova-platform-mode: ios;
+  --pinova-space-scale: 1;
+  --pinova-type-scale: 1;
+  --pinova-type-line-scale: 1;
+  --pinova-type-tracking-delta: 0em;
+  --pinova-btn-padding: 12px 20px;
+  --pinova-card-padding: 16px;
+  --pinova-sheet-padding: 20px 16px;
+  --pinova-gap-stack: 16px;
+  --pinova-gap-inline: 8px;
+  --pinova-radius-button: 16px;
+  --pinova-shadow-hover-glow: none;
+  --pinova-press-scale: 0.92;
+  --pinova-press-brightness: 0.97;
+  --pinova-ripple-color: rgba(0, 0, 0, 0.06);
+}
+
+.dark {
+  --pinova-ripple-color: rgba(255, 255, 255, 0.07);
+}
+
+/* ── iOS — par défaut, on conserve toutes les valeurs canoniques. ── */
+html[data-pinova-motion="ios"] {
+  --pinova-platform-mode: ios;
+  --pinova-space-scale: 1;
+  --pinova-type-scale: 1;
+  --pinova-type-line-scale: 1;
+  --pinova-type-tracking-delta: 0em;
+  --pinova-btn-padding: 12px 20px;
+  --pinova-card-padding: 16px;
+  --pinova-sheet-padding: 20px 16px;
+  --pinova-gap-stack: 16px;
+  --pinova-gap-inline: 8px;
+  --pinova-radius-button: 16px;
+  --pinova-radius-card: 22px;
+  --pinova-radius-sheet: 28px;
+  --pinova-radius-fullscreen: 38px;
+  --pinova-radius-floating: 24px;
+  --pinova-press-scale: 0.92;
+  --pinova-press-brightness: 0.97;
+  --pinova-shadow-hover-glow: none;
+  --pinova-dur-fast: 180ms;
+  --pinova-dur-medium: 260ms;
+  --pinova-dur-slow: 380ms;
+  --pinova-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --pinova-ripple-color: rgba(0, 0, 0, 0.04);
+}
+html[data-pinova-motion="ios"].dark {
+  --pinova-ripple-color: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Material (Android) — elevation harde, ripple, radius rectangulaires. ── */
+html[data-pinova-motion="material"] {
+  --pinova-platform-mode: material;
+  --pinova-space-scale: 0.95;
+  --pinova-type-scale: 1.04;
+  --pinova-type-line-scale: 1.02;
+  --pinova-type-tracking-delta: 0.005em;
+  --pinova-btn-padding: 10px 18px;
+  --pinova-card-padding: 14px;
+  --pinova-sheet-padding: 18px 16px;
+  --pinova-gap-stack: 14px;
+  --pinova-gap-inline: 8px;
+  --pinova-radius-button: 12px;
+  --pinova-radius-card: 16px;
+  --pinova-radius-sheet: 20px;
+  --pinova-radius-fullscreen: 24px;
+  --pinova-radius-floating: 20px;
+  --pinova-press-scale: 0.96;
+  --pinova-press-brightness: 1;
+  --pinova-shadow-hover-glow: none;
+  --pinova-dur-fast: 160ms;
+  --pinova-dur-medium: 240ms;
+  --pinova-dur-slow: 320ms;
+  --pinova-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --pinova-ripple-color: rgba(0, 0, 0, 0.10);
+
+  /* Material elevation — moins de "halo" et plus de contact directionnel. */
+  --pinova-shadow-ambient:
+    0 1px 1px rgba(0, 0, 0, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.10);
+  --pinova-shadow-directional:
+    0 2px 4px rgba(0, 0, 0, 0.16),
+    0 4px 8px -2px rgba(0, 0, 0, 0.10);
+  --pinova-shadow-floating:
+    0 3px 6px rgba(0, 0, 0, 0.20),
+    0 8px 16px -4px rgba(0, 0, 0, 0.14);
+  --pinova-shadow-modal:
+    0 8px 12px -4px rgba(0, 0, 0, 0.18),
+    0 28px 56px -8px rgba(0, 0, 0, 0.32);
+  --pinova-shadow-elevated:
+    0 12px 18px -6px rgba(0, 0, 0, 0.22),
+    0 40px 80px -12px rgba(0, 0, 0, 0.42);
+  --pinova-shadow-pressed:
+    0 1px 1px rgba(0, 0, 0, 0.18),
+    0 2px 4px rgba(0, 0, 0, 0.12);
+}
+html[data-pinova-motion="material"].dark {
+  --pinova-ripple-color: rgba(255, 255, 255, 0.10);
+}
+
+/* ── Desktop — densité productive, hover affordant, transitions rapides. ── */
+html[data-pinova-motion="desktop"] {
+  --pinova-platform-mode: desktop;
+  --pinova-space-scale: 0.85;
+  --pinova-type-scale: 0.95;
+  --pinova-type-line-scale: 1.05;
+  --pinova-type-tracking-delta: -0.003em;
+  --pinova-btn-padding: 8px 16px;
+  --pinova-card-padding: 14px;
+  --pinova-sheet-padding: 16px;
+  --pinova-gap-stack: 12px;
+  --pinova-gap-inline: 6px;
+  --pinova-radius-button: 10px;
+  --pinova-radius-card: 14px;
+  --pinova-radius-sheet: 18px;
+  --pinova-radius-fullscreen: 20px;
+  --pinova-radius-floating: 14px;
+  --pinova-press-scale: 0.98;
+  --pinova-press-brightness: 0.99;
+  --pinova-shadow-hover-glow:
+    0 0 0 1px rgba(224, 36, 94, 0.18),
+    0 8px 22px -8px rgba(224, 36, 94, 0.22);
+  --pinova-dur-fast: 120ms;
+  --pinova-dur-medium: 180ms;
+  --pinova-dur-slow: 240ms;
+  --pinova-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --pinova-ripple-color: rgba(0, 0, 0, 0.03);
+
+  /* Desktop : ombres au repos minimales (le hover prend le relais). */
+  --pinova-shadow-ambient:
+    0 1px 0 rgba(15, 23, 42, 0.04),
+    0 1px 3px rgba(15, 23, 42, 0.06);
+  --pinova-shadow-directional:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 6px 14px -4px rgba(15, 23, 42, 0.10);
+  --pinova-shadow-floating:
+    0 6px 14px -4px rgba(15, 23, 42, 0.12),
+    0 14px 28px -10px rgba(15, 23, 42, 0.18);
+  --pinova-shadow-modal:
+    0 12px 22px -6px rgba(15, 23, 42, 0.18),
+    0 32px 60px -16px rgba(15, 23, 42, 0.28);
+  --pinova-shadow-elevated:
+    0 16px 28px -8px rgba(15, 23, 42, 0.22),
+    0 44px 80px -20px rgba(15, 23, 42, 0.36),
+    0 10px 28px rgba(224, 36, 94, 0.08);
+}
+html[data-pinova-motion="desktop"].dark {
+  --pinova-ripple-color: rgba(255, 255, 255, 0.04);
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Component Adaptation Layer — pds-btn / pds-card / pds-pill / pds-surface
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ *  Les classes existantes consomment les vars `--pinova-*` ci-dessus —
+ *  donc tout `pds-btn` / `pds-card` change automatiquement de feel selon
+ *  `data-pinova-motion`. Cette section ajoute SEULEMENT les overrides
+ *  spécifiques à chaque plateforme qui ne peuvent pas se faire via vars
+ *  (ex: `.pds-btn:active` scale variable, ripple Material, hover desktop).
+ */
+
+/* Padding / radius / typography piloté par tokens — appliqué à .pds-btn. */
+.pds-btn {
+  padding: var(--pinova-btn-padding, 12px 20px);
+  border-radius: var(--pinova-radius-button, 16px);
+  letter-spacing: calc(-0.005em + var(--pinova-type-tracking-delta, 0em));
+  font-size: calc(1rem * var(--pinova-type-scale, 1));
+}
+.pds-btn:active:not(:disabled) {
+  transform: scale3d(var(--pinova-press-scale, 0.96), var(--pinova-press-scale, 0.96), 1);
+  filter: brightness(var(--pinova-press-brightness, 0.97));
+}
+
+/* Card : padding & radius platform-aware. */
+.pds-card,
+.pds-card-floating,
+.pds-card-elevated {
+  padding: var(--pinova-card-padding, 16px);
+  border-radius: var(--pinova-radius-card, 22px);
+}
+
+/* iOS — press feedback prononcé (déjà géré par var). Glass disponible. */
+
+/* Material — ripple universel sur boutons & cartes interactives. */
+html[data-pinova-motion="material"] .pds-btn,
+html[data-pinova-motion="material"] .pds-card,
+html[data-pinova-motion="material"] .pinova-interactive {
+  position: relative;
+  overflow: hidden;
+}
+html[data-pinova-motion="material"] .pds-btn::after,
+html[data-pinova-motion="material"] .pds-card::after,
+html[data-pinova-motion="material"] .pinova-interactive::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
+    var(--pinova-ripple-color, rgba(0, 0, 0, 0.10)) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--pinova-dur-fast, 160ms) ease;
+}
+html[data-pinova-motion="material"] .pds-btn:active::after,
+html[data-pinova-motion="material"] .pds-card:active::after,
+html[data-pinova-motion="material"] .pinova-interactive:active::after {
+  opacity: 1;
+  transition-duration: 60ms;
+}
+/* Material : primary perd le gradient gloss iOS pour un fill solide + elevation. */
+html[data-pinova-motion="material"] .pds-btn--primary {
+  background: var(--pinova-accent, #e0245e);
+  box-shadow: var(--pinova-shadow-floating);
+}
+html[data-pinova-motion="material"] .pds-btn--primary:active:not(:disabled) {
+  background: var(--pinova-accent-pressed, #c11550);
+  box-shadow: var(--pinova-shadow-pressed);
+}
+html[data-pinova-motion="material"] .pds-btn--secondary {
+  box-shadow: var(--pinova-shadow-ambient);
+}
+html[data-pinova-motion="material"] .pds-card {
+  box-shadow: var(--pinova-shadow-ambient);
+}
+
+/* Desktop — hover affordances, focus ring strong, pas de scale press marqué. */
+@media (hover: hover) {
+  html[data-pinova-motion="desktop"] .pds-btn:hover:not(:disabled) {
+    box-shadow: var(--pinova-shadow-hover-glow);
+    transform: translate3d(0, -0.5px, 0);
+  }
+  html[data-pinova-motion="desktop"] .pds-card:hover {
+    box-shadow:
+      var(--pinova-shadow-directional),
+      var(--pinova-shadow-hover-glow);
+    transform: translate3d(0, -2px, 0);
+  }
+  html[data-pinova-motion="desktop"] .pds-btn--ghost:hover:not(:disabled) {
+    background-color: var(--pinova-accent-subtle);
+  }
+}
+html[data-pinova-motion="desktop"] .pds-btn:focus-visible {
+  box-shadow:
+    var(--pinova-focus-ring),
+    var(--pinova-shadow-hover-glow);
+}
+html[data-pinova-motion="desktop"] .pds-btn:active:not(:disabled) {
+  transform: scale3d(0.985, 0.985, 1);
+  filter: none;
+}
+
+/* Cards interactives en desktop : curseur pointer + transitions courtes. */
+html[data-pinova-motion="desktop"] .pds-card {
+  transition:
+    box-shadow var(--pinova-dur-fast, 120ms) var(--pinova-easing),
+    transform var(--pinova-dur-fast, 120ms) var(--pinova-easing),
+    border-color var(--pinova-dur-fast, 120ms) ease;
+}
+
+/* Material : on neutralise le hover desktop sur Android (tactile). */
+html[data-pinova-motion="material"] .pds-btn:hover:not(:disabled),
+html[data-pinova-motion="material"] .pds-card:hover {
+  transform: none;
+}
+
+/*
+ * Typography Scaling — pds-* tailles fluides selon plateforme.
+ * On utilise calc() sur les classes existantes pour ne PAS dupliquer
+ * la hiérarchie typo (qui reste pilotée par `src/theme/typography.ts`).
+ */
+.pds-display-3xl { font-size: calc(2.5rem    * var(--pinova-type-scale, 1)); line-height: calc(1.15 * var(--pinova-type-line-scale, 1)); }
+.pds-display-2xl { font-size: calc(2rem      * var(--pinova-type-scale, 1)); line-height: calc(1.18 * var(--pinova-type-line-scale, 1)); }
+.pds-display-xl  { font-size: calc(1.625rem  * var(--pinova-type-scale, 1)); line-height: calc(1.22 * var(--pinova-type-line-scale, 1)); }
+.pds-title-lg    { font-size: calc(1.25rem   * var(--pinova-type-scale, 1)); }
+.pds-title-md    { font-size: calc(1.0625rem * var(--pinova-type-scale, 1)); }
+.pds-title-sm    { font-size: calc(0.9375rem * var(--pinova-type-scale, 1)); }
+.pds-body-lg     { font-size: calc(1.0625rem * var(--pinova-type-scale, 1)); }
+.pds-body-md     { font-size: calc(1rem      * var(--pinova-type-scale, 1)); }
+.pds-body-sm     { font-size: calc(0.875rem  * var(--pinova-type-scale, 1)); }
+.pds-caption     { font-size: calc(0.8125rem * var(--pinova-type-scale, 1)); }
+.pds-metadata    { font-size: calc(0.75rem   * var(--pinova-type-scale, 1)); }
+
+/*
+ * Variants utilitaires par densité — exposés comme classes pour les composants
+ * qui veulent moduler manuellement (`<button class="pds-btn pds-btn--dense">`).
+ */
+.pds-btn--dense   { padding: 6px 12px; font-size: calc(0.8125rem * var(--pinova-type-scale, 1)); border-radius: var(--pinova-radius-ms); }
+.pds-btn--airy    { padding: 16px 24px; font-size: calc(1.0625rem * var(--pinova-type-scale, 1)); border-radius: var(--pinova-radius-md); }
+
+/* Surface (sheet / modal) : radius platform-aware utilisables hors composants. */
+.pds-surface-sheet      { border-radius: var(--pinova-radius-sheet); padding: var(--pinova-sheet-padding); }
+.pds-surface-fullscreen { border-radius: var(--pinova-radius-fullscreen); }
+.pds-surface-floating   { border-radius: var(--pinova-radius-floating); box-shadow: var(--pinova-shadow-floating); }
+
+/*
+ * Glass : sur Android, on coupe le blur (elevation prend le relais) tout
+ * en gardant les fills opaques pour préserver la lisibilité.
+ */
+html[data-pinova-motion="material"] .pinova-glass,
+html[data-pinova-motion="material"] .pinova-glass-strong,
+html[data-pinova-motion="material"] .pinova-glass-rose {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background-color: var(--pinova-surface-elevated);
+  border-color: var(--pinova-border-subtle);
+  box-shadow: var(--pinova-shadow-modal);
+}
+
+/*
+ * Reduced motion : on neutralise toutes les variations de scale press.
+ * (Le focus ring desktop reste affiché — il sert au clavier, c'est a11y.)
+ */
+@media (prefers-reduced-motion: reduce) {
+  .pds-btn:active:not(:disabled),
+  html[data-pinova-motion="desktop"] .pds-btn:hover:not(:disabled),
+  html[data-pinova-motion="desktop"] .pds-card:hover {
+    transform: none !important;
+  }
+  html[data-pinova-motion="material"] .pds-btn::after,
+  html[data-pinova-motion="material"] .pds-card::after,
+  html[data-pinova-motion="material"] .pinova-interactive::after {
+    opacity: 0 !important;
+    transition: none !important;
+  }
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  A11y : skip-link (#main-content)
+ *  ─ Caché par défaut, visible au focus clavier. Apparaît en haut-gauche
+ *    avec un fond rose Pinova pour rester reconnaissable.
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+.pinova-skip-link {
+  position: fixed;
+  top: -100px;
+  left: 12px;
+  z-index: 2147483647;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f472b6, #db2777);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 12px 24px -10px rgba(190, 24, 93, 0.45);
+  transition: top 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms ease;
+}
+.pinova-skip-link:focus-visible,
+.pinova-skip-link:focus {
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  outline: 3px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  iOS anti-zoom : tous les inputs doivent avoir font-size >= 16px,
+ *  sinon Safari Mobile zoome agressivement au focus. On force la règle
+ *  uniquement sur mobile (< lg) pour préserver les designs desktop denses.
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  View Transitions API (Chrome 111+, Safari 18+)
+ *  ─ On déclare un `view-transition-name` global sur le shell pour que la
+ *    transition de page soit naturelle. Les overrides directionnels par
+ *    `data-pinova-nav-dir` permettent de varier l'effet (slide push vs pop).
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+@supports (view-transition-name: pinova-root) {
+  :root {
+    view-transition-name: pinova-root;
+  }
+  /* Animation par défaut : fade rapide iOS-like. */
+  ::view-transition-old(pinova-root),
+  ::view-transition-new(pinova-root) {
+    animation-duration: 240ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  ::view-transition-old(pinova-root) {
+    animation-name: pinova-vt-fade-out;
+  }
+  ::view-transition-new(pinova-root) {
+    animation-name: pinova-vt-fade-in;
+  }
+  /* Direction forward : slide vers la gauche + fade. */
+  html[data-pinova-nav-dir="forward"]::view-transition-old(pinova-root) {
+    animation-name: pinova-vt-slide-left-out;
+  }
+  html[data-pinova-nav-dir="forward"]::view-transition-new(pinova-root) {
+    animation-name: pinova-vt-slide-left-in;
+  }
+  /* Direction back : slide vers la droite. */
+  html[data-pinova-nav-dir="back"]::view-transition-old(pinova-root) {
+    animation-name: pinova-vt-slide-right-out;
+  }
+  html[data-pinova-nav-dir="back"]::view-transition-new(pinova-root) {
+    animation-name: pinova-vt-slide-right-in;
+  }
+  /* Material / desktop : on garde un simple fade (cohérent platform). */
+  html[data-pinova-motion="material"]::view-transition-old(pinova-root),
+  html[data-pinova-motion="material"]::view-transition-new(pinova-root),
+  html[data-pinova-motion="desktop"]::view-transition-old(pinova-root),
+  html[data-pinova-motion="desktop"]::view-transition-new(pinova-root) {
+    animation-name: pinova-vt-fade-out, pinova-vt-fade-in;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(pinova-root),
+    ::view-transition-new(pinova-root) {
+      animation-duration: 120ms;
+      animation-name: pinova-vt-fade-out, pinova-vt-fade-in;
+    }
+  }
+}
+
+@keyframes pinova-vt-fade-out {
+  from { opacity: 1; } to { opacity: 0; }
+}
+@keyframes pinova-vt-fade-in {
+  from { opacity: 0; } to { opacity: 1; }
+}
+@keyframes pinova-vt-slide-left-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-6%); }
+}
+@keyframes pinova-vt-slide-left-in {
+  from { opacity: 0; transform: translateX(6%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pinova-vt-slide-right-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(6%); }
+}
+@keyframes pinova-vt-slide-right-in {
+  from { opacity: 0; transform: translateX(-6%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ *  Skip link — WCAG 2.4.1 « Bypass Blocks ». Invisible jusqu'à focus clavier.
+ *  Cible `#main` posé sur le `<main>` racine dans App.vue.
+ * ───────────────────────────────────────────────────────────────────────── */
+.pinova-skip-link {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  z-index: 10000;
+  padding: 0.6rem 1rem;
+  background: var(--pinova-pink-strong, #db2777);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 12px 32px -8px rgba(190, 24, 93, 0.4);
+  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.pinova-skip-link:focus,
+.pinova-skip-link:focus-visible {
+  transform: translate(-50%, 0);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import CreatorDashboardSkeleton from '../components/CreatorDashboardSkeleton.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
@@ -10,8 +10,16 @@ import { useI18n } from '../i18n'
 
 const { t, currentLang } = useI18n()
 const router = useRouter()
-const { currentUser, isAuthenticated, fetchCurrentUser } = useAuth()
-const { fetchCreatorStats, fetchCreatorWeeklyStats, fetchCreatorEngagement } = usePins()
+const { currentUser, isAuthenticated, fetchCurrentUser, updateProfile } = useAuth()
+const {
+  fetchCreatorStats,
+  fetchCreatorWeeklyStats,
+  fetchCreatorEngagement,
+  fetchCreatorRecentPins,
+  fetchCreatorCommentInbox,
+  downloadCreatorStatsCsv,
+  moderatePinComment,
+} = usePins()
 
 const loading = ref(true)
 const errorMsg = ref('')
@@ -42,6 +50,11 @@ const weeklyMeta = ref<{
   total_view_events_period: number
   period_days: number
   period_engagement?: PeriodEngagement | null
+  period_comparison?: {
+    previous_period_days: number
+    previous_period_engagement: PeriodEngagement
+    previous_total_view_events_period: number
+  } | null
 } | null>(null)
 const topPinsHasMore = ref(false)
 const weeklyPinsHasMore = ref(false)
@@ -51,7 +64,43 @@ const topPinsPage = ref(1)
 const weeklyPinsPage = ref(1)
 const TOP_PAGE_SIZE = 10
 const WEEKLY_PAGE_SIZE = 10
+const RECENT_PAGE_SIZE = 12
+const INBOX_LIMIT = 15
+const periodDays = ref<7 | 14 | 28>(7)
 const AUDIENCE_PERIOD_DAYS = 30
+
+type RecentPinRow = {
+  id: number
+  slug: string
+  title: string
+  thumbnail_url: string | null
+  visibility: string
+  comments_policy: string
+  created_at: string
+}
+const recentPins = ref<RecentPinRow[]>([])
+const hubLoading = ref(false)
+
+type InboxCommentRow = {
+  id: number
+  pin_slug: string
+  pin_title: string
+  author_username: string
+  author_display_name: string
+  text_preview: string
+  hidden_by_owner: boolean
+  moderation_hidden: boolean
+  created_at: string
+}
+const inboxComments = ref<InboxCommentRow[]>([])
+const inboxLoading = ref(false)
+const inboxHasMore = ref(false)
+const inboxOffset = ref(0)
+const inboxModeratingId = ref<number | null>(null)
+
+const digestWeekly = ref(true)
+const digestSaving = ref(false)
+const exportLoading = ref(false)
 
 const isPro = computed(() => currentUser.value?.subscription?.plan === 'pro')
 
@@ -79,7 +128,8 @@ type TotalKey = 'pins' | 'views' | 'saves' | 'likes' | 'comments'
 type KpiSpec = {
   key: TotalKey
   labelKey: string
-  icon: string
+  /** Icône Font Awesome (ex. `fa-thumbtack` — combinée avec `fa-solid` dans le template). */
+  fa: string
   ring: string
   border: string
   darkBorder: string
@@ -94,7 +144,7 @@ const kpiSpecs: readonly KpiSpec[] = [
   {
     key: 'pins',
     labelKey: 'creator.kpiPins',
-    icon: 'push_pin',
+    fa: 'fa-thumbtack',
     ring: 'ring-violet-500/20',
     border: 'border-violet-200/90',
     darkBorder: 'dark:border-violet-500/25',
@@ -107,7 +157,7 @@ const kpiSpecs: readonly KpiSpec[] = [
   {
     key: 'views',
     labelKey: 'creator.kpiViews',
-    icon: 'visibility',
+    fa: 'fa-eye',
     ring: 'ring-sky-500/20',
     border: 'border-sky-200/90',
     darkBorder: 'dark:border-sky-500/25',
@@ -120,7 +170,7 @@ const kpiSpecs: readonly KpiSpec[] = [
   {
     key: 'saves',
     labelKey: 'creator.kpiSaves',
-    icon: 'bookmark',
+    fa: 'fa-bookmark',
     ring: 'ring-teal-500/20',
     border: 'border-teal-200/90',
     darkBorder: 'dark:border-teal-500/25',
@@ -133,7 +183,7 @@ const kpiSpecs: readonly KpiSpec[] = [
   {
     key: 'likes',
     labelKey: 'creator.kpiLikes',
-    icon: 'favorite',
+    fa: 'fa-heart',
     ring: 'ring-rose-500/20',
     border: 'border-rose-200/90',
     darkBorder: 'dark:border-rose-500/25',
@@ -146,7 +196,7 @@ const kpiSpecs: readonly KpiSpec[] = [
   {
     key: 'comments',
     labelKey: 'creator.kpiComments',
-    icon: 'chat_bubble',
+    fa: 'fa-comment',
     ring: 'ring-amber-500/20',
     border: 'border-amber-200/90',
     darkBorder: 'dark:border-amber-500/25',
@@ -200,8 +250,153 @@ const periodSummaryLine = computed(() => {
   })
 })
 
-function audienceActionParam(key: Exclude<TotalKey, 'pins'>): 'likes' | 'saves' | 'comments' | 'views' {
-  return key
+function pctDeltaLabel(cur: number, prev: number): string {
+  if (prev === 0 && cur === 0) return '—'
+  if (prev === 0) return t('creator.compareNew')
+  const raw = ((cur - prev) / prev) * 100
+  const rounded = Math.round(raw * 10) / 10
+  const sign = rounded > 0 ? '+' : ''
+  return `${sign}${rounded}%`
+}
+
+const periodComparisonHint = computed(() => {
+  const pc = weeklyMeta.value?.period_comparison
+  if (!pc || weeklyMeta.value == null) return ''
+  const cur = weeklyMeta.value.total_view_events_period
+  const prev = pc.previous_total_view_events_period
+  const days = weeklyMeta.value.period_days ?? periodDays.value
+  return t('creator.compareViews', {
+    days,
+    delta: pctDeltaLabel(cur, prev),
+  })
+})
+
+watch(
+  () => currentUser.value?.subscription?.digestCreatorWeekly,
+  (v) => {
+    digestWeekly.value = v ?? true
+  },
+  { immediate: true },
+)
+
+watch(periodDays, async () => {
+  if (!isAuthenticated.value || !isPro.value || loading.value) return
+  await reloadWeeklyOnly()
+})
+
+async function reloadWeeklyOnly() {
+  weeklyPinsLoadingMore.value = false
+  weeklyPinsPage.value = 1
+  try {
+    const weekly = await fetchCreatorWeeklyStats(periodDays.value, {
+      page: 1,
+      page_size: WEEKLY_PAGE_SIZE,
+    })
+    weeklyPins.value = weekly?.top_pins || []
+    weeklyMeta.value = {
+      total_view_events_period: weekly?.total_view_events_period ?? 0,
+      period_days: weekly?.period_days ?? periodDays.value,
+      period_engagement: weekly?.period_engagement ?? null,
+      period_comparison: weekly?.period_comparison ?? null,
+    }
+    weeklyPinsHasMore.value = !!weekly?.pagination?.has_next
+  } catch {
+    errorMsg.value = t('creator.errorLoad')
+  }
+}
+
+async function loadHubExtras() {
+  hubLoading.value = true
+  inboxLoading.value = true
+  inboxOffset.value = 0
+  try {
+    const [recent, inbox] = await Promise.all([
+      fetchCreatorRecentPins({ page: 1, page_size: RECENT_PAGE_SIZE }),
+      fetchCreatorCommentInbox({ limit: INBOX_LIMIT, offset: 0 }),
+    ])
+    recentPins.value = Array.isArray(recent?.pins) ? recent.pins : []
+    inboxComments.value = Array.isArray(inbox?.comments) ? inbox.comments : []
+    inboxHasMore.value = !!inbox?.has_more
+    inboxOffset.value = inboxComments.value.length
+  } catch {
+    recentPins.value = []
+    inboxComments.value = []
+    inboxHasMore.value = false
+  } finally {
+    hubLoading.value = false
+    inboxLoading.value = false
+  }
+}
+
+async function loadMoreInbox() {
+  if (!inboxHasMore.value || inboxLoading.value) return
+  inboxLoading.value = true
+  try {
+    const inbox = await fetchCreatorCommentInbox({
+      limit: INBOX_LIMIT,
+      offset: inboxOffset.value,
+    })
+    const chunk = Array.isArray(inbox?.comments) ? inbox.comments : []
+    inboxComments.value.push(...chunk)
+    inboxHasMore.value = !!inbox?.has_more
+    inboxOffset.value += chunk.length
+  } finally {
+    inboxLoading.value = false
+  }
+}
+
+async function toggleDigestWeb() {
+  if (digestSaving.value) return
+  digestSaving.value = true
+  const next = !digestWeekly.value
+  try {
+    await updateProfile({ notificationsDigestCreatorWeekly: next })
+  } catch {
+    digestWeekly.value = currentUser.value?.subscription?.digestCreatorWeekly ?? digestWeekly.value
+  } finally {
+    digestSaving.value = false
+  }
+}
+
+async function exportCsvWeb() {
+  if (exportLoading.value) return
+  exportLoading.value = true
+  try {
+    const blob = await downloadCreatorStatsCsv()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'pinova-creator-stats.csv'
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  } finally {
+    exportLoading.value = false
+  }
+}
+
+async function moderateFromInbox(row: InboxCommentRow, hidden: boolean) {
+  if (row.moderation_hidden) return
+  inboxModeratingId.value = row.id
+  try {
+    await moderatePinComment(row.pin_slug, row.id, hidden)
+    const i = inboxComments.value.findIndex((c) => c.id === row.id)
+    if (i >= 0) {
+      inboxComments.value[i] = { ...inboxComments.value[i]!, hidden_by_owner: hidden }
+    }
+  } finally {
+    inboxModeratingId.value = null
+  }
+}
+
+function audienceActionParam(key: TotalKey): 'likes' | 'saves' | 'comments' | 'views' {
+  return key as 'likes' | 'saves' | 'comments' | 'views'
+}
+
+function setPeriodDaysChoice(d: 7 | 14 | 28) {
+  periodDays.value = d
 }
 
 async function openAudiencePanel(key: TotalKey) {
@@ -254,18 +449,20 @@ const load = async () => {
   try {
     const [all, weekly] = await Promise.all([
       fetchCreatorStats({ top_page: 1, top_page_size: TOP_PAGE_SIZE }),
-      fetchCreatorWeeklyStats(7, { page: 1, page_size: WEEKLY_PAGE_SIZE }),
+      fetchCreatorWeeklyStats(periodDays.value, { page: 1, page_size: WEEKLY_PAGE_SIZE }),
     ])
     creatorTotals.value = all?.totals || null
     topAllTime.value = all?.top_pins || []
     weeklyPins.value = weekly?.top_pins || []
     weeklyMeta.value = {
       total_view_events_period: weekly?.total_view_events_period ?? 0,
-      period_days: weekly?.period_days ?? 7,
+      period_days: weekly?.period_days ?? periodDays.value,
       period_engagement: weekly?.period_engagement ?? null,
+      period_comparison: weekly?.period_comparison ?? null,
     }
     topPinsHasMore.value = !!all?.top_pins_pagination?.has_next
     weeklyPinsHasMore.value = !!weekly?.pagination?.has_next
+    void loadHubExtras()
   } catch {
     errorMsg.value = t('creator.errorLoad')
     creatorTotals.value = null
@@ -303,7 +500,10 @@ const loadMoreWeeklyPins = async () => {
   const nextPage = weeklyPinsPage.value + 1
   weeklyPinsLoadingMore.value = true
   try {
-    const weekly = await fetchCreatorWeeklyStats(7, { page: nextPage, page_size: WEEKLY_PAGE_SIZE })
+    const weekly = await fetchCreatorWeeklyStats(periodDays.value, {
+      page: nextPage,
+      page_size: WEEKLY_PAGE_SIZE,
+    })
     const chunk = weekly?.top_pins || []
     const seen = new Set(weeklyPins.value.map((p) => p.id))
     for (const p of chunk) {
@@ -360,13 +560,13 @@ onMounted(async () => {
             to="/"
             class="inline-flex items-center gap-2 text-sm font-semibold
                    text-neutral-600 dark:text-neutral-400
-                   hover:text-pink-600 dark:hover:text-pink-400
+                   hover:text-pink-800 dark:hover:text-pink-800
                    transition-colors rounded-xl px-3 py-2 -ml-1
                    hover:bg-white/80 dark:hover:bg-neutral-800/80
                    border border-transparent
                    hover:border-neutral-200/80 dark:hover:border-neutral-700/80"
           >
-            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">home</span>
+            <i class="fa-solid fa-house text-[18px]" aria-hidden="true"></i>
             {{ t('nav.home') }}
           </router-link>
 
@@ -380,9 +580,9 @@ onMounted(async () => {
                    hover:bg-neutral-50 dark:hover:bg-neutral-800
                    transition-colors
                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
-                   focus-visible:outline-pink-500"
+                   focus-visible:outline-pink-700 dark:outline-pink-600"
           >
-            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>
+            <i class="fa-solid fa-plus text-base" aria-hidden="true"></i>
             {{ t('nav.create') }}
           </router-link>
         </nav>
@@ -409,7 +609,7 @@ onMounted(async () => {
                        ring-2 ring-white/25 shadow-inner"
                 aria-hidden="true"
               >
-                <span class="material-symbols-outlined text-[32px] md:text-[38px] text-white/95">insights</span>
+                <i class="fa-solid fa-chart-line text-[30px] md:text-[36px] text-white/95" aria-hidden="true"></i>
               </div>
               <!-- Heading -->
               <header class="min-w-0 flex-1">
@@ -435,7 +635,7 @@ onMounted(async () => {
                        backdrop-blur-md border border-white/25
                        text-white transition-colors text-center"
               >
-                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">tune</span>
+                <i class="fa-solid fa-sliders text-base" aria-hidden="true"></i>
                 {{ t('nav.settings') }}
               </router-link>
             </div>
@@ -451,7 +651,7 @@ onMounted(async () => {
                  px-5 py-6 sm:px-7 sm:py-8 text-center shadow-sm"
           role="alert"
         >
-          <span class="material-symbols-outlined text-rose-500 dark:text-rose-400 text-[40px] mb-3 inline-block" aria-hidden="true">error</span>
+          <i class="fa-solid fa-circle-exclamation text-rose-500 dark:text-rose-400 text-[40px] mb-3 inline-block leading-none" aria-hidden="true"></i>
           <p class="text-sm sm:text-base text-rose-900 dark:text-rose-300 font-medium">{{ errorMsg }}</p>
           <button
             type="button"
@@ -462,7 +662,7 @@ onMounted(async () => {
                    transition-colors"
             @click="load"
           >
-            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">refresh</span>
+            <i class="fa-solid fa-arrow-rotate-right text-base" aria-hidden="true"></i>
             {{ t('creator.retry') }}
           </button>
         </div>
@@ -494,15 +694,15 @@ onMounted(async () => {
                        ring-4 transition-all duration-200
                        hover:shadow-lg hover:-translate-y-0.5
                        bg-gradient-to-br no-underline text-inherit
-                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-700 dark:outline-pink-600"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
               >
                 <div class="flex items-center justify-center w-full">
-                  <span
-                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
-                    :class="[item.iconWrap, item.darkIconWrap]"
+                  <i
+                    class="fa-solid shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
+                    :class="[item.iconWrap, item.darkIconWrap, item.fa]"
                     aria-hidden="true"
-                  >{{ item.icon }}</span>
+                  ></i>
                 </div>
                 <div class="min-w-0 flex-1 w-full flex flex-col items-center">
                   <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
@@ -527,11 +727,11 @@ onMounted(async () => {
                 disabled
               >
                 <div class="flex items-center justify-center w-full">
-                  <span
-                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
-                    :class="[item.iconWrap, item.darkIconWrap]"
+                  <i
+                    class="fa-solid shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
+                    :class="[item.iconWrap, item.darkIconWrap, item.fa]"
                     aria-hidden="true"
-                  >{{ item.icon }}</span>
+                  ></i>
                 </div>
                 <div class="min-w-0 flex-1 w-full flex flex-col items-center">
                   <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
@@ -554,17 +754,17 @@ onMounted(async () => {
                        ring-4 transition-all duration-200
                        hover:shadow-lg hover:-translate-y-0.5
                        bg-gradient-to-br text-left text-inherit
-                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500
+                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-700 dark:outline-pink-600
                        cursor-pointer"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
                 @click="openAudiencePanel(item.key)"
               >
                 <div class="flex items-center justify-center w-full">
-                  <span
-                    class="material-symbols-outlined shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
-                    :class="[item.iconWrap, item.darkIconWrap]"
+                  <i
+                    class="fa-solid shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
+                    :class="[item.iconWrap, item.darkIconWrap, item.fa]"
                     aria-hidden="true"
-                  >{{ item.icon }}</span>
+                  ></i>
                 </div>
                 <div class="min-w-0 flex-1 w-full flex flex-col items-center">
                   <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
@@ -582,6 +782,186 @@ onMounted(async () => {
               </button>
 
             </template>
+          </div>
+        </section>
+
+        <!-- ── Cockpit : récents + modération ───────────────────── -->
+        <section
+          id="cockpit"
+          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem]
+                 border border-neutral-200/80 dark:border-neutral-700/60
+                 bg-white/92 dark:bg-neutral-900/92 shadow-lg shadow-neutral-950/[0.03]
+                 overflow-hidden scroll-mt-28"
+          aria-labelledby="creator-hub-heading"
+        >
+          <div
+            class="px-5 py-5 sm:px-7 sm:py-6 border-b border-neutral-100 dark:border-neutral-800
+                   flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          >
+            <div>
+              <h2 id="creator-hub-heading" class="text-lg sm:text-xl font-bold text-neutral-950 dark:text-neutral-100">
+                {{ t('creator.hubTitle') }}
+              </h2>
+              <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1 max-w-prose">
+                {{ t('creator.hubSubtitle') }}
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <router-link
+                to="/contest/live"
+                class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
+                       bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-900 dark:text-fuchsia-200
+                       border border-fuchsia-200/80 dark:border-fuchsia-800/60"
+              >
+                <i class="fa-solid fa-trophy text-[18px]" aria-hidden="true"></i>
+                {{ t('creator.contestLink') }}
+              </router-link>
+              <router-link
+                to="/settings#settings-tips"
+                class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
+                       bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100
+                       border border-neutral-200 dark:border-neutral-700"
+              >
+                <i class="fa-solid fa-money-bill-wave text-[18px]" aria-hidden="true"></i>
+                {{ t('creator.settingsTips') }}
+              </router-link>
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
+                       bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900
+                       disabled:opacity-50"
+                :disabled="exportLoading"
+                @click="exportCsvWeb"
+              >
+                <i class="fa-solid fa-download text-[18px]" aria-hidden="true"></i>
+                {{ exportLoading ? t('creator.exporting') : t('creator.exportCsv') }}
+              </button>
+            </div>
+          </div>
+
+          <div class="p-4 sm:p-6 md:p-7 space-y-8">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">
+                {{ t('creator.recentPinsTitle') }}
+              </h3>
+              <div v-if="hubLoading" class="text-sm text-neutral-400 py-6">{{ t('app.loading') }}</div>
+              <div
+                v-else-if="!recentPins.length"
+                class="text-sm text-neutral-500 dark:text-neutral-400 py-4 border border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl px-4"
+              >
+                {{ t('creator.recentPinsEmpty') }}
+              </div>
+              <ul v-else class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-thin">
+                <li
+                  v-for="rp in recentPins"
+                  :key="rp.id"
+                  class="snap-start shrink-0 w-[10.5rem] rounded-2xl border border-neutral-200 dark:border-neutral-700
+                         bg-neutral-50/80 dark:bg-neutral-800/40 overflow-hidden flex flex-col"
+                >
+                  <router-link :to="`/pin/${rp.slug}`" class="block relative aspect-square bg-neutral-200 dark:bg-neutral-700">
+                    <img
+                      v-if="rp.thumbnail_url"
+                      :src="rp.thumbnail_url"
+                      :alt="rp.title"
+                      class="size-full object-cover"
+                      loading="lazy"
+                    />
+                    <i
+                      class="fa-solid fa-thumbtack flex size-full items-center justify-center text-neutral-400 text-3xl leading-none"
+                      aria-hidden="true"
+                    ></i>
+                  </router-link>
+                  <div class="p-2.5 flex flex-col gap-1 min-h-[4.25rem]">
+                    <router-link
+                      :to="`/pin/${rp.slug}`"
+                      class="text-xs font-bold text-neutral-900 dark:text-neutral-100 line-clamp-2 hover:text-pink-800 dark:hover:text-pink-800"
+                    >
+                      {{ rp.title }}
+                    </router-link>
+                    <router-link
+                      :to="`/pin/${rp.slug}/edit`"
+                      class="text-[11px] font-semibold text-pink-700 dark:text-pink-600"
+                    >
+                      {{ t('creator.editPin') }} →
+                    </router-link>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">
+                {{ t('creator.inboxTitle') }}
+              </h3>
+              <div v-if="inboxLoading && !inboxComments.length" class="text-sm text-neutral-400 py-6">
+                {{ t('app.loading') }}
+              </div>
+              <p
+                v-else-if="!inboxComments.length"
+                class="text-sm text-neutral-500 dark:text-neutral-400 py-4 border border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl px-4"
+              >
+                {{ t('creator.inboxEmpty') }}
+              </p>
+              <ul v-else class="divide-y divide-neutral-100 dark:divide-neutral-800 rounded-xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+                <li
+                  v-for="row in inboxComments"
+                  :key="row.id"
+                  class="px-4 py-4 bg-white dark:bg-neutral-900/60 hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
+                >
+                  <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+                    <div class="min-w-0">
+                      <router-link
+                        :to="`/pin/${row.pin_slug}`"
+                        class="text-sm font-bold text-neutral-900 dark:text-neutral-100 hover:text-pink-800 dark:hover:text-pink-800 line-clamp-1"
+                      >
+                        {{ row.pin_title }}
+                      </router-link>
+                      <p class="text-xs text-neutral-500 mt-0.5">
+                        {{ row.author_display_name }}
+                        <span class="text-neutral-400">@{{ row.author_username }}</span>
+                      </p>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                      <template v-if="row.moderation_hidden">
+                        <span
+                          class="text-[11px] font-semibold px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200"
+                        >
+                          {{ t('creator.inboxPlatformHidden') }}
+                        </span>
+                      </template>
+                      <template v-else>
+                        <button
+                          type="button"
+                          class="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-600
+                                 text-neutral-700 dark:text-neutral-200 disabled:opacity-40"
+                          :disabled="inboxModeratingId === row.id"
+                          @click="moderateFromInbox(row, !row.hidden_by_owner)"
+                        >
+                          {{
+                            row.hidden_by_owner ? t('creator.inboxShow') : t('creator.inboxHide')
+                          }}
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                  <p class="text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-wrap break-words">
+                    {{ row.text_preview }}
+                  </p>
+                </li>
+              </ul>
+              <div v-if="inboxHasMore" class="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-700
+                         px-5 py-2 text-sm font-semibold text-neutral-700 dark:text-neutral-300
+                         disabled:opacity-40"
+                  :disabled="inboxLoading"
+                  @click="loadMoreInbox"
+                >
+                  {{ t('creator.inboxLoadMore') }}
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -613,6 +993,22 @@ onMounted(async () => {
                 <p class="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-prose">
                   {{ t('creator.weeklyExplain') }}
                 </p>
+                <div class="flex flex-wrap gap-2 mt-4">
+                  <button
+                    v-for="d in ([7, 14, 28] as const)"
+                    :key="d"
+                    type="button"
+                    class="rounded-full px-4 py-2 text-xs font-bold transition-colors border"
+                    :class="
+                      periodDays === d
+                        ? 'bg-pink-600 border-pink-600 text-white shadow-sm'
+                        : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-300 hover:border-pink-300'
+                    "
+                    @click="setPeriodDaysChoice(d)"
+                  >
+                    {{ t('creator.periodDaysChip', { n: d }) }}
+                  </button>
+                </div>
               </div>
 
               <!-- Period summary badge -->
@@ -639,6 +1035,14 @@ onMounted(async () => {
                 {{ t('creator.weeklyEvents', { count: weeklyMeta.total_view_events_period, days: weeklyMeta.period_days }) }}
               </p>
             </div>
+          </div>
+
+          <div
+            v-if="periodComparisonHint"
+            class="px-5 py-3 sm:px-7 border-b border-neutral-100 dark:border-neutral-800
+                   bg-sky-50/80 dark:bg-sky-950/25 text-sm text-sky-900 dark:text-sky-100"
+          >
+            {{ periodComparisonHint }}
           </div>
 
           <!-- List body -->
@@ -680,11 +1084,11 @@ onMounted(async () => {
                     loading="lazy"
                     decoding="async"
                   />
-                  <span
+                  <i
                     v-else
-                    class="flex size-full items-center justify-center material-symbols-outlined
-                           text-neutral-400 dark:text-neutral-600 text-[2rem]"
-                  >push_pin</span>
+                    class="fa-solid fa-thumbtack flex size-full items-center justify-center text-neutral-400 dark:text-neutral-600 text-[2rem] leading-none"
+                    aria-hidden="true"
+                  ></i>
                 </router-link>
 
                 <!-- Content -->
@@ -692,7 +1096,7 @@ onMounted(async () => {
                   <router-link
                     :to="`/pin/${p.slug}`"
                     class="font-bold text-neutral-950 dark:text-neutral-100
-                           hover:text-pink-600 dark:hover:text-pink-400
+                           hover:text-pink-800 dark:hover:text-pink-800
                            line-clamp-2 text-[15px] sm:text-base leading-snug transition-colors"
                   >{{ p.title }}</router-link>
 
@@ -704,7 +1108,7 @@ onMounted(async () => {
                                  ring-1 ring-neutral-200/80 dark:ring-neutral-700/60
                                  text-neutral-600 dark:text-neutral-400
                                  shadow-sm tabular-nums">
-                      <span class="material-symbols-outlined text-[15px] text-sky-500" aria-hidden="true">visibility</span>
+                      <i class="fa-solid fa-eye text-[15px] text-sky-500 leading-none" aria-hidden="true"></i>
                       {{ t('creator.viewsThisWeek', { count: p.views_week }) }}
                     </span>
                     <span
@@ -716,7 +1120,7 @@ onMounted(async () => {
                              text-rose-700 dark:text-rose-300
                              shadow-sm tabular-nums"
                     >
-                      <span class="material-symbols-outlined text-[15px] text-rose-500 dark:text-rose-400" aria-hidden="true">favorite</span>
+                      <i class="fa-solid fa-heart text-[15px] text-rose-500 dark:text-rose-400 leading-none" aria-hidden="true"></i>
                       {{ t('creator.weekLikes', { n: p.likes_week ?? 0 }) }}
                     </span>
                     <span
@@ -728,7 +1132,7 @@ onMounted(async () => {
                              text-teal-700 dark:text-teal-300
                              shadow-sm tabular-nums"
                     >
-                      <span class="material-symbols-outlined text-[15px] text-teal-500 dark:text-teal-400" aria-hidden="true">bookmark</span>
+                      <i class="fa-solid fa-bookmark text-[15px] text-teal-500 dark:text-teal-400 leading-none" aria-hidden="true"></i>
                       {{ t('creator.weekSaves', { n: p.saves_week ?? 0 }) }}
                     </span>
                     <span
@@ -740,7 +1144,7 @@ onMounted(async () => {
                              text-amber-800 dark:text-amber-300
                              shadow-sm tabular-nums"
                     >
-                      <span class="material-symbols-outlined text-[15px] text-amber-500 dark:text-amber-400" aria-hidden="true">chat_bubble</span>
+                      <i class="fa-solid fa-comment text-[15px] text-amber-500 dark:text-amber-400 leading-none" aria-hidden="true"></i>
                       {{ t('creator.weekComments', { n: p.comments_week ?? 0 }) }}
                     </span>
                   </div>
@@ -760,12 +1164,12 @@ onMounted(async () => {
                        shadow-sm
                        hover:border-pink-200 dark:hover:border-pink-700/60
                        hover:bg-pink-50/50 dark:hover:bg-pink-950/30
-                       hover:text-pink-700 dark:hover:text-pink-400
+                       hover:text-pink-800 dark:hover:text-pink-800
                        disabled:opacity-40 transition-all duration-150"
                 :disabled="weeklyPinsLoadingMore"
                 @click="loadMoreWeeklyPins"
               >
-                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">expand_more</span>
+                <i class="fa-solid fa-chevron-down text-[16px] leading-none" aria-hidden="true"></i>
                 {{ t('creator.loadMoreWeekly') }}
               </button>
             </div>
@@ -779,11 +1183,7 @@ onMounted(async () => {
                      border-neutral-200 dark:border-neutral-700/70
                      bg-neutral-50/65 dark:bg-neutral-800/30"
             >
-              <span
-                class="material-symbols-outlined text-[48px]
-                       text-neutral-300 dark:text-neutral-600 mb-4"
-                aria-hidden="true"
-              >bar_chart</span>
+              <i class="fa-solid fa-chart-column text-[48px] text-neutral-300 dark:text-neutral-600 mb-4 leading-none" aria-hidden="true"></i>
               <p class="text-neutral-500 dark:text-neutral-400 text-sm max-w-md leading-relaxed">
                 {{ t('creator.weeklyEmpty') }}
               </p>
@@ -838,7 +1238,7 @@ onMounted(async () => {
                   :to="`/pin/${p.slug}`"
                   class="font-semibold
                          text-neutral-900 dark:text-neutral-100
-                         hover:text-pink-600 dark:hover:text-pink-400
+                         hover:text-pink-800 dark:hover:text-pink-800
                          truncate min-w-0 text-[15px] sm:text-base
                          transition-colors"
                 >{{ p.title }}</router-link>
@@ -848,15 +1248,15 @@ onMounted(async () => {
               <div class="flex items-center gap-4 sm:gap-5 ps-[3.25rem] sm:ps-0 shrink-0
                           text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 tabular-nums">
                 <span class="inline-flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-[17px] text-sky-500" aria-hidden="true">visibility</span>
+                  <i class="fa-solid fa-eye text-[15px] text-sky-500 leading-none" aria-hidden="true"></i>
                   {{ formatStat(p.views) }}
                 </span>
                 <span class="inline-flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-[17px] text-rose-500" aria-hidden="true">favorite</span>
+                  <i class="fa-solid fa-heart text-[15px] text-rose-500 leading-none" aria-hidden="true"></i>
                   {{ formatStat(p.likes) }}
                 </span>
                 <span class="inline-flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-[17px] text-teal-500" aria-hidden="true">bookmark</span>
+                  <i class="fa-solid fa-bookmark text-[15px] text-teal-500 leading-none" aria-hidden="true"></i>
                   {{ formatStat(p.saves) }}
                 </span>
               </div>
@@ -880,12 +1280,12 @@ onMounted(async () => {
                      shadow-sm
                      hover:border-pink-200 dark:hover:border-pink-700/60
                      hover:bg-pink-50/50 dark:hover:bg-pink-950/30
-                     hover:text-pink-700 dark:hover:text-pink-400
+                     hover:text-pink-800 dark:hover:text-pink-800
                      disabled:opacity-40 transition-all duration-150"
               :disabled="topPinsLoadingMore"
               @click="loadMoreTopPins"
             >
-              <span class="material-symbols-outlined text-[18px]" aria-hidden="true">expand_more</span>
+              <i class="fa-solid fa-chevron-down text-[16px] leading-none" aria-hidden="true"></i>
               {{ t('creator.loadMoreTop') }}
             </button>
           </div>
@@ -893,13 +1293,42 @@ onMounted(async () => {
 
         <!-- ── Footer hint ─────────────────────────────────────── -->
         <footer class="pt-5 border-t border-neutral-200/80 dark:border-neutral-800/80">
-          <p class="flex flex-wrap items-start gap-x-3 gap-y-2
-                    text-xs sm:text-[13px]
-                    text-neutral-400 dark:text-neutral-500
-                    leading-relaxed max-w-[56rem]">
-            <span class="material-symbols-outlined text-[18px] text-neutral-300 dark:text-neutral-600 shrink-0 mt-0.5" aria-hidden="true">mail</span>
-            <span>{{ t('creator.digestHint') }}</span>
-          </p>
+          <div
+            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
+                   rounded-2xl border border-neutral-200/80 dark:border-neutral-700/60
+                   px-5 py-4 bg-white/70 dark:bg-neutral-900/60"
+          >
+            <div class="flex items-start gap-3 min-w-0">
+              <i
+                class="fa-solid fa-envelope text-xl text-neutral-400 dark:text-neutral-500 shrink-0 mt-0.5 leading-none"
+                aria-hidden="true"
+              ></i>
+              <div>
+                <p class="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+                  {{ t('creator.digestToggle') }}
+                </p>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1 max-w-xl">
+                  {{ t('creator.digestFootnote') }}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="digestWeekly"
+              class="relative shrink-0 h-11 w-[3.35rem] rounded-full transition-colors border
+                     border-neutral-200 dark:border-neutral-600
+                     disabled:opacity-50 self-start sm:self-center"
+              :class="digestWeekly ? 'bg-pink-600' : 'bg-neutral-200 dark:bg-neutral-700'"
+              :disabled="digestSaving"
+              @click="toggleDigestWeb"
+            >
+              <span
+                class="absolute top-1 left-1 size-9 rounded-full bg-white shadow-md transition-transform duration-200"
+                :style="{ transform: digestWeekly ? 'translateX(1.35rem)' : 'translateX(0)' }"
+              />
+            </button>
+          </div>
         </footer>
 
         <!-- ── Audience panel (Teleport) ───────────────────────── -->
@@ -945,7 +1374,7 @@ onMounted(async () => {
                   <p
                     id="creator-audience-title"
                     class="text-[11px] font-bold uppercase tracking-wider
-                           text-pink-700 dark:text-pink-400"
+                           text-pink-700 dark:text-pink-600"
                   >
                     {{ t('creator.audience.title') }}
                   </p>
@@ -964,7 +1393,7 @@ onMounted(async () => {
                          transition-colors shrink-0"
                   @click="closeAudiencePanel"
                 >
-                  <span class="material-symbols-outlined">close</span>
+                  <i class="fa-solid fa-xmark text-lg leading-none" aria-hidden="true"></i>
                 </button>
               </header>
 

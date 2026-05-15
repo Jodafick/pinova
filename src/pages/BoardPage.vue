@@ -1,26 +1,101 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import PinovaModal from '../components/ui/PinovaModal.vue'
 import { useRoute, useRouter } from 'vue-router'
 import PinGrid from '../components/PinGrid.vue'
+import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
 import BoardHeaderSkeleton from '../components/BoardHeaderSkeleton.vue'
 import UserListSkeleton from '../components/UserListSkeleton.vue'
 import api from '../api'
 import { mapDjangoPinToFrontend, usePins } from '../composables/usePins'
+import {
+  boardDetailCacheKey,
+  getCachedBoardDetail,
+  setCachedBoardDetail,
+  type BoardDetailSnapshot,
+} from '../entityClientCache'
 import { useAuth } from '../composables/useAuth'
 import type { Pin } from '../types'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { shareUrlWithFallback } from '../utils/shareFallback'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
+import {
+  mobileBoardMoreButtonRef,
+  setMobileBoardMoreTrailing,
+  setMobileHeaderTitle,
+} from '../composables/mobileHeaderContext'
+
+import UserSearchPickModal from '../components/UserSearchPickModal.vue'
+import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
+import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 
 const { t } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
 const route = useRoute()
 const router = useRouter()
 const { toggleSave } = usePins()
-const { currentUser, updateBoard, deleteBoard } = useAuth()
+const { currentUser, updateBoard, deleteBoard, addBoardCollaborator } = useAuth()
+
+const currentPlan = computed<'free' | 'plus' | 'pro'>(() => {
+  const p = currentUser.value?.subscription?.plan
+  if (p === 'plus' || p === 'pro') return p
+  return 'free'
+})
+
+const boardActionsOpen = ref(false)
+const boardActionsTriggerRef = ref<HTMLElement | null>(null)
+const boardActionsPanelRef = ref<HTMLElement | null>(null)
+const isViewportLg = ref(false)
+let viewportMqlCleanup: (() => void) | null = null
+
+/** Menu ancré au bouton page (desktop) ; mobile : panneau fixe sous le header. */
+const boardActionsAnchorOpen = computed(() => boardActionsOpen.value && isViewportLg.value)
+
+const { floatingStyles: boardActionsFloatingStyles } = useAnchoredDropdown(
+  boardActionsTriggerRef,
+  boardActionsPanelRef,
+  {
+    open: boardActionsAnchorOpen,
+    placement: 'bottom-end',
+    strategy: 'fixed',
+    offsetPx: 8,
+  },
+)
+
+const boardActionsMenuMobileStyle = computed(() => {
+  if (isViewportLg.value) return {} as Record<string, string>
+  const top = 'calc(3.5rem + env(safe-area-inset-top, 0px) + 6px)'
+  return {
+    position: 'fixed',
+    top,
+    right: '12px',
+    zIndex: '120',
+  } as Record<string, string>
+})
+
+usePointerOutsideDismiss(() => [
+  {
+    isOpen: boardActionsOpen,
+    getRoots: () =>
+      [boardActionsTriggerRef.value, boardActionsPanelRef.value, mobileBoardMoreButtonRef.value].filter(
+        (n): n is HTMLElement => n instanceof HTMLElement,
+      ),
+    close: () => {
+      boardActionsOpen.value = false
+    },
+  },
+])
+
+const collaboratorInviteOpen = ref(false)
+const boardInviteDisambiguation = ref<Array<{ username: string; display_name: string }>>([])
+
+watch(collaboratorInviteOpen, (open) => {
+  if (!open) boardInviteDisambiguation.value = []
+})
 
 const boardId = computed(() => Number(route.params.boardId))
+const routeOwnerUsername = computed(() => String(route.params.username || '').trim())
 const loading = ref(true)
 const loadError = ref<'not_found' | 'generic' | null>(null)
 const boardName = ref('')
@@ -48,29 +123,80 @@ const organizeLoading = ref(false)
 const organizeSaving = ref(false)
 const dragOrganizeIndex = ref<number | null>(null)
 
+/** Tactile : glisser-réordonner uniquement depuis la poignée (DnD HTML5 peu fiable au doigt). */
+const organizeTouchDragging = ref(false)
+const organizeTouchFrom = ref<number | null>(null)
+
 const showOrganizeButton = computed(() => viewerCanManage.value && !!currentUser.value)
+
+function snapshotBoardState(): BoardDetailSnapshot {
+  return {
+    boardName: boardName.value,
+    ownerUsername: ownerUsername.value,
+    boardDescription: boardDescription.value,
+    viewerCanManage: viewerCanManage.value,
+    boardIsPrivate: boardIsPrivate.value,
+    boardIsOwner: boardIsOwner.value,
+    boardPins: boardPins.value,
+  }
+}
+
+function persistBoardClientCache() {
+  if (!Number.isFinite(boardId.value) || boardId.value < 1) return
+  if (loadError.value !== null) return
+  const shareParam = typeof route.query.share === 'string' ? route.query.share : ''
+  setCachedBoardDetail(boardDetailCacheKey(boardId.value, shareParam), snapshotBoardState())
+}
 
 async function loadBoard() {
   if (!Number.isFinite(boardId.value) || boardId.value < 1) {
     loadError.value = 'not_found'
+    boardName.value = ''
+    ownerUsername.value = ''
     loading.value = false
     return
   }
+  const shareParam = typeof route.query.share === 'string' ? route.query.share : ''
+  const cacheKey = boardDetailCacheKey(boardId.value, shareParam)
+  const pathOwner = routeOwnerUsername.value
+  const cached = getCachedBoardDetail(cacheKey)
+  if (cached) {
+    boardName.value = cached.boardName
+    ownerUsername.value = cached.ownerUsername || pathOwner
+    viewerCanManage.value = cached.viewerCanManage
+    boardIsPrivate.value = cached.boardIsPrivate
+    boardIsOwner.value = cached.boardIsOwner
+    boardDescription.value = cached.boardDescription
+    boardPins.value = cached.boardPins
+    loadError.value = null
+    loading.value = false
+    return
+  }
+
   loading.value = true
   loadError.value = null
+  ownerUsername.value = pathOwner
+  boardName.value = ''
+  boardPins.value = []
+  viewerCanManage.value = false
+  boardIsPrivate.value = false
+  boardIsOwner.value = false
+  boardDescription.value = ''
   try {
-    const shareParam = typeof route.query.share === 'string' ? route.query.share : ''
     const res = await api.get(`boards/${boardId.value}/`, shareParam ? { params: { share: shareParam } } : {})
     boardName.value = res.data.name || ''
-    ownerUsername.value = res.data.owner_username || ''
+    ownerUsername.value = res.data.owner_username || pathOwner
     viewerCanManage.value = !!(res.data.viewer_can_manage ?? res.data.viewerCanManage)
     boardIsPrivate.value = !!(res.data.is_private ?? res.data.isPrivate)
     boardIsOwner.value = !!(res.data.is_owner ?? res.data.isOwner)
     boardDescription.value = String(res.data.description ?? '')
     boardPins.value = (res.data.pins || []).map(mapDjangoPinToFrontend)
+    persistBoardClientCache()
   } catch (e: unknown) {
     const status = (e as { response?: { status?: number } })?.response?.status
     loadError.value = status === 404 ? 'not_found' : 'generic'
+    boardName.value = ''
+    ownerUsername.value = pathOwner
     boardPins.value = []
     viewerCanManage.value = false
     boardIsPrivate.value = false
@@ -82,7 +208,7 @@ async function loadBoard() {
 }
 
 function openPin(slug: string) {
-  router.push(`/pin/${slug}`)
+  router.push({ path: route.path, query: { ...route.query, pin: slug } })
 }
 
 async function onToggleSave(slug: string) {
@@ -100,10 +226,13 @@ async function onToggleSave(slug: string) {
 function onPinDeletedFromGrid(slug: string) {
   boardPins.value = boardPins.value.filter((p) => p.slug !== slug)
   organizePins.value = organizePins.value.filter((p) => p.slug !== slug)
+  persistBoardClientCache()
 }
 
 async function openOrganize() {
   if (!viewerCanManage.value || !currentUser.value) return
+  organizeTouchDragging.value = false
+  organizeTouchFrom.value = null
   organizeModalOpen.value = true
   organizeLoading.value = true
   organizePins.value = []
@@ -120,8 +249,15 @@ async function openOrganize() {
 
 function closeOrganize() {
   organizeModalOpen.value = false
-  organizePins.value = []
 }
+
+watch(organizeModalOpen, (open) => {
+  if (!open) {
+    organizeTouchDragging.value = false
+    organizeTouchFrom.value = null
+    organizePins.value = []
+  }
+})
 
 /** Aligne boardPins sur l’ordre du modal après succès POST (sans refetch). */
 function reorderBoardPinsFromOrganizeModal() {
@@ -137,6 +273,7 @@ function reorderBoardPinsFromOrganizeModal() {
     if (!orderIds.includes(pin.id)) ordered.push(pin)
   }
   boardPins.value = ordered
+  persistBoardClientCache()
 }
 
 async function saveBoardOrder() {
@@ -158,23 +295,157 @@ async function saveBoardOrder() {
   }
 }
 
-function onOrganizeDragStart(index: number) {
+async function openInviteCollaboratorFromBoard() {
+  boardActionsOpen.value = false
+  if (!boardIsOwner.value || !currentUser.value) return
+  if (currentPlan.value === 'free') {
+    await showAlert(t('profile.boards.collabRequiresPlan'), { variant: 'warning' })
+    return
+  }
+  collaboratorInviteOpen.value = true
+}
+
+async function submitBoardInvitePick(usernameRaw: string) {
+  const id = boardId.value
+  const username = usernameRaw.trim()
+  if (!id || !username) return
+  try {
+    const result = await addBoardCollaborator(id, username)
+    collaboratorInviteOpen.value = false
+    boardInviteDisambiguation.value = []
+    if ((result as { status?: string })?.status === 'invited') {
+      await showAlert(t('profile.boards.inviteSent'), { variant: 'success' })
+    }
+  } catch (err: unknown) {
+    const ax = err as {
+      response?: {
+        data?: {
+          code?: string
+          candidates?: Array<{ username: string; display_name: string }>
+          error?: string
+        }
+      }
+    }
+    const d = ax.response?.data
+    if (d?.code === 'ambiguous_display_name' && Array.isArray(d.candidates) && d.candidates.length) {
+      boardInviteDisambiguation.value = d.candidates
+      return
+    }
+    await showAlert(d?.error || t('profile.boards.inviteError'), {
+      variant: 'danger',
+      title: t('modal.errorTitle'),
+    })
+  }
+}
+
+function onBoardInvitePick(username: string) {
+  void submitBoardInvitePick(username)
+}
+
+async function shareThisBoardFromMenu() {
+  boardActionsOpen.value = false
+  await shareThisBoard()
+}
+
+function openOrganizeFromMenu() {
+  boardActionsOpen.value = false
+  void openOrganize()
+}
+
+function openBoardEditorFromMenu() {
+  boardActionsOpen.value = false
+  openBoardEditor()
+}
+
+async function confirmDeleteBoardFromMenu() {
+  boardActionsOpen.value = false
+  await confirmDeleteBoard()
+}
+
+function endOrganizeTouchDragFromRow(e: PointerEvent) {
+  const el = e.currentTarget
+  if (el instanceof HTMLElement) {
+    try {
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
+    } catch {
+      /* */
+    }
+  }
+  organizeTouchDragging.value = false
+  organizeTouchFrom.value = null
+}
+
+function reorderOrganizePinRows(from: number, to: number) {
+  if (from === to) return
+  const arr = [...organizePins.value]
+  const moved = arr.splice(from, 1)[0]
+  if (moved === undefined) return
+  arr.splice(to, 0, moved)
+  organizePins.value = arr
+}
+
+/** Poignée : au tactile, démarrage immédiat du glisser (DnD HTML5 peu fiable au doigt). */
+function onOrganizeHandlePointerDown(e: PointerEvent, idx: number) {
+  if (e.pointerType === 'mouse') return
+  organizeTouchDragging.value = true
+  organizeTouchFrom.value = idx
+  const row = (e.currentTarget as HTMLElement | null)?.closest?.('[data-organize-index]') ?? null
+  if (row instanceof HTMLElement) {
+    try {
+      row.setPointerCapture(e.pointerId)
+    } catch {
+      /* */
+    }
+  }
+}
+
+function onOrganizeRowPointerMove(e: PointerEvent) {
+  if (!organizeTouchDragging.value || organizeTouchFrom.value === null) return
+  if (e.cancelable) e.preventDefault()
+  const el = document.elementFromPoint(e.clientX, e.clientY)
+  const row = el?.closest('[data-organize-index]') as HTMLElement | null
+  const raw = row?.dataset.organizeIndex
+  if (raw === undefined) return
+  const to = Number.parseInt(raw, 10)
+  if (!Number.isFinite(to)) return
+  const from = organizeTouchFrom.value
+  if (from === to) return
+  reorderOrganizePinRows(from, to)
+  organizeTouchFrom.value = to
+}
+
+function onOrganizeRowPointerUp(e: PointerEvent) {
+  if (organizeTouchDragging.value) {
+    endOrganizeTouchDragFromRow(e)
+  }
+}
+
+function onOrganizeDragStart(index: number, event: DragEvent) {
   dragOrganizeIndex.value = index
+  /* Requis par Firefox / Safari pour autoriser le drop sur une autre ligne. */
+  try {
+    event.dataTransfer?.setData('text/plain', `pinova-organize:${index}`)
+    event.dataTransfer?.setData('application/x-pinova-board-organize', String(index))
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+  } catch {
+    /* certains navigateurs restreignent setData hors geste utilisateur */
+  }
+}
+
+function onOrganizeDragEnd() {
+  dragOrganizeIndex.value = null
 }
 
 function onOrganizeDragOver(event: DragEvent) {
   event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
 }
 
 function onOrganizeDrop(index: number) {
   const from = dragOrganizeIndex.value
   dragOrganizeIndex.value = null
   if (from === null || from === index) return
-  const arr = [...organizePins.value]
-  const moved = arr.splice(from, 1)[0]
-  if (moved === undefined) return
-  arr.splice(index, 0, moved)
-  organizePins.value = arr
+  reorderOrganizePinRows(from, index)
 }
 
 async function shareThisBoard() {
@@ -242,6 +513,7 @@ async function submitBoardMeta() {
       boardIsPrivate.value = !!payload.isPrivate
     }
     boardEditOpen.value = false
+    persistBoardClientCache()
   } catch (err: unknown) {
     const ax = err as { response?: { data?: Record<string, unknown> | string } }
     const data = ax.response?.data
@@ -281,15 +553,63 @@ async function confirmDeleteBoard() {
   }
 }
 
-onMounted(loadBoard)
-watch([boardId, () => route.query.share], loadBoard)
+watch([boardId, () => route.query.share], () => {
+  void loadBoard()
+}, { immediate: true })
+
+watch(
+  () => boardName.value,
+  (n) => {
+    setMobileHeaderTitle(n?.trim() || null)
+  },
+  { immediate: true },
+)
+
+watch(
+  [loading, loadError],
+  () => {
+    if (loading.value || loadError.value !== null) {
+      setMobileBoardMoreTrailing(null)
+      boardActionsOpen.value = false
+      return
+    }
+    setMobileBoardMoreTrailing({
+      ariaLabel: t('pin.ownerMenu.more'),
+      onClick: () => {
+        boardActionsOpen.value = !boardActionsOpen.value
+      },
+    })
+  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  if (typeof window === 'undefined') return
+  const mql = window.matchMedia('(min-width: 1024px)')
+  isViewportLg.value = mql.matches
+  const fn = () => {
+    isViewportLg.value = mql.matches
+  }
+  mql.addEventListener('change', fn)
+  viewportMqlCleanup = () => mql.removeEventListener('change', fn)
+})
+
+onUnmounted(() => {
+  viewportMqlCleanup?.()
+  viewportMqlCleanup = null
+  organizeTouchDragging.value = false
+  organizeTouchFrom.value = null
+  setMobileHeaderTitle(null)
+  setMobileBoardMoreTrailing(null)
+  boardActionsOpen.value = false
+})
 </script>
 
 <template>
   <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
     <button
       type="button"
-      class="app-btn app-btn-secondary group mb-8 text-sm"
+      class="app-btn app-btn-secondary group mb-8 hidden text-sm lg:inline-flex"
       @click="router.back()"
     >
       <span class="material-symbols-outlined text-lg">arrow_back</span>
@@ -297,8 +617,22 @@ watch([boardId, () => route.query.share], loadBoard)
     </button>
 
     <div v-if="loading" class="app-skeleton-wave w-full min-w-0">
-      <BoardHeaderSkeleton />
-      <PinGrid class="mt-2 sm:mt-6 w-full" :pins="[]" loading-initial />
+      <template v-if="routeOwnerUsername && !boardName">
+        <div class="mb-8 flex flex-wrap items-start justify-between gap-3 w-full min-w-0">
+          <div class="min-w-0 flex-1 pr-2">
+            <div class="h-8 sm:h-9 w-48 sm:w-64 rounded-lg bg-neutral-200/80 dark:bg-neutral-700/80 animate-pulse mb-2" />
+            <router-link
+              :to="`/profile/${routeOwnerUsername}`"
+              class="text-sm text-pink-700 hover:underline mt-1 inline-block"
+            >
+              @{{ routeOwnerUsername }}
+            </router-link>
+            <p class="text-sm app-text-muted mt-2">{{ t('board.pinCount', { count: boardPins.length }) }}</p>
+          </div>
+        </div>
+      </template>
+      <BoardHeaderSkeleton v-else />
+      <PinGrid class="mt-2 sm:mt-6 w-full" :pins="boardPins" :loading-initial="boardPins.length === 0" />
     </div>
 
     <div v-else-if="loadError === 'not_found'" class="w-full min-w-0 text-center py-16 text-neutral-600 dark:text-neutral-400">
@@ -310,161 +644,241 @@ watch([boardId, () => route.query.share], loadBoard)
     </div>
 
     <template v-else>
-      <div class="mb-8 flex flex-wrap items-start justify-between gap-4 w-full min-w-0">
-        <div class="min-w-0 flex-1">
-          <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">{{ boardName }}</h1>
+      <div class="mb-8 flex flex-wrap items-start justify-between gap-3 w-full min-w-0">
+        <div class="min-w-0 flex-1 pr-2">
+          <h1 class="text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ boardName }}</h1>
           <router-link
             v-if="ownerUsername"
             :to="`/profile/${ownerUsername}`"
-            class="text-sm text-pink-600 hover:underline mt-1 inline-block"
+            class="text-sm text-pink-700 hover:underline mt-1 inline-block"
           >
             @{{ ownerUsername }}
           </router-link>
           <p class="text-sm app-text-muted mt-2">{{ t('board.pinCount', { count: boardPins.length }) }}</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-end ml-auto">
-          <button
-            v-if="viewerCanManage"
-            type="button"
-            class="lux-btn-secondary"
-            @click="openBoardEditor"
-          >
-            <span class="material-symbols-outlined text-lg text-neutral-500">edit</span>
-            {{ t('board.editBoard') }}
-          </button>
-          <button
-            v-if="boardIsOwner"
-            type="button"
-            class="app-btn app-btn-danger disabled:opacity-50"
-            :disabled="boardDeletePending"
-            @click="confirmDeleteBoard"
-          >
-            <span v-if="boardDeletePending" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-            <span v-else class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
-            {{ t('board.deleteBoard') }}
-          </button>
-          <button
-            v-if="showOrganizeButton"
-            type="button"
-            class="lux-btn-accent-dark"
-            @click="openOrganize"
-          >
-            <span class="material-symbols-outlined text-lg">drag_indicator</span>
-            {{ t('board.organizePins') }}
-          </button>
-          <button
-            type="button"
-            class="lux-btn-secondary"
-            :aria-label="t('board.share')"
-            @click="shareThisBoard"
-          >
-            <span class="material-symbols-outlined text-lg">share</span>
-            {{ t('board.share') }}
-          </button>
-        </div>
+        <button
+          type="button"
+          ref="boardActionsTriggerRef"
+          class="hidden lg:inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-neutral-200/90 bg-white/90 text-neutral-700 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900/90 dark:text-neutral-200 dark:hover:bg-neutral-800"
+          :aria-expanded="boardActionsOpen"
+          aria-haspopup="menu"
+          :aria-label="t('pin.ownerMenu.more')"
+          @click="boardActionsOpen = !boardActionsOpen"
+        >
+          <span class="material-symbols-outlined text-[22px]">more_vert</span>
+        </button>
       </div>
 
       <PinGrid v-if="boardPins.length" class="w-full" :pins="boardPins" @open-pin="openPin" @toggle-save="onToggleSave" @pin-deleted="onPinDeletedFromGrid" />
       <p v-else class="app-text-muted text-center py-16">{{ t('board.empty') }}</p>
     </template>
 
-    <div
-      v-if="organizeModalOpen"
-      class="lux-modal-backdrop z-50"
+    <Teleport to="body">
+      <div
+        v-if="boardActionsOpen"
+        ref="boardActionsPanelRef"
+        role="menu"
+        class="lux-dropdown-panel"
+        :style="{ ...(isViewportLg ? boardActionsFloatingStyles : boardActionsMenuMobileStyle), zIndex: 120 }"
+        @pointerdown.stop
+      >
+        <button
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
+          @click="shareThisBoardFromMenu"
+        >
+          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">share</span>
+          {{ t('board.share') }}
+        </button>
+        <button
+          v-if="viewerCanManage"
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
+          @click="openBoardEditorFromMenu"
+        >
+          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">edit</span>
+          {{ t('board.editBoard') }}
+        </button>
+        <button
+          v-if="showOrganizeButton"
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
+          @click="openOrganizeFromMenu"
+        >
+          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">drag_indicator</span>
+          {{ t('board.organizePins') }}
+        </button>
+        <button
+          v-if="boardIsOwner && currentPlan !== 'free'"
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
+          @click="openInviteCollaboratorFromBoard"
+        >
+          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">person_add</span>
+          {{ t('profile.boards.invitePromptTitle') }}
+        </button>
+        <button
+          v-if="boardIsOwner"
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-400 hover:bg-red-50/90 dark:hover:bg-red-950/35 transition-colors disabled:opacity-50"
+          :disabled="boardDeletePending"
+          @click="confirmDeleteBoardFromMenu"
+        >
+          <span v-if="boardDeletePending" class="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" aria-hidden="true" />
+          <span v-else class="material-symbols-outlined text-lg shrink-0" aria-hidden="true">delete</span>
+          {{ t('board.deleteBoard') }}
+        </button>
+      </div>
+    </Teleport>
+
+    <UserSearchPickModal
+      v-model="collaboratorInviteOpen"
+      :title="t('profile.boards.invitePromptTitle')"
+      :message="t('profile.boards.inviteSearchMessage')"
+      :input-placeholder="t('profile.boards.invitePlaceholder')"
+      :disambiguation-rows="boardInviteDisambiguation"
+      @pick="onBoardInvitePick"
+    />
+
+    <PinDetailOverlayHost :pins="boardPins" />
+
+    <PinovaModal
+      v-model:open="organizeModalOpen"
+      presentation="tallSheet"
+      presentation-lg="center"
+      :presentation-lg-min-width="1280"
+      disable-gesture
+      :title="t('profile.boards.organizeTitle')"
     >
-      <div class="lux-modal-panel w-full max-w-lg max-h-[85vh] flex flex-col">
-        <div class="px-5 py-4 border-b app-divider-subtle flex items-center justify-between">
-          <h3 class="text-lg font-bold text-neutral-900 dark:text-neutral-100 tracking-tight">{{ t('profile.boards.organizeTitle') }}</h3>
-          <button type="button" class="p-2 rounded-full text-neutral-500 hover:bg-white/80 hover:text-neutral-900 transition" @click="closeOrganize">
-            <span class="material-symbols-outlined">close</span>
-          </button>
+      <template #headerEnd>
+        <button
+          type="button"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 hover:bg-black/[0.06] dark:text-neutral-300 dark:hover:bg-white/[0.08] transition"
+          :aria-label="t('common.close')"
+          @click="closeOrganize"
+        >
+          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+        </button>
+      </template>
+
+      <p class="text-xs app-text-muted -mt-1 mb-3">{{ t('profile.boards.organizeHint') }}</p>
+      <div class="min-h-[120px] touch-pan-y">
+        <div v-if="organizeLoading" class="min-h-[140px]">
+          <UserListSkeleton :rows="7" thumb="rounded" :divided="false" />
         </div>
-        <p class="text-xs app-text-muted px-5 pt-3">{{ t('profile.boards.organizeHint') }}</p>
-        <div class="flex-1 overflow-y-auto px-5 py-4 min-h-[120px]">
-          <div v-if="organizeLoading" class="min-h-[140px]">
-            <UserListSkeleton :rows="7" thumb="rounded" :divided="false" />
-          </div>
-          <ul v-else class="space-y-2">
-            <li
-              v-for="(p, idx) in organizePins"
-              :key="p.id"
+        <ul v-else class="space-y-2 touch-pan-y">
+          <li
+            v-for="(p, idx) in organizePins"
+            :key="p.id"
+            :data-organize-index="idx"
+            class="lux-organize-row !cursor-default touch-pan-y"
+            :class="
+              organizeTouchDragging && organizeTouchFrom === idx
+                ? 'ring-2 ring-pink-700/45 dark:ring-pink-600/35 opacity-90'
+                : ''
+            "
+            @pointermove="onOrganizeRowPointerMove($event)"
+            @pointerup="onOrganizeRowPointerUp($event)"
+            @pointercancel="onOrganizeRowPointerUp($event)"
+            @dragover="onOrganizeDragOver($event)"
+            @dragenter.prevent="onOrganizeDragOver($event)"
+            @drop.prevent="onOrganizeDrop(idx)"
+          >
+            <img
+              :src="p.image"
+              alt=""
+              draggable="false"
+              class="w-12 h-12 shrink-0 rounded-lg object-cover bg-neutral-200 dark:bg-neutral-700 pointer-events-none"
+            />
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{{ p.title }}</p>
+              <p v-if="p.scheduled_publish_at" class="text-[10px] text-amber-700 dark:text-amber-400">{{ t('pin.scheduledBadge') }}</p>
+            </div>
+            <button
+              type="button"
               draggable="true"
-              class="lux-organize-row"
-              @dragstart="onOrganizeDragStart(idx)"
-              @dragover="onOrganizeDragOver($event)"
-              @drop.prevent="onOrganizeDrop(idx)"
+              class="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl border-2 border-neutral-200/95 bg-gradient-to-b from-white to-neutral-50 text-neutral-500 shadow-sm touch-none cursor-grab select-none active:cursor-grabbing active:scale-[0.98] dark:border-neutral-600 dark:from-neutral-800 dark:to-neutral-900 dark:text-neutral-300 dark:shadow-black/20"
+              :aria-label="t('board.organizeDragHandle')"
+              @pointerdown.stop="onOrganizeHandlePointerDown($event, idx)"
+              @dragstart.stop="onOrganizeDragStart(idx, $event)"
+              @dragend="onOrganizeDragEnd"
             >
-              <img :src="p.image" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0 bg-neutral-200" />
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-neutral-900 truncate">{{ p.title }}</p>
-                <p v-if="p.scheduled_publish_at" class="text-[10px] text-amber-700">{{ t('pin.scheduledBadge') }}</p>
-              </div>
-              <span class="material-symbols-outlined text-neutral-400 text-lg shrink-0">drag_indicator</span>
-            </li>
-          </ul>
-        </div>
-        <div class="px-5 py-4 border-t app-divider-subtle flex gap-3 justify-end">
-          <button type="button" class="lux-btn-secondary px-6" @click="closeOrganize">
+              <span class="material-symbols-outlined text-[30px] leading-none" aria-hidden="true">drag_indicator</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <template #footer>
+        <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganize">
             {{ t('profile.boards.organizeClose') }}
           </button>
           <button
             type="button"
-            class="lux-btn-primary disabled:opacity-50 disabled:cursor-not-allowed px-6"
+            class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px] sm:min-w-[9rem] disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="organizeSaving || organizeLoading || organizePins.length === 0"
             @click="saveBoardOrder"
           >
             {{ organizeSaving ? t('common.loading') : t('profile.boards.organizeSave') }}
           </button>
         </div>
-      </div>
-    </div>
+      </template>
+    </PinovaModal>
 
-    <div
-      v-if="boardEditOpen"
-      class="lux-modal-backdrop z-50"
-      role="dialog"
-      aria-modal="true"
+    <PinovaModal
+      v-model:open="boardEditOpen"
+      presentation="tallSheet"
+      presentation-lg="center"
+      :title="t('board.editTitle')"
     >
-      <div class="lux-modal-panel lux-modal-panel-sm sm:p-8 w-full max-w-md" @click.stop>
-        <div class="h-px w-full bg-gradient-to-r from-transparent via-pink-200/70 to-transparent opacity-70 mb-6" aria-hidden="true" />
-        <h3 class="text-lg font-bold text-neutral-900 mb-5 tracking-tight">{{ t('board.editTitle') }}</h3>
-        <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('board.editName') }}</label>
-        <input
-          v-model="editBoardName"
-          type="text"
-          class="lux-input-elegant mb-4"
-          maxlength="255"
-        />
-        <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('board.editDescription') }}</label>
-        <textarea
-          v-model="editBoardDescription"
-          rows="3"
-          class="lux-input-elegant resize-none mb-4"
-        />
-        <label
-          v-if="boardEditCanTogglePrivate"
-          class="flex items-start gap-2 text-sm text-neutral-800 mb-6 cursor-pointer"
+      <template #headerEnd>
+        <button
+          type="button"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 hover:bg-black/[0.06] dark:text-neutral-300 dark:hover:bg-white/[0.08] transition"
+          :aria-label="t('common.close')"
+          @click="closeBoardEditor"
         >
-          <input v-model="editBoardPrivate" type="checkbox" class="mt-1 rounded border-neutral-300 text-pink-600" />
-          <span>
-            {{ t('profile.boards.modal.private') }}
-            <span class="block text-[11px] text-neutral-500 font-normal">{{ t('board.editPrivateHelp') }}</span>
-          </span>
-        </label>
-        <div class="flex flex-col-reverse sm:flex-row gap-3 justify-end mt-4">
-          <button type="button" class="lux-btn-secondary sm:min-w-[7rem]" @click="closeBoardEditor">
+          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+        </button>
+      </template>
+
+      <div class="h-px w-full bg-gradient-to-r from-transparent via-pink-200/70 to-transparent opacity-70 mb-5 dark:via-pink-600/40" aria-hidden="true" />
+      <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{{ t('board.editName') }}</label>
+      <input v-model="editBoardName" type="text" class="lux-input-elegant mb-4" maxlength="255" />
+      <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{{ t('board.editDescription') }}</label>
+      <textarea v-model="editBoardDescription" rows="3" class="lux-input-elegant resize-none mb-4" />
+      <label
+        v-if="boardEditCanTogglePrivate"
+        class="flex items-start gap-2 text-sm text-neutral-800 dark:text-neutral-200 mb-2 cursor-pointer"
+      >
+        <input v-model="editBoardPrivate" type="checkbox" class="mt-1 rounded border-neutral-300 text-pink-700" />
+        <span>
+          {{ t('profile.boards.modal.private') }}
+          <span class="block text-[11px] text-neutral-500 dark:text-neutral-400 font-normal">{{ t('board.editPrivateHelp') }}</span>
+        </span>
+      </label>
+
+      <template #footer>
+        <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeBoardEditor">
             {{ t('common.cancel') }}
           </button>
           <button
             type="button"
-            class="lux-btn-primary sm:min-w-[9rem]"
+            class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px] sm:min-w-[9rem]"
             :disabled="boardEditSaving"
             @click="submitBoardMeta"
           >
             {{ boardEditSaving ? t('board.savingBoard') : t('board.saveChanges') }}
           </button>
         </div>
-      </div>
-    </div>
+      </template>
+    </PinovaModal>
   </div>
 </template>

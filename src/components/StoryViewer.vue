@@ -63,6 +63,9 @@ const index = ref(0)
 const heartBurst = ref(false)
 const expandedDesc = ref(false)
 const storyLikersOpen = ref(false)
+const reportStoryOpen = ref(false)
+const storyMoreOpen = ref(false)
+const holdFingerPause = ref(false)
 /** État like / reactions — props.story ≠ store `pins`; toggleLike ne met pas à jour le viewer. */
 const storyLikedBySlug = ref<Record<string, boolean>>({})
 const storyReactionsBySlug = ref<Record<string, number>>({})
@@ -74,6 +77,10 @@ const slideDurationMs = ref(DEFAULT_IMAGE_MS)
 const storyVideoEl = ref<HTMLVideoElement | null>(null)
 /** Autoplay : départ en muted (politiques navigateurs) ; clic sur le bouton active le son jusqu’à fermeture du viewer. */
 const storySoundOn = ref(false)
+const playbackPaused = computed(() =>
+  storyMoreOpen.value || storyLikersOpen.value || reportStoryOpen.value || holdFingerPause.value,
+)
+let holdPauseTimer: ReturnType<typeof setTimeout> | null = null
 
 function syncStoryVideoMute(el?: HTMLVideoElement | null) {
   const v = el ?? storyVideoEl.value
@@ -100,6 +107,14 @@ function clearAdvance() {
     clearTimeout(advanceTimer)
     advanceTimer = null
   }
+}
+
+function pauseStoryVideo() {
+  storyVideoEl.value?.pause()
+}
+
+function resumeStoryVideo() {
+  void storyVideoEl.value?.play()?.catch(() => {})
 }
 
 function scheduleAdvance() {
@@ -213,6 +228,17 @@ watch(storyLikersOpen, (open) => {
   else restartCurrentSegment()
 })
 
+watch(playbackPaused, (paused) => {
+  if (!props.modelValue || props.pins.length === 0) return
+  if (paused) {
+    clearAdvance()
+    pauseStoryVideo()
+    return
+  }
+  resumeStoryVideo()
+  restartCurrentSegment()
+})
+
 const current = computed(() => props.pins[index.value])
 
 watch(
@@ -299,9 +325,6 @@ function openStoryLikersModal() {
   if (!isOwnerViewingStory.value || !current.value?.slug) return
   storyLikersOpen.value = true
 }
-
-const reportStoryOpen = ref(false)
-const storyMoreOpen = ref(false)
 
 async function handleReportStory() {
   const pin = current.value
@@ -495,6 +518,21 @@ function handleStoryDblLike() {
   void doLike()
 }
 
+function startHoldPause() {
+  if (holdPauseTimer) clearTimeout(holdPauseTimer)
+  holdPauseTimer = setTimeout(() => {
+    holdFingerPause.value = true
+  }, 260)
+}
+
+function endHoldPause() {
+  if (holdPauseTimer) {
+    clearTimeout(holdPauseTimer)
+    holdPauseTimer = null
+  }
+  holdFingerPause.value = false
+}
+
 let lastTap = 0
 function onCenterTap() {
   const pin = current.value
@@ -512,6 +550,7 @@ function onCenterTap() {
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
+  if (holdPauseTimer) clearTimeout(holdPauseTimer)
   clearAdvance()
 })
 </script>
@@ -520,7 +559,7 @@ onUnmounted(() => {
   <Teleport to="body">
     <div
       v-if="modelValue && pins.length > 0"
-      class="fixed inset-0 z-[100] bg-neutral-950 flex flex-col"
+        class="story-viewer-root fixed inset-0 z-[100] bg-neutral-950 flex flex-col"
       role="dialog"
       aria-modal="true"
     >
@@ -531,6 +570,7 @@ onUnmounted(() => {
           :current-index="index"
           :active-duration-ms="slideDurationMs"
           :animation-key="progressAnimKey"
+          :paused="playbackPaused"
         />
         <div class="flex justify-center px-2 pb-1">
           <button
@@ -631,6 +671,10 @@ onUnmounted(() => {
           class="absolute inset-y-0 left-[28%] right-[28%] z-25 flex items-center justify-center"
           @click.stop="onCenterTap"
           @dblclick.stop.prevent="handleStoryDblLike"
+          @pointerdown="startHoldPause"
+          @pointerup="endHoldPause"
+          @pointerleave="endHoldPause"
+          @pointercancel="endHoldPause"
         />
 
         <div class="relative flex-1 flex items-center justify-center px-3 pb-28 pt-14 sm:px-8">
@@ -717,7 +761,7 @@ onUnmounted(() => {
             >
               <span
                 class="material-symbols-outlined text-[26px] transition-colors"
-                  :class="currentStoryLiked ? 'text-pink-400' : 'text-white'"
+                  :class="currentStoryLiked ? 'text-pink-700 dark:text-pink-600' : 'text-white'"
               >favorite</span>
             </button>
             <button
@@ -727,7 +771,7 @@ onUnmounted(() => {
               :aria-label="t('story.likers.title', { count: currentStoryReactions })"
               @click.stop="openStoryLikersModal"
             >
-                <span class="material-symbols-outlined text-[24px] text-pink-300">favorite</span>
+                <span class="material-symbols-outlined text-[24px] text-pink-700 dark:text-pink-600">favorite</span>
               <span class="text-xs font-semibold tabular-nums min-w-[1.25rem]">{{ currentStoryReactions }}</span>
             </button>
 
@@ -736,7 +780,7 @@ onUnmounted(() => {
                 v-if="heartBurst"
                 class="pointer-events-none absolute inset-0 flex items-center justify-center z-[45]"
               >
-                <span class="material-symbols-outlined text-pink-300 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]">
+                <span class="material-symbols-outlined text-pink-700 dark:text-pink-600 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]">
                   favorite
                 </span>
               </div>
@@ -771,6 +815,11 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.story-viewer-root {
+  animation: story-viewer-enter 0.22s ease-out both;
+  touch-action: manipulation;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.35s ease;
@@ -808,6 +857,17 @@ onUnmounted(() => {
     opacity: 0;
     transform: scale(1.22);
     filter: blur(1px);
+  }
+}
+
+@keyframes story-viewer-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

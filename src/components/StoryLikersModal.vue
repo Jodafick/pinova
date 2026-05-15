@@ -6,6 +6,7 @@ import { DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { displayInitials } from '../utils/displayInitials'
 import AvatarDisc from './AvatarDisc.vue'
+import PinovaModal from './ui/PinovaModal.vue'
 import type { PinLikerEntry } from '../types'
 
 const props = defineProps<{
@@ -62,68 +63,46 @@ function close() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="modelValue && pinSlug"
-      class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center px-4 py-10 sm:p-6 bg-neutral-950/55 backdrop-blur-md"
-      role="dialog"
-      aria-modal="true"
-      @click.self="close"
-    >
-      <div
-        class="w-full max-w-md lux-alert-panel rounded-t-[1.625rem] sm:rounded-[1.625rem] overflow-hidden flex flex-col max-h-[min(70vh,520px)]"
-        @click.stop
-      >
-        <div class="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-neutral-200/70 bg-white/35">
-          <h2 class="text-sm font-semibold text-neutral-900">
-            {{ t('story.likers.title', { count: total }) }}
-          </h2>
-          <button
-            type="button"
-            class="p-2 rounded-full hover:bg-white/90 text-neutral-600 ring-1 ring-transparent hover:ring-neutral-200/80 transition shadow-sm"
-            :aria-label="t('story.likers.close')"
+  <PinovaModal
+    :open="modelValue && !!pinSlug"
+    presentation="bottomSheet"
+    :title="t('story.likers.title', { count: total })"
+    @update:open="(v: boolean) => emit('update:modelValue', v)"
+  >
+    <div class="px-3 py-2 max-h-[min(60vh,420px)] overflow-y-auto">
+      <p v-if="loading" class="text-sm text-neutral-500 dark:text-neutral-400 text-center py-8">{{ t('story.likers.loading') }}</p>
+      <p v-else-if="errorMsg" class="text-sm text-red-600 text-center py-6">{{ errorMsg }}</p>
+      <p v-else-if="!likers.length" class="text-sm text-neutral-500 dark:text-neutral-400 text-center py-8">{{ t('story.likers.empty') }}</p>
+      <ul v-else class="divide-y divide-neutral-100 dark:divide-neutral-800">
+        <li v-for="row in likers" :key="row.username">
+          <RouterLink
+            :to="`/profile/${encodeURIComponent(row.username)}`"
+            class="flex items-center gap-3 py-3 px-2 hover:bg-white/90 dark:hover:bg-neutral-800/60 rounded-2xl transition ring-1 ring-transparent hover:ring-neutral-200/70"
             @click="close"
           >
-            <span class="material-symbols-outlined text-[22px]">close</span>
-          </button>
-        </div>
-
-        <div class="flex-1 min-h-0 overflow-y-auto px-3 py-2">
-          <p v-if="loading" class="text-sm text-neutral-500 text-center py-8">{{ t('story.likers.loading') }}</p>
-          <p v-else-if="errorMsg" class="text-sm text-red-600 text-center py-6">{{ errorMsg }}</p>
-          <p v-else-if="!likers.length" class="text-sm text-neutral-500 text-center py-8">{{ t('story.likers.empty') }}</p>
-          <ul v-else class="divide-y divide-neutral-100">
-            <li v-for="row in likers" :key="row.username">
-              <RouterLink
-                :to="`/profile/${encodeURIComponent(row.username)}`"
-                class="flex items-center gap-3 py-3 px-2 hover:bg-white/90 rounded-2xl transition ring-1 ring-transparent hover:ring-neutral-200/70"
-                @click="close"
-              >
-                <AvatarDisc
-                  :color="row.avatar_url ? undefined : (row.avatar_color || DEFAULT_AVATAR_COLOR_CLASS)"
-                  frame-class="relative h-10 w-10 text-xs ring-2 ring-neutral-100 shrink-0"
-                  text-class="text-white"
-                  :has-image="!!row.avatar_url"
-                >
-                  <img
-                    v-if="row.avatar_url"
-                    :src="row.avatar_url"
-                    alt=""
-                    class="h-full w-full object-cover"
-                    draggable="false"
-                  />
-                  <span v-else>{{ displayInitials(row.display_name) }}</span>
-                </AvatarDisc>
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm font-semibold text-neutral-900 truncate">{{ row.display_name }}</p>
-                  <p class="text-xs text-neutral-500 truncate">@{{ row.username }}</p>
-                </div>
-                <span class="text-[10px] text-neutral-400 shrink-0 tabular-nums">{{ formatWhen(row.liked_at) }}</span>
-              </RouterLink>
-            </li>
-          </ul>
-        </div>
-      </div>
+            <AvatarDisc
+              :color="row.avatar_url ? undefined : (row.avatar_color || DEFAULT_AVATAR_COLOR_CLASS)"
+              frame-class="relative h-10 w-10 text-xs ring-2 ring-neutral-100 dark:ring-neutral-700 shrink-0"
+              text-class="text-white"
+              :has-image="!!row.avatar_url"
+            >
+              <img
+                v-if="row.avatar_url"
+                :src="row.avatar_url"
+                alt=""
+                class="h-full w-full object-cover"
+                draggable="false"
+              />
+              <span v-else>{{ displayInitials(row.display_name) }}</span>
+            </AvatarDisc>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{{ row.display_name }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">@{{ row.username }}</p>
+            </div>
+            <span class="text-[10px] text-neutral-400 shrink-0 tabular-nums">{{ formatWhen(row.liked_at) }}</span>
+          </RouterLink>
+        </li>
+      </ul>
     </div>
-  </Teleport>
+  </PinovaModal>
 </template>

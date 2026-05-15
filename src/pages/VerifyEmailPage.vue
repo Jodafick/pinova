@@ -27,10 +27,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-6 py-12">
+  <div class="min-h-screen flex items-center justify-center bg-transparent dark:bg-transparent px-6 py-12">
     <div class="w-full max-w-md bg-white dark:bg-neutral-900 p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800 text-center">
       <div v-if="loading">
-        <div class="w-16 h-16 border-4 border-neutral-100 border-t-pink-600 rounded-full animate-spin mx-auto mb-6"></div>
+        <div class="w-16 h-16 border-4 border-neutral-100 border-t-pink-700 dark:border-t-pink-600 rounded-full animate-spin mx-auto mb-6"></div>
         <h2 class="text-2xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.loading.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('verifyEmail.loading.desc') }}</p>
       </div>
@@ -41,14 +41,14 @@ onMounted(async () => {
         </div>
         <h2 class="text-2xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.success.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('verifyEmail.success.desc') }}</p>
-        <router-link to="/login" class="inline-block mt-8 px-8 py-3 rounded-full bg-pink-600 text-white font-bold hover:bg-pink-700 transition-all">
+        <router-link to="/login" class="inline-block mt-8 px-8 py-3 rounded-full bg-pink-700 dark:bg-pink-600 text-white font-bold hover:bg-pink-800 dark:hover:opacity-90 transition-all">
           {{ t('verifyEmail.success.cta') }}
         </router-link>
       </div>
 
       <div v-else class="animate-fade-in">
         <div class="w-16 h-16 rounded-full bg-pink-50 flex items-center justify-center mx-auto mb-6">
-          <span class="material-symbols-outlined text-pink-600 text-3xl">error_outline</span>
+          <span class="material-symbols-outlined text-pink-700 text-3xl">error_outline</span>
         </div>
         <h2 class="text-2xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.error.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ error }}</p>

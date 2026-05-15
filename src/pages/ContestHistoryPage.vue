@@ -77,7 +77,7 @@ onMounted(() => {
       </div>
       <router-link
         to="/contest/live"
-        class="text-sm font-semibold text-pink-600 hover:text-pink-700 shrink-0"
+        class="text-sm font-semibold text-pink-700 hover:text-pink-800 shrink-0"
       >
         ← {{ t('contest.title') }}
       </router-link>
@@ -91,7 +91,7 @@ onMounted(() => {
         v-for="a in archives"
         :key="a.contest_key"
         type="button"
-        class="rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-xs font-bold text-pink-800 hover:bg-pink-100 dark:border-pink-800/60 dark:bg-pink-950/40 dark:text-pink-200"
+        class="rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-xs font-bold text-pink-700 hover:bg-pink-100 dark:border-pink-800/60 dark:bg-pink-950/40 dark:text-pink-600"
         @click="loadHistoryByKey(a.contest_key)"
       >
         {{ a.contest_key }}
@@ -108,7 +108,7 @@ onMounted(() => {
         />
         <button
           type="button"
-          class="rounded-xl px-4 py-2 bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700"
+          class="rounded-xl px-4 py-2 bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90"
           @click="loadHistoryByKey(inputKey)"
         >
           {{ t('contest.history.load') }}
@@ -139,7 +139,7 @@ onMounted(() => {
               })
             }}
           </p>
-          <p class="text-pink-600 font-bold">{{ t('contest.row.points', { points: Number(winner.score || 0).toFixed(2) }) }}</p>
+          <p class="text-pink-700 font-bold">{{ t('contest.row.points', { points: Number(winner.score || 0).toFixed(2) }) }}</p>
         </div>
       </div>
     </div>

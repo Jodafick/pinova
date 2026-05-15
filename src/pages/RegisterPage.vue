@@ -8,6 +8,7 @@ import { useI18n } from '../i18n'
 import { EMAIL_DELIVERY_UNAVAILABLE_CODE } from '../constants/authErrors'
 import { clearStoredReferralCode } from '../composables/useReferralIntent'
 import { extractDrfFieldErrors, firstErroredField } from '../utils/apiValidationErrors'
+import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
 
 const router = useRouter()
 const { register, socialLogin } = useAuth()
@@ -87,12 +88,18 @@ const handleRegister = async () => {
     const maybeRaw = (result as { raw?: unknown }).raw
     const extracted = extractDrfFieldErrors(maybeRaw)
     fieldErrors.value = Object.fromEntries(
-      Object.entries(extracted).map(([k, v]) => [k, v[0] || '']),
+      Object.entries(extracted).map(([k, v]) => [k, translatePinovaErrorToken(v[0] || '', t)]),
     )
     await focusField(firstErroredField(extracted, FIELD_ORDER))
+    const body = maybeRaw && typeof maybeRaw === 'object' && !Array.isArray(maybeRaw) ? (maybeRaw as Record<string, unknown>) : null
+    const nfe = body?.non_field_errors
+    const firstNfe =
+      Array.isArray(nfe) && typeof nfe[0] === 'string' && nfe[0].trim() ? nfe[0].trim() : ''
+    const globalFromApi = firstNfe ? translatePinovaNonFieldToken(firstNfe, t) : ''
     error.value = suggestGoogleForEmail.value
       ? t('auth.emailDeliveryBlocked.message')
-      : result.error || t('register.error.generic')
+      : globalFromApi ||
+        (Object.keys(fieldErrors.value).length ? '' : result.error || t('register.error.generic'))
     return
   }
   clearStoredReferralCode()
@@ -119,10 +126,10 @@ const { login: googleLogin } = useTokenClient({
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-white dark:bg-neutral-950">
+  <div class="min-h-screen flex bg-transparent dark:bg-transparent">
     <!-- Left side - hero -->
     <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-pink-500/90 via-pink-500/80 to-pink-600/90 z-10"></div>
+      <div class="absolute inset-0 bg-gradient-to-br from-pink-700/90 dark:from-pink-600/90 via-pink-700/80 dark:via-pink-600/80 to-pink-700/90 dark:to-pink-600/90 z-10"></div>
       <img
         src="https://images.pexels.com/photos/1070534/pexels-photo-1070534.jpeg?auto=compress&cs=tinysrgb&w=1200"
         alt=""
@@ -149,7 +156,7 @@ const { login: googleLogin } = useTokenClient({
       <div class="w-full max-w-lg bg-white dark:bg-neutral-900 p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800">
         <!-- Mobile logo -->
         <div class="lg:hidden flex items-center justify-center gap-2 mb-10">
-          <div class="w-10 h-10 rounded-full bg-pink-600 flex items-center justify-center overflow-hidden shadow-sm">
+          <div class="w-10 h-10 rounded-full bg-pink-700 dark:bg-pink-600 flex items-center justify-center overflow-hidden shadow-sm">
             <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
           <span class="text-2xl font-auth-title text-neutral-900 dark:text-neutral-100">Pinova</span>
@@ -163,7 +170,7 @@ const { login: googleLogin } = useTokenClient({
         <form @submit.prevent="handleRegister" class="space-y-5">
           <div
             v-if="error"
-            class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-600 text-sm animate-shake"
+            class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm animate-shake"
           >
             <span class="material-symbols-outlined text-lg">error</span>
             {{ error }}
@@ -173,14 +180,14 @@ const { login: googleLogin } = useTokenClient({
             <div>
               <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('register.fullName') }}</label>
               <div class="relative group">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">person</span>
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">person</span>
                 <input
                   ref="displayNameInput"
                   v-model="displayName"
                   type="text"
                   :placeholder="t('register.fullName.placeholder')"
                   :class="[
-                    'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all',
+                    'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all',
                     fieldErrors.display_name || fieldErrors.username
                       ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
                       : 'border-neutral-200 dark:border-neutral-700',
@@ -194,14 +201,14 @@ const { login: googleLogin } = useTokenClient({
             <div>
               <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('login.email') }}</label>
               <div class="relative group">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">mail</span>
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">mail</span>
                 <input
                   ref="emailInput"
                   v-model="email"
                   type="email"
                   :placeholder="t('register.email.placeholder')"
                   :class="[
-                    'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all',
+                    'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all',
                     fieldErrors.email
                       ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
                       : 'border-neutral-200 dark:border-neutral-700',
@@ -215,14 +222,14 @@ const { login: googleLogin } = useTokenClient({
           <div>
             <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('login.password') }}</label>
             <div class="relative group">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">lock</span>
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">lock</span>
               <input
                 ref="passwordInput"
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 :placeholder="t('register.password.placeholder')"
                 :class="[
-                  'w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all',
+                  'w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all',
                   fieldErrors.password1
                     ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
                     : 'border-neutral-200 dark:border-neutral-700',
@@ -242,14 +249,14 @@ const { login: googleLogin } = useTokenClient({
           <div>
             <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('register.confirmPassword') }}</label>
             <div class="relative group">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-500 transition-colors">verified_user</span>
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">verified_user</span>
               <input
                 ref="confirmPasswordInput"
                 v-model="confirmPassword"
                 type="password"
                 :placeholder="t('register.confirmPassword.placeholder')"
                 :class="[
-                  'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all',
+                  'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all',
                   fieldErrors.password2
                     ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
                     : 'border-neutral-200 dark:border-neutral-700',
@@ -265,17 +272,17 @@ const { login: googleLogin } = useTokenClient({
                 ref="termsInput"
                 v-model="acceptTerms"
                 type="checkbox"
-                class="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border-2 border-neutral-300 transition-all checked:bg-pink-600 checked:border-pink-600 hover:border-pink-400"
+                class="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border-2 border-neutral-300 transition-all checked:bg-pink-700 dark:bg-pink-600 checked:border-pink-700 dark:border-pink-600 hover:border-pink-700"
               />
               <span class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none material-symbols-outlined text-sm font-bold">check</span>
             </div>
             <span class="text-sm text-neutral-500 dark:text-neutral-400 font-medium select-none">
               {{ t('register.acceptTerms.before') }}
-              <router-link to="/legal/terms" class="text-pink-600 font-bold hover:underline" tabindex="0" @click.stop>
+              <router-link to="/legal/terms" class="text-pink-700 font-bold hover:underline" tabindex="0" @click.stop>
                 {{ t('register.acceptTerms.terms') }}
               </router-link>
               {{ t('register.acceptTerms.middle') }}
-              <router-link to="/legal/privacy" class="text-pink-600 font-bold hover:underline" tabindex="0" @click.stop>
+              <router-link to="/legal/privacy" class="text-pink-700 font-bold hover:underline" tabindex="0" @click.stop>
                 {{ t('register.acceptTerms.privacy') }}
               </router-link>.
             </span>
@@ -283,7 +290,7 @@ const { login: googleLogin } = useTokenClient({
 
           <button
             type="submit"
-            class="w-full py-4 rounded-2xl bg-pink-600 text-white font-bold hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-pink-600/20 flex items-center justify-center gap-2"
+            class="w-full py-4 rounded-2xl bg-pink-700 dark:bg-pink-600 text-white font-bold hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-pink-700/20 flex items-center justify-center gap-2"
             :disabled="loading"
           >
             <span v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -309,7 +316,7 @@ const { login: googleLogin } = useTokenClient({
             type="button"
             @click="googleLogin()"
             class="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all text-sm font-bold text-neutral-700 dark:text-neutral-200 w-full"
-            :class="suggestGoogleForEmail ? 'ring-2 ring-pink-400 ring-offset-2' : ''"
+            :class="suggestGoogleForEmail ? 'ring-2 ring-pink-700 dark:ring-pink-600 ring-offset-2' : ''"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" />
             {{ t('login.googleCta') }}
@@ -318,7 +325,7 @@ const { login: googleLogin } = useTokenClient({
 
         <p class="mt-10 text-center text-sm text-neutral-500 dark:text-neutral-400 font-medium">
           {{ t('register.haveAccount') }}
-          <router-link to="/login" class="text-pink-600 font-bold hover:underline">{{ t('register.signIn') }}</router-link>
+          <router-link to="/login" class="text-pink-700 font-bold hover:underline">{{ t('register.signIn') }}</router-link>
         </p>
       </div>
     </div>

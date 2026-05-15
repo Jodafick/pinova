@@ -3,6 +3,11 @@ import type { User } from '../types'
 import api, { AUTH_INVALIDATED_EVENT } from '../api'
 import { readApiErrorCode } from '../constants/authErrors'
 import { clearPinClientCaches } from '../pinClientCache'
+import {
+  getCachedProfileUser,
+  profileDetailCacheKey,
+  setCachedProfileUser,
+} from '../entityClientCache'
 import { devLog } from '../devLog'
 import { API_BASE_URL } from '../env'
 import { extractMeHydrationFromApiPayload } from '../utils/mePayload'
@@ -12,6 +17,9 @@ import {
 } from '../utils/webPushBackendSync'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 import { clearStoredReferralCode, getStoredReferralCode } from './useReferralIntent'
+import { useI18n } from '../i18n'
+import { extractDrfFieldErrors } from '../utils/apiValidationErrors'
+import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
 
 export { DEFAULT_AVATAR_COLOR_CLASS }
 
@@ -57,7 +65,7 @@ const inMemoryAccessToken = ref<string | null>(
   typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null,
 )
 let hasAuthInvalidationListener = false
-const CURRENT_USER_CACHE_TTL_MS = 60_000
+const CURRENT_USER_CACHE_TTL_MS = 30 * 60 * 1000
 let currentUserLastFetchAt = 0
 let currentUserFetchPromise: Promise<void> | null = null
 let updateProfileInFlight:
@@ -261,6 +269,7 @@ export type FetchUserProfileResult = {
 }
 
 export function useAuth() {
+  const { t } = useI18n()
   function buildUpdateProfileSignature(data: {
     displayName?: string
     bio?: string
@@ -371,6 +380,10 @@ export function useAuth() {
           currentUser.value = mapDjangoUserToFrontend(response.data)
           persistMePayloadFromApi(response.data)
           currentUserLastFetchAt = Date.now()
+          const u = currentUser.value
+          if (u) {
+            setCachedProfileUser(profileDetailCacheKey(u.username, ''), u)
+          }
           void resyncWebPushSubscriptionForCurrentUser(api).catch(() => undefined)
         }
       } catch (err) {
@@ -387,12 +400,20 @@ export function useAuth() {
 
   async function fetchUserProfile(
     username: string,
-    opts?: { share?: string | null },
+    opts?: { share?: string | null; force?: boolean },
   ): Promise<FetchUserProfileResult> {
+    const shareRaw = typeof opts?.share === 'string' ? opts.share.trim() : ''
+    const cacheKey = profileDetailCacheKey(username, shareRaw)
+    if (!opts?.force) {
+      const warm = getCachedProfileUser(cacheKey)
+      if (warm) return { user: warm }
+    }
     try {
-      const params = opts?.share ? { share: opts.share } : {}
+      const params = shareRaw ? { share: shareRaw } : {}
       const response = await api.get(`profiles/${username}/`, { params })
-      return { user: mapDjangoUserToFrontend(response.data) }
+      const user = mapDjangoUserToFrontend(response.data)
+      setCachedProfileUser(cacheKey, user)
+      return { user }
     } catch (err: unknown) {
       const ax = err as { response?: { status?: number; data?: { code?: string } } }
       const status = ax.response?.status
@@ -457,6 +478,10 @@ export function useAuth() {
         currentUser.value = mapDjangoUserToFrontend(response.data)
         persistMePayloadFromApi(response.data)
         currentUserLastFetchAt = Date.now()
+        const u = currentUser.value
+        if (u) {
+          setCachedProfileUser(profileDetailCacheKey(u.username, ''), u)
+        }
       }
       return response.data
       })()
@@ -500,8 +525,29 @@ export function useAuth() {
     } catch (err: any) {
       console.error('Login error:', err)
       clearAuthState()
-      const errorMsg = err.response?.data?.non_field_errors?.[0] || 'Identifiants incorrects.'
-      return { success: false, error: errorMsg }
+      const data = err.response?.data as Record<string, unknown> | undefined
+      const fe = extractDrfFieldErrors(data)
+      const fieldErrors: { email?: string; password?: string } = {}
+      if (fe.email?.[0]) fieldErrors.email = translatePinovaErrorToken(fe.email[0], t)
+      if (fe.password?.[0]) fieldErrors.password = translatePinovaErrorToken(fe.password[0], t)
+
+      const nfe = data?.non_field_errors
+      let errorMsg = t('login.error.generic')
+      if (Array.isArray(nfe) && typeof nfe[0] === 'string' && nfe[0].trim()) {
+        errorMsg = translatePinovaNonFieldToken(nfe[0], t)
+      } else if (typeof data?.detail === 'string' && data.detail.trim()) {
+        errorMsg = data.detail.trim()
+      } else if (fe.email?.[0] || fe.password?.[0]) {
+        errorMsg = ''
+      } else {
+        const legacy = err.response?.data?.non_field_errors?.[0]
+        if (typeof legacy === 'string' && legacy.trim()) errorMsg = legacy
+      }
+
+      if (Object.keys(fieldErrors).length > 0) {
+        return { success: false as const, error: errorMsg, fieldErrors }
+      }
+      return { success: false as const, error: errorMsg }
     }
   }
 

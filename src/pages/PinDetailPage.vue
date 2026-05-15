@@ -3,6 +3,7 @@ import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
+import api from '../api'
 import { displayInitials } from '../utils/displayInitials'
 import PinGrid from '../components/PinGrid.vue'
 import PinDetailSkeleton from '../components/PinDetailSkeleton.vue'
@@ -41,13 +42,12 @@ const {
   getPin,
   toggleSave,
   pins,
-  fetchPins,
   fetchPinBySlug,
+  seedPinDetailCacheIntoStore,
   patchPinCommentsPolicy,
   moderatePinComment,
   deletePinComment,
   formatCount,
-  toggleLike,
   toggleFollow,
   loading: pinsLoading,
   fetchComments,
@@ -83,6 +83,15 @@ const detailImageFetchPriority = computed(() => (isLowDataMode.value ? 'low' : '
 const pinSlug = computed(() => route.params.slug as string)
 const pin = computed(() => getPin(pinSlug.value))
 
+function initPinDetailLoadingFromCache(): boolean {
+  const s = typeof route.params.slug === 'string' ? route.params.slug : ''
+  if (!s) return true
+  seedPinDetailCacheIntoStore(s)
+  return !getPin(s)
+}
+
+const pinDetailLoading = ref(initPinDetailLoadingFromCache())
+
 function usernamesMatch(a?: string | null, b?: string | null) {
   return (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
 }
@@ -102,11 +111,11 @@ const relatedPins = computed(() => {
 const savingPin = ref(false)
 const likingPin = ref(false)
 const followingAuthor = ref(false)
+const pinHeartBurst = ref(false)
 const translatingDescription = ref(false)
 const submittingComment = ref(false)
 const downloadingPin = ref(false)
 const commentsPolicySaving = ref(false)
-const pinDetailLoading = ref(true)
 const pinDetailNotFound = ref(false)
 const storyLikersOpen = ref(false)
 
@@ -155,7 +164,8 @@ function onDetailVideoLoadedMetadata(e: Event) {
 async function resolvePinDetail() {
   const slug = pinSlug.value
   const generation = ++resolvePinGeneration
-  pinDetailLoading.value = true
+  seedPinDetailCacheIntoStore(slug)
+  pinDetailLoading.value = !pin.value
   pinDetailNotFound.value = false
   detailImageLandscape.value = null
   richComments.value = []
@@ -174,6 +184,7 @@ async function resolvePinDetail() {
   if (pin.value && pin.value.slug === slug) {
     pinDetailNotFound.value = false
     descriptionText.value = pin.value.description
+    descriptionTranslated.value = false
     void trackPinView(pin.value.slug)
     try {
       await loadComments(true)
@@ -186,9 +197,6 @@ async function resolvePinDetail() {
 }
 
 onMounted(async () => {
-  if (pins.value.length === 0) {
-    void fetchPins()
-  }
   await resolvePinDetail()
 })
 
@@ -211,13 +219,44 @@ const handleLike = async () => {
   }
   const p = pin.value
   if (!p) return
-  if (p.isStory && isPinOwner.value) return
+  const previousLiked = !!p.liked
+  const previousReactions = p.stats.reactions || 0
+  p.liked = !previousLiked
+  p.stats.reactions = Math.max(0, previousReactions + (p.liked ? 1 : -1))
   likingPin.value = true
   try {
-    await toggleLike(p.slug)
+    const response = await api.post(`pins/${encodeURIComponent(p.slug)}/like/`)
+    p.liked = response.data.status === 'liked'
+    p.stats.reactions = response.data.likes_count
+  } catch (err) {
+    p.liked = previousLiked
+    p.stats.reactions = previousReactions
+    console.error('Erreur like pin', err)
   } finally {
     likingPin.value = false
   }
+}
+
+function triggerPinHeartBurst() {
+  pinHeartBurst.value = false
+  window.setTimeout(() => {
+    pinHeartBurst.value = true
+  }, 0)
+  window.setTimeout(() => {
+    pinHeartBurst.value = false
+  }, 980)
+}
+
+const handleMediaDoubleLike = () => {
+  triggerPinHeartBurst()
+  const p = pin.value
+  if (!p) return
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
+  }
+  if (p.liked) return
+  void handleLike()
 }
 
 const handleSave = () => {
@@ -289,6 +328,7 @@ const commentsPage = ref(1)
 const commentsHasNext = ref(false)
 const commentsLoadingMore = ref(false)
 const descriptionText = ref('')
+const descriptionTranslated = ref(false)
 const commentSort = ref<'recent' | 'relevant'>(
   typeof window !== 'undefined' && window.localStorage.getItem('pinova_comment_sort') === 'relevant'
     ? 'relevant'
@@ -556,10 +596,16 @@ const handleTranslateDescription = async () => {
     router.push('/login')
     return
   }
+  if (descriptionTranslated.value) {
+    descriptionText.value = pin.value.description
+    descriptionTranslated.value = false
+    return
+  }
   translatingDescription.value = true
   try {
     const result = await translatePinDescription(pin.value.slug, targetLang.value)
     descriptionText.value = result?.translated || pin.value.description
+    descriptionTranslated.value = !!result?.translated && result.translated.trim() !== pin.value.description.trim()
   } finally {
     translatingDescription.value = false
   }
@@ -716,9 +762,10 @@ const handleDeleteComment = async (commentId: number) => {
 
 const handleShare = async () => {
   if (!pin.value) return
+  const sharedPin = pin.value
   const url = typeof window !== 'undefined' ? window.location.href : ''
-  const title = pin.value.title || 'Pinova'
-  const text = (pin.value.description || '').slice(0, 280)
+  const title = sharedPin.title || 'Pinova'
+  const text = (sharedPin.description || '').slice(0, 280)
   await shareUrlWithFallback(
     { showAlert, showPrompt },
     {
@@ -732,6 +779,14 @@ const handleShare = async () => {
       manualBody: t('pin.share.manualBody'),
     },
   )
+  if (isAuthenticated.value) {
+    try {
+      const response = await api.post(`pins/${encodeURIComponent(sharedPin.slug)}/record-share/`)
+      sharedPin.stats.shares = response.data?.shares_count ?? (sharedPin.stats.shares || 0) + 1
+    } catch (err) {
+      console.warn('Erreur compteur partage pin', err)
+    }
+  }
 }
 
 const handleDownload = async () => {
@@ -838,18 +893,18 @@ async function deletePinFromMenu() {
     </div>
 
     <!-- Pin detail -->
+    <template v-else>
     <main
-      v-else
       id="main-pin-detail"
       tabindex="-1"
       :aria-labelledby="pin.title ? 'pin-detail-title' : undefined"
       class="min-h-screen w-full min-w-0 outline-none"
     >
-      <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div class="pin-detail-page-wrap w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <!-- Back button -->
         <button
           type="button"
-          class="app-btn app-btn-secondary group mb-8 text-sm"
+          class="pin-detail-back app-btn app-btn-secondary group mb-8 hidden text-sm lg:inline-flex"
           :aria-label="t('pin.a11y.back')"
           @click="goBack"
         >
@@ -858,10 +913,10 @@ async function deletePinFromMenu() {
         </button>
 
         <!-- Main card -->
-        <div class="lux-pin-detail-card flex flex-col lg:flex-row lg:max-h-[80vh]">
+        <div class="pin-detail-mobile-card lux-pin-detail-card flex flex-col lg:flex-row lg:max-h-[80vh]">
           <!-- Image : paysage centré verticalement ; portrait → colonne plus large pour mieux remplir -->
           <div
-            class="bg-neutral-100 flex flex-col lg:max-h-[80vh] lg:overflow-hidden shrink-0 min-h-[200px] lg:min-h-0"
+            class="pin-detail-media-pane bg-neutral-100 flex flex-col lg:max-h-[80vh] lg:overflow-hidden shrink-0 min-h-[200px] lg:min-h-0"
             :class="
               detailImageLandscape === false
                 ? 'lg:flex-[1.38] lg:basis-0 lg:min-w-0'
@@ -870,7 +925,7 @@ async function deletePinFromMenu() {
             :style="detailImageLandscape === true ? { justifyContent: 'center' } : undefined"
           >
             <div
-              class="w-full flex min-h-0"
+              class="pin-detail-media-wrap w-full flex min-h-0"
               :class="detailImageLandscape === true ? 'flex-1 items-center justify-center' : ''"
             >
               <PinSensitiveMedia
@@ -890,10 +945,10 @@ async function deletePinFromMenu() {
                   decoding="async"
                   :class="[
                     PIN_MEDIA_ANTI_LEAK_CLASS,
-                    'w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
+                    'pin-detail-media w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
                   ]"
                   @load="onDetailImageLoad"
-                  @dblclick.prevent="handleLike"
+                  @dblclick.prevent="handleMediaDoubleLike"
                   v-bind="pinMediaAntiLeakImgBindings()"
                 />
               </PinSensitiveMedia>
@@ -913,20 +968,25 @@ async function deletePinFromMenu() {
                   :preload="detailVideoPreload"
                   :class="[
                     PIN_MEDIA_ANTI_LEAK_CLASS,
-                    'w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
+                    'pin-detail-media w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
                   ]"
                   @loadedmetadata="onDetailVideoLoadedMetadata"
-                  @dblclick.prevent="handleLike"
+                  @dblclick.prevent="handleMediaDoubleLike"
                   v-bind="pinMediaAntiLeakVideoBindings(true)"
                 />
               </PinSensitiveMedia>
+              <transition name="pin-detail-heart">
+                <div v-if="pinHeartBurst" class="pin-detail-heart-burst pointer-events-none">
+                  <span class="material-symbols-outlined">favorite</span>
+                </div>
+              </transition>
             </div>
           </div>
 
           <!-- Details -->
-          <div class="lg:flex-1 lg:min-w-0 p-6 sm:p-8 lg:p-10 flex flex-col lg:max-h-[80vh] lg:overflow-y-auto min-h-0">
+          <div class="pin-detail-info-pane lg:flex-1 lg:min-w-0 p-6 sm:p-8 lg:p-10 flex flex-col lg:max-h-[80vh] lg:overflow-y-auto min-h-0">
             <!-- Actions bar -->
-            <div class="flex items-center justify-between mb-6">
+            <div class="pin-detail-actions flex items-center justify-between mb-6">
               <div class="flex items-center gap-2 flex-wrap">
                 <div v-if="isPinOwner && pin.slug" class="relative shrink-0">
                   <button
@@ -954,7 +1014,7 @@ async function deletePinFromMenu() {
                   @click="handleLike"
                 >
                   <span v-if="likingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-                  <span v-else class="material-symbols-outlined" :class="pin.liked ? 'text-pink-600' : 'text-neutral-700'" aria-hidden="true">favorite</span>
+                  <span v-else class="material-symbols-outlined" :class="pin.liked ? 'text-pink-700' : 'text-neutral-700'" aria-hidden="true">favorite</span>
                 </button>
                 <button
                   type="button"
@@ -986,7 +1046,7 @@ async function deletePinFromMenu() {
               </div>
               <button
                 type="button"
-                class="transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+                class="pin-detail-save transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
                 :class="pin.saved ? 'lux-btn-detail-saved' : 'lux-btn-primary lux-btn-pill'"
                 :disabled="savingPin"
                 :aria-pressed="pin.saved"
@@ -994,7 +1054,8 @@ async function deletePinFromMenu() {
                 @click="handleSave"
               >
                 <span v-if="savingPin" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                <span v-else>{{ pin.saved ? t('pin.saved') : t('pin.save') }}</span>
+                <span v-else class="pin-detail-save-icon material-symbols-outlined" aria-hidden="true">bookmark</span>
+                <span v-if="!savingPin">{{ pin.saved ? t('pin.saved') : t('pin.save') }}</span>
               </button>
             </div>
 
@@ -1029,7 +1090,7 @@ async function deletePinFromMenu() {
                 </p>
                 <button
                   v-if="isAuthenticated"
-                  class="text-xs font-semibold text-pink-600 hover:text-pink-700 inline-flex items-center gap-1.5"
+                  class="text-xs font-semibold text-pink-700 hover:text-pink-800 inline-flex items-center gap-1.5"
                   :disabled="translatingDescription"
                   @click="handleTranslateDescription"
                 >
@@ -1120,14 +1181,14 @@ async function deletePinFromMenu() {
                 @click="storyLikersOpen = true"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <span class="material-symbols-outlined text-lg text-pink-500" aria-hidden="true">favorite</span>
+                <span class="material-symbols-outlined text-lg text-pink-700" aria-hidden="true">favorite</span>
               </button>
               <span
                 v-else-if="!pin.isStory"
                 class="flex items-center gap-1.5"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <span class="material-symbols-outlined text-lg" :class="pin.liked ? 'text-pink-500' : 'text-neutral-300'">favorite</span>
+                <span class="material-symbols-outlined text-lg" :class="pin.liked ? 'text-pink-700' : 'text-neutral-300'">favorite</span>
               </span>
               <span class="flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-lg">sell</span>
@@ -1157,7 +1218,7 @@ async function deletePinFromMenu() {
             </div>
 
             <!-- Comments section (rich) -->
-            <div class="flex-1">
+            <div class="pin-detail-comments-pane flex-1">
               <div class="flex flex-col gap-3 mb-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
@@ -1223,7 +1284,7 @@ async function deletePinFromMenu() {
                 />
                 <div v-if="commentsHasNext" class="mt-3 text-center">
                   <button
-                    class="text-sm font-semibold text-pink-600 hover:text-pink-700 disabled:opacity-50"
+                    class="text-sm font-semibold text-pink-700 hover:text-pink-800 disabled:opacity-50"
                     :disabled="commentsLoadingMore"
                     @click="handleLoadMoreComments"
                   >
@@ -1275,6 +1336,7 @@ async function deletePinFromMenu() {
         />
       </section>
     </main>
+    </template>
 
     <StoryLikersModal
       v-model="storyLikersOpen"

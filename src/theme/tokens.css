@@ -1,0 +1,140 @@
+/**
+ * Pinova Native Tokens — mapping CSS 1:1 avec `Pinova-Mobile/src/theme/tokens.ts`.
+ *
+ *  Préfixe : `--pn-*` (Pinova Native) — distinct de `--pinova-*` pour éviter
+ *  les collisions avec les variables existantes du prompt 12 (`platformTokens`)
+ *  et les variables historiques de `style.css` (`--card-*`, `--btn-*`, ...).
+ *
+ *  Stratégie :
+ *   - Ce fichier déclare la palette canonique mobile sous forme de CSS vars.
+ *   - `platformTokens.ts` continue d'injecter dynamiquement `--pinova-*`
+ *     selon la plateforme (iOS / Material / Desktop) — non touché.
+ *   - Les composants nouveaux peuvent utiliser SOIT `--pn-*` (alignés mobile)
+ *     SOIT `--pinova-*` (alignés platform-aware). À terme on convergera.
+ *
+ *  Dark mode : déclenché via `html.dark` (cohérent avec `useAppearance.ts`).
+ */
+
+:root {
+  /* ── Couleurs surface / texte ─────────────────────────────────────────── */
+  --pn-bg-page:           #faf7f9;
+  --pn-bg-surface:        #ffffff;
+  --pn-bg-elevated:       #fffafd;
+  --pn-page-alt:          #fbf6f9;
+  --pn-text:              #0f0a0d;
+  --pn-text-muted:        #6b5a63;
+  --pn-text-placeholder:  #a898a3;
+  --pn-ink:               #120810;
+  --pn-ink-mid:           #5c3d4d;
+  --pn-ink-muted:         #9a8492;
+  --pn-neutral-100:       #f3eef1;
+
+  /* ── Bordures ─────────────────────────────────────────────────────────── */
+  --pn-border:            #ebe3e8;
+  --pn-border-soft:       #eadde5;
+
+  /* ── Palette rose (CTA, accents) ──────────────────────────────────────── */
+  --pn-pink:              #e11d77;
+  --pn-pink-700:          #be185d;
+  --pn-pink-strong:       #db2777;
+  --pn-pink-soft:         rgba(219, 39, 119, 0.08);
+  --pn-pink-border:       rgba(219, 39, 119, 0.22);
+
+  /* ── Glass system (iOS chrome flottant) ───────────────────────────────── */
+  --pn-glass-fill:        rgba(255, 255, 255, 0.45);
+  --pn-glass-stroke:      rgba(255, 255, 255, 0.7);
+
+  /* ── Dégradés CTA / accents ───────────────────────────────────────────── */
+  --pn-rose-gradient-start: #f472b6;
+  --pn-rose-gradient-end:   #db2777;
+  --pn-rose-gradient: linear-gradient(135deg, #f472b6 0%, #db2777 100%);
+
+  /* ── Feed wash (fond léger des feeds) ─────────────────────────────────── */
+  --pn-feed-wash-top:     #fff5fb;
+  --pn-feed-wash-bottom:  #faf7f9;
+  --pn-feed-wash: linear-gradient(180deg, #fff5fb 0%, #faf7f9 100%);
+
+  /* ── Squelettes (GET en cours) ────────────────────────────────────────── */
+  --pn-skeleton:          #e8e0e6;
+  --pn-skeleton-muted:    #ddd5dc;
+
+  /* ── Overlay / scrim ──────────────────────────────────────────────────── */
+  --pn-overlay-scrim:     rgba(15, 10, 13, 0.45);
+
+  /* ── États sémantiques ────────────────────────────────────────────────── */
+  --pn-success:           #059669;
+  --pn-warning:           #d97706;
+  --pn-badge-viral:       #7c3aed;
+  --pn-badge-contest:     #db2777;
+
+  /* ── Rayons (1:1 mobile) ──────────────────────────────────────────────── */
+  --pn-radius-sm:         10px;
+  --pn-radius-md:         16px;
+  --pn-radius-lg:         22px;
+  --pn-radius-xl:         28px;
+  --pn-radius-card:       22px;
+  --pn-radius-card-lg:    28px;
+
+  /* ── Shadows multi-layer (équivalent `shadowSoft` mobile) ─────────────── */
+  --pn-shadow-color:      rgba(190, 24, 93, 0.18);
+  --pn-shadow-soft:
+    0 10px 24px -10px rgba(190, 24, 93, 0.20),
+    0 4px 12px -6px rgba(190, 24, 93, 0.12);
+  --pn-shadow-soft-hover:
+    0 16px 32px -12px rgba(190, 24, 93, 0.26),
+    0 8px 20px -8px rgba(190, 24, 93, 0.18);
+  --pn-shadow-glow-rose:  0 0 32px rgba(219, 39, 119, 0.28);
+}
+
+html.dark {
+  --pn-bg-page:           #000000;
+  --pn-bg-surface:        #08080b;
+  --pn-bg-elevated:       #0c0c10;
+  --pn-page-alt:          #050506;
+  --pn-text:              #f7f2f5;
+  --pn-text-muted:        #a89aa3;
+  --pn-text-placeholder:  #6d6168;
+  --pn-ink:               #fdf4f8;
+  --pn-ink-mid:           #e8c4d4;
+  --pn-ink-muted:         #8f7c86;
+  --pn-neutral-100:       #1c181b;
+
+  --pn-border:            #1f1c20;
+  --pn-border-soft:       #1a181c;
+
+  --pn-pink:              #e11d77;
+  --pn-pink-700:          #be185d;
+  --pn-pink-strong:       #db2777;
+  --pn-pink-soft:         rgba(219, 39, 119, 0.14);
+  --pn-pink-border:       rgba(219, 39, 119, 0.35);
+
+  --pn-glass-fill:        rgba(8, 8, 11, 0.72);
+  --pn-glass-stroke:      rgba(255, 255, 255, 0.08);
+
+  --pn-rose-gradient-start: #f472b6;
+  --pn-rose-gradient-end:   #db2777;
+
+  /* Haut : wash rose ; bas : noir quasi pur (visible derrière #app-shell transparent). */
+  --pn-feed-wash-top:     #160a12;
+  --pn-feed-wash-bottom:  #000000;
+  --pn-feed-wash: linear-gradient(180deg, #160a12 0%, #0a0508 28%, #030203 58%, #000000 100%);
+
+  --pn-skeleton:          #141418;
+  --pn-skeleton-muted:    #1a1a20;
+
+  --pn-overlay-scrim:     rgba(0, 0, 0, 0.72);
+
+  --pn-success:           #34d399;
+  --pn-warning:           #fbbf24;
+  --pn-badge-viral:       #a78bfa;
+  --pn-badge-contest:     #db2777;
+
+  --pn-shadow-color:      rgba(0, 0, 0, 0.55);
+  --pn-shadow-soft:
+    0 14px 28px -12px rgba(0, 0, 0, 0.55),
+    0 6px 16px -8px rgba(0, 0, 0, 0.4);
+  --pn-shadow-soft-hover:
+    0 20px 36px -14px rgba(0, 0, 0, 0.62),
+    0 10px 24px -10px rgba(0, 0, 0, 0.48);
+  --pn-shadow-glow-rose:  0 0 40px rgba(219, 39, 119, 0.42);
+}

@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
+import { pushToast } from '../composables/useToast'
 import PrivateTags from '../components/PrivateTags.vue'
 import CreatePinEditSkeleton from '../components/CreatePinEditSkeleton.vue'
+import StoryImageCropEditor from '../components/StoryImageCropEditor.vue'
+import CameraCaptureModal from '../components/CameraCaptureModal.vue'
 import api from '../api'
 import {
   moderationScanText,
@@ -21,9 +24,14 @@ import {
   formatDrfErrorMessages,
   drfErrorTouchesFields,
 } from '../utils/apiValidationErrors'
+import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
 import { escapeHtml } from '../utils/escapeHtml'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
+import { useIsLgDown } from '../composables/useIsLgDown'
+import { useEdgeSwipeBack } from '../composables/useEdgeSwipeBack'
+import { usePinovaHeaderSwipeDismiss } from '../composables/usePinovaHeaderSwipeDismiss'
+import { useLayer } from '../navigation/useLayer'
 
 /** Champs affichés uniquement à l’étape 1 (texte / catégorie / tags publics). Pas les tags privés (étape 2). */
 const CREATE_PIN_STEP_1_FIELD_KEYS = new Set([
@@ -56,6 +64,28 @@ const storyVideoFile = ref<File | null>(null)
 const storyVideoPreviewUrl = ref<string | null>(null)
 const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+/** Modal de capture caméra (getUserMedia) — PC + mobile. */
+const cameraCaptureOpen = ref(false)
+function openCameraCapture() {
+  cameraCaptureOpen.value = true
+}
+function onCameraCaptured(file: File) {
+  void setMediaFile(file)
+}
+/** Retouche image (mobile, breakpoint lg) avant l'étape méta — même composant que les stories. */
+const pinMobilePendingImage = ref<File | null>(null)
+const pinMobileEditorOpen = ref(false)
+const pinMobileMetaScrollRef = ref<HTMLElement | null>(null)
+const pinMobileShellRef = ref<HTMLElement | null>(null)
+const pinMobileHeaderSwipeRef = ref<HTMLElement | null>(null)
+const { isLgDown } = useIsLgDown()
+const { layer, close: closeLayer } = useLayer()
+
+function leaveCreateFlow() {
+  if (layer.value) closeLayer()
+  else void router.back()
+}
+
 const saving = ref(false)
 /** Scan NSFW : publication avec flou par défaut (adultes vérifiés uniquement). */
 const pendingSensitiveBlur = ref(false)
@@ -128,6 +158,7 @@ const editSlug = computed(() => (route.name === 'edit-pin' ? String(route.params
 const isEditMode = computed(() => editSlug.value.length > 0)
 const loadingEdit = ref(false)
 const createStep = ref<1 | 2>(1)
+const mobileCreateStep = ref<'media' | 'meta'>(isEditMode.value ? 'meta' : 'media')
 
 const existingImageUrl = ref<string | null>(null)
 const existingStoryVideoUrl = ref<string | null>(null)
@@ -164,11 +195,14 @@ watch(isStory, (on) => {
 })
 
 const isGif = computed(() => imageFile.value?.type === 'image/gif')
-const fileAcceptAttr = computed(() =>
-  isStory.value
+const fileAcceptAttr = computed(() => {
+  if (isLgDown.value && !isEditMode.value) {
+    return 'image/*,.gif,.webp,.png,.jpg,.jpeg,.avif,.heic,.heif'
+  }
+  return isStory.value
     ? 'image/*,image/gif'
-    : 'image/*,image/gif,video/mp4,video/webm,video/quicktime',
-)
+    : 'image/*,image/gif,video/mp4,video/webm,video/quicktime'
+})
 const canUsePrivateTags = computed(() => currentPlan.value !== 'free')
 const resolvedTopics = computed<TopicOption[]>(() => {
   if (dynamicTopics.value.length > 0) return dynamicTopics.value
@@ -382,9 +416,57 @@ async function ensureBirthDateBeforeMedia(): Promise<boolean> {
   return false
 }
 
+function pinMobileUsesCropEditor(file: File) {
+  if (!isLgDown.value || !file.type.startsWith('image/')) return false
+  if (file.type === 'image/gif') return false
+  return true
+}
+
+function closePinMobileCropEditor() {
+  pinMobileEditorOpen.value = false
+  pinMobilePendingImage.value = null
+}
+
+function onPinMobileCropCancel() {
+  closePinMobileCropEditor()
+}
+
+async function commitPickedImageFile(file: File) {
+  if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
+  storyVideoFile.value = null
+  storyVideoPreviewUrl.value = null
+  if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
+  imageFile.value = file
+  imagePreviewUrl.value = URL.createObjectURL(file)
+  void runImageModeration(file)
+  mobileCreateStep.value = 'meta'
+  if (isLgDown.value) createStep.value = 2
+}
+
+async function onPinMobileCropped(file: File) {
+  closePinMobileCropEditor()
+  await commitPickedImageFile(file)
+}
+
+function mobilePinMetaBack() {
+  if (pinMobileEditorOpen.value) {
+    closePinMobileCropEditor()
+    return
+  }
+  if (isEditMode.value) {
+    leaveCreateFlow()
+    return
+  }
+  mobileCreateStep.value = 'media'
+}
+
 async function setMediaFile(file: File) {
   if (!(await ensureBirthDateBeforeMedia())) return
   if (file.type.startsWith('video/')) {
+    if (isLgDown.value && !isEditMode.value) {
+      void showAlert(t('create.pinMobile.videoNotAllowed'), { variant: 'warning' })
+      return
+    }
     if (isStory.value) {
       void showAlert(t('create.upload.videoNotForStory'), { variant: 'warning' })
       return
@@ -396,16 +478,17 @@ async function setMediaFile(file: File) {
     storyVideoFile.value = file
     storyVideoPreviewUrl.value = URL.createObjectURL(file)
     void runVideoModeration(file)
+    mobileCreateStep.value = 'meta'
+    if (isLgDown.value) createStep.value = 2
     return
   }
   if (file.type.startsWith('image/')) {
-    if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
-    storyVideoFile.value = null
-    storyVideoPreviewUrl.value = null
-    if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
-    imageFile.value = file
-    imagePreviewUrl.value = URL.createObjectURL(file)
-    void runImageModeration(file)
+    if (pinMobileUsesCropEditor(file)) {
+      pinMobilePendingImage.value = file
+      pinMobileEditorOpen.value = true
+      return
+    }
+    await commitPickedImageFile(file)
     return
   }
   void showAlert(t('create.upload.invalid'), { variant: 'warning' })
@@ -414,6 +497,7 @@ async function setMediaFile(file: File) {
 const onFileChange = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (file) void setMediaFile(file)
+  ;(e.target as HTMLInputElement).value = ''
 }
 
 const onDrop = (e: DragEvent) => {
@@ -433,10 +517,13 @@ const clearImage = () => {
 }
 
 const clearStep2Media = () => {
+  closePinMobileCropEditor()
   clearImage()
   clearStoryVideo()
   existingImageUrl.value = null
   existingStoryVideoUrl.value = null
+  mobileCreateStep.value = 'media'
+  if (isLgDown.value && !isEditMode.value) createStep.value = 1
 }
 
 const submitPin = async () => {
@@ -533,7 +620,7 @@ const submitPin = async () => {
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       const extracted = extractDrfFieldErrors(data)
       fieldErrors.value = Object.fromEntries(
-        Object.entries(extracted).map(([k, v]) => [k, v[0] || '']),
+        Object.entries(extracted).map(([k, v]) => [k, translatePinovaErrorToken(v[0] || '', t)]),
       )
       if (drfErrorTouchesFields(data, CREATE_PIN_STEP_1_FIELD_KEYS)) {
         createStep.value = 1
@@ -552,11 +639,29 @@ const submitPin = async () => {
         if (first === 'topic') categoryInput.value?.focus()
         if (first === 'public_tags_input') publicTagsInputRef.value?.focus()
       })
-      const lines = formatDrfErrorMessages(data)
-      await showAlert(lines.slice(0, 8).join('\n') || t('create.publish.error'), {
-        variant: 'danger',
-        title: t('modal.errorTitle'),
-      })
+      const hasFieldErr = Object.keys(fieldErrors.value).length > 0
+      const rawNfe = data.non_field_errors
+      const nfe0 =
+        Array.isArray(rawNfe) && typeof rawNfe[0] === 'string' && rawNfe[0].trim()
+          ? rawNfe[0].trim()
+          : ''
+      const detail =
+        typeof data.detail === 'string' && data.detail.trim() ? data.detail.trim() : ''
+      const globalMsg = nfe0
+        ? translatePinovaNonFieldToken(nfe0, t)
+        : detail
+          ? translatePinovaNonFieldToken(detail, t)
+          : ''
+
+      if (globalMsg) {
+        pushToast({ message: globalMsg, kind: 'error' })
+      } else if (!hasFieldErr) {
+        const lines = formatDrfErrorMessages(data)
+        await showAlert(lines.slice(0, 8).join('\n') || t('create.publish.error'), {
+          variant: 'danger',
+          title: t('modal.errorTitle'),
+        })
+      }
     } else {
       await showAlert(t('create.publish.error'), { variant: 'danger', title: t('modal.errorTitle') })
     }
@@ -578,12 +683,439 @@ const selectCategory = (selected: TopicOption) => {
   categorySearch.value = selected.name
   showCategoryDropdown.value = false
 }
+
+/** Fond image/vidéo derrière le formulaire : hauteur viewport uniquement. */
+const pinMobileBackdropVisible = computed(
+  () =>
+    isLgDown.value &&
+    !pinMobileEditorOpen.value &&
+    (isEditMode.value || (!isEditMode.value && mobileCreateStep.value === 'meta')),
+)
+
+function setPinVisibility(id: 'public' | 'followers' | 'private') {
+  visibility.value = id
+}
+
+function scrollPinMobileMetaToEnd() {
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      const el = pinMobileMetaScrollRef.value
+      if (!el) return
+      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+    })
+  })
+}
+
+watch(
+  [isLgDown, mobileCreateStep, pinMobileEditorOpen, loadingEdit, isEditMode],
+  () => {
+    if (!isLgDown.value || loadingEdit.value) return
+    if (pinMobileEditorOpen.value) return
+    if (!isEditMode.value && mobileCreateStep.value !== 'meta') return
+    scrollPinMobileMetaToEnd()
+  },
+  { flush: 'post', immediate: true },
+)
+
+function onCreateMobileEdgeDismiss() {
+  if (pinMobileEditorOpen.value) {
+    closePinMobileCropEditor()
+    return
+  }
+  if (!isEditMode.value && mobileCreateStep.value === 'meta') {
+    mobilePinMetaBack()
+    return
+  }
+  if (!isEditMode.value && mobileCreateStep.value === 'media') {
+    leaveCreateFlow()
+    return
+  }
+  if (isEditMode.value) {
+    mobilePinMetaBack()
+  }
+}
+
+function createMobileEdgeUsesFullSlideOut() {
+  if (pinMobileEditorOpen.value) return false
+  if (!isEditMode.value && mobileCreateStep.value === 'meta') return false
+  return true
+}
+
+useEdgeSwipeBack(pinMobileShellRef, {
+  enabled: () => isLgDown.value && !loadingEdit.value,
+  fullSlideOut: createMobileEdgeUsesFullSlideOut,
+  onDismiss: onCreateMobileEdgeDismiss,
+  canAcceptPointerDown: (e) => {
+    const el = e.target as HTMLElement | null
+    if (!el) return true
+    return !el.closest('[data-pinova-no-edge-back]')
+  },
+})
+
+usePinovaHeaderSwipeDismiss({
+  gestureRootRef: pinMobileHeaderSwipeRef,
+  transformRef: pinMobileShellRef,
+  enabled: () => isLgDown.value && !loadingEdit.value && !layer.value,
+  onClose: () => leaveCreateFlow(),
+})
 </script>
 
 <template>
-  <div class="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900">
-    <CreatePinEditSkeleton v-if="loadingEdit" />
-    <template v-else>
+  <CreatePinEditSkeleton
+    v-if="loadingEdit"
+    class="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
+  />
+
+  <div
+    v-else-if="isLgDown"
+    ref="pinMobileShellRef"
+    class="fixed inset-0 z-[70] overflow-y-auto overflow-x-hidden bg-[#060408] text-white overscroll-y-contain"
+  >
+    <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange">
+
+    <!-- Fond média : hauteur viewport fixe, indépendante du scroll du formulaire -->
+    <div
+      v-if="pinMobileBackdropVisible"
+      class="pointer-events-none fixed inset-x-0 top-0 z-[1] h-[100svh] max-h-[100dvh] w-full overflow-hidden bg-[#0c0812]"
+    >
+      <video
+        v-if="storyVideoPreviewUrl || (!imagePreviewUrl && (existingStoryVideoUrl || '').trim())"
+        :src="storyVideoPreviewUrl || existingStoryVideoUrl || ''"
+        class="h-full w-full object-contain object-center"
+        autoplay
+        muted
+        loop
+        playsinline
+      />
+      <img
+        v-else-if="imagePreviewUrl || (existingImageUrl || '').trim()"
+        :src="(imagePreviewUrl || existingImageUrl || '').trim()"
+        alt=""
+        class="h-full w-full object-contain object-center"
+      />
+      <div v-else class="absolute left-1/2 top-1/4 h-52 w-52 -translate-x-1/2 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
+      <div class="absolute inset-0 bg-gradient-to-b from-black/15 via-black/30 via-45% to-[#060408] to-80%" />
+    </div>
+
+    <div
+      v-if="!isEditMode && mobileCreateStep === 'media'"
+      class="relative min-h-[100svh] px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
+    >
+      <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
+      <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />
+
+      <header ref="pinMobileHeaderSwipeRef" class="relative z-10 flex items-center justify-between" data-pinova-swipe-dismiss-handle>
+        <button
+          type="button"
+          class="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white/80 transition active:scale-95"
+          :aria-label="t('common.cancel')"
+          @click="leaveCreateFlow()"
+        >
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
+        <p class="text-sm font-black tracking-tight">{{ t('create.pinMobile.header') }}</p>
+        <span class="h-9 w-9" />
+      </header>
+
+      <div class="relative z-10 mx-auto mt-4 flex max-w-sm items-center gap-2 px-8">
+        <span class="h-1.5 w-[22px] rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
+        <span class="h-1.5 flex-1 rounded-full bg-white/15" />
+      </div>
+
+      <section class="relative z-10 mx-auto mt-9 max-w-sm">
+        <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[0.25em] text-white/30">{{ t('create.pinMobile.stepBadge') }}</p>
+        <h1 class="text-[2.35rem] font-black leading-[1.05] tracking-[-0.08em]">
+          {{ t('create.pinMobile.mediaTitleLine1') }}<br>{{ t('create.pinMobile.mediaTitleLine2') }}
+        </h1>
+        <p class="mt-3 text-sm leading-6 text-white/40">{{ t('create.pinMobile.mediaHint') }}</p>
+      </section>
+
+      <section class="relative z-10 mx-auto mt-10 grid max-w-sm gap-3">
+        <button
+          type="button"
+          class="pin-m-pick-card pin-m-pick-primary relative flex min-h-[11.875rem] max-h-[190px] flex-col justify-end overflow-hidden rounded-[1.75rem] px-7 pb-7 pt-16 text-left text-white shadow-[0_28px_70px_-28px_rgba(236,72,153,0.78)] transition active:scale-[0.98] active:opacity-90"
+          @click="fileInput?.click()"
+        >
+          <span class="absolute right-[1.375rem] top-[1.375rem] grid h-[3.75rem] w-[3.75rem] place-items-center rounded-full bg-white/15 text-white">
+            <span class="material-symbols-outlined text-3xl">imagesmode</span>
+          </span>
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/60">{{ t('create.pinMobile.galleryLabel') }}</span>
+          <span class="text-2xl font-black tracking-tight">{{ t('create.pinMobile.chooseFile') }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="pin-m-pick-card relative flex min-h-[9.375rem] max-h-[150px] flex-col justify-end overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.03] px-7 pb-7 pt-16 text-left transition active:scale-[0.98] active:opacity-90"
+          @click="openCameraCapture()"
+        >
+          <span class="absolute right-[1.375rem] top-[1.375rem] grid h-[3.75rem] w-[3.75rem] place-items-center rounded-full bg-white/5 text-pink-700 dark:text-pink-600">
+            <span class="material-symbols-outlined text-3xl">photo_camera</span>
+          </span>
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/35">{{ t('create.pinMobile.cameraLabel') }}</span>
+          <span class="text-[1.35rem] font-black tracking-tight">{{ t('create.pinMobile.capturePin') }}</span>
+        </button>
+      </section>
+
+      <div v-if="needsBirthDateForMedia" class="relative z-10 mx-auto mt-5 max-w-sm rounded-2xl border border-amber-200/30 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-100">
+        {{ t('create.banner.birthDate') }}
+        <router-link to="/settings" class="font-bold text-amber-50 underline underline-offset-2">
+          {{ t('create.banner.birthDateCta') }}
+        </router-link>
+      </div>
+    </div>
+
+    <!-- Étape meta mobile (création + édition) — sheet en moitié basse, fond média visible en haut -->
+    <div v-else class="pin-m-meta relative z-10 flex h-[100svh] flex-col justify-end overflow-hidden">
+      <header class="fixed inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/55 to-transparent px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]" ref="pinMobileHeaderSwipeRef" data-pinova-swipe-dismiss-handle>
+        <button
+          type="button"
+          class="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/45 text-white transition active:scale-95"
+          :aria-label="t('common.back')"
+          @click="mobilePinMetaBack()"
+        >
+          <span class="material-symbols-outlined text-xl">chevron_left</span>
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3 py-2 text-xs font-bold text-white/80 transition active:scale-95"
+          @click="fileInput?.click()"
+        >
+          <span class="material-symbols-outlined text-base">imagesmode</span>
+          {{ (imagePreviewUrl || storyVideoPreviewUrl || (existingImageUrl || '').trim() || (existingStoryVideoUrl || '').trim()) ? t('create.pinMobile.changeMedia') : t('create.pinMobile.galleryPill') }}
+        </button>
+      </header>
+
+      <main
+        ref="pinMobileMetaScrollRef"
+        class="pin-m-sheet relative z-20 max-h-[55svh] overflow-y-auto overscroll-y-contain rounded-t-[2rem] border-t border-white/10 bg-black/65 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pt-3 shadow-[0_-24px_60px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl backdrop-saturate-150"
+      >
+        <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-white/25" aria-hidden="true" />
+        <div class="flex min-h-full flex-col justify-end">
+          <div class="mx-auto mb-3 flex max-w-md justify-center gap-2">
+            <span class="h-1.5 w-[22px] rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
+            <span class="h-1.5 w-[22px] rounded-full bg-white/15" />
+          </div>
+          <div class="mx-auto w-full max-w-md space-y-3">
+          <div v-if="needsBirthDateForMedia" class="rounded-2xl border border-amber-200/25 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-100">
+            {{ t('create.banner.birthDate') }}
+            <router-link to="/settings" class="font-bold text-amber-50 underline underline-offset-2">{{ t('create.banner.birthDateCta') }}</router-link>
+          </div>
+
+          <div v-if="mediaModerationPending" class="pin-m-glass flex items-center gap-2 text-xs text-white/70">
+            <span class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-pink-700 border-t-transparent" />
+            {{ t('moderation.scanningMedia') }}
+          </div>
+
+          <div class="pin-m-glass space-y-4">
+            <div>
+              <input
+                ref="titleInput"
+                v-model="title"
+                type="text"
+                :placeholder="t('create.field.title.placeholder')"
+                class="w-full border-0 border-b border-white/10 bg-transparent pb-3 text-2xl font-black tracking-tight text-white outline-none placeholder:text-white/25 focus:border-pink-700/60 dark:border-pink-600/60"
+              />
+              <p v-if="fieldErrors.title" class="mt-1 text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.title }}</p>
+            </div>
+            <div>
+              <textarea
+                ref="descriptionInput"
+                v-model="description"
+                rows="3"
+                maxlength="1000"
+                :placeholder="t('create.field.description.placeholder')"
+                class="w-full resize-none border-0 border-b border-white/8 bg-transparent pb-3 text-sm text-white/75 outline-none placeholder:text-white/25 focus:border-pink-700/50 dark:border-pink-600/50"
+              />
+              <p v-if="fieldErrors.description" class="mt-1 text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.description }}</p>
+            </div>
+            <div class="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+              <span class="material-symbols-outlined text-lg text-white/35">link</span>
+              <input
+                ref="linkInput"
+                v-model="link"
+                type="url"
+                :placeholder="t('create.field.link.placeholder')"
+                class="min-w-0 flex-1 bg-transparent py-2 text-sm text-white/70 outline-none placeholder:text-white/25"
+              />
+            </div>
+            <p v-if="fieldErrors.link" class="text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.link }}</p>
+
+            <div class="relative z-40">
+              <p class="mb-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">{{ t('create.field.category') }}</p>
+              <div ref="categoryAnchorRef" class="relative">
+                <input
+                  ref="categoryInput"
+                  v-model="categorySearch"
+                  type="text"
+                  :placeholder="t('create.field.category.placeholder')"
+                  class="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-pink-700/70"
+                  @focus="showCategoryDropdown = true"
+                />
+                <button
+                  type="button"
+                  class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full hover:bg-white/10"
+                  @click="showCategoryDropdown = !showCategoryDropdown"
+                >
+                  <span class="material-symbols-outlined text-white/50">expand_more</span>
+                </button>
+              </div>
+              <Teleport to="body">
+                <div
+                  v-if="showCategoryDropdown"
+                  ref="categoryFloatingRef"
+                  class="max-h-56 overflow-y-auto rounded-xl border border-white/15 bg-neutral-950 shadow-2xl"
+                  role="listbox"
+                  :style="{ ...categoryFloatingStyles, zIndex: 200 }"
+                >
+                  <button
+                    v-for="topicItem in filteredTopics"
+                    :key="topicItem.originalName"
+                    type="button"
+                    class="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white/90 hover:bg-white/10"
+                    @click="selectCategory(topicItem)"
+                  >
+                    <span class="material-symbols-outlined text-base text-white/40">{{ topicItem.icon || 'category' }}</span>
+                    <span>{{ topicItem.name }}</span>
+                  </button>
+                  <button
+                    v-if="categorySearch.trim() && !resolvedTopics.some((item) => item.name === categorySearch.trim() || item.originalName === categorySearch.trim())"
+                    type="button"
+                    class="w-full px-3 py-2.5 text-left text-sm font-semibold text-pink-700 dark:text-pink-600 hover:bg-pink-700/10 dark:hover:bg-pink-600/20"
+                    @click="selectCategory({ name: categorySearch.trim(), originalName: categorySearch.trim() })"
+                  >
+                    + {{ categorySearch.trim() }}
+                  </button>
+                </div>
+              </Teleport>
+              <p v-if="fieldErrors.topic" class="mt-1 text-xs text-pink-700 dark:text-pink-600">{{ fieldErrors.topic }}</p>
+            </div>
+          </div>
+
+          <div class="pin-m-glass space-y-3">
+            <p class="text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">{{ t('create.visibility.label') }}</p>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="option in [
+                  { id: 'public', label: t('create.visibility.public'), icon: 'public' },
+                  { id: 'followers', label: t('create.visibility.followers'), icon: 'group' },
+                  { id: 'private', label: t('create.visibility.private'), icon: 'lock' },
+                ]"
+                :key="option.id"
+                type="button"
+                class="rounded-xl border px-2 py-2.5 text-center text-[11px] font-bold transition"
+                :class="visibility === option.id ? 'border-pink-700 dark:border-pink-600 bg-pink-700/15 dark:bg-pink-600/15 text-pink-200' : 'border-white/10 bg-white/[0.04] text-white/50'"
+                @click="setPinVisibility(option.id as 'public' | 'followers' | 'private')"
+              >
+                <span class="material-symbols-outlined mb-0.5 block text-base">{{ option.icon }}</span>
+                {{ option.label }}
+              </button>
+            </div>
+            <label class="flex cursor-pointer items-start gap-3 border-t border-white/10 pt-3">
+              <input v-model="isStory" type="checkbox" class="mt-1 rounded border-white/20 bg-white/10 text-pink-700 focus:ring-pink-700 dark:focus:ring-pink-600">
+              <span>
+                <span class="block text-sm font-semibold text-white">{{ t('create.story.title') }}</span>
+                <span class="block text-xs text-white/40">{{ t('create.story.subtitle') }}</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="pin-m-glass space-y-3">
+            <p class="text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">{{ t('create.field.publicTags') }}</p>
+            <input
+              ref="publicTagsInputRef"
+              v-model="publicTagsInput"
+              type="text"
+              :placeholder="t('create.field.publicTags.placeholder')"
+              class="w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
+            />
+            <p v-if="fieldErrors.public_tags_input" class="text-xs text-pink-700 dark:text-pink-600">{{ fieldErrors.public_tags_input }}</p>
+            <div v-if="myBoards.length" class="border-t border-white/10 pt-3">
+              <p class="mb-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">{{ t('create.field.boards') }}</p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="board in myBoards"
+                  :key="board.id"
+                  type="button"
+                  class="rounded-full border px-3 py-1.5 text-xs font-semibold transition"
+                  :class="selectedBoardIds.includes(board.id) ? 'border-pink-700 dark:border-pink-600 bg-pink-700/15 dark:bg-pink-600/15 text-pink-200' : 'border-white/10 text-white/55'"
+                  @click="toggleBoardSelection(board.id)"
+                >
+                  {{ board.name }}
+                </button>
+              </div>
+            </div>
+            <p v-else class="text-xs text-white/35">{{ t('create.field.boards.empty') }}</p>
+          </div>
+
+          <div class="pin-m-glass space-y-3">
+            <PrivateTags v-if="canUsePrivateTags" v-model="privateTags" />
+            <div v-else class="rounded-2xl border border-violet-400/20 bg-violet-500/10 px-4 py-3 text-xs text-violet-100">
+              {{ t('create.privateTags.upgradeRequired') }}
+              <router-link to="/premium" class="font-bold text-white underline">{{ t('create.privateTags.upgradeCta') }}</router-link>
+            </div>
+            <div v-if="canSchedulePublish" class="border-t border-white/10 pt-3">
+              <p class="mb-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">{{ t('create.schedule.title') }}</p>
+              <input v-model="scheduledPublishLocal" type="datetime-local" class="w-full max-w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-white" />
+            </div>
+          </div>
+
+          <div class="pin-m-glass text-xs leading-relaxed text-white/60">
+            <span v-html="createNoTrackingSafeHtml" />
+            <router-link to="/premium" class="ml-1 font-semibold text-pink-700 dark:text-pink-600 underline">{{ t('create.noTracking.learnMore') }}</router-link>
+          </div>
+
+          <button
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 py-4 text-base font-black text-white shadow-lg shadow-pink-700/35 transition active:scale-[0.98] disabled:opacity-50"
+            :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending"
+            @click="submitPin"
+          >
+            <svg v-if="saving || mediaModerationPending" class="h-5 w-5 shrink-0 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span v-else class="material-symbols-outlined text-xl">rocket_launch</span>
+            {{
+              saving
+                ? (isEditMode ? t('pin.edit.saving') : t('create.publishing'))
+                : mediaModerationPending
+                  ? t('moderation.scanningMediaShort')
+                  : isEditMode
+                    ? t('pin.edit.save')
+                    : t('create.publish')
+            }}
+          </button>
+
+          <div class="flex justify-center pb-4">
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold text-white/45 transition active:scale-95"
+              @click="openCameraCapture()"
+            >
+              <span class="material-symbols-outlined text-base">photo_camera</span>
+              {{ t('create.pinMobile.cameraShortcut') }}
+            </button>
+          </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div v-if="pinMobileEditorOpen && pinMobilePendingImage" class="fixed inset-0 z-[80]">
+      <StoryImageCropEditor
+        export-profile="pin"
+        :file="pinMobilePendingImage"
+        @cancel="onPinMobileCropCancel"
+        @apply="onPinMobileCropped"
+      />
+    </div>
+  </div>
+
+  <div
+    v-else
+    class="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
+  >
+    <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange">
     <div
       v-if="needsBirthDateForMedia"
       class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
@@ -597,23 +1129,23 @@ const selectCategory = (selected: TopicOption) => {
       </router-link>
     </div>
     <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center justify-between mb-8" data-pinova-swipe-dismiss-handle>
       <div>
-        <h1 class="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-neutral-100">{{ isEditMode ? t('pin.edit.title') : t('create.title') }}</h1>
+        <h1 class="text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ isEditMode ? t('pin.edit.title') : t('create.title') }}</h1>
         <p class="text-sm text-neutral-500 dark:text-neutral-300 mt-1">{{ isEditMode ? t('pin.edit.subtitle') : t('create.subtitle') }}</p>
-        <p v-if="createStep === 1" class="text-xs text-pink-600 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
+        <p v-if="createStep === 1" class="text-xs text-pink-700 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
       </div>
       <div class="flex items-center gap-3">
         <button
           class="px-5 py-2.5 rounded-full text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
-          @click="router.back()"
+          @click="leaveCreateFlow()"
         >
           {{ t('common.cancel') }}
         </button>
         <button
           v-if="createStep === 2"
           type="button"
-          class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition flex items-center gap-2 shadow-lg shadow-pink-400/30"
+          class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition flex items-center gap-2 shadow-lg shadow-pink-700/30"
           :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending"
           @click="submitPin"
         >
@@ -634,7 +1166,7 @@ const selectCategory = (selected: TopicOption) => {
         <button
           v-else
           type="button"
-          class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition shadow-lg shadow-pink-400/30"
+          class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition shadow-lg shadow-pink-700/30"
           :disabled="!title.trim()"
           @click="goStep2"
         >
@@ -646,14 +1178,14 @@ const selectCategory = (selected: TopicOption) => {
     <!-- Form -->
     <!-- Formulaire : overflow visible pour que la liste catégories ne soit pas coupée -->
     <div class="bg-white/95 dark:bg-neutral-900/95 rounded-3xl shadow-xl border border-pink-100 dark:border-neutral-700 overflow-visible">
-      <div class="flex flex-col lg:flex-row">
-        <!-- Image (étape 2) -->
-        <div v-if="createStep === 2" class="lg:w-2/5 p-6 sm:p-8 bg-neutral-50 border-b lg:border-b-0 lg:border-r border-neutral-100">
+      <div class="flex flex-col xl:flex-row">
+        <!-- Image — disponible dès l'étape 1 sur web (même flux empilé que mobile jusqu’à xl). -->
+        <div class="xl:w-2/5 p-6 sm:p-8 bg-neutral-50 dark:bg-neutral-950/60 border-b xl:border-b-0 xl:border-r border-neutral-100 dark:border-neutral-800">
           <div
             v-if="!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()"
-            class="h-80 lg:h-full min-h-[320px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 text-center cursor-pointer transition-colors"
+            class="h-80 xl:h-full min-h-[320px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 text-center cursor-pointer transition-colors"
             :class="isDragging
-              ? 'border-pink-400 bg-pink-50/60'
+              ? 'border-pink-700 bg-pink-50/60'
               : 'border-neutral-300 hover:border-pink-300 hover:bg-pink-50/30'"
             @dragover.prevent="isDragging = true"
             @dragleave.prevent="isDragging = false"
@@ -710,7 +1242,7 @@ const selectCategory = (selected: TopicOption) => {
               />
               <span
                 v-if="isGif"
-                class="absolute top-3 left-3 px-2 py-1 rounded-md bg-pink-600 text-white text-[10px] font-bold tracking-wider flex items-center gap-1 shadow"
+                class="absolute top-3 left-3 px-2 py-1 rounded-md bg-pink-700 dark:bg-pink-600 text-white text-[10px] font-bold tracking-wider flex items-center gap-1 shadow"
               >
                 <span class="material-symbols-outlined text-sm">animation</span>
                 {{ t('create.gif.label') }}
@@ -720,7 +1252,7 @@ const selectCategory = (selected: TopicOption) => {
               v-if="mediaModerationPending"
               class="absolute inset-0 rounded-2xl bg-white/55 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 z-10 pointer-events-none"
             >
-              <svg class="animate-spin h-10 w-10 text-pink-600" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="animate-spin h-10 w-10 text-pink-700" viewBox="0 0 24 24" aria-hidden="true">
                 <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
                 <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
@@ -736,29 +1268,19 @@ const selectCategory = (selected: TopicOption) => {
               <span class="material-symbols-outlined text-neutral-600">close</span>
             </button>
           </div>
-
-          <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange" />
-        </div>
-
-        <div
-          v-else
-          class="lg:w-2/5 p-6 sm:p-8 bg-neutral-50 border-b lg:border-b-0 lg:border-r border-neutral-100 hidden lg:flex flex-col items-center justify-center text-center min-h-[300px]"
-        >
-          <span class="material-symbols-outlined text-5xl text-neutral-300 mb-3">add_photo_alternate</span>
-          <p class="text-sm text-neutral-600 font-medium">{{ t('create.step1.sideHint') }}</p>
         </div>
 
         <!-- Fields -->
-        <div class="lg:w-3/5 p-6 sm:p-8 space-y-5">
+        <div class="xl:w-3/5 p-6 sm:p-8 space-y-5">
           <div class="flex items-center gap-2 mb-2">
             <span
               class="text-xs font-bold px-2 py-1 rounded-full"
-              :class="createStep === 1 ? 'bg-pink-600 text-white' : 'bg-neutral-200 text-neutral-600'"
+              :class="createStep === 1 ? 'bg-pink-700 dark:bg-pink-600 text-white' : 'bg-neutral-200 text-neutral-600'"
             >1</span>
             <span class="text-neutral-300">→</span>
             <span
               class="text-xs font-bold px-2 py-1 rounded-full"
-              :class="createStep === 2 ? 'bg-pink-600 text-white' : 'bg-neutral-200 text-neutral-600'"
+              :class="createStep === 2 ? 'bg-pink-700 dark:bg-pink-600 text-white' : 'bg-neutral-200 text-neutral-600'"
             >2</span>
           </div>
 
@@ -774,7 +1296,7 @@ const selectCategory = (selected: TopicOption) => {
                 'w-full px-4 py-3 rounded-xl border text-base focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
                 fieldErrors.title
                   ? 'border-red-400 focus:ring-red-400'
-                  : 'border-neutral-200 focus:ring-pink-500',
+                  : 'border-neutral-200 focus:ring-pink-700 dark:focus:ring-pink-600',
               ]"
             />
             <p v-if="fieldErrors.title" class="mt-1 text-xs text-red-600">{{ fieldErrors.title }}</p>
@@ -792,7 +1314,7 @@ const selectCategory = (selected: TopicOption) => {
                 'w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:border-transparent transition resize-none placeholder:text-neutral-400',
                 fieldErrors.description
                   ? 'border-red-400 focus:ring-red-400'
-                  : 'border-neutral-200 focus:ring-pink-500',
+                  : 'border-neutral-200 focus:ring-pink-700 dark:focus:ring-pink-600',
               ]"
             />
             <p v-if="fieldErrors.description" class="mt-1 text-xs text-red-600">{{ fieldErrors.description }}</p>
@@ -811,7 +1333,7 @@ const selectCategory = (selected: TopicOption) => {
                   'w-full pl-11 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
                   fieldErrors.link
                     ? 'border-red-400 focus:ring-red-400'
-                    : 'border-neutral-200 focus:ring-pink-500',
+                    : 'border-neutral-200 focus:ring-pink-700 dark:focus:ring-pink-600',
                 ]"
               />
             </div>
@@ -830,7 +1352,7 @@ const selectCategory = (selected: TopicOption) => {
                   'w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
                   fieldErrors.topic
                     ? 'border-red-400 focus:ring-red-400'
-                    : 'border-neutral-200 focus:ring-pink-500',
+                    : 'border-neutral-200 focus:ring-pink-700 dark:focus:ring-pink-600',
                 ]"
                 @focus="showCategoryDropdown = true"
               />
@@ -865,7 +1387,7 @@ const selectCategory = (selected: TopicOption) => {
                 <button
                   v-if="categorySearch.trim() && !resolvedTopics.some((item) => item.name === categorySearch.trim() || item.originalName === categorySearch.trim())"
                   type="button"
-                  class="w-full text-left px-3 py-2 text-sm font-medium text-pink-600 hover:bg-pink-50"
+                  class="w-full text-left px-3 py-2 text-sm font-medium text-pink-700 hover:bg-pink-50"
                   @click="selectCategory({ name: categorySearch.trim(), originalName: categorySearch.trim() })"
                 >
                   + {{ categorySearch.trim() }}
@@ -886,7 +1408,7 @@ const selectCategory = (selected: TopicOption) => {
                 'w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
                 fieldErrors.public_tags_input
                   ? 'border-red-400 focus:ring-red-400'
-                  : 'border-neutral-200 focus:ring-pink-500',
+                  : 'border-neutral-200 focus:ring-pink-700 dark:focus:ring-pink-600',
               ]"
             />
             <p v-if="fieldErrors.public_tags_input" class="mt-1 text-xs text-red-600">
@@ -936,14 +1458,14 @@ const selectCategory = (selected: TopicOption) => {
                 type="button"
                 class="px-3 py-3 rounded-xl border-2 text-left transition-all"
                 :class="visibility === option.id
-                  ? 'border-pink-500 bg-pink-50/40'
+                  ? 'border-pink-700 dark:border-pink-600 bg-pink-50/40'
                   : 'border-neutral-200 hover:border-neutral-300'"
-                @click="visibility = option.id as typeof visibility"
+                @click="setPinVisibility(option.id as 'public' | 'followers' | 'private')"
               >
                 <div class="flex items-center gap-1.5 mb-0.5">
                   <span
                     class="material-symbols-outlined text-base"
-                    :class="visibility === option.id ? 'text-pink-600' : 'text-neutral-500'"
+                    :class="visibility === option.id ? 'text-pink-700' : 'text-neutral-500'"
                   >{{ option.icon }}</span>
                   <span
                     class="text-xs font-bold"
@@ -961,7 +1483,7 @@ const selectCategory = (selected: TopicOption) => {
               <input
                 v-model="isStory"
                 type="checkbox"
-                class="mt-1 rounded border-neutral-300 text-pink-600 focus:ring-pink-500"
+                class="mt-1 rounded border-neutral-300 text-pink-700 focus:ring-pink-700 dark:focus:ring-pink-600"
               />
               <div>
                 <p class="text-sm font-medium text-neutral-800">{{ t('create.story.title') }}</p>
@@ -977,7 +1499,7 @@ const selectCategory = (selected: TopicOption) => {
             <input
               v-model="scheduledPublishLocal"
               type="datetime-local"
-              class="w-full max-w-xs px-3 py-2 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+              class="w-full max-w-xs px-3 py-2 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600"
             />
           </div>
 
@@ -1015,6 +1537,33 @@ const selectCategory = (selected: TopicOption) => {
         </div>
       </div>
     </div>
-    </template>
   </div>
+
+  <CameraCaptureModal
+    v-model="cameraCaptureOpen"
+    filename-prefix="pin"
+    @capture="onCameraCaptured"
+  />
 </template>
+
+<style scoped>
+.pin-m-pick-card {
+  position: relative;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.pin-m-pick-card:active {
+  transform: scale(0.98);
+  opacity: 0.88;
+}
+.pin-m-pick-primary {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 48%, #a855f7 100%);
+}
+.pin-m-glass {
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 1.5rem;
+  background: rgb(12 8 18 / 0.82);
+  padding: 1.25rem;
+  backdrop-filter: blur(18px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+</style>

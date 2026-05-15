@@ -14,6 +14,15 @@ import {
   upsertStoryRingSession,
 } from '../utils/storyRingProgress'
 import type { StorySessionEndPayload } from '../utils/storyRingProgress'
+
+const props = withDefaults(
+  defineProps<{
+    /** Bandeau intégré au chrome sombre de la home mobile (même palette que les tabs). */
+    feedChrome?: boolean
+  }>(),
+  { feedChrome: false },
+)
+
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -57,9 +66,15 @@ const displayGroups = computed(() => {
 })
 
 function ringOuterClass(g: StoryRingGroupUi) {
-  return isStoryRingAllCaughtUp(g.username, g.pins)
+  const caught = isStoryRingAllCaughtUp(g.username, g.pins)
+  if (props.feedChrome) {
+    return caught
+      ? 'w-20 h-20 rounded-full p-[3px] bg-neutral-300 ring-1 ring-neutral-200/90 dark:bg-neutral-600 dark:ring-white/15'
+      : 'w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-pink-700 dark:from-pink-600 via-amber-400 to-violet-500 shadow-[0_0_12px_rgba(236,72,153,0.35)] dark:shadow-[0_0_14px_rgba(236,72,153,0.45)]'
+  }
+  return caught
     ? 'w-20 h-20 rounded-full p-[3px] bg-neutral-300 ring-1 ring-neutral-200/80'
-    : 'w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-pink-500 via-amber-400 to-violet-500 shadow-[0_0_12px_rgba(236,72,153,0.25)]'
+    : 'w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-pink-700 dark:from-pink-600 via-amber-400 to-violet-500 shadow-[0_0_12px_rgba(236,72,153,0.25)]'
 }
 
 function ringRowDimmed(g: StoryRingGroupUi) {
@@ -67,7 +82,13 @@ function ringRowDimmed(g: StoryRingGroupUi) {
 }
 
 function ringLabelClass(g: StoryRingGroupUi) {
-  return isStoryRingAllCaughtUp(g.username, g.pins)
+  const caught = isStoryRingAllCaughtUp(g.username, g.pins)
+  if (props.feedChrome) {
+    return caught
+      ? 'text-[11px] font-medium text-neutral-500 truncate max-w-[84px] text-center leading-tight px-0.5 dark:text-white/45'
+      : 'text-[11px] font-medium text-neutral-800 truncate max-w-[84px] text-center leading-tight px-0.5 dark:text-white'
+  }
+  return caught
     ? 'text-[11px] font-medium text-neutral-400 truncate max-w-[84px] text-center leading-tight px-0.5'
     : 'text-[11px] font-medium text-neutral-600 truncate max-w-[84px] text-center leading-tight px-0.5'
 }
@@ -251,12 +272,25 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section v-if="!loading && groups.length > 0" class="mb-6 sm:mb-8">
-    <div class="flex items-center justify-between gap-2 mb-3 px-0.5">
-      <h2 class="text-sm font-semibold text-neutral-800">{{ t('home.stories.title') }}</h2>
+  <section
+    v-if="!loading && groups.length > 0"
+    :class="feedChrome ? 'mb-0 px-2 sm:px-3 pt-0 pb-0' : 'mb-6 sm:mb-8'"
+  >
+    <div class="flex items-center justify-between gap-2 px-0.5" :class="feedChrome ? 'mb-0.5 px-0' : 'mb-1'">
+      <h2
+        class="text-sm font-semibold"
+        :class="feedChrome ? 'text-neutral-900 dark:text-white' : 'text-neutral-800 dark:text-neutral-100'"
+      >
+        {{ t('home.stories.title') }}
+      </h2>
       <button
         type="button"
-        class="shrink-0 w-9 h-9 rounded-full border border-neutral-200 bg-white text-pink-600 hover:bg-neutral-50 disabled:opacity-50 flex items-center justify-center transition"
+        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition disabled:opacity-50"
+        :class="
+          feedChrome
+            ? 'border border-neutral-200 bg-white/80 text-pink-700 hover:bg-neutral-50 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/15'
+            : 'border border-neutral-200 bg-white text-pink-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-pink-600 dark:hover:bg-neutral-800'
+        "
         :disabled="refreshingStories"
         :aria-label="t('home.stories.reload')"
         @click="load({ soft: true })"
@@ -272,7 +306,12 @@ onUnmounted(() => {
       <button
         v-if="showArrows"
         type="button"
-        class="hidden sm:flex shrink-0 w-10 h-10 rounded-full border border-neutral-200 bg-white shadow-sm items-center justify-center text-neutral-700 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none transition"
+        class="hidden sm:flex shrink-0 w-10 h-10 rounded-full border shadow-sm items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition"
+        :class="
+          feedChrome
+            ? 'border-neutral-200 bg-white/90 text-neutral-700 hover:bg-neutral-50 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/15'
+            : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800'
+        "
         :disabled="!canScrollLeft"
         :aria-label="t('home.stories.prev')"
         @click="scrollPrev"
@@ -282,15 +321,21 @@ onUnmounted(() => {
 
       <div
         ref="scrollEl"
-        class="flex-1 min-w-0 flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pt-1 scroll-smooth snap-x snap-mandatory overscroll-x-contain touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        :class="[
+          'flex-1 min-w-0 flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory overscroll-x-contain touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden',
+          feedChrome ? 'pb-1 pt-0.5' : 'pb-1.5 pt-0.5',
+        ]"
         @scroll.passive="syncScrollMetrics"
       >
         <button
           v-for="(g, i) in displayGroups"
           :key="g.username || `g-${i}`"
           type="button"
-          class="snap-start shrink-0 flex flex-col items-center gap-2 w-[84px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 rounded-xl py-1 transition-opacity"
-          :class="ringRowDimmed(g)"
+          :class="[
+            'snap-start shrink-0 flex flex-col items-center gap-2 w-[84px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600 rounded-xl py-1 transition-opacity',
+            feedChrome ? 'focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-950' : '',
+            ringRowDimmed(g),
+          ]"
           @click="openAt(i)"
         >
           <div :class="ringOuterClass(g)">
@@ -313,7 +358,12 @@ onUnmounted(() => {
       <button
         v-if="showArrows"
         type="button"
-        class="hidden sm:flex shrink-0 w-10 h-10 rounded-full border border-neutral-200 bg-white shadow-sm items-center justify-center text-neutral-700 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none transition"
+        class="hidden sm:flex shrink-0 w-10 h-10 rounded-full border shadow-sm items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition"
+        :class="
+          feedChrome
+            ? 'border-neutral-200 bg-white/90 text-neutral-700 hover:bg-neutral-50 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/15'
+            : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800'
+        "
         :disabled="!canScrollRight"
         :aria-label="t('home.stories.next')"
         @click="scrollNext"
@@ -325,12 +375,29 @@ onUnmounted(() => {
   </section>
 
   <!-- Chargement léger : même hauteur que la rangée pour éviter un saut -->
-  <div v-else-if="loading" class="app-skeleton-wave mb-6 sm:mb-8 animate-pulse">
-    <div class="h-4 w-24 bg-neutral-200 rounded mb-3" />
+  <div
+    v-else-if="loading"
+    class="app-skeleton-wave animate-pulse"
+    :class="feedChrome ? 'mb-0 px-2 sm:px-3 py-2' : 'mb-6 sm:mb-8'"
+  >
+    <div
+      class="h-4 w-24 rounded mb-3"
+      :class="feedChrome ? 'bg-neutral-200/90 dark:bg-white/15' : 'bg-neutral-200 dark:bg-neutral-700'"
+    />
     <div class="flex gap-4 overflow-hidden pb-2">
       <div v-for="i in 10" :key="'sk-' + i" class="shrink-0 flex flex-col items-center gap-2 w-[84px]">
-        <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-neutral-200 via-neutral-100 to-neutral-200 p-[3px]">
-          <div class="w-full h-full rounded-full bg-neutral-100" />
+        <div
+          class="w-20 h-20 rounded-full p-[3px]"
+          :class="
+            feedChrome
+              ? 'bg-gradient-to-tr from-neutral-200/80 via-neutral-100/80 to-neutral-200/80 dark:from-white/20 dark:via-white/10 dark:to-white/20'
+              : 'bg-gradient-to-tr from-neutral-200 via-neutral-100 to-neutral-200'
+          "
+        >
+          <div
+            class="w-full h-full rounded-full"
+            :class="feedChrome ? 'bg-white/80 dark:bg-neutral-800' : 'bg-neutral-100 dark:bg-neutral-800'"
+          />
         </div>
       </div>
     </div>

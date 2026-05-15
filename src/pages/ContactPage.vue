@@ -67,10 +67,10 @@ watch(currentLang, load, { immediate: true })
 
 <template>
   <div class="min-h-[60vh] w-full min-w-0 max-w-xl mx-auto px-4 py-10 sm:py-14 pb-24">
-    <nav class="mb-8 flex items-center gap-2 text-sm">
+    <nav class="mb-8 max-lg:hidden flex items-center gap-2 text-sm">
       <router-link
         to="/"
-        class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-600 font-medium transition-colors"
+        class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-800 font-medium transition-colors"
       >
         <span class="material-symbols-outlined text-[18px]">arrow_back</span>
         {{ t('legal.backHome') }}
@@ -123,7 +123,7 @@ watch(currentLang, load, { immediate: true })
       <div class="relative p-8 sm:p-10">
         <header class="flex flex-wrap items-start gap-5 pb-8 mb-2 border-b app-divider-subtle">
           <div
-            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 ring-black/[0.05] bg-pink-500/15 text-pink-700"
+            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 ring-black/[0.05] bg-pink-700/15 dark:bg-pink-600/15 text-pink-700"
           >
             <span class="material-symbols-outlined text-[28px]">mail</span>
           </div>
@@ -161,7 +161,7 @@ watch(currentLang, load, { immediate: true })
             <span class="material-symbols-outlined text-xl">outgoing_mail</span>
             {{ t('contact.emailCta') }}
           </a>
-          <p class="mt-3 text-sm text-pink-700 dark:text-pink-300 font-medium break-all">
+          <p class="mt-3 text-sm text-pink-700 dark:text-pink-600 font-medium break-all">
             {{ contactEmail.trim() || FALLBACK_EMAIL }}
           </p>
         </div>

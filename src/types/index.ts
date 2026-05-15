@@ -17,6 +17,7 @@ export type Pin = {
   stats: {
     saves: number
     reactions: number
+    shares?: number
   }
   topic: string
   /** Libellé topic traduit (API topic_meta.name) pour l’affichage ; `topic` reste le nom canonique. */

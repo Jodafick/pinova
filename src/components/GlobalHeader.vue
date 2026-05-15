@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { ComponentPublicInstance } from 'vue'
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
@@ -9,22 +8,43 @@ import type { Pin } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api'
 import { subscribeUnreadCountFromHeader } from '../notificationRefresh'
-import LanguageSwitcher from './LanguageSwitcher.vue'
 import AvatarDisc from './AvatarDisc.vue'
 import { displayInitials } from '../utils/displayInitials'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
-
-type LangSwitcherInstance = ComponentPublicInstance & { close?: () => void }
 
 const { t, currentLang } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
 const { currentUser, isAuthenticated, logout } = useAuth()
-const { trackSearchInteraction } = usePins()
 
-const langSwitcherRef = ref<LangSwitcherInstance | null>(null)
+const PINOVA_HEADER_H_VAR = '--pinova-global-header-h'
+
+const headerShellRef = ref<HTMLElement | null>(null)
+const isHomeRouteHeader = computed(() => route.name === 'home' || route.path === '/')
+/** Home connectée : slot header pour stories + onglets (uniquement &lt; lg, Teleport). */
+const homeHeaderChrome = computed(() => isHomeRouteHeader.value && isAuthenticated.value)
+
+let headerHeightRo: ResizeObserver | null = null
+
+function clearHeaderHeightCssVar() {
+  if (typeof document === 'undefined') return
+  document.documentElement.style.removeProperty(PINOVA_HEADER_H_VAR)
+}
+
+function syncHeaderHeightCssVar() {
+  const el = headerShellRef.value
+  if (typeof document === 'undefined' || !el) return
+  const h = el.getBoundingClientRect().height
+  // `max-lg:hidden` sur routes hors home : le header a hauteur 0 — on laisse le fallback App.
+  if (!Number.isFinite(h) || h < 12) {
+    clearHeaderHeightCssVar()
+    return
+  }
+  document.documentElement.style.setProperty(PINOVA_HEADER_H_VAR, `${Math.ceil(h)}px`)
+}
+const { trackSearchInteraction } = usePins()
 
 const searchQuery = ref('')
 const showUserMenu = ref(false)
@@ -151,6 +171,11 @@ const currentPlanLabel = computed(() => {
   if (currentPlan.value === 'plus') return 'PLUS'
   return 'FREE'
 })
+
+/** Lien profil mobile : même résolution que l’ancienne tab bar (évite /profile générique si pseudo connu). */
+const profileDirectTo = computed(() =>
+  currentUser.value?.username ? `/profile/${encodeURIComponent(currentUser.value.username)}` : '/profile',
+)
 
 type NavItem = { name: string; label: string; to: string }
 
@@ -331,36 +356,25 @@ const closeDropdowns = () => {
   showUserMenu.value = false
   showNotifications.value = false
   showSearchResults.value = false
-  langSwitcherRef.value?.close?.()
-}
-
-function onLangPopoverOpen(opened: boolean) {
-  if (!opened) return
-  showUserMenu.value = false
-  showNotifications.value = false
-  showSearchResults.value = false
 }
 
 function onSearchFocus() {
-  langSwitcherRef.value?.close?.()
   showUserMenu.value = false
   showNotifications.value = false
   showSearchResults.value = true
 }
 
 function toggleNotificationsPanel() {
-  langSwitcherRef.value?.close?.()
   showUserMenu.value = false
   showNotifications.value = !showNotifications.value
 }
 
 function toggleUserMenuPanel() {
-  langSwitcherRef.value?.close?.()
   showNotifications.value = false
   showUserMenu.value = !showUserMenu.value
 }
 
-/** Au-dessus du header sticky (z-30). */
+/** Au-dessus du header global (z-[40]). */
 const popoverZIndex = { zIndex: 115 }
 
 let unsubscribeNotifications: (() => void) | null = null
@@ -393,31 +407,58 @@ onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('message', handleWorkerMessage)
   }
+  void nextTick(() => {
+    syncHeaderHeightCssVar()
+    const el = headerShellRef.value
+    if (!el || typeof ResizeObserver === 'undefined') return
+    headerHeightRo = new ResizeObserver(() => syncHeaderHeightCssVar())
+    headerHeightRo.observe(el)
+  })
 })
 
 onUnmounted(() => {
+  headerHeightRo?.disconnect()
+  headerHeightRo = null
+  clearHeaderHeightCssVar()
   unsubscribeNotifications?.()
   unsubscribeNotifications = null
   if (typeof window !== 'undefined') {
     window.removeEventListener('message', handleWorkerMessage)
   }
 })
+
+watch(
+  () => [route.fullPath, isAuthenticated.value],
+  () => void nextTick(() => syncHeaderHeightCssVar()),
+)
 </script>
 
 <template>
   <header
-    class="flex items-center gap-1.5 sm:gap-3 md:gap-4 px-2 sm:px-4 md:px-5 py-1.5 sm:py-2 border-b border-neutral-100 dark:border-neutral-800 bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md sticky top-0 z-30 transition-colors"
+    ref="headerShellRef"
+    class="app-global-header-shell pinova-app-chrome-safe-pt flex flex-col w-full px-2 sm:px-4 lg:px-5 pb-0 bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md fixed inset-x-0 top-0 z-[40] border-b border-neutral-200/80 dark:border-neutral-800/80 transition-colors"
+    :class="homeHeaderChrome ? 'max-lg:overflow-hidden max-lg:rounded-b-3xl' : ''"
   >
+    <div class="flex w-full min-w-0 items-center gap-1.5 sm:gap-3 lg:gap-4 pb-1.5 sm:pb-2">
     <!-- Logo -->
     <router-link
       to="/"
-      class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-pink-600 text-white hover:bg-pink-700 transition shrink-0 overflow-hidden"
+      class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-pink-700 dark:bg-pink-600 text-white hover:bg-pink-800 dark:hover:opacity-90 transition shrink-0 overflow-hidden shadow-md shadow-pink-900/15 dark:shadow-black/40 ring-1 ring-black/[0.06] dark:ring-white/15"
       aria-label="Accueil Pinova"
     >
-      <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
+      <img
+        src="../assets/logo.png"
+        alt="Logo"
+        class="w-full h-full object-cover contrast-[1.02] dark:brightness-110 dark:contrast-[1.04] dark:saturate-[1.06]"
+      />
     </router-link>
 
-    <!-- Navigation desktop : pleine ligne xl+, menu « Plus » md–lg pour alléger (mobile web & tablette). -->
+    <!--
+      Raccourci Explore retiré sur mobile : la home propose désormais une tab
+      « Explorer » native ; sur desktop, l'item reste accessible via la nav ci-dessous.
+    -->
+
+    <!-- Navigation desktop : pleine ligne xl+, menu « Plus » lg–xl ; &lt; lg = même barre compacte que mobile. -->
     <nav class="hidden xl:flex items-center gap-0.5 ml-1 shrink-0">
       <router-link
         v-for="item in navFull"
@@ -442,7 +483,7 @@ onUnmounted(() => {
       </div>
     </nav>
 
-    <nav class="hidden md:flex xl:hidden items-center gap-0.5 ml-1 shrink-0">
+    <nav class="hidden lg:flex xl:hidden items-center gap-0.5 ml-1 shrink-0">
       <router-link
         v-for="item in navMain"
         :key="item.name"
@@ -460,13 +501,14 @@ onUnmounted(() => {
       <details
         v-if="navCommunity.length || navCreateExtras.length"
         ref="navMoreRef"
-        class="relative group"
+        class="relative group bg-transparent rounded-full"
+        style="background-color: transparent !important;"
       >
         <summary
-          class="list-none cursor-pointer px-3 py-2 rounded-full text-sm font-semibold text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800 flex items-center gap-1 [&::-webkit-details-marker]:hidden"
+          class="list-none cursor-pointer rounded-full px-3 py-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1 [&::-webkit-details-marker]:hidden"
         >
           <span class="material-symbols-outlined text-lg leading-none">apps</span>
-          <span class="sr-only md:not-sr-only">{{ t('header.nav.more') }}</span>
+          <span class="sr-only lg:not-sr-only">{{ t('header.nav.more') }}</span>
         </summary>
         <div
           class="absolute left-0 top-[calc(100%+6px)] min-w-[12.5rem] py-1.5 rounded-2xl border border-neutral-200/90 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl z-[120]"
@@ -476,7 +518,7 @@ onUnmounted(() => {
             :key="'more-' + item.name"
             :to="item.to"
             class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800/80"
-            :class="currentRoute === item.name ? 'bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-200' : ''"
+            :class="currentRoute === item.name ? 'bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : ''"
             @click="closeNavMoreMenu"
           >
             {{ item.label }}
@@ -493,8 +535,10 @@ onUnmounted(() => {
       </div>
     </nav>
 
-    <!-- Search bar -->
-    <div class="flex-1 relative min-w-0 max-md:min-w-[40%]">
+    <!--
+      Search bar (desktop ≥ lg) : input réel avec dropdown de résultats.
+    -->
+    <div class="hidden lg:block flex-1 relative min-w-0">
       <div
         ref="searchAnchorRef"
         class="app-input-surface flex items-center gap-1.5 sm:gap-2 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-sm transition-all overflow-hidden"
@@ -524,6 +568,20 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!--
+      Search bar (mobile / tablette < lg) : faux input qui ouvre la page /search
+      dédiée — pas de recherche automatique, l'utilisateur tape puis valide.
+      Stylé comme un vrai input pour conserver l'affordance « zone de recherche ».
+    -->
+    <router-link
+      to="/search"
+      class="lg:hidden flex-1 min-w-0 flex items-center gap-2 rounded-full bg-neutral-100/90 dark:bg-neutral-800/90 hover:bg-neutral-200/80 dark:hover:bg-neutral-700/80 px-3 py-2 text-sm text-neutral-500 dark:text-neutral-400 transition-colors"
+      :aria-label="t('common.search')"
+    >
+      <span class="material-symbols-outlined text-lg shrink-0">search</span>
+      <span class="flex-1 truncate text-xs sm:text-sm">{{ t('header.search.placeholder') }}</span>
+    </router-link>
+
     <Teleport to="body">
       <div
         v-if="showSearchResults"
@@ -535,7 +593,7 @@ onUnmounted(() => {
       >
         <div class="p-2 overflow-y-auto flex-1 min-h-0">
           <div v-if="searchRemoteLoading" class="px-3 py-6 flex justify-center">
-            <span class="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+            <span class="w-8 h-8 border-2 border-pink-700 dark:border-pink-600 border-t-transparent rounded-full animate-spin" />
           </div>
           <template v-else>
             <p
@@ -665,7 +723,7 @@ onUnmounted(() => {
                 </div>
                 <div class="min-w-0">
                   <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ pin.title }}</p>
-                  <p class="text-xs text-pink-600/90">{{ t('header.search.forYouBadge') }}</p>
+                  <p class="text-xs text-pink-700/90">{{ t('header.search.forYouBadge') }}</p>
                 </div>
               </router-link>
             </template>
@@ -687,7 +745,7 @@ onUnmounted(() => {
         <div class="border-t border-neutral-200/70 dark:border-neutral-700/80 p-2 shrink-0">
           <button
             type="button"
-            class="w-full py-2 text-center text-sm font-semibold text-pink-600 hover:text-pink-700"
+            class="w-full py-2 text-center text-sm font-semibold text-pink-700 hover:text-pink-800"
             @click="handleSearch"
           >
             {{ t('header.search.openExplore') }}
@@ -696,13 +754,29 @@ onUnmounted(() => {
       </div>
     </Teleport>
 
-    <!-- Droite : langue, notifications, profil -->
+    <!-- Droite : notifications, profil (la recherche mobile occupe la zone centrale). -->
     <div class="flex items-center gap-1 sm:gap-2 shrink-0">
       <template v-if="isAuthenticated">
-        <LanguageSwitcher ref="langSwitcherRef" @popover-open-change="onLangPopoverOpen" />
+        <!-- Notifications (mobile) : lien direct vers la page /notifications. -->
+        <router-link
+          to="/notifications"
+          class="lg:hidden relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-600 transition hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+          :class="
+            currentRoute === 'notifications'
+              ? 'bg-pink-50 text-pink-700 ring-1 ring-pink-200 dark:bg-pink-950/40 dark:text-pink-600 dark:ring-pink-800/60'
+              : ''
+          "
+          :aria-label="t('header.notifications')"
+        >
+          <span class="material-symbols-outlined text-[22px] leading-none">notifications</span>
+          <span
+            v-if="unreadCount > 0"
+            class="absolute top-1 right-1 w-2.5 h-2.5 bg-pink-700 dark:bg-pink-600 rounded-full border-2 border-white dark:border-neutral-900"
+          ></span>
+        </router-link>
 
-        <!-- Notifications -->
-        <div ref="notifAnchorRef">
+        <!-- Notifications (desktop) : panneau déroulant ancré. -->
+        <div ref="notifAnchorRef" class="hidden lg:block">
           <button
             type="button"
             class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 transition relative"
@@ -711,16 +785,38 @@ onUnmounted(() => {
             <span class="material-symbols-outlined text-xl">notifications</span>
             <span
               v-if="unreadCount > 0"
-              class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-500 rounded-full border-2 border-white dark:border-neutral-900 ring-1 ring-pink-200/70 dark:ring-pink-500/40"
+              class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-700 dark:bg-pink-600 rounded-full border-2 border-white dark:border-neutral-900 ring-1 ring-pink-200/70 dark:ring-pink-600/40"
             ></span>
           </button>
         </div>
 
-        <!-- Photo profil = menu utilisateur -->
-        <div ref="userAnchorRef">
+        <!-- Mobile (&lt; lg) : avatar = lien direct vers le profil. Desktop : menu utilisateur. -->
+        <router-link
+          v-if="currentUser"
+          :to="profileDirectTo"
+          class="lg:hidden w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full transition ring-2 ring-pink-700 dark:ring-pink-600 hover:ring-pink-700 dark:hover:ring-pink-600 hover:scale-[1.02] shadow-md overflow-hidden focus:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-950 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600"
+          :aria-label="t('header.user.myProfile')"
+        >
+          <AvatarDisc
+            :color="currentUser.avatarColor || DEFAULT_AVATAR_COLOR_CLASS"
+            frame-class="w-full h-full text-xs sm:text-sm"
+            text-class="text-white drop-shadow-sm"
+            :has-image="!!currentUser.avatarUrl"
+          >
+            <img
+              v-if="currentUser.avatarUrl"
+              :src="currentUser.avatarUrl"
+              alt=""
+              class="w-full h-full object-cover rounded-full"
+            />
+            <span v-else>{{ userInitials }}</span>
+          </AvatarDisc>
+        </router-link>
+
+        <div ref="userAnchorRef" class="hidden lg:block">
           <button
             type="button"
-            class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full transition ring-2 ring-pink-500 hover:ring-pink-600 hover:scale-[1.02] shadow-md overflow-hidden focus:outline-none focus:ring-offset-2 focus:ring-offset-white focus:ring-pink-500"
+            class="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full transition ring-2 ring-pink-700 dark:ring-pink-600 hover:ring-pink-700 dark:hover:ring-pink-600 hover:scale-[1.02] shadow-md overflow-hidden focus:outline-none focus:ring-offset-2 focus:ring-offset-white focus:ring-pink-700 dark:focus:ring-pink-600 dark:focus:ring-offset-neutral-950"
             :aria-label="t('header.user.myProfile')"
             aria-haspopup="menu"
             :aria-expanded="showUserMenu"
@@ -757,7 +853,7 @@ onUnmounted(() => {
               <button
                 v-if="unreadCount > 0"
                 type="button"
-                class="text-xs text-pink-600 dark:text-pink-300 font-medium hover:underline"
+                class="text-xs text-pink-700 dark:text-pink-600 font-medium hover:underline"
                 @click="markAllAsRead"
               >
                 {{ t('header.notifications.markAllRead') }}
@@ -799,13 +895,13 @@ onUnmounted(() => {
                   <p class="text-sm text-neutral-800 dark:text-neutral-100 leading-snug">{{ notification.message }}</p>
                   <p class="text-xs text-neutral-400 mt-1">@{{ notification.sender_username }}</p>
                 </div>
-                <div v-if="!notification.is_read" class="w-2 h-2 rounded-full bg-pink-600 dark:bg-pink-400 mt-2"></div>
+                <div v-if="!notification.is_read" class="w-2 h-2 rounded-full bg-pink-700 dark:bg-pink-600 mt-2"></div>
               </div>
             </div>
             <div v-if="notifHasMore" class="border-t border-neutral-200/70 dark:border-neutral-700/80 p-2">
               <button
                 type="button"
-                class="w-full py-2 text-center text-sm font-semibold text-pink-600 hover:text-pink-700 disabled:opacity-50"
+                class="w-full py-2 text-center text-sm font-semibold text-pink-700 hover:text-pink-800 disabled:opacity-50"
                 :disabled="notifLoadingMore"
                 @click="loadMoreNotifications"
               >
@@ -864,64 +960,6 @@ onUnmounted(() => {
                 {{ t('header.user.myProfile') }}
               </router-link>
               <router-link
-                v-if="currentPlan === 'plus' || currentPlan === 'pro'"
-                to="/story/create"
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-pink-50 transition text-sm text-pink-700 md:hidden font-medium"
-                @click="showUserMenu = false"
-              >
-                <span class="material-symbols-outlined text-lg">auto_stories</span>
-                {{ t('story.standalone.navShort') }}
-              </router-link>
-              <router-link
-                to="/create"
-                class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
-                @click="showUserMenu = false"
-              >
-                <span class="material-symbols-outlined text-lg">add_circle</span>
-                {{ t('header.user.createPin') }}
-              </router-link>
-              <router-link
-                to="/explore"
-                class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
-                @click="showUserMenu = false"
-              >
-                <span class="material-symbols-outlined text-lg">explore</span>
-                {{ t('nav.explore') }}
-              </router-link>
-              <router-link
-                to="/contest/live"
-                class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
-                @click="showUserMenu = false"
-              >
-                <span class="material-symbols-outlined text-lg">emoji_events</span>
-                {{ t('nav.contest') }}
-              </router-link>
-              <router-link
-                to="/referrals/contest"
-                class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
-                @click="showUserMenu = false"
-              >
-                <span class="material-symbols-outlined text-lg">card_giftcard</span>
-                {{ t('nav.referral') }}
-              </router-link>
-              <router-link
-                to="/following"
-                class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200 md:hidden"
-                @click="showUserMenu = false"
-              >
-                <span class="material-symbols-outlined text-lg">groups</span>
-                {{ t('nav.following') }}
-              </router-link>
-              <router-link
-                v-if="currentPlan === 'pro'"
-                to="/creator"
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50 transition text-sm text-amber-900 font-medium md:hidden"
-                @click="showUserMenu = false"
-              >
-                <span class="material-symbols-outlined text-lg">insights</span>
-                {{ t('nav.creator') }}
-              </router-link>
-              <router-link
                 to="/settings"
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
@@ -939,7 +977,7 @@ onUnmounted(() => {
               </router-link>
               <router-link
                 to="/premium"
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-pink-50 transition text-sm text-pink-600 font-semibold"
+                class="flex items-center gap-3 px-4 py-2.5 hover:bg-pink-50 transition text-sm text-pink-700 font-semibold"
                 @click="showUserMenu = false"
               >
                 <span class="material-symbols-outlined text-lg">workspace_premium</span>
@@ -962,7 +1000,7 @@ onUnmounted(() => {
             <div class="border-t border-neutral-200/70 dark:border-neutral-700/80 py-1">
               <button
                 type="button"
-                class="app-menu-item flex items-center gap-3 px-4 py-2.5 w-full transition text-sm text-pink-600 dark:text-pink-400"
+                class="app-menu-item flex items-center gap-3 px-4 py-2.5 w-full transition text-sm text-pink-700 dark:text-pink-600"
                 @click="handleLogout"
               >
                 <span class="material-symbols-outlined text-lg">logout</span>
@@ -974,7 +1012,6 @@ onUnmounted(() => {
       </template>
 
       <template v-else>
-        <LanguageSwitcher ref="langSwitcherRef" @popover-open-change="onLangPopoverOpen" />
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <router-link
             to="/login"
@@ -984,12 +1021,16 @@ onUnmounted(() => {
           </router-link>
           <router-link
             to="/register"
-            class="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-pink-600 text-white text-xs sm:text-sm font-semibold hover:bg-pink-700 transition whitespace-nowrap"
+            class="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-xs sm:text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition whitespace-nowrap"
           >
             {{ t('nav.register') }}
           </router-link>
         </div>
       </template>
     </div>
+    </div>
+
+    <!-- Home connectée : contenu injecté par `HomePage.vue` (Teleport). -->
+    <div id="pinova-header-home-extension" class="w-full min-w-0 shrink-0" />
   </header>
 </template>

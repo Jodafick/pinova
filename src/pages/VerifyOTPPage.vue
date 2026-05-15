@@ -77,11 +77,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-6 py-12">
+  <div class="min-h-screen flex items-center justify-center bg-transparent dark:bg-transparent px-6 py-12">
     <div class="w-full max-w-md bg-white dark:bg-neutral-900 p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800">
       <div class="text-center mb-10">
         <div class="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span class="material-symbols-outlined text-pink-600 text-3xl">verified_user</span>
+          <span class="material-symbols-outlined text-pink-700 text-3xl">verified_user</span>
         </div>
         <h2 class="text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('otp.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('otp.subtitle') }} <strong>{{ email }}</strong></p>
@@ -93,7 +93,7 @@ onMounted(() => {
       </div>
 
       <form v-else @submit.prevent="handleVerify" class="space-y-6">
-        <div v-if="error" class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-600 text-sm">
+        <div v-if="error" class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm">
           <span class="material-symbols-outlined text-lg">error</span>
           {{ error }}
         </div>
@@ -105,13 +105,13 @@ onMounted(() => {
             type="text"
             maxlength="6"
             placeholder="000000"
-            class="w-full text-center tracking-[0.5em] text-2xl font-bold py-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+            class="w-full text-center tracking-[0.5em] text-2xl font-bold py-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all"
           />
         </div>
 
         <button
           type="submit"
-          class="w-full py-4 rounded-2xl bg-pink-600 text-white font-bold hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-pink-600/20 flex items-center justify-center gap-2"
+          class="w-full py-4 rounded-2xl bg-pink-700 dark:bg-pink-600 text-white font-bold hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-pink-700/20 flex items-center justify-center gap-2"
           :disabled="loading || !otp || otp.length !== 6"
         >
           <span v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -120,7 +120,7 @@ onMounted(() => {
 
         <p class="text-center text-sm text-neutral-500 dark:text-neutral-400">
           {{ t('otp.notReceived') }}
-          <button @click="handleResend" type="button" class="text-pink-600 font-bold hover:underline" :disabled="loading">{{ t('otp.resend') }}</button>
+          <button @click="handleResend" type="button" class="text-pink-700 font-bold hover:underline" :disabled="loading">{{ t('otp.resend') }}</button>
         </p>
 
         <div

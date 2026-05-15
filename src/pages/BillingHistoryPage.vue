@@ -144,7 +144,7 @@ onMounted(async () => {
     <div class="w-full min-w-0 max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-14 pb-16">
       <button
         type="button"
-        class="app-btn app-btn-secondary group mb-8 text-sm"
+        class="app-btn app-btn-secondary group mb-8 hidden text-sm lg:inline-flex"
         @click="router.push('/settings')"
       >
         <span class="material-symbols-outlined text-[1.125rem]">
@@ -157,23 +157,23 @@ onMounted(async () => {
         class="relative overflow-hidden rounded-3xl border border-pink-100/80 dark:border-pink-900/40 bg-gradient-to-br from-white via-white to-pink-50/40 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-900 px-6 sm:px-10 py-8 sm:py-10 shadow-[0_1px_0_0_rgba(0,0,0,0.04),0_12px_40px_-18px_rgba(225,29,119,0.18)] mb-8"
       >
         <div
-          class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-pink-400/10 blur-2xl"
+          class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl"
           aria-hidden="true"
         />
         <div
-          class="pointer-events-none absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-pink-500/5 blur-xl"
+          class="pointer-events-none absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-pink-700/5 dark:bg-pink-600/5 blur-xl"
           aria-hidden="true"
         />
         <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div class="flex gap-4">
             <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-md shadow-pink-500/25"
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-700 dark:from-pink-600 to-pink-700 dark:to-pink-600 text-white shadow-md shadow-pink-700/25"
               aria-hidden="true"
             >
               <span class="material-symbols-outlined text-[1.5rem]">receipt_long</span>
             </div>
             <div>
-              <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-pink-600">
+              <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-pink-700">
                 {{ t('billing.title') }}
               </p>
               <h1 class="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
@@ -186,7 +186,7 @@ onMounted(async () => {
           </div>
           <div
             v-if="!loading && invoiceCountLabel"
-            class="shrink-0 self-start rounded-full border border-pink-100 dark:border-pink-900/50 bg-white/90 dark:bg-neutral-900 px-4 py-2 text-center text-xs font-semibold text-pink-800 dark:text-pink-200 shadow-sm"
+            class="shrink-0 self-start rounded-full border border-pink-100 dark:border-pink-900/50 bg-white/90 dark:bg-neutral-900 px-4 py-2 text-center text-xs font-semibold text-pink-700 dark:text-pink-600 shadow-sm"
           >
             {{ invoiceCountLabel }}
           </div>

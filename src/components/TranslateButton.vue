@@ -35,7 +35,7 @@ const toggleTranslate = async () => {
       {{ showTranslated ? fakeTranslated : original }}
     </p>
     <button
-      class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-pink-600 hover:text-pink-700 transition"
+      class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-pink-700 hover:text-pink-800 transition"
       @click="toggleTranslate"
     >
       <svg v-if="loading" class="animate-spin h-3 w-3" viewBox="0 0 24 24">

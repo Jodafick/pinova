@@ -234,7 +234,7 @@ const plans = computed(() => [
     currencyIso: readCycle('plus', 'monthly')?.currency_iso || readCycle('plus', 'yearly')?.currency_iso || null,
     isPriceReady: !!(readCycle('plus', 'monthly') && readCycle('plus', 'yearly')),
     badge: t('premium.plan.plus.badge'),
-    color: 'border-pink-500 dark:border-pink-500/80 ring-4 ring-pink-100 dark:ring-pink-500/25',
+    color: 'border-pink-700 dark:border-pink-600 ring-4 ring-pink-100 dark:ring-pink-600/25',
     cta:
       currentPlanId.value === 'plus'
         ? paidTierFullyMatchesSelection('plus')
@@ -477,12 +477,12 @@ onUnmounted(() => {
   <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-neutral-900 dark:text-neutral-100">
     <!-- Hero -->
     <div class="text-center mb-12">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 text-xs font-semibold mb-4">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600 text-xs font-semibold mb-4">
         <span class="material-symbols-outlined text-sm">block</span>
         {{ t('premium.adFree') }}
       </div>
       <h1 class="text-4xl sm:text-5xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-3">
-        {{ t('premium.title') }} <span class="text-pink-600">{{ t('premium.titleHighlight') }}</span>
+        {{ t('premium.title') }} <span class="text-pink-700">{{ t('premium.titleHighlight') }}</span>
       </h1>
       <p class="text-base sm:text-lg text-neutral-500 dark:text-neutral-400 max-w-2xl mx-auto">
         {{ t('premium.tagline') }}
@@ -534,7 +534,7 @@ onUnmounted(() => {
           <button
             type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold border transition"
-            :class="seatBundle === 'solo' ? 'border-pink-500 bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-300' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
+            :class="seatBundle === 'solo' ? 'border-pink-700 dark:border-pink-600 bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
             :disabled="isSeatMember"
             @click="seatBundle = 'solo'"
           >
@@ -543,7 +543,7 @@ onUnmounted(() => {
           <button
             type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold border transition"
-            :class="seatBundle === 'family' ? 'border-pink-500 bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-300' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
+            :class="seatBundle === 'family' ? 'border-pink-700 dark:border-pink-600 bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
             :disabled="isSeatMember"
             @click="seatBundle = 'family'"
           >
@@ -552,7 +552,7 @@ onUnmounted(() => {
           <button
             type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold border transition"
-            :class="seatBundle === 'team' ? 'border-pink-500 bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-300' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
+            :class="seatBundle === 'team' ? 'border-pink-700 dark:border-pink-600 bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
             :disabled="isSeatMember"
             @click="seatBundle = 'team'"
           >
@@ -578,7 +578,7 @@ onUnmounted(() => {
         <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{{ t('premium.trial.sub') }}</p>
         <button
           type="button"
-          class="mt-4 w-full sm:w-auto px-5 py-2.5 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 disabled:opacity-50"
+          class="mt-4 w-full sm:w-auto px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-xs font-semibold hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-50"
           :disabled="trialPending"
           @click="handleStartTrial"
         >
@@ -599,7 +599,7 @@ onUnmounted(() => {
         <div
           v-if="plan.badge"
           class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider"
-          :class="plan.id === 'plus' ? 'bg-pink-600 text-white' : 'bg-amber-500 text-white'"
+          :class="plan.id === 'plus' ? 'bg-pink-700 dark:bg-pink-600 text-white' : 'bg-amber-500 text-white'"
         >
           {{ plan.badge }}
         </div>
@@ -631,7 +631,7 @@ onUnmounted(() => {
         <button
           class="w-full py-3 rounded-full font-semibold text-sm transition mb-6"
           :class="plan.id === 'plus'
-            ? 'bg-pink-600 text-white hover:bg-pink-700'
+            ? 'bg-pink-700 dark:bg-pink-600 text-white hover:bg-pink-800 dark:hover:opacity-90'
             : plan.id === 'pro'
               ? 'bg-neutral-900 text-white hover:bg-neutral-800'
               : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 cursor-not-allowed'"
@@ -681,8 +681,8 @@ onUnmounted(() => {
           </div>
         </div>
         <div class="app-card-soft rounded-2xl p-4 sm:p-5 flex items-start gap-3">
-          <div class="w-11 h-11 rounded-xl bg-pink-500/15 dark:bg-pink-500/22 ring-1 ring-pink-300/55 dark:ring-pink-500/45 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-pink-700 dark:text-pink-300">favorite</span>
+          <div class="w-11 h-11 rounded-xl bg-pink-700/15 dark:bg-pink-600/15 dark:bg-pink-600/22 ring-1 ring-pink-300/55 dark:ring-pink-600/45 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-pink-700 dark:text-pink-600">favorite</span>
           </div>
           <div>
             <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trust.creators') }}</p>
