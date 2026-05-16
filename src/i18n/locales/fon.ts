@@ -333,6 +333,7 @@ export const fon: Record<string, string> = {
   'profile.boards.modal.namePlaceholder': 'Tlɛ́nnu : « Lin déco » alǒ « Recettes »',
   'profile.boards.modal.private': 'Hwla tableau elɔ́',
   'profile.boards.modal.create': 'Bló',
+  'profile.boards.createError': 'É kpé bló tableau ɖè ǎ. Tɛ́nkpɔ́n hwenu ɖevo.',
   'profile.tab.created': 'È bló',
   'profile.tab.saved': 'È bɛ̀',
   'profile.empty.created.title': 'Pin e è bló ɖè ǎ',

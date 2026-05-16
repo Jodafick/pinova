@@ -769,6 +769,7 @@ export const fr: Record<string, string> = {
   'profile.boards.modal.namePlaceholder': 'Par exemple : « Idées déco » ou « Recettes »',
   'profile.boards.modal.private': 'Garder ce tableau secret',
   'profile.boards.modal.create': 'Créer',
+  'profile.boards.createError': 'Impossible de créer le tableau. Réessayez dans un instant.',
   'profile.boards.suggestionsTitle': 'Suggestions de tableaux',
   'profile.boards.suggestionsNew': 'Créer un tableau à partir de vos sujets',
   'profile.boards.suggestionsExisting': 'Tableaux qui recoupent vos sujets',

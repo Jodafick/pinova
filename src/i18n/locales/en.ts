@@ -766,6 +766,7 @@ export const en: Record<string, string> = {
   'profile.boards.modal.namePlaceholder': 'For example: "Decor ideas" or "Recipes"',
   'profile.boards.modal.private': 'Keep this board secret',
   'profile.boards.modal.create': 'Create',
+  'profile.boards.createError': 'Could not create this board. Please try again in a moment.',
   'profile.boards.suggestionsTitle': 'Board suggestions',
   'profile.boards.suggestionsNew': 'Create a board from your topics',
   'profile.boards.suggestionsExisting': 'Boards that match your topics',

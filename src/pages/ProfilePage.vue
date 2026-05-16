@@ -800,8 +800,16 @@ const handleCreateBoard = async () => {
     showCreateBoard.value = false
     await syncMyBoardsFromApi()
     void loadBoardSuggestions()
-  } catch (err) {
+  } catch (err: any) {
     console.error('Erreur création tableau:', err)
+    const apiMessage =
+      err?.response?.data?.error ||
+      err?.response?.data?.detail ||
+      err?.response?.data?.name?.[0]
+    await showAlert(apiMessage || t('profile.boards.createError'), {
+      variant: 'danger',
+      title: t('modal.errorTitle'),
+    })
   }
 }
 

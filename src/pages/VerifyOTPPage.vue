@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api'
 import { useI18n } from '../i18n'
@@ -17,6 +17,7 @@ const error = ref('')
 const suggestGoogleForEmail = ref(false)
 const loading = ref(false)
 const success = ref(false)
+let successRedirectTimer: ReturnType<typeof setTimeout> | null = null
 
 const handleVerify = async () => {
   if (!otp.value || otp.value.length !== 6) {
@@ -35,7 +36,8 @@ const handleVerify = async () => {
 
     if (response.status === 200) {
       success.value = true
-      setTimeout(() => {
+      successRedirectTimer = setTimeout(() => {
+        successRedirectTimer = null
         router.push('/login')
       }, 3000)
     }
@@ -72,6 +74,13 @@ const handleResend = async () => {
 onMounted(() => {
   if (!email.value) {
     error.value = t('otp.error.missingEmail')
+  }
+})
+
+onBeforeUnmount(() => {
+  if (successRedirectTimer != null) {
+    clearTimeout(successRedirectTimer)
+    successRedirectTimer = null
   }
 })
 </script>

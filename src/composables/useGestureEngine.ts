@@ -262,9 +262,14 @@ export function useGestureEngine(
     history.push({ x: e.clientX, y: e.clientY, time: startedAt })
     direction.value = null
     isDragging.value = false
-    /* Pointer capture pour ne pas perdre le geste en sortant de l'élément. */
-    const el = elRef.value
-    el?.setPointerCapture?.(e.pointerId)
+    /*
+     * NE PAS capturer le pointeur ici : un simple tap (sans drag) doit
+     * laisser le clic remonter naturellement au bouton/lien cible. La capture
+     * détourne `pointerup` vers l'élément capturant et casse les boutons
+     * placés dans la zone de geste (ex. Annuler / fermer dans le header
+     * `data-pinova-swipe-dismiss-handle`). On capture seulement quand le
+     * drag est confirmé dans `onPointerMove`.
+     */
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -289,6 +294,10 @@ export function useGestureEngine(
         return
       }
       isDragging.value = true
+      /* Le drag est confirmé : on capture maintenant pour ne pas perdre le
+         geste si le pointeur sort de l'élément (et pour profiter de
+         pointermove fluide). */
+      try { elRef.value?.setPointerCapture?.(e.pointerId) } catch { /* ignore */ }
       options.onStart?.(makeState(e.clientX, e.clientY))
     }
 

@@ -2131,6 +2131,17 @@ html, body {
   -webkit-backface-visibility: hidden;
 }
 
+/*
+ * Pendant la transition, l'ancienne page reste montée 260ms : sans cette
+ * règle elle interceptait les clics qui visaient la nouvelle page →
+ * symptôme "le bouton/lien ne marche qu'une fois sur deux".
+ */
+.page-forward-leave-active,
+.page-back-leave-active,
+.page-initial-leave-active {
+  pointer-events: none;
+}
+
 .page-forward-enter-from {
   transform: translate3d(100%, 0, 0);
   opacity: 1;
