@@ -12,7 +12,7 @@
  * Types supportés :
  *  - 'center'      : modal centré classique (confirmation, choix court)
  *  - 'bottomSheet' : sheet ~50% viewport, drag-to-dismiss, snap half/expanded
- *  - 'tallSheet'   : feuille haute ; sur mobile hauteur adaptative (~92dvh max), sauf si `tallSheetMobileFullBleed`
+ *  - 'tallSheet'   : feuille haute ; hauteur adaptative (borne max), option `tallSheetMobileFullBleed` pour un plafond plus large sur mobile
  *  - 'fullscreen'  : couvre tout l'écran (édition pleine, story viewer)
  *  - 'floating'    : carte flottante centrée sans backdrop opaque (toasts, picker discret)
  *
@@ -83,8 +83,8 @@ interface Props {
   /** Active la scale+blur du background #app-shell. Default true. */
   depthEffect?: boolean
   /**
-   * `tallSheet` sur viewport &lt; lg : occupe toute la hauteur (ancien comportement).
-   * Par défaut false : hauteur adaptative (max ~92dvh) pour les feuilles « liste / formulaire ».
+   * `tallSheet` sur viewport &lt; lg : plafond de hauteur un peu plus haut (~96svh max)
+   * tout en restant adaptatif au contenu (évite une feuille figée à 100vh sur Safari).
    */
   tallSheetMobileFullBleed?: boolean
   /**
@@ -406,21 +406,22 @@ const surfaceStyles = computed<Record<string, string>>(() => {
     base.borderBottomRightRadius = '0'
     base.paddingBottom = `calc(${safeBottom.value}px + ${keyboardHeight.value}px)`
     if (pres === 'tallSheet') {
-      if (tallSheetUsesFullBleed.value) {
-        /* svh / lvh : plus stable que dvh sur Safari iOS & PWA. */
-        base.height = '100svh'
-        base.maxHeight = '100lvh'
-      } else {
-        base.height = 'auto'
-        base.maxHeight = 'min(92svh, 100lvh)'
-      }
+      /*
+       * Hauteur pilotée par le contenu ; borne max pour le scroll interne.
+       * Évite `height: 100svh` sur full-bleed : sur Safari/PWA la feuille peut
+       * dépasser la zone visible → bande vide sous la surface.
+       */
+      base.height = 'auto'
+      base.maxHeight = tallSheetUsesFullBleed.value
+        ? 'min(96svh, 100lvh, 100dvh)'
+        : 'min(92svh, 100lvh, 100dvh)'
     } else {
       base.height = 'auto'
       base.maxHeight = 'min(78svh, 92svh)'
     }
   } else if (isFullscreen) {
     base.borderRadius = '0'
-    base.height = '100svh'
+    base.height = '100%'
     base.maxHeight = '100lvh'
     base.width = '100%'
     base.maxWidth = '100%'
@@ -548,17 +549,21 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 
 .pinova-modal-root--bottomSheet,
 .pinova-modal-root--tallSheet {
-  align-items: flex-end;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
   /*
-   * Ne pas forcer height: 100dvh en plus de `inset:0` : sur iOS / PWA, dvh peut
-   * dépasser la zone visible et `align-items:flex-end` aligne alors la feuille
-   * trop haut → bande vide sous la modale.
+   * Ne pas forcer height/min-height ici : `inset:0` sur le root fixe définit
+   * déjà la boîte viewport. `align-items:flex-end` en row + enfant stretch
+   * laissait parfois une hauteur de ligne flex incorrecte sous WebKit.
    */
-  height: auto;
-  min-height: 0;
-  max-height: none;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.pinova-modal-root--fullscreen {
+  align-items: stretch;
+  align-content: stretch;
 }
 
 .pinova-modal-backdrop {
@@ -640,7 +645,8 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 
 .pinova-modal-surface--bottomSheet .pinova-modal-body,
 .pinova-modal-surface--tallSheet .pinova-modal-body {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Header / poignée : le navigateur ne doit pas prendre le pan vertical à la place du drag JS (surtout iOS). */

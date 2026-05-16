@@ -2,6 +2,30 @@ import { computed, onUnmounted, ref, watch, type ComputedRef, type Ref } from 'v
 
 const DEFAULT_THRESHOLD_PX = 68
 const MAX_PULL_PX = 100
+/** Tolérance « tout en haut » du scroll racine (#main-content). */
+const TOP_EPS_PX = 2
+
+function isRootAtTop(scrollRoot: HTMLElement | null): boolean {
+  return !!scrollRoot && scrollRoot.scrollTop <= TOP_EPS_PX
+}
+
+/** True si un ascendant scrollable (en dessous du root) est déjà défoulé — le PTR ne doit pas voler le geste. */
+function nestedScrollerAwayFromTop(scrollRoot: HTMLElement, fromEl: HTMLElement | null): boolean {
+  let el: HTMLElement | null = fromEl
+  while (el && el !== scrollRoot) {
+    if (el.scrollHeight > el.clientHeight + TOP_EPS_PX) {
+      const oy = typeof window !== 'undefined' ? window.getComputedStyle(el).overflowY : 'visible'
+      if (
+        (oy === 'auto' || oy === 'scroll' || oy === 'overlay') &&
+        el.scrollTop > TOP_EPS_PX
+      ) {
+        return true
+      }
+    }
+    el = el.parentElement
+  }
+  return false
+}
 
 /**
  * Tirer depuis le haut du scroll principal (#main-content sur mobile lg-),
@@ -9,6 +33,8 @@ const MAX_PULL_PX = 100
  * après un seuil visuel (souvent `reloadPwaApplication()`).
  *
  * Zones / composants où le geste doit être ignoré : `data-pinova-no-pull-refresh`.
+ * Ne s’active que si le `#main-content` est déjà tout en haut ; les écouteurs `touchmove`
+ * sont **passifs** (pas de `preventDefault`) pour ne pas gêner le défilement.
  */
 export function useMobilePullToRefresh(options: {
   scrollRootRef: Ref<HTMLElement | null>
@@ -30,11 +56,6 @@ export function useMobilePullToRefresh(options: {
   let armed = false
   let startY = 0
 
-  function scrollTopSafe(): number {
-    const el = options.scrollRootRef.value
-    return el ? el.scrollTop : 0
-  }
-
   function resetArmHard() {
     armed = false
     pullDistance.value = 0
@@ -43,9 +64,10 @@ export function useMobilePullToRefresh(options: {
   function onTouchStart(e: TouchEvent) {
     if (!options.enabled.value) return
     const el = options.scrollRootRef.value
-    if (!el || scrollTopSafe() > 4) return
+    if (!el || !isRootAtTop(el)) return
     const target = e.target as HTMLElement | null
     if (target?.closest('[data-pinova-no-pull-refresh]')) return
+    if (nestedScrollerAwayFromTop(el, target)) return
 
     armed = true
     startY = e.touches[0]?.clientY ?? 0
@@ -54,7 +76,8 @@ export function useMobilePullToRefresh(options: {
   function onTouchMove(e: TouchEvent) {
     if (!armed || !options.enabled.value) return
 
-    if (scrollTopSafe() > 4) {
+    const el = options.scrollRootRef.value
+    if (!el || !isRootAtTop(el)) {
       resetArmHard()
       return
     }
@@ -64,13 +87,17 @@ export function useMobilePullToRefresh(options: {
       resetArmHard()
       return
     }
+    if (nestedScrollerAwayFromTop(el, target)) {
+      resetArmHard()
+      return
+    }
 
     const y = e.touches[0]?.clientY ?? 0
     const dy = y - startY
-    if (dy <= 8) return
+    /* Tirer vers le bas uniquement ; pas de preventDefault (listeners passifs) pour ne pas bloquer le scroll natif. */
+    if (dy <= 12) return
 
-    if (e.cancelable) e.preventDefault()
-    pullDistance.value = Math.min((dy - 8) * 0.45, MAX_PULL_PX)
+    pullDistance.value = Math.min((dy - 12) * 0.45, MAX_PULL_PX)
   }
 
   function onTouchEndOrCancel() {
@@ -104,7 +131,7 @@ export function useMobilePullToRefresh(options: {
     detach()
     attachedEl = el
     el.addEventListener('touchstart', onTouchStart, { passive: true })
-    el.addEventListener('touchmove', onTouchMove as EventListener, { passive: false })
+    el.addEventListener('touchmove', onTouchMove as EventListener, { passive: true })
     el.addEventListener('touchend', onTouchEndOrCancel)
     el.addEventListener('touchcancel', onTouchEndOrCancel)
   }

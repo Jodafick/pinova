@@ -400,7 +400,11 @@ usePinovaHeaderSwipeDismiss({
 <template>
   <div
     ref="storyCreateShellRef"
-    class="story-create-shell pinova-min-vh-fill flex w-full flex-1 flex-col min-h-0 bg-[#060408] text-white overflow-hidden"
+    :class="[
+      isLgDown
+        ? 'fixed inset-0 z-[70] overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#060408] text-white'
+        : 'story-create-shell pinova-min-vh-fill flex w-full flex-1 flex-col min-h-0 bg-[#060408] text-white overflow-hidden',
+    ]"
   >
     <input
       ref="galleryInput"
@@ -411,7 +415,13 @@ usePinovaHeaderSwipeDismiss({
       @change="(e) => void pickMedia(e)"
     >
 
-    <div v-if="step === 'caption'" class="story-caption-step relative flex min-h-0 flex-1 flex-col px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+1rem)]">
+    <div
+      v-if="step === 'caption'"
+      :class="[
+        'story-caption-step relative flex flex-col px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+1rem)]',
+        isLgDown ? 'min-h-[100svh]' : 'min-h-0 flex-1',
+      ]"
+    >
       <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
       <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />
       <header class="relative z-10 flex items-center justify-between">
@@ -460,7 +470,13 @@ usePinovaHeaderSwipeDismiss({
       </section>
     </div>
 
-    <div v-else-if="step === 'pick'" class="story-media-step relative flex min-h-0 flex-1 flex-col px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
+    <div
+      v-else-if="step === 'pick'"
+      :class="[
+        'story-media-step relative flex flex-col px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]',
+        isLgDown ? 'min-h-[100svh]' : 'min-h-0 flex-1',
+      ]"
+    >
       <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
       <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />
 
@@ -542,7 +558,13 @@ usePinovaHeaderSwipeDismiss({
       @apply="setEditedVideo"
     />
 
-    <div v-else-if="step === 'meta'" class="story-meta-step relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#060408]">
+    <div
+      v-else-if="step === 'meta'"
+      :class="[
+        'story-meta-step relative flex flex-col overflow-hidden bg-[#060408]',
+        isLgDown ? 'min-h-[100svh]' : 'min-h-0 flex-1',
+      ]"
+    >
       <header
         ref="storyHeaderSwipeRef"
         class="relative z-30 flex shrink-0 items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]"
