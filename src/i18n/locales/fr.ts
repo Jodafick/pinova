@@ -1022,14 +1022,21 @@ export const fr: Record<string, string> = {
   'settings.notifications.recommendations': 'Recommandations',
   'settings.notifications.recommendations.desc': 'Idées personnalisées basées sur vos intérêts',
   'settings.notifications.web.title': 'Notifications web',
-  'settings.notifications.web.desc': 'Recevoir les notifications directement dans votre navigateur.',
+  'settings.notifications.web.desc':
+    'Les notifications envoyées dans le navigateur dépendent de chaque appareil (état stocké sur le serveur pour votre compte).',
   'settings.notifications.web.enable': 'Activer',
   'settings.notifications.web.enabled': 'Activé',
+  'settings.notifications.web.disable': 'Désactiver sur cet appareil',
+  'settings.notifications.web.deviceHint':
+    'Réglé par navigateur/appareil : vos autres téléphones ou sessions ne sont pas modifiées.',
   'settings.notifications.web.activating': 'Activation...',
+  'settings.notifications.web.disabling': 'Désactivation...',
   'settings.notifications.web.errorUnsupported': 'Ce navigateur ne supporte pas les notifications web.',
   'settings.notifications.web.errorDenied': 'Autorisation refusée pour les notifications web.',
   'settings.notifications.web.errorUnavailable': 'Service de notifications indisponible pour le moment.',
   'settings.notifications.web.errorGeneric': 'Impossible d\'activer les notifications web.',
+  'settings.notifications.web.errorDisableFailed':
+    'Impossible de désactiver les notifications sur cet appareil. Réessayez.',
   'settings.notifications.save': 'Enregistrer',
   'settings.notifications.saving': 'Enregistrement...',
   'settings.notifications.saved': 'Préférences de notifications mises à jour.',

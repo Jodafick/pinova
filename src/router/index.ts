@@ -96,6 +96,7 @@ const router = createRouter({
         preserveBackground: true,
         statusBar: 'auto',
         disableEdgeBack: true,
+        hideAppMobileSubheader: true,
       },
     },
     {

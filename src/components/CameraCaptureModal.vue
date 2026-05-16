@@ -313,11 +313,11 @@ onBeforeUnmount(() => {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-[140] flex flex-col bg-black/40 sm:items-center sm:justify-center app-modal-backdrop"
+      class="camera-capture-root fixed inset-0 z-[140] flex flex-col bg-black/40 sm:items-center sm:justify-center app-modal-backdrop"
       @click.self="close"
     >
       <div
-        class="relative flex min-h-0 h-full w-full flex-1 flex-col overflow-hidden bg-neutral-100/95 text-neutral-900 shadow-xl ring-1 ring-black/[0.08] backdrop-blur-2xl dark:bg-black/85 dark:text-white dark:ring-white/10 sm:h-auto sm:max-h-[90vh] sm:max-w-3xl sm:flex-none sm:rounded-3xl"
+        class="camera-capture-panel relative flex min-h-0 flex-1 basis-0 flex-col overflow-hidden bg-neutral-100/95 text-neutral-900 shadow-xl ring-1 ring-black/[0.08] backdrop-blur-2xl dark:bg-black/85 dark:text-white dark:ring-white/10 sm:h-auto sm:max-h-[90vh] sm:max-w-3xl sm:flex-none sm:basis-auto sm:rounded-3xl"
       >
         <!-- Header -->
         <div class="flex shrink-0 items-center justify-between border-b border-neutral-200/90 px-4 py-3 dark:border-white/10">
@@ -364,11 +364,11 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <!-- Preview -->
-        <div class="relative min-h-0 flex-1 bg-neutral-950 dark:bg-black">
+        <!-- Preview (WebKit : flex-1 + basis-0 + min-h-0 évite hauteur 0 sur la vidéo). -->
+        <div class="relative min-h-0 flex-1 basis-0 bg-neutral-950 dark:bg-black">
           <video
             ref="videoEl"
-            class="h-full w-full object-contain"
+            class="absolute inset-0 h-full w-full object-contain"
             :class="facing === 'user' ? 'scale-x-[-1]' : ''"
             playsinline
             muted
@@ -470,3 +470,11 @@ onBeforeUnmount(() => {
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.camera-capture-root {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: -webkit-fill-available;
+}
+</style>

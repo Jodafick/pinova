@@ -5,6 +5,41 @@
 /** Thème sombre : classe `dark` sur `<html>` (paramètres Pinova). */
 @variant dark (.dark &);
 
+/**
+ * Safari iOS / PWA standalone : évite flex + min-h-0 sur l’empilement racine qui
+ * donne hauteur 0 (pages vides : création story, caméra, modales décalées).
+ */
+.pinova-min-vh-fill {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: -webkit-fill-available;
+}
+
+@media (max-width: 1023px) {
+  .pinova-chrome-stack {
+    min-height: 100svh;
+    min-height: -webkit-fill-available;
+    height: auto;
+    max-height: none;
+  }
+
+  /**
+   * Le route-view en position absolute pendant les transitions doit avoir un ancêtre
+   * avec hauteur non nulle (WebKit). Le `min-h-0` Tailwind seul suffisait à tout effondrer.
+   */
+  .pinova-page-transition-host {
+    min-height: 100%;
+    min-height: 100svh;
+    min-height: -webkit-fill-available;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pinova-page-transition-host {
+    min-height: 0;
+  }
+}
+
 :root {
   --input-bg: rgb(255 255 255);
   --input-border: rgb(212 212 216 / 0.9);

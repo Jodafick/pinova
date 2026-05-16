@@ -443,28 +443,28 @@ async function applyCrop() {
     </header>
 
     <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <!-- Zone média ~ moitié d’écran, centrée, avec marge pour les poignées de rognage -->
+      <!-- Zone média : hauteur fluide (flex-1) pour que l’image s’adapte à la hauteur sans être rognée dans un cadre 3:4 fixe. -->
       <div
-        class="flex flex-1 min-h-0 items-center justify-center px-6 pb-3 pt-4 sm:px-8"
+        class="flex min-h-0 flex-1 flex-col items-stretch justify-center px-6 pb-3 pt-4 sm:px-8"
       >
         <div
-          class="w-full max-w-full rounded-[1.75rem] border border-white/12 bg-black/35 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:p-5"
+          class="flex min-h-0 flex-1 w-full max-w-full flex-col rounded-[1.75rem] border border-white/12 bg-black/35 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:p-5"
         >
           <section
             ref="stageRef"
-            class="story-crop-stage relative mx-auto aspect-[3/4] h-[min(50svh,50dvh)] w-full max-w-[min(100vw-3rem,420px)] touch-none overflow-hidden rounded-xl border border-white/15 bg-black"
+            class="story-crop-stage relative mx-auto min-h-[12.5rem] w-full max-w-[min(100vw-3rem,420px)] flex-1 touch-none overflow-hidden rounded-xl border border-white/15 bg-black"
           >
         <div class="absolute inset-0 overflow-hidden rounded-[inherit] bg-black">
-          <div class="absolute inset-0 flex items-center justify-center">
+          <div class="absolute inset-0 flex items-center justify-center p-0.5">
             <div
-              class="flex max-h-full max-w-full items-center justify-center will-change-transform"
+              class="flex h-full max-h-full w-full max-w-full items-center justify-center will-change-transform"
               :style="imageTransformStyle"
             >
               <img
                 ref="imageEl"
                 :src="previewUrl"
                 alt=""
-                class="max-h-full max-w-full select-none object-contain"
+                class="max-h-full max-w-full h-auto w-auto select-none object-contain"
                 draggable="false"
                 @load="onImageLoad"
               >

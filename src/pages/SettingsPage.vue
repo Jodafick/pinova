@@ -21,6 +21,7 @@ import { usePwaContext } from '../composables/usePwaContext'
 import { reloadPwaApplication } from '../utils/pwaAppReload'
 import {
   activateWebPushNotifications,
+  deactivateWebPushNotifications,
   isWebPushActiveForUi,
   isWebPushSupported,
   type WebPushActivateError,
@@ -310,6 +311,19 @@ const activateWebNotifications = async () => {
   webNotificationsError.value = map[result.error]
 }
 
+const deactivateWebNotifications = async () => {
+  if (webNotificationsLoading.value) return
+  webNotificationsLoading.value = true
+  webNotificationsError.value = ''
+  const { ok } = await deactivateWebPushNotifications(api)
+  webNotificationsLoading.value = false
+  if (!ok) {
+    webNotificationsError.value = t('settings.notifications.web.errorDisableFailed')
+    return
+  }
+  await syncWebNotificationState()
+}
+
 onMounted(() => {
   if (currentUser.value) {
     displayName.value = currentUser.value.displayName
@@ -347,6 +361,13 @@ onMounted(() => {
   void loadSeatHub()
   void loadBlockedList()
 })
+
+watch(
+  () => currentUser.value?.id,
+  () => {
+    syncWebNotificationState().catch(() => undefined)
+  },
+)
 
 watch(
   () =>
@@ -1037,15 +1058,18 @@ watch(
 
     <nav
       :aria-label="t('settings.navLabel')"
-      class="sticky z-[38] mb-6 sm:mb-8 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md backdrop-saturate-150 shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,.5)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] top-[var(--pinova-global-header-h,calc(3.5rem+env(safe-area-inset-top,0px)+var(--pinova-pwa-extra-top-inset,0px)))]"
+      class="pinova-sticky-below-global-header sticky z-[38] mb-6 sm:mb-8 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md backdrop-saturate-150 shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,.5)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
     >
-      <div class="flex gap-1.5 overflow-x-auto px-2 py-2 sm:px-3 sm:py-2.5 no-scrollbar scroll-pl-1 scroll-pr-6 touch-pan-x">
+      <!-- lg+ : pastilles horizontales. &lt; lg : grille lisible (Safari / PWA, beaucoup d’entrées). -->
+      <div
+        class="grid grid-cols-2 gap-2 px-3 py-3 sm:grid-cols-3 lg:flex lg:flex-nowrap lg:items-stretch lg:gap-1.5 lg:overflow-x-auto lg:px-2 lg:py-2.5 lg:scroll-pl-1 lg:scroll-pr-6 lg:touch-pan-x no-scrollbar"
+      >
         <button
           v-for="item in settingsNavItems"
           :key="item.id"
           type="button"
           :aria-current="activeSectionId === item.id ? 'true' : undefined"
-          class="shrink-0 inline-flex items-center gap-1 sm:gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-[12px] font-semibold tracking-tight transition focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600 focus-visible:ring-offset-2"
+          class="inline-flex min-h-[44px] min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[12px] font-semibold tracking-tight transition focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600 focus-visible:ring-offset-2 sm:text-[12px] lg:min-h-0 lg:w-auto lg:shrink-0 lg:justify-center lg:rounded-full lg:px-3 lg:py-2 lg:text-center lg:text-[11px]"
           :class="
             activeSectionId === item.id
               ? 'border-pink-700 dark:border-pink-600 bg-pink-700 dark:bg-pink-600 text-white shadow-md shadow-pink-700/25'
@@ -1053,8 +1077,8 @@ watch(
           "
           @click="scrollToSettingsSection(item.id)"
         >
-          <span class="material-symbols-outlined text-[18px] leading-none shrink-0" aria-hidden="true">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
+          <span class="material-symbols-outlined shrink-0 text-[20px] leading-none lg:text-[18px]" aria-hidden="true">{{ item.icon }}</span>
+          <span class="min-w-0 leading-snug lg:whitespace-nowrap">{{ item.label }}</span>
         </button>
       </div>
     </nav>
@@ -1071,7 +1095,7 @@ watch(
     <div class="flex-1 flex flex-col min-h-0">
       <div class="space-y-8">
       <!-- Profile section -->
-      <section id="settings-profile" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section id="settings-profile" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.profile.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.profile.subtitle') }}</p>
@@ -1206,7 +1230,7 @@ watch(
       </section>
 
       <!-- Notifications preferences -->
-      <section id="settings-notifications" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section id="settings-notifications" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.notifications.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.notifications.subtitle') }}</p>
@@ -1245,23 +1269,47 @@ watch(
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
-          <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.web.title') }}</p>
-              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.web.desc') }}</p>
+          <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 flex flex-col gap-3">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.web.title') }}</p>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.web.desc') }}</p>
+              </div>
+              <div class="flex flex-col gap-2 shrink-0 self-stretch sm:self-auto sm:min-w-[11rem]">
+                <button
+                  v-if="!webNotificationsEnabled"
+                  type="button"
+                  class="px-4 py-2 rounded-full text-xs font-semibold transition text-center bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50"
+                  :disabled="webNotificationsLoading || !isWebPushSupported()"
+                  @click="activateWebNotifications"
+                >
+                  {{
+                    webNotificationsLoading
+                      ? t('settings.notifications.web.activating')
+                      : t('settings.notifications.web.enable')
+                  }}
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="px-4 py-2 rounded-full text-xs font-semibold transition text-center border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
+                  :disabled="webNotificationsLoading"
+                  @click="deactivateWebNotifications"
+                >
+                  {{
+                    webNotificationsLoading
+                      ? t('settings.notifications.web.disabling')
+                      : t('settings.notifications.web.disable')
+                  }}
+                </button>
+              </div>
             </div>
-            <button
-              class="px-4 py-2 rounded-full text-xs font-semibold transition shrink-0 self-stretch sm:self-auto text-center sm:text-left"
-              :class="webNotificationsEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-900 text-white hover:bg-neutral-800'"
-              :disabled="webNotificationsLoading || webNotificationsEnabled"
-              @click="activateWebNotifications"
+            <p
+              v-if="webNotificationsEnabled"
+              class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-snug"
             >
-              {{
-                webNotificationsEnabled
-                  ? t('settings.notifications.web.enabled')
-                  : (webNotificationsLoading ? t('settings.notifications.web.activating') : t('settings.notifications.web.enable'))
-              }}
-            </button>
+              {{ t('settings.notifications.web.deviceHint') }}
+            </p>
           </div>
           <p v-if="webNotificationsError" class="text-xs text-pink-700">{{ webNotificationsError }}</p>
           <div class="flex items-center justify-end">
@@ -1278,7 +1326,7 @@ watch(
       </section>
 
       <!-- Privacy -->
-      <section id="settings-privacy" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section id="settings-privacy" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.privacy.title') }}</h2>
         </div>
@@ -1321,7 +1369,7 @@ watch(
       <!-- Apparence -->
       <section
         id="settings-appearance"
-        class="scroll-mt-48 lg:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
+        class="scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.appearance.title') }}</h2>
@@ -1359,7 +1407,7 @@ watch(
         </div>
       </section>
 
-      <section id="settings-blocked" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section id="settings-blocked" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.blocked.title') }}</h2>
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.blocked.subtitle') }}</p>
@@ -1392,7 +1440,7 @@ watch(
       </section>
 
       <!-- Accessibilité & données -->
-      <section id="settings-access" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section id="settings-access" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.access.title') }}</h2>
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.access.subtitle') }}</p>
@@ -1507,7 +1555,7 @@ watch(
         </div>
       </section>
 
-      <section id="settings-tips" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section id="settings-tips" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div class="min-w-0">
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.tips.title') }}</h2>
@@ -1556,7 +1604,7 @@ watch(
       <section
         v-if="currentUser"
         id="settings-seats"
-        class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden"
+        class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.seats.title') }}</h2>
@@ -1684,7 +1732,7 @@ watch(
         </div>
       </section>
 
-      <section id="settings-subscription" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section id="settings-subscription" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0">
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.subscription.title') }}</h2>
@@ -1807,7 +1855,7 @@ watch(
       <section
         v-if="isStandalone"
         id="settings-pwa-reload"
-        class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden"
+        class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('pwa.reload.title') }}</h2>
@@ -1825,7 +1873,7 @@ watch(
         </div>
       </section>
 
-      <section id="settings-support" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section id="settings-support" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.support.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.support.subtitle') }}</p>
@@ -1869,7 +1917,7 @@ watch(
       </section>
 
       <!-- Password section -->
-      <section id="settings-password" class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section id="settings-password" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="min-w-0 flex-1">
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.password.title') }}</h2>
@@ -1948,7 +1996,7 @@ watch(
 
       <section
         id="settings-danger"
-        class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl border-pink-300/55 overflow-hidden mt-auto pt-8"
+        class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl border-pink-300/55 overflow-hidden mt-auto pt-8"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-pink-300/50 dark:border-pink-700/50">
           <h2 class="text-lg font-semibold text-pink-700 dark:text-pink-600">{{ t('settings.danger.title') }}</h2>

@@ -407,20 +407,23 @@ const surfaceStyles = computed<Record<string, string>>(() => {
     base.paddingBottom = `calc(${safeBottom.value}px + ${keyboardHeight.value}px)`
     if (pres === 'tallSheet') {
       if (tallSheetUsesFullBleed.value) {
-        base.height = '100dvh'
-        base.maxHeight = '100dvh'
+        /* svh / lvh : plus stable que dvh sur Safari iOS & PWA. */
+        base.height = '100svh'
+        base.maxHeight = '100lvh'
       } else {
         base.height = 'auto'
-        base.maxHeight = 'min(92dvh, 100dvh)'
+        base.maxHeight = 'min(92svh, 100lvh)'
       }
     } else {
       base.height = 'auto'
-      base.maxHeight = 'min(78dvh, 92dvh)'
+      base.maxHeight = 'min(78svh, 92svh)'
     }
   } else if (isFullscreen) {
     base.borderRadius = '0'
-    base.height = '100dvh'
-    base.width = '100vw'
+    base.height = '100svh'
+    base.maxHeight = '100lvh'
+    base.width = '100%'
+    base.maxWidth = '100%'
     base.paddingTop = `${safeTop.value}px`
     base.paddingBottom = `${safeBottom.value + keyboardHeight.value}px`
   } else {
@@ -428,7 +431,7 @@ const surfaceStyles = computed<Record<string, string>>(() => {
     base.borderRadius = `${GLASS.radius.md}px`
     base.maxWidth = `${props.maxWidth}px`
     /* Borne la hauteur pour que `.pinova-modal-body` (flex + overflow) scrolle au lieu de dépasser l'écran. */
-    base.maxHeight = 'min(90dvh, calc(100dvh - 32px), calc(100svh - 32px))'
+    base.maxHeight = 'min(90svh, calc(100lvh - 32px), calc(100svh - 32px))'
     base.paddingBottom = `${keyboardHeight.value}px`
   }
 
@@ -532,14 +535,14 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 .pinova-modal-root--floating {
   align-items: center;
   padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
-  /* Ancrage strict au viewport : centrage / max-h ne suivent pas la hauteur totale du document. */
-  height: 100dvh;
+  /* Ancrage viewport : svh + léger filet PWA (Safari). */
   height: 100svh;
-  min-height: 100dvh;
+  height: 100lvh;
   min-height: 100svh;
-  max-height: 100dvh;
-  max-height: 100svh;
+  min-height: -webkit-fill-available;
+  max-height: 100lvh;
   overflow: hidden;
 }
 
@@ -625,6 +628,9 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 .pinova-modal-surface--bottomSheet,
 .pinova-modal-surface--tallSheet {
   height: auto;
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Hauteur pilotée par les styles inline pour `tallSheet` (100dvh). */
@@ -685,8 +691,12 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
   background: transparent;
 }
 
+/*
+ * Safe-area bas : déjà dans `paddingBottom` inline de la surface (useSafeArea).
+ * Doubler env() ici créait un vide énorme sous les boutons en PWA.
+ */
 .pinova-modal-footer {
-  padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  padding: 10px 16px 12px;
   border-top: 1px solid var(--glass-border);
   background: color-mix(in srgb, var(--glass-fill) 88%, transparent);
   backdrop-filter: blur(14px) saturate(1.15);

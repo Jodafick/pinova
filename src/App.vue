@@ -177,12 +177,14 @@ const isAuthPage = computed(() => {
 
 const isMobileFullscreenRoute = computed(() => typeof route.query.pin === 'string' && route.query.pin.trim().length > 0)
 
+/** Routes `meta.presentation === 'fullscreen'` : pas de padding chrome du `<main>`. */
+const isFullscreenPresentationRoute = computed(
+  () => (route.meta as { presentation?: string }).presentation === 'fullscreen',
+)
+
 /** Routes immersives hors query `?pin=` : pas de padding chrome du `<main>` (safe + header fantôme). */
 const suppressMobileMainChromeInsets = computed(
-  () =>
-    isMobileFullscreenRoute.value ||
-    route.name === 'create-standalone-story' ||
-    route.name === 'create',
+  () => isMobileFullscreenRoute.value || isFullscreenPresentationRoute.value,
 )
 
 /*
@@ -233,8 +235,7 @@ const showMobileCreateFab = computed(
     isAuthenticated.value &&
     !isAuthPage.value &&
     !isMobileFullscreenRoute.value &&
-    route.name !== 'create-standalone-story' &&
-    route.name !== 'create' &&
+    !isFullscreenPresentationRoute.value &&
     !suppressMobileChromeForProfileDrawer.value &&
     (route.name === 'home' || route.name === 'profile'),
 )
@@ -403,7 +404,7 @@ const pageTransitionName = computed(() => {
   </a>
 
   <div
-    class="pinova-chrome-stack relative flex w-full flex-col min-h-screen max-lg:h-[100dvh] max-lg:max-h-[100dvh] max-lg:min-h-0 max-lg:overflow-hidden"
+    class="pinova-chrome-stack relative flex w-full flex-col min-h-screen max-lg:overflow-hidden"
   >
     <div
       class="pinova-edge-peek pointer-events-none absolute inset-0 z-0 flex flex-col overflow-hidden bg-neutral-100 dark:bg-[#050506] transition-opacity duration-100"
@@ -458,7 +459,7 @@ const pageTransitionName = computed(() => {
           : '',
       ]"
     >
-      <div class="pinova-page-transition-host relative flex flex-1 flex-col min-h-0 w-full">
+      <div class="pinova-page-transition-host relative flex flex-1 flex-col w-full">
       <!--
         Transitions : pile session (routerViewTransition) → forward / back.
         Clé `r.path` (pas fullPath) : éviter remount feed quand seule la query ?pin change.
