@@ -137,15 +137,22 @@ provide(LAYER_CONTEXT_KEY, {
       ref="surfaceRef"
       class="pinova-layer-fullscreen__surface"
       :class="{ 'pinova-no-transition': gesture.isDragging.value }"
-      :style="{
-        paddingTop: safeTop + 'px',
-        paddingBottom: safeBottom + 'px',
-        paddingLeft: safeLeft + 'px',
-        paddingRight: safeRight + 'px',
-      }"
     >
-      <!-- WebKit iOS : chaîne flex explicite — sinon routes plein écran (création) ont hauteur 0. -->
-      <div class="pinova-layer-fullscreen__route-root">
+      <!--
+        WebKit iOS : on positionne le route-root en `absolute; inset: 0` et on
+        applique la safe-area en padding ici (box-sizing: border-box). La chaîne
+        de hauteurs en pourcentage à travers flex échouait sur Safari iOS
+        (création pin/story → contenu hauteur 0 → écran noir).
+      -->
+      <div
+        class="pinova-layer-fullscreen__route-root"
+        :style="{
+          paddingTop: safeTop + 'px',
+          paddingBottom: safeBottom + 'px',
+          paddingLeft: safeLeft + 'px',
+          paddingRight: safeRight + 'px',
+        }"
+      >
         <component :is="layer.component" v-bind="layer.componentProps" />
       </div>
     </div>
@@ -172,9 +179,6 @@ provide(LAYER_CONTEXT_KEY, {
 .pinova-layer-fullscreen__surface {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
   overflow: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -186,13 +190,14 @@ provide(LAYER_CONTEXT_KEY, {
 }
 
 .pinova-layer-fullscreen__route-root {
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  height: 100%;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 @keyframes pinova-fs-in {
