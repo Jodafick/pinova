@@ -4,6 +4,8 @@ export type StoryRingProgressEntry = {
   slugSignature: string
   resumeIndex: number
   allCaughtUp: boolean
+  /** Temps déjà écoulé sur le segment `resumeIndex` (ms), pour reprendre après fermeture. */
+  segmentElapsedMs?: number
 }
 
 export type StorySessionEndPayload = {
@@ -11,6 +13,7 @@ export type StorySessionEndPayload = {
   pinSlugs: string[]
   resumeIndex: number
   allCaughtUp: boolean
+  segmentElapsedMs?: number
 }
 
 function normUser(u: string) {
@@ -49,19 +52,15 @@ export function upsertStoryRingSession(payload: StorySessionEndPayload) {
   if (!key || !payload.pinSlugs.length) return
   const slugSignature = payload.pinSlugs.join('|')
   const map = readStoryRingProgress()
-  const prev = map[key]
-  if (prev && prev.slugSignature !== slugSignature) {
-    map[key] = {
-      slugSignature,
-      resumeIndex: payload.resumeIndex,
-      allCaughtUp: payload.allCaughtUp,
-    }
-  } else {
-    map[key] = {
-      slugSignature,
-      resumeIndex: payload.resumeIndex,
-      allCaughtUp: payload.allCaughtUp,
-    }
+  const elapsed =
+    typeof payload.segmentElapsedMs === 'number' && Number.isFinite(payload.segmentElapsedMs)
+      ? Math.max(0, Math.round(payload.segmentElapsedMs))
+      : 0
+  map[key] = {
+    slugSignature,
+    resumeIndex: payload.resumeIndex,
+    allCaughtUp: payload.allCaughtUp,
+    segmentElapsedMs: elapsed,
   }
   writeStoryRingProgress(map)
 }
@@ -73,6 +72,24 @@ export function initialStoryIndexForUser(username: string, pins: { slug: string 
   const p = readStoryRingProgress()[key]
   if (!p || p.slugSignature !== sig) return 0
   return Math.min(Math.max(0, p.resumeIndex), pins.length - 1)
+}
+
+/** Ms déjà parcourues sur le segment courant (si même bague / même index que à la fermeture). */
+export function initialStorySegmentElapsedForUser(
+  username: string,
+  pins: { slug: string }[],
+  initialIndex: number,
+): number {
+  if (!pins.length) return 0
+  const key = normUser(username)
+  const sig = slugSignatureFromPins(pins)
+  const p = readStoryRingProgress()[key]
+  if (!p || p.slugSignature !== sig) return 0
+  if (p.resumeIndex !== initialIndex) return 0
+  if (p.allCaughtUp) return 0
+  const raw = p.segmentElapsedMs ?? 0
+  if (!Number.isFinite(raw) || raw <= 0) return 0
+  return Math.min(Math.max(0, Math.round(raw)), 3600_000)
 }
 
 export function isStoryRingAllCaughtUp(username: string, pins: { slug: string }[]): boolean {

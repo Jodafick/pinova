@@ -23,13 +23,21 @@ const props = defineProps<{
   modelValue: boolean
   pins: Pin[]
   initialIndex?: number
+  /** Ms déjà écoulées sur `initialIndex` (reprise après fermeture du viewer). */
+  initialSegmentElapsedMs?: number
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
   (
     e: 'session-end',
-    payload: { username: string; pinSlugs: string[]; resumeIndex: number; allCaughtUp: boolean },
+    payload: {
+      username: string
+      pinSlugs: string[]
+      resumeIndex: number
+      allCaughtUp: boolean
+      segmentElapsedMs: number
+    },
   ): void
 }>()
 
@@ -59,6 +67,18 @@ const blurSensitiveByDefault = computed(() =>
 const DEFAULT_IMAGE_MS = 8000
 const MIN_VIDEO_MS = 3000
 const MAX_VIDEO_MS = 120_000
+const VIDEO_LOAD_FALLBACK_MS = 90_000
+
+function clampIncomingResumeMs(v: unknown): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return 0
+  return Math.min(Math.max(0, Math.round(v)), MAX_VIDEO_MS)
+}
+
+function clampResumeAgainstFull(resume: number, full: number): number {
+  if (!Number.isFinite(resume) || resume <= 0) return 0
+  if (!Number.isFinite(full) || full <= 0) return 0
+  return Math.min(resume, Math.max(0, full - 80))
+}
 
 const index = ref(0)
 const heartBurst = ref(false)
@@ -74,8 +94,21 @@ const storyLikedBySlug = ref<Record<string, boolean>>({})
 const storyReactionsBySlug = ref<Record<string, number>>({})
 /** Recrée l’animation CSS de la barre du segment courant à chaque story. */
 const progressAnimKey = ref(0)
-/** Durée du segment courant (barre + auto-suivant). */
+/** Durée « pleine » du segment courant (ms) — bornes vidéo, pour cap à la fermeture. */
 const slideDurationMs = ref(DEFAULT_IMAGE_MS)
+/** Durée restante animée sur la barre (peut être < slideDurationMs si reprise). */
+const activeProgressDurationForBar = ref(DEFAULT_IMAGE_MS)
+/** Remplissage initial du segment actif [0..1] (reprise). */
+const progressStartFraction = ref(0)
+/** Tant que le média n’est pas prêt, pas de compte à rebours (évite PWA / onglets lents). */
+const segmentMediaPending = ref(true)
+
+/** Brings one-shot resume ms from the parent open, consommée au prochain segment. */
+const pendingOpenResumeElapsed = ref(0)
+/** Offset ms déjà parcouru sur le segment courant (reprise). */
+const segmentOpenedWithResumeMs = ref(0)
+/** Horodatage (wall) du début du timer auto-suivant sur le segment courant. */
+let segmentTimerAnchorAt: number | null = null
 
 const storyVideoEl = ref<HTMLVideoElement | null>(null)
 /** Autoplay : départ en muted (politiques navigateurs) ; clic sur le bouton active le son jusqu’à fermeture du viewer. */
@@ -378,6 +411,7 @@ function toggleStorySound() {
 }
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
+let videoSafetyTimer: ReturnType<typeof setTimeout> | null = null
 /** Incrémenté à chaque segment pour ignorer timeouts / événements obsolètes */
 const segmentPlaybackId = ref(0)
 
@@ -385,11 +419,52 @@ function bumpProgressAnimation() {
   progressAnimKey.value++
 }
 
+function clearVideoSafetyTimer() {
+  if (videoSafetyTimer) {
+    clearTimeout(videoSafetyTimer)
+    videoSafetyTimer = null
+  }
+}
+
 function clearAdvance() {
   if (advanceTimer) {
     clearTimeout(advanceTimer)
     advanceTimer = null
   }
+  segmentTimerAnchorAt = null
+}
+
+function primeSegmentCountdown(fullMs: number, slackMs: number) {
+  clearAdvance()
+  if (!props.modelValue || props.pins.length === 0) return
+  const resume = clampResumeAgainstFull(segmentOpenedWithResumeMs.value, fullMs)
+  const remaining = Math.max(220, fullMs - resume + slackMs)
+  slideDurationMs.value = fullMs
+  activeProgressDurationForBar.value = remaining
+  progressStartFraction.value = fullMs > 0 ? resume / fullMs : 0
+  segmentMediaPending.value = false
+  bumpProgressAnimation()
+  const playbackId = segmentPlaybackId.value
+  segmentTimerAnchorAt = Date.now()
+  advanceTimer = setTimeout(() => {
+    advanceTimer = null
+    segmentTimerAnchorAt = null
+    if (playbackId !== segmentPlaybackId.value) return
+    goNext()
+  }, remaining)
+}
+
+function startVideoMetadataSafetyTimer() {
+  clearVideoSafetyTimer()
+  const playbackId = segmentPlaybackId.value
+  videoSafetyTimer = window.setTimeout(() => {
+    videoSafetyTimer = null
+    if (playbackId !== segmentPlaybackId.value) return
+    if (!props.modelValue) return
+    clearAdvance()
+    slideDurationMs.value = DEFAULT_IMAGE_MS
+    primeSegmentCountdown(DEFAULT_IMAGE_MS, 600)
+  }, VIDEO_LOAD_FALLBACK_MS)
 }
 
 function pauseStoryVideo() {
@@ -400,39 +475,48 @@ function resumeStoryVideo() {
   void storyVideoEl.value?.play()?.catch(() => {})
 }
 
-function scheduleAdvance() {
-  clearAdvance()
-  if (!props.modelValue || props.pins.length === 0) return
-  const playbackId = segmentPlaybackId.value
-  const delay = slideDurationMs.value
-  advanceTimer = setTimeout(() => {
-    advanceTimer = null
-    if (playbackId !== segmentPlaybackId.value) return
-    goNext()
-  }, delay)
-}
-
 function restartCurrentSegment() {
   expandedDesc.value = false
   segmentPlaybackId.value++
   clearAdvance()
+  clearVideoSafetyTimer()
+  segmentMediaPending.value = true
+  progressStartFraction.value = 0
+  activeProgressDurationForBar.value = DEFAULT_IMAGE_MS
+  slideDurationMs.value = DEFAULT_IMAGE_MS
   bumpProgressAnimation()
+
   const pin = props.pins[index.value]
   if (!pin || !props.modelValue) return
-  slideDurationMs.value = DEFAULT_IMAGE_MS
+
+  const resumeMs = pendingOpenResumeElapsed.value
+  pendingOpenResumeElapsed.value = 0
+  segmentOpenedWithResumeMs.value = resumeMs
 
   if (pin.storyVideoUrl?.trim()) {
-    const playbackId = segmentPlaybackId.value
-    slideDurationMs.value = DEFAULT_IMAGE_MS
-    advanceTimer = setTimeout(() => {
-      advanceTimer = null
-      if (playbackId !== segmentPlaybackId.value) return
-      goNext()
-    }, MAX_VIDEO_MS)
+    startVideoMetadataSafetyTimer()
     return
   }
 
-  scheduleAdvance()
+  if (pin.imageUrl?.trim()) {
+    void nextTick(() => {
+      if (!props.modelValue) return
+      const pin2 = props.pins[index.value]
+      if (!pin2?.imageUrl?.trim() || pin2.storyVideoUrl?.trim()) return
+      const root = storyRootRef.value
+      const el = root?.querySelector?.(
+        '[data-story-slide-img]',
+      ) as HTMLImageElement | undefined | null
+      if (el && el.complete && el.naturalWidth > 0) {
+        void finalizeStoryImageFromEl(el)
+      }
+    })
+    return
+  }
+
+  const full = DEFAULT_IMAGE_MS
+  const slackMs = Math.min(400, Math.max(120, Math.round(full * 0.04)))
+  primeSegmentCountdown(full, slackMs)
 }
 
 function syncStoryEngagementFromProps() {
@@ -446,6 +530,20 @@ function syncStoryEngagementFromProps() {
   storyReactionsBySlug.value = reactions
 }
 
+function computeSegmentElapsedForEmit(): number {
+  const full = slideDurationMs.value
+  const resume = segmentOpenedWithResumeMs.value
+  if (!Number.isFinite(full) || full <= 0) {
+    return Math.max(0, resume)
+  }
+  const cap = Math.max(0, full - 1)
+  if (segmentTimerAnchorAt == null) {
+    return Math.min(cap, Math.max(0, resume))
+  }
+  const raw = resume + (Date.now() - segmentTimerAnchorAt)
+  return Math.min(Math.max(0, raw), cap)
+}
+
 watch(
   () => props.modelValue,
   async (open, prevOpen) => {
@@ -456,6 +554,7 @@ watch(
       resetSurfaceGesture()
       surfacePointerActive.value = false
       syncStoryEngagementFromProps()
+      pendingOpenResumeElapsed.value = clampIncomingResumeMs(props.initialSegmentElapsedMs)
       const maxIdx = props.pins.length - 1
       index.value = Math.min(Math.max(0, props.initialIndex ?? 0), maxIdx)
       // Force le redémarrage du segment même si l'index n'a pas changé (cas 0 -> 0)
@@ -464,6 +563,7 @@ watch(
       attachStoryTouchGestures()
     } else {
       clearAdvance()
+      clearVideoSafetyTimer()
       detachStoryTouchGestures?.()
     }
     if (prevOpen && !open && props.pins.length > 0) {
@@ -476,6 +576,7 @@ watch(
           pinSlugs,
           resumeIndex: allCaughtUp ? 0 : index.value,
           allCaughtUp,
+          segmentElapsedMs: allCaughtUp ? 0 : computeSegmentElapsedForEmit(),
         })
       }
       closingSessionReason.value = null
@@ -689,6 +790,7 @@ function closeActionsAndReport() {
 
 function close() {
   clearAdvance()
+  clearVideoSafetyTimer()
   clearExitCloseTimer()
   storyActionsOpen.value = false
   isExitClosing.value = false
@@ -701,6 +803,7 @@ function close() {
 
 function goNext() {
   clearAdvance()
+  clearVideoSafetyTimer()
   if (index.value < props.pins.length - 1) {
     index.value++
     return
@@ -711,33 +814,62 @@ function goNext() {
 
 function goPrev() {
   clearAdvance()
+  clearVideoSafetyTimer()
   if (index.value > 0) {
     index.value--
   }
 }
 
 function onStoryVideoLoadedMetadata(e: Event) {
+  clearVideoSafetyTimer()
   const v = e.target as HTMLVideoElement
   let ms = Math.round(v.duration * 1000)
   if (!Number.isFinite(ms) || ms <= 0) ms = DEFAULT_IMAGE_MS
   ms = Math.min(Math.max(ms, MIN_VIDEO_MS), MAX_VIDEO_MS)
-  clearAdvance()
-  slideDurationMs.value = ms
-  bumpProgressAnimation()
   const slackMs = Math.min(800, Math.max(220, Math.round(ms * 0.06)))
-  const playbackId = segmentPlaybackId.value
-  advanceTimer = setTimeout(() => {
-    advanceTimer = null
-    if (playbackId !== segmentPlaybackId.value) return
-    goNext()
-  }, ms + slackMs)
+  primeSegmentCountdown(ms, slackMs)
   syncStoryVideoMute(v)
+  void v.play()?.catch(() => {})
+}
+
+async function finalizeStoryImageFromEl(img: HTMLImageElement) {
+  if (!props.modelValue) return
+  const pin = props.pins[index.value]
+  if (!pin || pin.storyVideoUrl?.trim()) return
+  try {
+    await img.decode?.()
+  } catch {
+    /* decode() est optionnel ; @load suffit */
+  }
+  if (!props.modelValue) return
+  const full = DEFAULT_IMAGE_MS
+  const slackMs = Math.min(400, Math.max(120, Math.round(full * 0.04)))
+  primeSegmentCountdown(full, slackMs)
+}
+
+async function onStoryImageLoaded(e: Event) {
+  await finalizeStoryImageFromEl(e.target as HTMLImageElement)
+}
+
+function onStoryImageError() {
+  if (!props.modelValue) return
+  clearVideoSafetyTimer()
+  segmentMediaPending.value = false
+  goNext()
+}
+
+function onStoryVideoError() {
+  clearVideoSafetyTimer()
+  if (!props.modelValue) return
+  segmentMediaPending.value = false
+  goNext()
 }
 
 /** Fin lecture vidéo : prioritaire sur le timer avec marge. */
 function onStoryVideoEnded() {
   const pin = props.pins[index.value]
   if (!pin?.storyVideoUrl?.trim()) return
+  clearVideoSafetyTimer()
   clearAdvance()
   goNext()
 }
@@ -840,6 +972,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
   if (heartBurstHideTimer) clearTimeout(heartBurstHideTimer)
   clearAdvance()
+  clearVideoSafetyTimer()
   clearExitCloseTimer()
   detachStoryTouchGestures?.()
 })
@@ -874,9 +1007,10 @@ onUnmounted(() => {
           <StorySegmentedProgressBar
             :segment-count="pins.length"
             :current-index="index"
-            :active-duration-ms="slideDurationMs"
+            :active-duration-ms="activeProgressDurationForBar"
+            :active-fill-start-fraction="progressStartFraction"
             :animation-key="progressAnimKey"
-            :paused="playbackPaused"
+            :paused="playbackPaused || segmentMediaPending"
           />
           <div class="flex justify-center px-2 pb-1">
             <button
@@ -945,6 +1079,7 @@ onUnmounted(() => {
                 autoplay
                 @loadedmetadata="onStoryVideoLoadedMetadata"
                 @ended="onStoryVideoEnded"
+                @error="onStoryVideoError"
                 v-bind="pinMediaAntiLeakVideoBindings(false)"
               />
             </PinSensitiveMedia>
@@ -958,6 +1093,8 @@ onUnmounted(() => {
               wrapper-class="w-full"
             >
               <img
+                :key="current.slug"
+                data-story-slide-img
                 :src="current.imageUrl"
                 :alt="current.title"
                 :class="[
@@ -965,6 +1102,8 @@ onUnmounted(() => {
                   'w-full max-h-[min(78vh,820px)] object-contain bg-black select-none pointer-events-none block',
                 ]"
                 v-bind="pinMediaAntiLeakImgBindings()"
+                @load="onStoryImageLoaded"
+                @error="onStoryImageError"
               />
             </PinSensitiveMedia>
 

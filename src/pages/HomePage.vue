@@ -651,10 +651,10 @@ async function continueWithGoogleFromLanding() {
     <!-- Stories + sujets : desktop (lg+) — hors header, comme avant -->
     <div
       v-if="isAuthenticated"
-      class="pinova-sticky-below-global-header hidden lg:flex lg:flex-row lg:items-center lg:gap-4 lg:min-h-[3.25rem] sticky z-[28] -mx-3 sm:-mx-6 lg:-mx-10 xl:-mx-16 mb-4 pinova-header-chrome px-3 sm:px-6 lg:px-10 xl:px-16 py-2 lg:py-2.5"
+      class="pinova-sticky-below-global-header hidden lg:flex lg:flex-col lg:items-stretch lg:gap-3 lg:min-h-0 sticky z-[28] -mx-3 sm:-mx-6 lg:-mx-10 xl:-mx-16 mb-4 pinova-header-chrome px-3 sm:px-6 lg:px-10 xl:px-16 py-2 lg:py-2.5"
     >
-      <HomeStoriesStrip v-if="currentUser" class="shrink-0 lg:max-w-[min(100%,24rem)]" />
-      <div class="flex min-h-11 flex-1 min-w-0 items-center lg:min-h-0">
+      <HomeStoriesStrip v-if="currentUser" class="shrink-0 w-full min-w-0" />
+      <div class="flex min-h-11 w-full min-w-0 items-center">
         <TopicScroller
           :topics="activeTopics"
           :active-topic="activeTopic"

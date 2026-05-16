@@ -764,13 +764,13 @@ export function useAuth() {
     extra?: { target_plan?: 'plus' | 'free' },
   ) {
     const response = await api.post('subscription/manage/', { action, ...extra })
-    await fetchCurrentUser()
+    await fetchCurrentUser({ force: true })
     return response.data
   }
 
   async function startPlusTrial() {
     const response = await api.post('subscription/trial/start/')
-    await fetchCurrentUser()
+    await fetchCurrentUser({ force: true })
     return response.data
   }
 

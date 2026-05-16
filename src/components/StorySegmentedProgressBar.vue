@@ -8,6 +8,8 @@ defineProps<{
   currentIndex: number
   /** Durée CSS + référence pour le timer parent (segment actif uniquement). */
   activeDurationMs: number
+  /** Partie déjà remplie du segment actif (0–1), pour reprendre après fermeture. */
+  activeFillStartFraction?: number
   /** Incrémenter pour relancer l’animation du segment courant. */
   animationKey: number
   /** Pause visuelle pendant appui long / modales. */
@@ -34,7 +36,17 @@ defineProps<{
         v-else-if="si - 1 === currentIndex"
         :key="`${si - 1}-${animationKey}`"
         class="story-segment-active h-full rounded-full bg-gradient-to-r from-pink-700 to-pink-700 shadow-[0_0_10px_rgba(190,24,93,0.45)] dark:from-pink-600 dark:to-pink-600 dark:shadow-[0_0_10px_rgba(219,39,119,0.5)]"
-        :style="{ animationDuration: `${activeDurationMs}ms`, animationPlayState: paused ? 'paused' : 'running' }"
+        :style="{
+          '--story-fill-start': String(
+            typeof activeFillStartFraction === 'number' &&
+              Number.isFinite(activeFillStartFraction) &&
+              activeFillStartFraction > 0
+              ? Math.min(1, Math.max(0, activeFillStartFraction))
+              : 0,
+          ),
+          animationDuration: `${activeDurationMs}ms`,
+          animationPlayState: paused ? 'paused' : 'running',
+        }"
       />
     </div>
   </div>
@@ -50,7 +62,11 @@ defineProps<{
   animation-fill-mode: forwards;
 }
 @keyframes story-segment-fill {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
+  from {
+    transform: scaleX(var(--story-fill-start, 0));
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 </style>

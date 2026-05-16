@@ -10,6 +10,7 @@ import { API_BASE_URL } from '../env'
 import StoryRingCover from './StoryRingCover.vue'
 import {
   initialStoryIndexForUser,
+  initialStorySegmentElapsedForUser,
   isStoryRingAllCaughtUp,
   upsertStoryRingSession,
 } from '../utils/storyRingProgress'
@@ -49,6 +50,7 @@ const refreshingStories = ref(false)
 const viewerOpen = ref(false)
 const viewerPins = ref<Pin[]>([])
 const viewerInitialIndex = ref(0)
+const viewerInitialSegmentElapsed = ref(0)
 const scrollEl = ref<HTMLElement | null>(null)
 const showArrows = ref(false)
 const canScrollLeft = ref(false)
@@ -226,6 +228,11 @@ function openStoryFromSlugIfPossible() {
   if (found != null && pinIdx >= 0) {
     viewerPins.value = [...found.pins]
     viewerInitialIndex.value = pinIdx
+    viewerInitialSegmentElapsed.value = initialStorySegmentElapsedForUser(
+      found.username,
+      found.pins,
+      pinIdx,
+    )
     viewerOpen.value = true
     // Nettoyer l'URL immédiatement pour éviter une réouverture au prochain montage/watch
     void router.replace({ path: '/', query: nextQuery })
@@ -250,7 +257,9 @@ function openAt(groupIndex: number) {
   if (!g?.pins?.length) return
   /* Une barre par auteur uniquement ; ne pas concaténer les autres comptes. */
   viewerPins.value = [...g.pins]
-  viewerInitialIndex.value = initialStoryIndexForUser(g.username, g.pins)
+  const idx = initialStoryIndexForUser(g.username, g.pins)
+  viewerInitialIndex.value = idx
+  viewerInitialSegmentElapsed.value = initialStorySegmentElapsedForUser(g.username, g.pins, idx)
   viewerOpen.value = true
 }
 
@@ -452,6 +461,7 @@ onUnmounted(() => {
     v-model="viewerOpen"
     :pins="viewerPins"
     :initial-index="viewerInitialIndex"
+    :initial-segment-elapsed-ms="viewerInitialSegmentElapsed"
     @session-end="onStripStorySessionEnd"
   />
 </template>

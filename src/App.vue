@@ -200,12 +200,8 @@ const suppressMobileChromeForProfileDrawer = computed(
 )
 
 const pullRefreshBlockedRoute = computed(() => {
-  const n = route.name
   const meta = route.meta as { disablePullToRefresh?: boolean }
-  if (meta.disablePullToRefresh) return true
-  if (n === 'create' || n === 'create-standalone-story') return true
-  if (typeof n === 'string' && n.startsWith('edit-')) return true
-  return false
+  return meta.disablePullToRefresh === true
 })
 
 /** Tirer depuis le haut du fil (≤ lg), y compris invité ou déconnecté. */
@@ -260,17 +256,28 @@ const showAppMobileSubheader = computed(
     !suppressMobileChromeForProfileDrawer.value,
 )
 
-/** Barre page mobile : fond flou après un léger scroll (hors home). */
+/** Dès qu’on scroll (quelques px), vitrage des barres fixes mobile (home + sous-titre page). */
+const SCROLL_BLUR_THRESHOLD = 4
+
 const mobilePageHeaderScrolled = ref(false)
-const MOBILE_HEADER_BLUR_AT = 28
+const homeGlobalHeaderScrolled = ref(false)
 
 function updateMobileHeaderScroll() {
-  if (!showAppMobileSubheader.value) {
+  if (typeof document === 'undefined') return
+  const y = getAppScrollRoot().scrollTop
+  const past = y >= SCROLL_BLUR_THRESHOLD
+
+  if (showAppMobileSubheader.value) {
+    mobilePageHeaderScrolled.value = past
+  } else {
     mobilePageHeaderScrolled.value = false
-    return
   }
-  const y = typeof document !== 'undefined' ? getAppScrollRoot().scrollTop : 0
-  mobilePageHeaderScrolled.value = y >= MOBILE_HEADER_BLUR_AT
+
+  if (isHomeRoute.value && isLgDown.value) {
+    homeGlobalHeaderScrolled.value = past
+  } else {
+    homeGlobalHeaderScrolled.value = false
+  }
 }
 
 watch(showAppMobileSubheader, () => {
@@ -429,6 +436,8 @@ const pageTransitionName = computed(() => {
       v-if="!isAuthPage"
       class="app-global-header"
       :class="isHomeRoute ? '' : 'max-lg:hidden'"
+      :home-mobile-glass="isHomeRoute && isLgDown"
+      :home-mobile-glass-scrolled="homeGlobalHeaderScrolled"
     />
 
   <div

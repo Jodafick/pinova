@@ -40,6 +40,7 @@ import {
 import { clearProfileDrawerPwaTheme } from '../composables/usePwaTheme'
 import {
   initialStoryIndexForUser,
+  initialStorySegmentElapsedForUser,
   isStoryRingAllCaughtUp,
   upsertStoryRingSession,
 } from '../utils/storyRingProgress'
@@ -706,7 +707,7 @@ function onProfileDrawerSurfaceClick(ev: MouseEvent) {
 const profileNavDrawerViewportClass = computed(() => {
   if (!profileNavDrawerOpen.value || !currentUser.value || !isMyProfile.value) return ''
   return [
-    'max-lg:fixed max-lg:inset-0 max-lg:isolate max-lg:z-0 max-lg:flex max-lg:min-h-0 max-lg:h-[100dvh] max-lg:max-h-[100dvh] max-lg:w-full max-lg:flex-col max-lg:overflow-hidden',
+    'max-lg:fixed max-lg:inset-0 max-lg:isolate max-lg:z-0 max-lg:flex max-lg:min-h-0 max-lg:w-full max-lg:flex-col max-lg:overflow-hidden',
     'max-lg:bg-[linear-gradient(180deg,#e11d77_0%,#be185d_50%,#e11d77_75%,#be185d_100%)] dark:max-lg:bg-[linear-gradient(180deg,#1a0508_0%,#3d0a1a_38%,#5b1230_62%,#2d0612_100%)]',
   ].join(' ')
 })
@@ -946,6 +947,7 @@ const boardSuggestions = ref<BoardSuggestions | null>(null)
 const activeStories = ref<Pin[]>([])
 const storyViewerOpen = ref(false)
 const storyViewerInitialIndex = ref(0)
+const storyViewerInitialSegmentElapsed = ref(0)
 const profileStoryProgressTick = ref(0)
 
 const profileStoryRingAllCaughtUp = computed(() => {
@@ -976,7 +978,9 @@ function openStoryViewer() {
   const u = profileUser.value?.username
   const list = activeStories.value
   if (!u || !list.length) return
-  storyViewerInitialIndex.value = initialStoryIndexForUser(u, list)
+  const idx = initialStoryIndexForUser(u, list)
+  storyViewerInitialIndex.value = idx
+  storyViewerInitialSegmentElapsed.value = initialStorySegmentElapsedForUser(u, list, idx)
   storyViewerOpen.value = true
 }
 
@@ -1892,6 +1896,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       v-model="storyViewerOpen"
       :pins="activeStories"
       :initial-index="storyViewerInitialIndex"
+      :initial-segment-elapsed-ms="storyViewerInitialSegmentElapsed"
       @session-end="onProfileStorySessionEnd"
     />
 

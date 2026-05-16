@@ -9,7 +9,6 @@ import { pushToast } from '../composables/useToast'
 import PrivateTags from '../components/PrivateTags.vue'
 import CreatePinEditSkeleton from '../components/CreatePinEditSkeleton.vue'
 import StoryImageCropEditor from '../components/StoryImageCropEditor.vue'
-import CameraCaptureModal from '../components/CameraCaptureModal.vue'
 import api from '../api'
 import {
   moderationScanText,
@@ -68,13 +67,10 @@ const storyVideoFile = ref<File | null>(null)
 const storyVideoPreviewUrl = ref<string | null>(null)
 const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
-/** Modal de capture caméra (getUserMedia) — PC + mobile. */
-const cameraCaptureOpen = ref(false)
+/** Caméra système (-picker natif, attribut `capture`). */
+const nativeCameraInput = ref<HTMLInputElement | null>(null)
 function openCameraCapture() {
-  cameraCaptureOpen.value = true
-}
-function onCameraCaptured(file: File) {
-  void setMediaFile(file)
+  nativeCameraInput.value?.click()
 }
 /** Retouche image (mobile, breakpoint lg) — étape 2 avant formulaire. */
 const pinMobilePendingImage = ref<File | null>(null)
@@ -1186,6 +1182,14 @@ usePinovaHeaderSwipeDismiss({
     class="flex min-h-full w-full min-w-0 max-w-5xl flex-1 flex-col mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
   >
     <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange">
+    <input
+      ref="nativeCameraInput"
+      type="file"
+      class="hidden"
+      accept="image/*"
+      capture="environment"
+      @change="onFileChange"
+    >
     <div
       v-if="needsBirthDateForMedia"
       class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
@@ -1618,11 +1622,6 @@ usePinovaHeaderSwipeDismiss({
     </div>
   </div>
 
-  <CameraCaptureModal
-    v-model="cameraCaptureOpen"
-    filename-prefix="pin"
-    @capture="onCameraCaptured"
-  />
 </template>
 
 <style scoped>

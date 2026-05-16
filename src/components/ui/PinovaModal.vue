@@ -17,7 +17,7 @@
  *  - 'floating'    : carte flottante centrée sans backdrop opaque (toasts, picker discret)
  *
  * Caractéristiques :
- *  - Glass system iOS (saturate + blur, light/dark, rose accent)
+ *  - Glass iOS (saturate + blur) aligné clair/sombre neutre
  *  - Drag interactif avec rubber band + velocity dismiss (sheet / fullscreen)
  *  - Multi snap points (bottomSheet)
  *  - Background interaction : scale + blur subtil du #app-shell pendant ouverture
@@ -67,7 +67,7 @@ interface Props {
   dismissOnEscape?: boolean
   /** Désactiver le gesture drag-to-dismiss. */
   disableGesture?: boolean
-  /** Style rose accent (pour modales actions Pinova : création, etc.). */
+  /** @deprecated Conservé pour compat API ; la surface suit désormais le thème neutre (`--glass-fill`). */
   rose?: boolean
   /** Intensité du scrim (0..1). Default selon presentation. */
   scrim?: number
@@ -475,10 +475,7 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
             v-if="isOpenInternal"
             ref="surfaceRef"
             class="pinova-modal-surface"
-            :class="[
-              `pinova-modal-surface--${resolvedPresentation}`,
-              rose ? 'pinova-modal-surface--rose' : '',
-            ]"
+            :class="[`pinova-modal-surface--${resolvedPresentation}`]"
             :style="surfaceStyles"
             role="dialog"
             aria-modal="true"
@@ -608,10 +605,6 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
   user-select: auto;
 }
 
-.pinova-modal-surface--rose {
-  background-color: var(--glass-fill-rose);
-}
-
 .pinova-modal-surface--center,
 .pinova-modal-surface--floating {
   max-width: 480px;
@@ -699,19 +692,13 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 
 /*
  * Safe-area bas : déjà dans `paddingBottom` inline de la surface (useSafeArea).
- * Doubler env() ici créait un vide énorme sous les boutons en PWA.
+ * Pas de fond / blur séparé : la surface vitrée du modal continue derrière les boutons.
  */
 .pinova-modal-footer {
+  flex-shrink: 0;
   padding: 10px 16px 12px;
-  border-top: 1px solid var(--glass-border);
-  background: color-mix(in srgb, var(--glass-fill) 88%, transparent);
-  backdrop-filter: blur(14px) saturate(1.15);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-}
-
-:global(.dark) .pinova-modal-footer {
-  background: color-mix(in srgb, rgb(18 18 22) 92%, transparent);
-  border-top-color: rgba(255, 255, 255, 0.08);
+  background: transparent;
+  border-top: none;
 }
 
 /* ─── Backdrop transitions ─── */

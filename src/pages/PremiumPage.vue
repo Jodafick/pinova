@@ -391,7 +391,7 @@ const confirmPaymentTransaction = async (
     }
     const response = await api.post('subscription/confirm/', payload)
     if (response.data?.status === 'approved') {
-      await fetchCurrentUser({ silent: true })
+      await fetchCurrentUser({ silent: true, force: true })
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
       }
@@ -425,11 +425,21 @@ async function runPostPaymentActivationSync() {
     await new Promise<void>((resolve) => {
       window.setTimeout(resolve, POST_PAYMENT_ACTIVATION_WAIT_MS)
     })
-    await fetchCurrentUser({ silent: true })
+    await fetchCurrentUser({ silent: true, force: true })
   } catch {
     /* ignore */
   } finally {
-    window.location.reload()
+    postPaymentActivationOverlay.value = false
+    const uname = currentUser.value?.username?.trim()
+    try {
+      if (uname) {
+        await router.replace(`/profile/${encodeURIComponent(uname)}`)
+      } else {
+        await router.replace('/profile')
+      }
+    } catch {
+      window.location.assign(uname ? `/profile/${encodeURIComponent(uname)}` : '/profile')
+    }
   }
 }
 
@@ -546,7 +556,7 @@ const handlePaymentMessage = async (event: MessageEvent) => {
     await confirmPendingPayment(transactionId)
   } else {
     window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
-    await fetchCurrentUser({ silent: true })
+    await fetchCurrentUser({ silent: true, force: true })
     void runPostPaymentActivationSync()
   }
 }
@@ -556,7 +566,8 @@ onMounted(() => {
     window.addEventListener('message', handlePaymentMessage)
   }
   if (isAuthenticated.value) {
-    void fetchCurrentUser({ silent: true })
+    const pendingAfterPay = !!window.localStorage.getItem(PENDING_TX_STORAGE_KEY)
+    void fetchCurrentUser({ silent: true, force: pendingAfterPay })
   }
   loadPricingCatalog()
   handlePopupCallbackReturn().catch(() => undefined)
@@ -564,6 +575,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  postPaymentActivationStarted = false
   if (typeof window !== 'undefined') {
     window.removeEventListener('message', handlePaymentMessage)
   }

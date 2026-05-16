@@ -2045,7 +2045,7 @@ html, body {
   --glass-blur: saturate(180%) blur(20px);
   --glass-blur-strong: saturate(200%) blur(28px);
 
-  /* Accent rose Pinova : conservé tel quel dans toutes les modales. */
+  /* Tokens accent rose (CTA, .pinova-glass-rose) — les modales PinovaModal utilisent `--glass-fill` neutre. */
   --pinova-rose-500: #e0245e;
   --pinova-rose-400: #ff4d7d;
   --pinova-rose-300: #ff79a3;

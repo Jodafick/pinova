@@ -94,6 +94,11 @@ export function useMobilePullToRefresh(options: {
 
     const y = e.touches[0]?.clientY ?? 0
     const dy = y - startY
+    /* Geste de scroll de contenu (doigt vers le haut) : ne pas accrocher le PTR. */
+    if (dy < -8) {
+      resetArmHard()
+      return
+    }
     /* Tirer vers le bas uniquement ; pas de preventDefault (listeners passifs) pour ne pas bloquer le scroll natif. */
     if (dy <= 12) return
 
@@ -117,12 +122,19 @@ export function useMobilePullToRefresh(options: {
 
   let attachedEl: HTMLElement | null = null
 
+  /** Dès que le conteneur principal n’est plus en tête, annule le tirage (évite de gêner le scroll). */
+  function onScrollRootScroll() {
+    const el = options.scrollRootRef.value
+    if (!el || !isRootAtTop(el)) resetArmHard()
+  }
+
   function detach() {
     if (!attachedEl) return
     attachedEl.removeEventListener('touchstart', onTouchStart)
     attachedEl.removeEventListener('touchmove', onTouchMove as EventListener)
     attachedEl.removeEventListener('touchend', onTouchEndOrCancel)
     attachedEl.removeEventListener('touchcancel', onTouchEndOrCancel)
+    attachedEl.removeEventListener('scroll', onScrollRootScroll)
     attachedEl = null
     resetArmHard()
   }
@@ -132,8 +144,9 @@ export function useMobilePullToRefresh(options: {
     attachedEl = el
     el.addEventListener('touchstart', onTouchStart, { passive: true })
     el.addEventListener('touchmove', onTouchMove as EventListener, { passive: true })
-    el.addEventListener('touchend', onTouchEndOrCancel)
-    el.addEventListener('touchcancel', onTouchEndOrCancel)
+    el.addEventListener('touchend', onTouchEndOrCancel, { passive: true })
+    el.addEventListener('touchcancel', onTouchEndOrCancel, { passive: true })
+    el.addEventListener('scroll', onScrollRootScroll, { passive: true })
   }
 
   watch(

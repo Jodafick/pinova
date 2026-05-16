@@ -129,7 +129,7 @@ onUnmounted(() => {
     "
     :style="{
       paddingTop: 'calc(env(safe-area-inset-top, 0px) + 6px)',
-      paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
+      paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)',
     }"
     role="navigation"
     :aria-label="t('nav.profile')"
@@ -181,7 +181,7 @@ onUnmounted(() => {
           class="flex min-h-0 w-[70vw] max-w-[70%] flex-1 flex-col self-start px-4 pb-1"
         >
         <nav
-          class="drawer-nav-scroll min-h-0 flex-1 overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          class="drawer-nav-scroll min-h-0 flex-1 overflow-y-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <p
             class="mb-2 ml-0.5 mt-0.5 text-[11px] font-extrabold uppercase tracking-[1.1px] text-white/[0.55] dark:text-white/[0.62]"

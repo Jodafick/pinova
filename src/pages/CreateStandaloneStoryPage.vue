@@ -8,7 +8,6 @@ import { useI18n } from '../i18n'
 import StoryViewer from '../components/StoryViewer.vue'
 import StoryImageCropEditor from '../components/StoryImageCropEditor.vue'
 import StoryVideoEditor from '../components/StoryVideoEditor.vue'
-import CameraCaptureModal from '../components/CameraCaptureModal.vue'
 import {
   hasRequiredBirthDateForMediaPublish,
   isVerifiedAdultFromBirthDate,
@@ -44,12 +43,9 @@ const { isAuthenticated, currentUser, fetchCurrentUser } = useAuth()
 const step = ref<'caption' | 'pick' | 'image-edit' | 'video-edit' | 'meta'>(
   isLgDown.value ? 'pick' : 'caption',
 )
-const storyCameraModalOpen = ref(false)
+const nativeStoryCameraInput = ref<HTMLInputElement | null>(null)
 function openStoryCameraCapture() {
-  storyCameraModalOpen.value = true
-}
-function onStoryCameraCaptured(file: File) {
-  void applyMediaFile(file)
+  nativeStoryCameraInput.value?.click()
 }
 function goCaptionToMedia() {
   step.value = 'pick'
@@ -414,6 +410,15 @@ usePinovaHeaderSwipeDismiss({
       :disabled="mediaModerationPending || saving"
       @change="(e) => void pickMedia(e)"
     >
+    <input
+      ref="nativeStoryCameraInput"
+      type="file"
+      accept="image/*,video/mp4,video/webm,video/quicktime,.mov"
+      capture="environment"
+      class="hidden"
+      :disabled="mediaModerationPending || saving"
+      @change="(e) => void pickMedia(e)"
+    >
 
     <div
       v-if="step === 'caption'"
@@ -685,13 +690,6 @@ usePinovaHeaderSwipeDismiss({
       v-model="storyViewerOpen"
       :pins="publishedStory ? [publishedStory] : []"
       @update:model-value="(open) => { if (!open) closePublishedStory() }"
-    />
-
-    <CameraCaptureModal
-      v-model="storyCameraModalOpen"
-      filename-prefix="story"
-      allow-video
-      @capture="onStoryCameraCaptured"
     />
   </div>
 </template>
