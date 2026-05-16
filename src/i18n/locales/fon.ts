@@ -39,6 +39,7 @@ export const fon: Record<string, string> = {
   'pwa.reload.title': 'Blí app ɖó',
   'pwa.reload.subtitle':
     'Blí Pinova é bé nà xwé hwenu mì, mì sú app alǒ fí sɔ́ yi wè ɖísíxwé kpɔ̀.',
+  'pwa.pullToRefresh.release': 'Yi wé bo blí kpɔ̀',
 
   'app.loading': 'Pinova dò sɔ́...',
   'app.offline': 'É MA ƉÒ INTERNET JÍ Ǎ',

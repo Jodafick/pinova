@@ -75,6 +75,7 @@ export const en: Record<string, string> = {
   'pwa.reload.title': 'Reload app',
   'pwa.reload.subtitle':
     'Refresh Pinova like in a browser, without closing or reinstalling the installed app.',
+  'pwa.pullToRefresh.release': 'Release to refresh',
 
   'modal.prompt.hint': 'Enter to confirm · Esc or outside click to dismiss',
   'modal.errorTitle': 'Error',

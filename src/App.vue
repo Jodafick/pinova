@@ -39,6 +39,8 @@ import {
   profileNavMobileDrawerOpen,
 } from './composables/mobileHeaderContext'
 import { useNotificationPrompt } from './composables/useNotificationPrompt'
+import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
+import { reloadPwaApplication } from './utils/pwaAppReload'
 
 /** Réf. du bouton ⋮ board : assignée dans le template ; `void` évite TS6133 (usage non vu par vue-tsc côté script). */
 void mobileBoardMoreButtonRef
@@ -47,6 +49,7 @@ const route = useRoute()
 const router = useRouter()
 const { isLgDown } = useIsLgDown()
 const appShellRef = ref<HTMLElement | null>(null)
+const mainContentRef = ref<HTMLElement | null>(null)
 /** Route « derrière » pour l’aperçu du geste edge-back (libellé discret). */
 const edgePeekSourcePath = ref('')
 const { fetchCurrentUser, isAuthenticated, currentUser } = useAuth()
@@ -192,6 +195,36 @@ const isHomeRoute = computed(() => route.name === 'home' || route.path === '/')
 /** Barre titre mobile + FAB créer masqués quand le menu latéral profil est ouvert. */
 const suppressMobileChromeForProfileDrawer = computed(
   () => profileNavMobileDrawerOpen.value && route.name === 'profile',
+)
+
+const pullRefreshBlockedRoute = computed(() => {
+  const n = route.name
+  const meta = route.meta as { disablePullToRefresh?: boolean }
+  if (meta.disablePullToRefresh) return true
+  if (n === 'create' || n === 'create-standalone-story') return true
+  if (typeof n === 'string' && n.startsWith('edit-')) return true
+  return false
+})
+
+/** Tirer depuis le haut du fil (≤ lg), y compris invité ou déconnecté. */
+const pullToRefreshEnabled = computed(
+  () =>
+    isLgDown.value &&
+    !isMobileFullscreenRoute.value &&
+    !suppressMobileChromeForProfileDrawer.value &&
+    !layerManager.hasLayers.value &&
+    !immersiveViewer.open.value &&
+    !pullRefreshBlockedRoute.value,
+)
+
+const { pullDistance: pullToRefreshPx, progress: pullToRefreshProgress } = useMobilePullToRefresh({
+  scrollRootRef: mainContentRef,
+  enabled: pullToRefreshEnabled,
+  onRefresh: () => reloadPwaApplication(),
+})
+
+const pullRefreshIndicatorOpacity = computed(() =>
+  Math.min(1, Math.max(0, pullToRefreshPx.value / 42)),
 )
 
 /** FAB création mobile : uniquement home et profil (évite d'encombrer explore, réglages, etc.). */
@@ -410,6 +443,7 @@ const pageTransitionName = computed(() => {
 
     <main
       id="main-content"
+      ref="mainContentRef"
       tabindex="-1"
       class="flex min-h-0 flex-1 flex-col max-lg:overflow-y-auto max-lg:overscroll-y-contain max-lg:[-webkit-overflow-scrolling:touch]"
       :class="[
@@ -585,6 +619,33 @@ const pageTransitionName = computed(() => {
       </template>
     </AppMobilePageHeader>
   </Teleport>
+
+  <!-- Tirer pour actualiser (mobile lg-) — invité inclus ; évite métier sur écrans d’édition. -->
+  <Teleport to="body">
+    <div
+      v-if="isLgDown && pullToRefreshPx > 3"
+      class="pointer-events-none fixed inset-x-0 z-[88] flex flex-col items-center gap-1 px-4"
+      :style="{ top: 'calc(env(safe-area-inset-top, 0px) + 8px)' }"
+      aria-hidden="true"
+    >
+      <div
+        class="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200/70 bg-white/95 shadow-md backdrop-blur-md dark:border-neutral-700/65 dark:bg-neutral-950/94 pinova-ptr-bubble"
+        :style="{ opacity: pullRefreshIndicatorOpacity }"
+      >
+        <span
+          class="material-symbols-outlined text-[25px] text-pink-600 dark:text-pink-400"
+          :style="{ transform: `rotate(${pullToRefreshPx * 3.2}deg)` }"
+          >refresh</span
+        >
+      </div>
+      <span
+        v-if="pullToRefreshProgress >= 0.94"
+        class="max-w-[min(100vw-2rem,20rem)] rounded-full bg-neutral-900/85 px-3 py-1.5 text-center text-[11px] font-semibold text-white backdrop-blur-sm dark:bg-white/90 dark:text-neutral-950"
+      >
+        {{ t('pwa.pullToRefresh.release') }}
+      </span>
+    </div>
+  </Teleport>
 </template>
 
 <style>
@@ -610,5 +671,11 @@ const pageTransitionName = computed(() => {
   -webkit-backface-visibility: hidden;
   /* Pas de contain:layout ici : sur mobile WebKit ça pouvait empêcher le scroll
      document alors que le contenu (ex. home) dépasse le viewport. */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pinova-ptr-bubble span.material-symbols-outlined[style] {
+    transform: none !important;
+  }
 }
 </style>

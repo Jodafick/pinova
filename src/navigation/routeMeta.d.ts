@@ -11,6 +11,8 @@ declare module 'vue-router' {
   interface RouteMeta {
     /** Authentification requise. */
     requiresAuth?: boolean
+    /** Désactive le geste tirer pour actualiser (mobile). */
+    disablePullToRefresh?: boolean
     /** Réservé aux invités (déjà connecté → redirige home). */
     guest?: boolean
     /** Conserver le composant en cache (KeepAlive). */
