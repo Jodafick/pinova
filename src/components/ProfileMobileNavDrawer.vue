@@ -7,6 +7,8 @@ import AvatarDisc from './AvatarDisc.vue'
 import { displayInitials } from '../utils/displayInitials'
 import { getAppScrollRoot } from '../utils/appScrollRoot'
 import { clearProfileDrawerPwaTheme, setProfileDrawerPwaTheme } from '../composables/usePwaTheme'
+import { usePwaContext } from '../composables/usePwaContext'
+import { reloadPwaApplication } from '../utils/pwaAppReload'
 
 const rowNavClass =
   'mb-1.5 flex items-center gap-3 rounded-[14px] border border-white/[0.12] bg-white/[0.14] px-3 py-3 transition-opacity active:opacity-88 dark:border-white/[0.08] dark:bg-black/30'
@@ -26,6 +28,12 @@ const emit = defineEmits<{
 const router = useRouter()
 const { t } = useI18n()
 const { currentUser, logout } = useAuth()
+const { isStandalone } = usePwaContext()
+
+async function onReloadPwa() {
+  close()
+  await reloadPwaApplication()
+}
 
 let prevHtmlOverflow = ''
 let prevScrollRootOverflow = ''
@@ -256,6 +264,19 @@ onUnmounted(() => {
             <span class="flex-1 text-[15px] font-bold text-white">{{ t('nav.settings') }}</span>
             <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
           </router-link>
+
+          <button
+            v-if="isStandalone"
+            type="button"
+            :class="rowNavButtonClass"
+            @click="onReloadPwa"
+          >
+            <span :class="iconBoxClass">
+              <span class="material-symbols-outlined text-[22px] text-white">refresh</span>
+            </span>
+            <span class="flex-1 text-[15px] font-bold text-white">{{ t('pwa.reload.title') }}</span>
+            <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+          </button>
 
           <p
             class="mb-2 ml-0.5 mt-3.5 text-[11px] font-extrabold uppercase tracking-[1.1px] text-white/[0.55] dark:text-white/[0.62]"

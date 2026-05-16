@@ -18,6 +18,10 @@ const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
 const trialPending = ref(false)
 const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
+/** Délai après paiement validé : webhooks / ledger backend, puis rechargement app. */
+const POST_PAYMENT_ACTIVATION_WAIT_MS = 10_000
+const postPaymentActivationOverlay = ref(false)
+let postPaymentActivationStarted = false
 type PricingCycle = {
   amount_minor: number
   amount_display: number
@@ -392,6 +396,9 @@ const confirmPaymentTransaction = async (
         window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
       }
       paymentInfoMessage.value = t('premium.payment.success', { plan: String(response.data?.plan || '').toUpperCase() })
+      if (!silent) {
+        void runPostPaymentActivationSync()
+      }
       return 'approved'
     }
     if (!silent) {
@@ -410,13 +417,19 @@ const confirmPaymentTransaction = async (
   }
 }
 
-async function goToProfileAfterSubscriptionUpdate() {
-  await fetchCurrentUser({ silent: true })
-  const username = currentUser.value?.username?.trim()
-  if (username) {
-    await router.replace(`/profile/${username}`)
-  } else {
-    await router.replace('/profile')
+async function runPostPaymentActivationSync() {
+  if (typeof window === 'undefined' || postPaymentActivationStarted) return
+  postPaymentActivationStarted = true
+  postPaymentActivationOverlay.value = true
+  try {
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, POST_PAYMENT_ACTIVATION_WAIT_MS)
+    })
+    await fetchCurrentUser({ silent: true })
+  } catch {
+    /* ignore */
+  } finally {
+    window.location.reload()
   }
 }
 
@@ -450,9 +463,6 @@ const handlePopupCallbackReturn = async () => {
     }, 350)
   } else {
     await confirmPendingPayment(transactionId)
-    if (!window.localStorage.getItem(PENDING_TX_STORAGE_KEY)) {
-      await goToProfileAfterSubscriptionUpdate()
-    }
   }
 }
 
@@ -531,16 +541,13 @@ const handlePaymentMessage = async (event: MessageEvent) => {
     confirmStatus: payload.confirm_status,
     confirmed: !!payload.confirmed,
   })
-  window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
   if (!payload.confirmed) {
+    window.localStorage.setItem(PENDING_TX_STORAGE_KEY, transactionId)
     await confirmPendingPayment(transactionId)
   } else {
     window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
     await fetchCurrentUser({ silent: true })
-  }
-  const remainingTx = window.localStorage.getItem(PENDING_TX_STORAGE_KEY)
-  if (!remainingTx) {
-    await goToProfileAfterSubscriptionUpdate()
+    void runPostPaymentActivationSync()
   }
 }
 
@@ -564,7 +571,22 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="premium-page relative isolate w-full overflow-x-hidden text-neutral-900 dark:text-neutral-100">
+  <div class="premium-page relative isolate flex min-h-full w-full flex-1 flex-col overflow-x-hidden text-neutral-900 dark:text-neutral-100">
+    <Teleport to="body">
+      <div
+        v-if="postPaymentActivationOverlay"
+        class="fixed inset-0 z-[240] flex flex-col items-center justify-center gap-4 bg-black/65 px-8 text-center backdrop-blur-md"
+        role="status"
+        aria-live="polite"
+      >
+        <div
+          class="h-12 w-12 animate-spin rounded-full border-[3px] border-white/25 border-t-white"
+          aria-hidden="true"
+        />
+        <p class="max-w-sm text-base font-bold text-white">{{ t('premium.payment.activating') }}</p>
+        <p class="max-w-sm text-sm text-white/75">{{ t('premium.payment.activatingHint') }}</p>
+      </div>
+    </Teleport>
     <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
       <div
         class="absolute -top-44 left-[min(16vw,220px)] h-[min(400px,75vw)] w-[min(400px,92vw)] rounded-full bg-gradient-to-br from-pink-300/75 via-fuchsia-200/50 to-transparent blur-[104px] dark:from-pink-600/32 dark:via-fuchsia-600/22 dark:to-transparent dark:blur-[118px]"
@@ -578,7 +600,7 @@ onUnmounted(() => {
     </div>
 
     <div
-      class="relative z-[1] w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 max-lg:pt-1 max-lg:pb-6 lg:py-10 xl:py-16"
+      class="relative z-[1] flex w-full min-w-0 max-w-6xl flex-1 flex-col mx-auto px-4 sm:px-6 max-lg:pt-1 max-lg:pb-6 lg:py-10 xl:py-16"
     >
     <!-- Hero -->
     <div class="max-lg:mb-8 lg:mb-12 xl:mb-14">
@@ -721,7 +743,7 @@ onUnmounted(() => {
     <!-- Plans — carrousel horizontal (sans flèches) tant que viewport &lt; lg ; grille colonnes ≥ lg -->
     <div
       ref="plansCarouselRef"
-      class="flex flex-row lg:grid lg:grid-cols-3 mb-10 max-lg:mb-12 lg:mb-16 gap-4 lg:gap-6 max-lg:-mx-4 max-lg:px-[9vw] overflow-x-auto lg:overflow-visible overscroll-x-contain touch-pan-x snap-x snap-mandatory lg:snap-none scroll-smooth no-scrollbar max-lg:py-6 max-lg:backdrop-blur-[2px]"
+      class="flex flex-row lg:grid lg:grid-cols-3 mb-10 max-lg:mb-12 lg:mb-16 gap-4 lg:gap-6 max-lg:-mx-4 max-lg:px-[9vw] overflow-x-auto lg:overflow-visible overscroll-x-contain touch-[pan-x_pan-y] snap-x snap-mandatory lg:snap-none scroll-smooth no-scrollbar max-lg:py-6 max-lg:backdrop-blur-[2px]"
       @scroll.passive="onPlansCarouselScroll"
     >
       <div

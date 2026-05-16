@@ -61,7 +61,15 @@ function readKeyboard() {
   }
   /* Heuristique iOS : clavier = window.innerHeight - visualViewport.height (+ safe bottom). */
   const diff = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
-  keyboardHeight.value = diff > 24 ? diff : 0
+  /*
+   * Seuil plus haut : sans clavier, PWA / barre d’outil laissait parfois 30–40px
+   * et gonflait le padding des bottom sheets (vide apparent sous la feuille).
+   */
+  if (diff < 72) {
+    keyboardHeight.value = 0
+    return
+  }
+  keyboardHeight.value = Math.min(diff, window.innerHeight * 0.58)
 }
 
 function onResize() {

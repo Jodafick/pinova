@@ -44,6 +44,10 @@ import {
   upsertStoryRingSession,
 } from '../utils/storyRingProgress'
 import type { StorySessionEndPayload } from '../utils/storyRingProgress'
+import {
+  getCachedProfileActiveStories,
+  setCachedProfileActiveStories,
+} from '../utils/activeStoriesCache'
 
 const PROFILE_PINS_PAGE_SIZE = 24
 
@@ -986,14 +990,24 @@ const dragOrganizeIndex = ref<number | null>(null)
 const organizeTouchDragging = ref(false)
 const organizeTouchFrom = ref<number | null>(null)
 
-async function loadActiveStories() {
+async function loadActiveStories(opts?: { force?: boolean }) {
   if (!currentUser.value || !profileUser.value?.username) {
     activeStories.value = []
     return
   }
+  const uname = profileUser.value.username.trim()
+  if (!opts?.force) {
+    const cached = getCachedProfileActiveStories(uname)
+    if (cached) {
+      activeStories.value = [...cached]
+      return
+    }
+  }
   try {
-    const res = await api.get('pins/active-stories/', { params: { username: profileUser.value.username } })
-    activeStories.value = (res.data.pins || []).map(mapDjangoPinToFrontend)
+    const res = await api.get('pins/active-stories/', { params: { username: uname } })
+    const pins = (res.data.pins || []).map(mapDjangoPinToFrontend)
+    activeStories.value = pins
+    setCachedProfileActiveStories(uname, pins)
   } catch {
     activeStories.value = []
   }

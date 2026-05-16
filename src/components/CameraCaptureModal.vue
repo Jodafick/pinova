@@ -313,11 +313,11 @@ onBeforeUnmount(() => {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-[140] flex items-center justify-center app-modal-backdrop"
+      class="fixed inset-0 z-[140] flex flex-col bg-black/40 sm:items-center sm:justify-center app-modal-backdrop"
       @click.self="close"
     >
       <div
-        class="relative flex h-full w-full flex-col overflow-hidden bg-neutral-100/95 text-neutral-900 shadow-xl ring-1 ring-black/[0.08] backdrop-blur-2xl dark:bg-black/85 dark:text-white dark:ring-white/10 sm:h-auto sm:max-h-[90vh] sm:max-w-3xl sm:rounded-3xl"
+        class="relative flex min-h-0 h-full w-full flex-1 flex-col overflow-hidden bg-neutral-100/95 text-neutral-900 shadow-xl ring-1 ring-black/[0.08] backdrop-blur-2xl dark:bg-black/85 dark:text-white dark:ring-white/10 sm:h-auto sm:max-h-[90vh] sm:max-w-3xl sm:flex-none sm:rounded-3xl"
       >
         <!-- Header -->
         <div class="flex shrink-0 items-center justify-between border-b border-neutral-200/90 px-4 py-3 dark:border-white/10">

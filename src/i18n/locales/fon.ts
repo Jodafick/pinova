@@ -36,6 +36,9 @@ export const fon: Record<string, string> = {
   'pwa.install.desktopLead': 'Mì má sixu sɔ́ dó é ǎ. Tɛ́n Chrome alǒ Edge.',
   'pwa.offline.banner': 'É ma ɖò internet jí ǎ',
   'pwa.offline.back': 'Internet lɛ́vɔ́ wá',
+  'pwa.reload.title': 'Blí app ɖó',
+  'pwa.reload.subtitle':
+    'Blí Pinova é bé nà xwé hwenu mì, mì sú app alǒ fí sɔ́ yi wè ɖísíxwé kpɔ̀.',
 
   'app.loading': 'Pinova dò sɔ́...',
   'app.offline': 'É MA ƉÒ INTERNET JÍ Ǎ',

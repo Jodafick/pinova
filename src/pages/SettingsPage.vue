@@ -17,6 +17,8 @@ import { useAppModal } from '../composables/useAppModal'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
 import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
 import { useAppearance } from '../composables/useAppearance'
+import { usePwaContext } from '../composables/usePwaContext'
+import { reloadPwaApplication } from '../utils/pwaAppReload'
 import {
   activateWebPushNotifications,
   isWebPushActiveForUi,
@@ -46,6 +48,11 @@ const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTick
 const { unblockUser } = usePins()
 const { t, currentLang } = useI18n()
 const { mode: appearanceMode, setMode: setAppearanceMode } = useAppearance()
+const { isStandalone } = usePwaContext()
+
+async function onReloadPwaFromSettings() {
+  await reloadPwaApplication()
+}
 const { showAlert, showPrompt } = useAppModal()
 const {
   override: dataSaverOverride,
@@ -1794,6 +1801,27 @@ watch(
               </li>
             </ul>
           </div>
+        </div>
+      </section>
+
+      <section
+        v-if="isStandalone"
+        id="settings-pwa-reload"
+        class="app-card scroll-mt-48 lg:scroll-mt-44 rounded-2xl overflow-hidden"
+      >
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('pwa.reload.title') }}</h2>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('pwa.reload.subtitle') }}</p>
+        </div>
+        <div class="p-4 sm:p-6">
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 transition dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
+            @click="onReloadPwaFromSettings"
+          >
+            <span class="material-symbols-outlined text-[20px]">refresh</span>
+            {{ t('pwa.reload.title') }}
+          </button>
         </div>
       </section>
 

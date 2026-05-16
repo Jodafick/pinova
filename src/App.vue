@@ -174,6 +174,14 @@ const isAuthPage = computed(() => {
 
 const isMobileFullscreenRoute = computed(() => typeof route.query.pin === 'string' && route.query.pin.trim().length > 0)
 
+/** Routes immersives hors query `?pin=` : pas de padding chrome du `<main>` (safe + header fantôme). */
+const suppressMobileMainChromeInsets = computed(
+  () =>
+    isMobileFullscreenRoute.value ||
+    route.name === 'create-standalone-story' ||
+    route.name === 'create',
+)
+
 /*
  * UX mobile « app native » : le header global ne s'affiche que sur la home (/),
  * les autres écrans présentent une barre fixe (retour + titre + profil).
@@ -192,6 +200,8 @@ const showMobileCreateFab = computed(
     isAuthenticated.value &&
     !isAuthPage.value &&
     !isMobileFullscreenRoute.value &&
+    route.name !== 'create-standalone-story' &&
+    route.name !== 'create' &&
     !suppressMobileChromeForProfileDrawer.value &&
     (route.name === 'home' || route.name === 'profile'),
 )
@@ -271,7 +281,7 @@ watch(
 
 /** Marge haute du `<main>` : barre chrome fixe (GlobalHeader et/ou barre page mobile). */
 const needsMainChromeTopPad = computed(
-  () => !isAuthPage.value && !isMobileFullscreenRoute.value,
+  () => !isAuthPage.value && !suppressMobileMainChromeInsets.value,
 )
 
 const appMobilePageTitle = computed(() => {
@@ -403,7 +413,7 @@ const pageTransitionName = computed(() => {
       tabindex="-1"
       class="flex min-h-0 flex-1 flex-col max-lg:overflow-y-auto max-lg:overscroll-y-contain max-lg:[-webkit-overflow-scrolling:touch]"
       :class="[
-        !isAuthPage && !isMobileFullscreenRoute
+        !isAuthPage && !suppressMobileMainChromeInsets
           ? suppressMobileChromeForProfileDrawer
             ? ''
             : /* Ancien espace réservé tab bar (~5rem) : `AppMobileTabBar` n’est pas montée — évite un vide généralisé sous le contenu. On garde la safe-area + une marge tactile minimale. */

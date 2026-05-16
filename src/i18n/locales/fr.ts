@@ -73,6 +73,9 @@ export const fr: Record<string, string> = {
   'pwa.install.desktopLead': 'Installation indisponible sur ce navigateur. Essayez Chrome ou Edge pour installer Pinova.',
   'pwa.offline.banner': 'Hors connexion',
   'pwa.offline.back': 'Connexion rétablie',
+  'pwa.reload.title': 'Recharger l’application',
+  'pwa.reload.subtitle':
+    'Actualise Pinova comme dans un navigateur, sans fermer ni réinstaller l’app installée.',
 
   'modal.prompt.hint': 'Entrée pour valider · Échap ou clic à l’extérieur pour fermer',
   'modal.errorTitle': 'Erreur',
@@ -596,6 +599,9 @@ export const fr: Record<string, string> = {
   'premium.payment.noPending': 'Aucun paiement en attente détecté sur cet appareil.',
   'premium.payment.checkoutError': 'Impossible de démarrer le paiement pour le moment.',
   'premium.payment.confirmError': 'Impossible de confirmer le paiement pour le moment.',
+  'premium.payment.activating': 'Activation de votre abonnement…',
+  'premium.payment.activatingHint':
+    'Merci de patienter environ 10 secondes pendant la synchronisation, puis l’application se recharge.',
   'create.privateTags.upgradeRequired': 'Les tags privés sont réservés aux plans Plus et Pro.',
   'create.privateTags.upgradeCta': 'Passer à Premium',
   'profile.boards.modal.limitPrivate': 'Limite atteinte : maximum {count} boards privés sur votre plan.',

@@ -14,6 +14,7 @@ import {
   upsertStoryRingSession,
 } from '../utils/storyRingProgress'
 import type { StorySessionEndPayload } from '../utils/storyRingProgress'
+import { getCachedHomeStoriesGroups, setCachedHomeStoriesGroups } from '../utils/activeStoriesCache'
 
 const props = withDefaults(
   defineProps<{
@@ -98,15 +99,36 @@ function onStripStorySessionEnd(payload: StorySessionEndPayload) {
   storyProgressTick.value++
 }
 
-async function load(opts?: { soft?: boolean }) {
+async function load(opts?: { soft?: boolean; force?: boolean }) {
   const soft = !!opts?.soft
+  const force = !!opts?.force
+
+  if (!force) {
+    const cached = getCachedHomeStoriesGroups()
+    if (cached) {
+      groups.value = cached.map((g) => ({
+        username: g.username,
+        display_name: g.display_name,
+        avatar_url: g.avatar_url,
+        avatar_color: g.avatar_color,
+        cover_image_url: g.cover_image_url,
+        pins: [...g.pins],
+      }))
+      loading.value = false
+      refreshingStories.value = false
+      await nextTick()
+      syncScrollMetrics()
+      return
+    }
+  }
+
   if (soft) refreshingStories.value = true
   else loading.value = true
   try {
     const res = await api.get('pins/active-stories/')
     const rawGroups = res.data.groups
     if (Array.isArray(rawGroups) && rawGroups.length > 0) {
-      groups.value = rawGroups.map((g: Record<string, unknown>) => ({
+      const mapped = rawGroups.map((g: Record<string, unknown>) => ({
         username: String(g.username ?? ''),
         display_name: String(g.display_name ?? g.username ?? ''),
         avatar_url: mediaUrl(g.avatar_url as string),
@@ -114,9 +136,20 @@ async function load(opts?: { soft?: boolean }) {
         cover_image_url: mediaUrl(g.cover_image_url as string),
         pins: ((g.pins as unknown[]) || []).map(mapDjangoPinToFrontend),
       }))
+      groups.value = mapped
+      setCachedHomeStoriesGroups(
+        mapped.map((g) => ({
+          username: g.username,
+          display_name: g.display_name,
+          avatar_url: g.avatar_url,
+          avatar_color: g.avatar_color,
+          cover_image_url: g.cover_image_url,
+          pins: [...g.pins],
+        })),
+      )
     } else {
       const flat = ((res.data.pins || []) as unknown[]).map(mapDjangoPinToFrontend)
-      groups.value =
+      const mapped: StoryRingGroupUi[] =
         flat.length > 0
           ? [
               {
@@ -129,6 +162,17 @@ async function load(opts?: { soft?: boolean }) {
               },
             ]
           : []
+      groups.value = mapped
+      setCachedHomeStoriesGroups(
+        mapped.map((g) => ({
+          username: g.username,
+          display_name: g.display_name,
+          avatar_url: g.avatar_url,
+          avatar_color: g.avatar_color,
+          cover_image_url: g.cover_image_url,
+          pins: [...g.pins],
+        })),
+      )
     }
   } catch {
     groups.value = []
@@ -293,7 +337,7 @@ onUnmounted(() => {
         "
         :disabled="refreshingStories"
         :aria-label="t('home.stories.reload')"
-        @click="load({ soft: true })"
+        @click="load({ soft: true, force: true })"
       >
         <span
           class="material-symbols-outlined text-[22px]"

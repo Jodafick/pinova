@@ -72,6 +72,9 @@ export const en: Record<string, string> = {
   'pwa.install.desktopLead': 'Installation is not available in this browser. Try Chrome or Edge to install Pinova.',
   'pwa.offline.banner': 'No internet',
   'pwa.offline.back': 'Back online',
+  'pwa.reload.title': 'Reload app',
+  'pwa.reload.subtitle':
+    'Refresh Pinova like in a browser, without closing or reinstalling the installed app.',
 
   'modal.prompt.hint': 'Enter to confirm · Esc or outside click to dismiss',
   'modal.errorTitle': 'Error',
@@ -600,6 +603,9 @@ export const en: Record<string, string> = {
   'premium.payment.noPending': 'No pending payment detected on this device.',
   'premium.payment.checkoutError': 'Unable to start payment right now.',
   'premium.payment.confirmError': 'Unable to confirm payment right now.',
+  'premium.payment.activating': 'Activating your subscription…',
+  'premium.payment.activatingHint':
+    'Please wait about 10 seconds while we sync; the app will then reload.',
   'create.privateTags.upgradeRequired': 'Private tags are reserved for Plus and Pro plans.',
   'create.privateTags.upgradeCta': 'Go Premium',
   'profile.boards.modal.limitPrivate': 'Limit reached: maximum {count} private boards on your current plan.',

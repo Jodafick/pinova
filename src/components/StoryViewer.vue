@@ -7,6 +7,7 @@ import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
+import PinovaModal from './ui/PinovaModal.vue'
 import StorySegmentedProgressBar from './StorySegmentedProgressBar.vue'
 import StoryLikersModal from './StoryLikersModal.vue'
 import ReportContentModal from './ReportContentModal.vue'
@@ -66,8 +67,8 @@ let heartBurstHideTimer: ReturnType<typeof setTimeout> | null = null
 const expandedDesc = ref(false)
 const storyLikersOpen = ref(false)
 const reportStoryOpen = ref(false)
-const storyMoreOpen = ref(false)
-const holdFingerPause = ref(false)
+/** Feuille Partager / Signaler — même principe que l’appui long sur la fiche pin mobile. */
+const storyActionsOpen = ref(false)
 /** État like / reactions — props.story ≠ store `pins`; toggleLike ne met pas à jour le viewer. */
 const storyLikedBySlug = ref<Record<string, boolean>>({})
 const storyReactionsBySlug = ref<Record<string, number>>({})
@@ -80,9 +81,289 @@ const storyVideoEl = ref<HTMLVideoElement | null>(null)
 /** Autoplay : départ en muted (politiques navigateurs) ; clic sur le bouton active le son jusqu’à fermeture du viewer. */
 const storySoundOn = ref(false)
 const playbackPaused = computed(() =>
-  storyMoreOpen.value || storyLikersOpen.value || reportStoryOpen.value || holdFingerPause.value,
+  storyActionsOpen.value || storyLikersOpen.value || reportStoryOpen.value,
 )
-let holdPauseTimer: ReturnType<typeof setTimeout> | null = null
+
+/** Fermeture par swipe bas — aligné `PinDetailMobileFullscreen`. */
+const surfaceDragY = ref(0)
+const surfacePointerActive = ref(false)
+const gestureStart = ref<{ x: number; y: number; at: number } | null>(null)
+const gestureIntent = ref<'none' | 'vertical' | 'horizontal'>('none')
+const isExitClosing = ref(false)
+let exitCloseTimer: ReturnType<typeof setTimeout> | null = null
+const EXIT_CLOSE_ANIM_MS = 360
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+let longPressTriggered = false
+const storyRootRef = ref<HTMLElement | null>(null)
+let detachStoryTouchGestures: (() => void) | null = null
+
+/** Double tap cœur (zone centrale) — coordonnées écran. */
+let lastTap = 0
+let lastTapX = 0
+let lastTapY = 0
+
+function clearExitCloseTimer() {
+  if (exitCloseTimer) {
+    clearTimeout(exitCloseTimer)
+    exitCloseTimer = null
+  }
+}
+
+function startDismissClose() {
+  if (isExitClosing.value) return
+  clearLongPressTimer()
+  gestureIntent.value = 'none'
+  gestureStart.value = null
+  isExitClosing.value = true
+  resetSurfaceGesture()
+  clearExitCloseTimer()
+  exitCloseTimer = window.setTimeout(() => {
+    exitCloseTimer = null
+    close()
+  }, EXIT_CLOSE_ANIM_MS)
+}
+
+const surfaceStyle = computed(() => {
+  if (isExitClosing.value) return undefined
+  const transition =
+    surfacePointerActive.value && (surfaceDragY.value > 0 || gestureIntent.value !== 'none')
+      ? 'none'
+      : undefined
+  if (surfaceDragY.value > 0) {
+    const y = Math.round(surfaceDragY.value * 4) / 4
+    const scale = Math.max(0.9, 1 - y / 1800)
+    const radius = Math.min(22, Math.round(y / 7))
+    return {
+      ...(transition ? { transition } : {}),
+      transform: `translate3d(0, ${y}px, 0) scale(${scale})`,
+      borderRadius: `${radius}px`,
+    }
+  }
+  return transition ? { transition } : undefined
+})
+
+const scrimOverlayStyle = computed(() => {
+  if (isExitClosing.value) {
+    return {
+      opacity: 0,
+      transition: `opacity ${EXIT_CLOSE_ANIM_MS * 0.88}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+    }
+  }
+  const y = surfaceDragY.value
+  if (y <= 0) return { opacity: 1 }
+  const t = Math.min(1, y / 420)
+  return { opacity: Math.max(0.08, 1 - t * 0.88) }
+})
+
+function clearLongPressTimer() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function resetSurfaceGesture() {
+  gestureIntent.value = 'none'
+  surfaceDragY.value = 0
+}
+
+function gestureTargetIgnored(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null
+  if (!el?.closest) return false
+  return !!el.closest(
+    'button, a[href], input, textarea, select, [data-story-gesture-ignore]',
+  )
+}
+
+function beginGesture(x: number, y: number) {
+  if (isExitClosing.value) return
+  if (storyActionsOpen.value || storyLikersOpen.value || reportStoryOpen.value) return
+  surfacePointerActive.value = true
+  gestureStart.value = { x, y, at: Date.now() }
+  gestureIntent.value = 'none'
+  surfaceDragY.value = 0
+  longPressTriggered = false
+  clearLongPressTimer()
+  longPressTimer = window.setTimeout(() => {
+    const start = gestureStart.value
+    if (!start || gestureIntent.value !== 'none') return
+    longPressTriggered = true
+    gestureStart.value = null
+    clearLongPressTimer()
+    storyActionsOpen.value = true
+  }, 420)
+}
+
+function moveGesture(x: number, y: number) {
+  if (isExitClosing.value) return
+  if (storyActionsOpen.value || storyLikersOpen.value || reportStoryOpen.value) return
+  const start = gestureStart.value
+  if (!start) return
+  const dx = x - start.x
+  const dy = y - start.y
+  const absX = Math.abs(dx)
+  const absY = Math.abs(dy)
+
+  if (gestureIntent.value === 'none') {
+    if (absY > 10 && absY > absX * 1.15) gestureIntent.value = 'vertical'
+    else if (absX > 10 && absX > absY * 1.15) gestureIntent.value = 'horizontal'
+    else return
+  }
+  if (absX > 12 || absY > 12) clearLongPressTimer()
+
+  if (gestureIntent.value === 'vertical') {
+    surfaceDragY.value = Math.max(0, Math.round(dy * 4) / 4)
+  }
+}
+
+function endGesture(x: number, y: number) {
+  try {
+    if (isExitClosing.value) return
+    const start = gestureStart.value
+    gestureStart.value = null
+    if (storyActionsOpen.value || storyLikersOpen.value || reportStoryOpen.value) {
+      clearLongPressTimer()
+      longPressTriggered = false
+      resetSurfaceGesture()
+      return
+    }
+    if (!start) {
+      resetSurfaceGesture()
+      return
+    }
+    clearLongPressTimer()
+    if (longPressTriggered) {
+      longPressTriggered = false
+      resetSurfaceGesture()
+      return
+    }
+
+    const dx = x - start.x
+    const dy = y - start.y
+    const absX = Math.abs(dx)
+    const absY = Math.abs(dy)
+    const elapsed = Date.now() - start.at
+
+    if (absY > 74 && absY > absX * 1.12) {
+      if (dy > 0) {
+        gestureIntent.value = 'none'
+        startDismissClose()
+        return
+      }
+      resetSurfaceGesture()
+      return
+    }
+
+    resetSurfaceGesture()
+
+    if (absX > 12 || absY > 12 || elapsed > 420) return
+
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1
+    const fx = x / Math.max(1, vw)
+    if (fx < 0.28) {
+      goPrev()
+      return
+    }
+    if (fx > 0.72) {
+      goNext()
+      return
+    }
+
+    const pin = current.value
+    if (!pin || !isAuthenticated.value) return
+    if (isOwnerViewingStory.value) return
+    const now = Date.now()
+    if (
+      now - lastTap < 340 &&
+      Math.abs(x - lastTapX) < 34 &&
+      Math.abs(y - lastTapY) < 34
+    ) {
+      lastTap = 0
+      const slug = pin.slug
+      const likedStored = storyLikedBySlug.value[slug]
+      const alreadyLiked =
+        typeof likedStored === 'boolean' ? likedStored : !!pin.liked
+      if (alreadyLiked) return
+      void doLike()
+      return
+    }
+    lastTap = now
+    lastTapX = x
+    lastTapY = y
+  } finally {
+    surfacePointerActive.value = false
+  }
+}
+
+function onSurfacePointerCancel() {
+  surfacePointerActive.value = false
+  clearLongPressTimer()
+  longPressTriggered = false
+  gestureStart.value = null
+  resetSurfaceGesture()
+}
+
+function attachStoryTouchGestures() {
+  detachStoryTouchGestures?.()
+  detachStoryTouchGestures = null
+  const el = storyRootRef.value
+  if (!el || typeof window === 'undefined') return
+  const cap = { capture: true }
+  const onStart = (e: TouchEvent) => {
+    if (gestureTargetIgnored(e.target)) return
+    const touch = e.changedTouches[0]
+    if (!touch) return
+    beginGesture(touch.clientX, touch.clientY)
+  }
+  const onMove = (e: TouchEvent) => {
+    if (!gestureStart.value && !surfacePointerActive.value) return
+    const touch = e.changedTouches[0]
+    if (!touch) return
+    moveGesture(touch.clientX, touch.clientY)
+    if (gestureIntent.value === 'vertical') e.preventDefault()
+  }
+  const onEnd = (e: TouchEvent) => {
+    const touch = e.changedTouches[0]
+    if (!touch) return
+    endGesture(touch.clientX, touch.clientY)
+  }
+  const onCancel = () => {
+    onSurfacePointerCancel()
+  }
+  el.addEventListener('touchstart', onStart, cap)
+  el.addEventListener('touchmove', onMove, { capture: true, passive: false })
+  el.addEventListener('touchend', onEnd, cap)
+  el.addEventListener('touchcancel', onCancel, cap)
+  detachStoryTouchGestures = () => {
+    el.removeEventListener('touchstart', onStart, cap)
+    el.removeEventListener('touchmove', onMove, { capture: true } as AddEventListenerOptions)
+    el.removeEventListener('touchend', onEnd, cap)
+    el.removeEventListener('touchcancel', onCancel, cap)
+    detachStoryTouchGestures = null
+  }
+}
+
+function onRootPointerDown(e: PointerEvent) {
+  if (e.pointerType === 'touch') return
+  if (gestureTargetIgnored(e.target)) return
+  ;(e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId)
+  beginGesture(e.clientX, e.clientY)
+}
+
+function onRootPointerMove(e: PointerEvent) {
+  if (e.pointerType === 'touch') return
+  moveGesture(e.clientX, e.clientY)
+}
+
+function onRootPointerUp(e: PointerEvent) {
+  if (e.pointerType === 'touch') return
+  endGesture(e.clientX, e.clientY)
+}
+
+function onRootPointerCancel(e: PointerEvent) {
+  if (e.pointerType === 'touch') return
+  onSurfacePointerCancel()
+}
 
 function syncStoryVideoMute(el?: HTMLVideoElement | null) {
   const v = el ?? storyVideoEl.value
@@ -167,17 +448,23 @@ function syncStoryEngagementFromProps() {
 
 watch(
   () => props.modelValue,
-  (open, prevOpen) => {
+  async (open, prevOpen) => {
     if (open && props.pins.length > 0) {
       closingSessionReason.value = null
       storySoundOn.value = false
+      isExitClosing.value = false
+      resetSurfaceGesture()
+      surfacePointerActive.value = false
       syncStoryEngagementFromProps()
       const maxIdx = props.pins.length - 1
       index.value = Math.min(Math.max(0, props.initialIndex ?? 0), maxIdx)
       // Force le redémarrage du segment même si l'index n'a pas changé (cas 0 -> 0)
       restartCurrentSegment()
+      await nextTick()
+      attachStoryTouchGestures()
     } else {
       clearAdvance()
+      detachStoryTouchGestures?.()
     }
     if (prevOpen && !open && props.pins.length > 0) {
       const username = props.pins[0]?.username?.trim() ?? ''
@@ -225,6 +512,12 @@ watch(index, () => {
 })
 
 watch(storyLikersOpen, (open) => {
+  if (!props.modelValue || props.pins.length === 0) return
+  if (open) clearAdvance()
+  else restartCurrentSegment()
+})
+
+watch(storyActionsOpen, (open) => {
   if (!props.modelValue || props.pins.length === 0) return
   if (open) clearAdvance()
   else restartCurrentSegment()
@@ -384,9 +677,25 @@ async function handleSubmitStoryReport(payload: { category: string; details: str
   }
 }
 
+function closeActionsAndShare() {
+  storyActionsOpen.value = false
+  void handleShareStory()
+}
+
+function closeActionsAndReport() {
+  storyActionsOpen.value = false
+  void handleReportStory()
+}
+
 function close() {
   clearAdvance()
-  storyMoreOpen.value = false
+  clearExitCloseTimer()
+  storyActionsOpen.value = false
+  isExitClosing.value = false
+  resetSurfaceGesture()
+  surfacePointerActive.value = false
+  gestureStart.value = null
+  detachStoryTouchGestures?.()
   emit('update:modelValue', false)
 }
 
@@ -509,8 +818,12 @@ function openPinPage() {
 function onKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return
   if (e.key === 'Escape') {
-    if (storyMoreOpen.value) {
-      storyMoreOpen.value = false
+    if (storyActionsOpen.value) {
+      storyActionsOpen.value = false
+      return
+    }
+    if (reportStoryOpen.value) {
+      reportStoryOpen.value = false
       return
     }
     if (storyLikersOpen.value) {
@@ -522,46 +835,13 @@ function onKeydown(e: KeyboardEvent) {
   else if (e.key === 'ArrowLeft') goPrev()
 }
 
-function handleStoryDblLike() {
-  if (isOwnerViewingStory.value) return
-  void doLike()
-}
-
-function startHoldPause() {
-  if (holdPauseTimer) clearTimeout(holdPauseTimer)
-  holdPauseTimer = setTimeout(() => {
-    holdFingerPause.value = true
-  }, 260)
-}
-
-function endHoldPause() {
-  if (holdPauseTimer) {
-    clearTimeout(holdPauseTimer)
-    holdPauseTimer = null
-  }
-  holdFingerPause.value = false
-}
-
-let lastTap = 0
-function onCenterTap() {
-  const pin = current.value
-  if (!pin || !isAuthenticated.value) return
-  if (isOwnerViewingStory.value) return
-  const now = Date.now()
-  if (now - lastTap < 340) {
-    lastTap = 0
-    void doLike()
-    return
-  }
-  lastTap = now
-}
-
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
-  if (holdPauseTimer) clearTimeout(holdPauseTimer)
   if (heartBurstHideTimer) clearTimeout(heartBurstHideTimer)
   clearAdvance()
+  clearExitCloseTimer()
+  detachStoryTouchGestures?.()
 })
 </script>
 
@@ -569,129 +849,80 @@ onUnmounted(() => {
   <Teleport to="body">
     <div
       v-if="modelValue && pins.length > 0"
-        class="story-viewer-root fixed inset-0 z-[100] bg-neutral-950 flex flex-col"
+      ref="storyRootRef"
+      class="story-viewer-root fixed inset-0 z-[100] flex flex-col overflow-hidden bg-transparent touch-none select-none"
+      :class="{ 'story-viewer--exit-closing': isExitClosing }"
       role="dialog"
       aria-modal="true"
     >
-      <!-- Progress + auteur -->
-      <div class="shrink-0 z-50 px-2 pt-safe pt-3 space-y-2">
-        <StorySegmentedProgressBar
-          :segment-count="pins.length"
-          :current-index="index"
-          :active-duration-ms="slideDurationMs"
-          :animation-key="progressAnimKey"
-          :paused="playbackPaused"
-        />
-        <div class="flex justify-center px-2 pb-1">
-          <button
-            type="button"
-            class="flex items-center gap-2.5 max-w-[min(100%,320px)] rounded-full px-2 py-1 pr-3 hover:bg-white/10 transition cursor-pointer pointer-events-auto"
-            @click.stop="openAuthorProfile"
-          >
-            <span
-              class="relative h-9 w-9 shrink-0 rounded-full overflow-hidden ring-2 ring-white/35 shadow-md flex items-center justify-center text-white"
-              :class="storyAuthorAvatarTw"
-              :style="storyAuthorAvatarStyle"
-            >
-              <img
-                v-if="current?.userAvatarUrl"
-                :src="current.userAvatarUrl"
-                alt=""
-                class="h-full w-full object-cover"
-                draggable="false"
-              />
-              <span v-else class="text-[11px] font-bold text-white leading-none">{{ storyAuthorInitials }}</span>
-            </span>
-            <span class="text-sm font-semibold text-white drop-shadow-md truncate text-left">
-              {{ current?.user }}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <div class="absolute top-safe right-3 z-50 flex flex-col items-end gap-2 pt-safe">
-        <button
-          v-if="current?.storyVideoUrl"
-          type="button"
-          class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"
-          :title="storySoundOn ? t('story.sound.mute') : t('story.sound.unmute')"
-          @click.stop="toggleStorySound"
-        >
-          <span class="material-symbols-outlined text-[22px]">{{ storySoundOn ? 'volume_up' : 'volume_off' }}</span>
-        </button>
-        <div class="relative">
-          <button
-            v-if="current?.slug || (isAuthenticated && current?.username !== currentUser?.username)"
-            type="button"
-            class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"
-            title="Plus"
-            @click.stop="storyMoreOpen = !storyMoreOpen"
-          >
-            <span class="material-symbols-outlined text-[22px]">more_vert</span>
-          </button>
-          <div
-            v-if="storyMoreOpen"
-            class="absolute right-0 top-[3.1rem] min-w-[11rem] rounded-xl bg-black/80 border border-white/15 backdrop-blur-md py-1.5"
-          >
+      <div
+        class="story-scrim pointer-events-none absolute inset-0 z-0 bg-neutral-950"
+        :style="scrimOverlayStyle"
+        aria-hidden="true"
+      />
+      <div
+        class="story-surface relative z-[1] flex min-h-0 flex-1 flex-col bg-transparent"
+        :class="{ 'story-surface--exit-dismiss': isExitClosing }"
+        :style="surfaceStyle"
+        @pointerdown="onRootPointerDown"
+        @pointermove="onRootPointerMove"
+        @pointerup="onRootPointerUp"
+        @pointercancel="onRootPointerCancel"
+      >
+        <!-- Progress + auteur -->
+        <div class="shrink-0 z-50 px-2 pt-safe pt-3 space-y-2">
+          <StorySegmentedProgressBar
+            :segment-count="pins.length"
+            :current-index="index"
+            :active-duration-ms="slideDurationMs"
+            :animation-key="progressAnimKey"
+            :paused="playbackPaused"
+          />
+          <div class="flex justify-center px-2 pb-1">
             <button
-              v-if="current?.slug"
               type="button"
-              class="w-full px-3 py-2 text-left text-white text-sm hover:bg-white/10 flex items-center gap-2"
-              @click.stop="storyMoreOpen = false; handleShareStory()"
+              class="flex max-w-[min(100%,320px)] cursor-pointer items-center gap-2.5 rounded-full px-2 py-1 pr-3 transition hover:bg-white/10 pointer-events-auto"
+              @click.stop="openAuthorProfile"
             >
-              <span class="material-symbols-outlined text-[18px]">share</span>
-              {{ t('pin.shareLink') }}
-            </button>
-            <button
-              v-if="isAuthenticated && current?.username !== currentUser?.username"
-              type="button"
-              class="w-full px-3 py-2 text-left text-white text-sm hover:bg-white/10 flex items-center gap-2"
-              @click.stop="storyMoreOpen = false; handleReportStory()"
-            >
-              <span class="material-symbols-outlined text-[18px]">flag</span>
-              {{ t('moderation.report') }}
+              <span
+                class="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-white shadow-md ring-2 ring-white/35"
+                :class="storyAuthorAvatarTw"
+                :style="storyAuthorAvatarStyle"
+              >
+                <img
+                  v-if="current?.userAvatarUrl"
+                  :src="current.userAvatarUrl"
+                  alt=""
+                  class="h-full w-full object-cover"
+                  draggable="false"
+                />
+                <span v-else class="text-[11px] font-bold leading-none text-white">{{ storyAuthorInitials }}</span>
+              </span>
+              <span class="truncate text-left text-sm font-semibold text-white drop-shadow-md">
+                {{ current?.user }}
+              </span>
             </button>
           </div>
         </div>
-        <button
-          type="button"
-          class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/55 border border-white/10"
-          @click="close"
-        >
-          <span class="material-symbols-outlined text-[22px]">close</span>
-        </button>
-      </div>
 
-      <!-- Zones tap -->
-      <div class="relative flex-1 min-h-0 flex items-stretch justify-center">
-        <button
-          type="button"
-          class="absolute inset-y-0 left-0 w-[28%] z-30 cursor-w-resize opacity-0"
-          aria-label="Précédent"
-          @click.stop="goPrev"
-        />
-        <button
-          type="button"
-          class="absolute inset-y-0 right-0 w-[28%] z-30 cursor-e-resize opacity-0"
-          aria-label="Suivant"
-          @click.stop="goNext"
-        />
-
-        <div
-          class="absolute inset-y-0 left-[28%] right-[28%] z-25 flex items-center justify-center"
-          @click.stop="onCenterTap"
-          @dblclick.stop.prevent="handleStoryDblLike"
-          @pointerdown="startHoldPause"
-          @pointerup="endHoldPause"
-          @pointerleave="endHoldPause"
-          @pointercancel="endHoldPause"
-        />
-
-        <div class="relative flex-1 flex items-center justify-center px-3 pb-28 pt-14 sm:px-8">
-          <div
-            v-if="current"
-            class="relative max-w-[min(100%,520px)] w-full rounded-2xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-white/10"
+        <div class="absolute top-safe right-3 z-50 flex flex-col items-end gap-2 pt-safe">
+          <button
+            v-if="current?.storyVideoUrl"
+            type="button"
+            class="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white backdrop-blur-md hover:bg-black/55"
+            :title="storySoundOn ? t('story.sound.mute') : t('story.sound.unmute')"
+            @click.stop="toggleStorySound"
           >
+            <span class="material-symbols-outlined text-[22px]">{{ storySoundOn ? 'volume_up' : 'volume_off' }}</span>
+          </button>
+        </div>
+
+        <div class="relative flex min-h-0 flex-1 flex-col">
+          <div class="relative flex flex-1 items-center justify-center px-3 pb-28 pt-14 sm:px-8">
+            <div
+              v-if="current"
+              class="relative w-full max-w-[min(100%,520px)] overflow-hidden rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-white/10"
+            >
             <PinSensitiveMedia
               v-if="current.storyVideoUrl"
               :sensitive="!!current.mediaSensitiveBlur"
@@ -798,19 +1029,59 @@ onUnmounted(() => {
             </transition>
           </div>
         </div>
+
+        <div class="pointer-events-none absolute bottom-6 inset-x-0 z-40 flex justify-center px-4">
+          <button
+            v-if="current?.slug && !current?.storyEphemeral"
+            type="button"
+            class="pointer-events-auto rounded-full border border-white/20 bg-white/15 px-5 py-2.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/25"
+            @click="openPinPage"
+          >
+            {{ t('story.viewPin') }}
+          </button>
+        </div>
       </div>
 
-      <div class="absolute bottom-6 inset-x-0 z-40 flex justify-center px-4 pointer-events-none">
-        <button
-          v-if="current?.slug && !current?.storyEphemeral"
-          type="button"
-          class="pointer-events-auto px-5 py-2.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-xs font-semibold hover:bg-white/25 transition"
-          @click="openPinPage"
-        >
-          {{ t('story.viewPin') }}
-        </button>
       </div>
     </div>
+
+    <PinovaModal
+      v-model:open="storyActionsOpen"
+      presentation="tallSheet"
+      :depth-effect="false"
+      :title="t('pin.actionsTitle')"
+    >
+      <template #headerEnd>
+        <button
+          type="button"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition hover:bg-black/[0.06] dark:text-neutral-300 dark:hover:bg-white/[0.08]"
+          :aria-label="t('common.close')"
+          @click="storyActionsOpen = false"
+        >
+          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+        </button>
+      </template>
+      <div class="space-y-2">
+        <button
+          v-if="current?.slug"
+          type="button"
+          class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-neutral-900 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-white/10"
+          @click="closeActionsAndShare"
+        >
+          <span class="material-symbols-outlined text-[20px]">share</span>
+          {{ t('pin.shareLink') }}
+        </button>
+        <button
+          v-if="isAuthenticated && current?.username !== currentUser?.username"
+          type="button"
+          class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-neutral-900 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-white/10"
+          @click="closeActionsAndReport"
+        >
+          <span class="material-symbols-outlined text-[20px]">flag</span>
+          {{ t('moderation.report') }}
+        </button>
+      </div>
+    </PinovaModal>
   </Teleport>
 
   <ReportContentModal
@@ -828,7 +1099,23 @@ onUnmounted(() => {
 <style scoped>
 .story-viewer-root {
   animation: story-viewer-enter 0.22s ease-out both;
-  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+.story-viewer--exit-closing {
+  pointer-events: none;
+}
+
+.story-surface {
+  -webkit-touch-callout: none;
+  transform-origin: center top;
+  transition: transform 0.18s ease-out, border-radius 0.18s ease-out;
+  will-change: transform;
+}
+
+.story-surface--exit-dismiss {
+  transform: translate3d(0, 100%, 0) !important;
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
 .fade-enter-active,

@@ -130,6 +130,7 @@ const router = createRouter({
         preserveBackground: true,
         statusBar: 'auto',
         disableEdgeBack: true,
+        hideAppMobileSubheader: true,
       },
     },
     {
@@ -143,6 +144,7 @@ const router = createRouter({
         preserveBackground: true,
         statusBar: 'light',
         disableEdgeBack: true,
+        hideAppMobileSubheader: true,
       },
     },
     {

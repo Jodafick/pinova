@@ -448,11 +448,11 @@ async function applyCrop() {
         class="flex flex-1 min-h-0 items-center justify-center px-6 pb-3 pt-4 sm:px-8"
       >
         <div
-          class="max-w-full rounded-[1.75rem] border border-white/12 bg-black/35 p-4 shadow-[inset_0_1px_0_rgb(255255255/0.06)] sm:p-5"
+          class="w-full max-w-full rounded-[1.75rem] border border-white/12 bg-black/35 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:p-5"
         >
           <section
             ref="stageRef"
-            class="story-crop-stage relative aspect-[3/4] h-[50svh] max-h-[50dvh] w-auto max-w-full touch-none overflow-hidden rounded-xl border border-white/15 bg-black"
+            class="story-crop-stage relative mx-auto aspect-[3/4] h-[min(50svh,50dvh)] w-full max-w-[min(100vw-3rem,420px)] touch-none overflow-hidden rounded-xl border border-white/15 bg-black"
           >
         <div class="absolute inset-0 overflow-hidden rounded-[inherit] bg-black">
           <div class="absolute inset-0 flex items-center justify-center">

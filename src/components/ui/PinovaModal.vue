@@ -546,13 +546,14 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 .pinova-modal-root--bottomSheet,
 .pinova-modal-root--tallSheet {
   align-items: flex-end;
-  /* Même ancrage strict que `center` : évite tout dépassement visuel du document sur Safari. */
-  height: 100dvh;
-  height: 100svh;
-  min-height: 100dvh;
-  min-height: 100svh;
-  max-height: 100dvh;
-  max-height: 100svh;
+  /*
+   * Ne pas forcer height: 100dvh en plus de `inset:0` : sur iOS / PWA, dvh peut
+   * dépasser la zone visible et `align-items:flex-end` aligne alors la feuille
+   * trop haut → bande vide sous la modale.
+   */
+  height: auto;
+  min-height: 0;
+  max-height: none;
   overflow: hidden;
   box-sizing: border-box;
 }

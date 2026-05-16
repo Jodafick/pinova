@@ -32,6 +32,10 @@ import { useIsLgDown } from '../composables/useIsLgDown'
 import { useEdgeSwipeBack } from '../composables/useEdgeSwipeBack'
 import { usePinovaHeaderSwipeDismiss } from '../composables/usePinovaHeaderSwipeDismiss'
 import { useLayer } from '../navigation/useLayer'
+import {
+  invalidateHomeStoriesCache,
+  invalidateProfileActiveStories,
+} from '../utils/activeStoriesCache'
 
 /** Champs affichés uniquement à l’étape 1 (texte / catégorie / tags publics). Pas les tags privés (étape 2). */
 const CREATE_PIN_STEP_1_FIELD_KEYS = new Set([
@@ -80,7 +84,18 @@ const pinMobileMetaScrollRef = ref<HTMLElement | null>(null)
 const pinMobileShellRef = ref<HTMLElement | null>(null)
 const pinMobileHeaderSwipeRef = ref<HTMLElement | null>(null)
 const { isLgDown } = useIsLgDown()
-const { layer, close: closeLayer } = useLayer()
+const { layer, close: closeLayer, popAll } = useLayer()
+
+/** Ferme les couches plein écran (création pin) puis navigue : les liens internes sinon restent sous le layer. */
+async function navigateFromCreateLayer(path: string) {
+  popAll()
+  await nextTick()
+  try {
+    await router.push(path)
+  } catch {
+    /* navigation dupliquée */
+  }
+}
 
 function leaveCreateFlow() {
   if (layer.value) closeLayer()
@@ -634,6 +649,11 @@ const submitPin = async () => {
       resultPin = await addPin(formData)
     }
     const destSlug = resultPin?.slug || editSlug.value
+    if (isStory.value) {
+      invalidateHomeStoriesCache()
+      const un = currentUser.value?.username?.trim()
+      if (un) invalidateProfileActiveStories(un)
+    }
     if (isStory.value && destSlug) {
       router.push({ path: '/', query: { story: destSlug } })
     } else {
@@ -856,9 +876,13 @@ usePinovaHeaderSwipeDismiss({
 
       <div v-if="needsBirthDateForMedia" class="relative z-10 mx-auto mt-5 max-w-sm rounded-2xl border border-amber-200/30 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-100">
         {{ t('create.banner.birthDate') }}
-        <router-link to="/settings" class="font-bold text-amber-50 underline underline-offset-2">
+        <a
+          href="/settings"
+          class="font-bold text-amber-50 underline underline-offset-2"
+          @click.prevent="navigateFromCreateLayer('/settings')"
+        >
           {{ t('create.banner.birthDateCta') }}
-        </router-link>
+        </a>
       </div>
     </div>
 
@@ -941,7 +965,11 @@ usePinovaHeaderSwipeDismiss({
           <div class="mx-auto w-full max-w-md space-y-3">
           <div v-if="needsBirthDateForMedia" class="rounded-2xl border border-amber-200/25 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-100">
             {{ t('create.banner.birthDate') }}
-            <router-link to="/settings" class="font-bold text-amber-50 underline underline-offset-2">{{ t('create.banner.birthDateCta') }}</router-link>
+            <a
+              href="/settings"
+              class="font-bold text-amber-50 underline underline-offset-2"
+              @click.prevent="navigateFromCreateLayer('/settings')"
+            >{{ t('create.banner.birthDateCta') }}</a>
           </div>
 
           <div v-if="mediaModerationPending" class="pin-m-glass flex items-center gap-2 text-xs text-white/70">
@@ -1094,7 +1122,11 @@ usePinovaHeaderSwipeDismiss({
             <PrivateTags v-if="canUsePrivateTags" v-model="privateTags" />
             <div v-else class="rounded-2xl border border-violet-400/20 bg-violet-500/10 px-4 py-3 text-xs text-violet-100">
               {{ t('create.privateTags.upgradeRequired') }}
-              <router-link to="/premium" class="font-bold text-white underline">{{ t('create.privateTags.upgradeCta') }}</router-link>
+              <a
+                href="/premium"
+                class="font-bold text-white underline"
+                @click.prevent="navigateFromCreateLayer('/premium')"
+              >{{ t('create.privateTags.upgradeCta') }}</a>
             </div>
             <div v-if="canSchedulePublish" class="border-t border-white/10 pt-3">
               <p class="mb-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">{{ t('create.schedule.title') }}</p>
@@ -1104,7 +1136,11 @@ usePinovaHeaderSwipeDismiss({
 
           <div class="pin-m-glass text-xs leading-relaxed text-white/60">
             <span v-html="createNoTrackingSafeHtml" />
-            <router-link to="/premium" class="ml-1 font-semibold text-pink-700 dark:text-pink-600 underline">{{ t('create.noTracking.learnMore') }}</router-link>
+            <a
+              href="/premium"
+              class="ml-1 font-semibold text-pink-700 dark:text-pink-600 underline"
+              @click.prevent="navigateFromCreateLayer('/premium')"
+            >{{ t('create.noTracking.learnMore') }}</a>
           </div>
 
           <button
@@ -1147,7 +1183,7 @@ usePinovaHeaderSwipeDismiss({
 
   <div
     v-else
-    class="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
+    class="flex min-h-full w-full min-w-0 max-w-5xl flex-1 flex-col mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
   >
     <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange">
     <div
@@ -1155,12 +1191,13 @@ usePinovaHeaderSwipeDismiss({
       class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
     >
       <p class="leading-snug">{{ t('create.banner.birthDate') }}</p>
-      <router-link
-        to="/settings"
+      <a
+        href="/settings"
         class="shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-full bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 text-center"
+        @click.prevent="navigateFromCreateLayer('/settings')"
       >
         {{ t('create.banner.birthDateCta') }}
-      </router-link>
+      </a>
     </div>
     <!-- Header -->
     <div class="flex items-center justify-between mb-8" data-pinova-swipe-dismiss-handle>
@@ -1544,9 +1581,13 @@ usePinovaHeaderSwipeDismiss({
               class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 leading-relaxed"
             >
               {{ t('create.privateTags.upgradeRequired') }}
-              <router-link to="/premium" class="ml-1 font-semibold underline hover:no-underline">
+              <a
+                href="/premium"
+                class="ml-1 font-semibold underline hover:no-underline"
+                @click.prevent="navigateFromCreateLayer('/premium')"
+              >
                 {{ t('create.privateTags.upgradeCta') }}
-              </router-link>
+              </a>
             </div>
           </div>
 
@@ -1555,7 +1596,11 @@ usePinovaHeaderSwipeDismiss({
               <span class="material-symbols-outlined text-lg text-blue-600">shield</span>
               <p class="text-xs leading-relaxed">
                 <span v-html="createNoTrackingSafeHtml"></span>
-                <router-link to="/premium" class="text-blue-600 font-semibold hover:underline ml-1">{{ t('create.noTracking.learnMore') }}</router-link>
+                <a
+                  href="/premium"
+                  class="text-blue-600 font-semibold hover:underline ml-1"
+                  @click.prevent="navigateFromCreateLayer('/premium')"
+                >{{ t('create.noTracking.learnMore') }}</a>
               </p>
             </div>
           </div>

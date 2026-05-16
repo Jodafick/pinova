@@ -349,6 +349,15 @@ watch(
   { flush: 'post', immediate: true },
 )
 
+watch(
+  [step, editingImageFile, editingVideoFile],
+  () => {
+    if (step.value === 'image-edit' && !editingImageFile.value) goPickStep()
+    if (step.value === 'video-edit' && !editingVideoFile.value) goPickStep()
+  },
+  { flush: 'post' },
+)
+
 function onStoryEdgeDismiss() {
   if (step.value === 'pick') {
     leaveStoryFlow()
