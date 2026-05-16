@@ -297,11 +297,11 @@ onMounted(() => {
 
 /* ─── Thème sombre (classe `dark` sur `<html>`, même source que Tailwind) ─── */
 :global(html.dark) .pwa-splash__bg {
+  /* Sombre quasi-pur, juste une lueur rose extrêmement faible pour identifier la marque. */
   background:
-    radial-gradient(ellipse 130% 85% at 50% -25%, rgba(160, 20, 70, 0.22) 0%, transparent 55%),
-    radial-gradient(circle at 22% 32%, rgba(90, 10, 40, 0.5) 0%, transparent 48%),
-    radial-gradient(circle at 82% 72%, rgba(45, 8, 24, 0.65) 0%, transparent 52%),
-    linear-gradient(165deg, #010101 0%, #050506 35%, #0a080c 68%, #100a14 100%);
+    radial-gradient(ellipse 110% 70% at 50% -20%, rgba(120, 18, 56, 0.10) 0%, transparent 60%),
+    radial-gradient(circle at 78% 82%, rgba(60, 8, 28, 0.18) 0%, transparent 55%),
+    #050507;
 }
 
 :global(html.dark) .pwa-splash__particle {

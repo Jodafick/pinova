@@ -650,6 +650,13 @@ const submitPin = async () => {
       const un = currentUser.value?.username?.trim()
       if (un) invalidateProfileActiveStories(un)
     }
+    const successMessage = isEditMode.value
+      ? t('pin.edit.success')
+      : isStory.value
+        ? t('create.story.success')
+        : t('create.pin.success')
+    pushToast({ message: successMessage, kind: 'success' })
+    if (layer.value) closeLayer()
     if (isStory.value && destSlug) {
       router.push({ path: '/', query: { story: destSlug } })
     } else {
@@ -1446,24 +1453,30 @@ usePinovaHeaderSwipeDismiss({
               <div
                 v-if="showCategoryDropdown"
                 ref="categoryFloatingRef"
-                class="bg-white border border-neutral-200 rounded-xl shadow-lg max-h-56 overflow-y-auto"
+                class="bg-white border border-neutral-200 rounded-xl shadow-lg max-h-56 overflow-y-auto dark:bg-neutral-900 dark:border-neutral-800"
                 role="listbox"
-                :style="{ ...categoryFloatingStyles, zIndex: 140 }"
+                :style="{ ...categoryFloatingStyles, zIndex: 400 }"
               >
                 <button
                   v-for="topicItem in filteredTopics"
                   :key="topicItem.originalName"
                   type="button"
-                  class="w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 flex items-center gap-2"
+                  class="w-full text-left px-3 py-2 text-sm text-neutral-800 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
                   @click="selectCategory(topicItem)"
                 >
-                  <span class="material-symbols-outlined text-base text-neutral-500">{{ topicItem.icon || 'category' }}</span>
+                  <span class="material-symbols-outlined text-base text-neutral-500 dark:text-neutral-400">{{ topicItem.icon || 'category' }}</span>
                   <span>{{ topicItem.name }}</span>
                 </button>
+                <div
+                  v-if="filteredTopics.length === 0 && !categorySearch.trim()"
+                  class="px-3 py-3 text-xs text-neutral-500 dark:text-neutral-400"
+                >
+                  {{ t('create.field.category.loading') }}
+                </div>
                 <button
                   v-if="categorySearch.trim() && !resolvedTopics.some((item) => item.name === categorySearch.trim() || item.originalName === categorySearch.trim())"
                   type="button"
-                  class="w-full text-left px-3 py-2 text-sm font-medium text-pink-700 hover:bg-pink-50"
+                  class="w-full text-left px-3 py-2 text-sm font-medium text-pink-700 hover:bg-pink-50 dark:hover:bg-pink-950/40"
                   @click="selectCategory({ name: categorySearch.trim(), originalName: categorySearch.trim() })"
                 >
                   + {{ categorySearch.trim() }}

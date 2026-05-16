@@ -667,17 +667,23 @@ const profileNavDrawerOpen = ref(false)
 
 const profileNavShellSurfaceClass = computed(() => {
   if (!profileNavDrawerOpen.value || !currentUser.value || !isMyProfile.value) return ''
+  /*
+   * Anim simplifiée 2D (slide + scale + ombre) au lieu d'une transformation 3D
+   * `rotateY + translateZ(-598px)` : sur Android Chromium / certaines puces GPU,
+   * la perspective négative culait le contenu hors du compositor → page blanche.
+   * Le rendu visuel reste proche (carte qui glisse à droite), garanti cross-browser.
+   */
   return [
     'relative z-[40] isolate',
-    'max-lg:origin-left max-lg:[transform-style:preserve-3d]',
+    'max-lg:origin-left',
     'max-lg:overflow-x-hidden max-lg:rounded-[32px]',
     'max-lg:transition-[transform,box-shadow,border-radius] max-lg:duration-300 max-lg:[transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
-    'max-lg:motion-safe:[transform:translate3d(80vw,32px,-598px)_rotateY(-22deg)_scale(1.1)]',
+    'max-lg:motion-safe:[transform:translate3d(78vw,18px,0)_scale(0.92)]',
     'max-lg:motion-safe:shadow-[0_25px_25px_rgba(0,0,0,0.25)] dark:max-lg:motion-safe:shadow-[0_28px_55px_-8px_rgba(0,0,0,0.62)]',
     'max-lg:motion-safe:ring-1 max-lg:motion-safe:ring-black/[0.07] dark:max-lg:motion-safe:ring-white/[0.1]',
     'max-lg:motion-reduce:[transform:none] max-lg:motion-reduce:shadow-none max-lg:motion-reduce:ring-0 max-lg:motion-reduce:rounded-none',
     'max-lg:bg-white/95 max-lg:dark:bg-neutral-950/95 max-lg:backdrop-blur-md',
-    /* La surface 3D est au-dessus du tiroir (z-40 > z-25) : sans ça elle intercepte les clics des router-link du menu. */
+    /* La surface est au-dessus du tiroir (z-40 > z-25) : sans pointer-events:none elle interceptait les clics des router-link du menu. */
     'max-lg:pointer-events-none',
   ].join(' ')
 })
@@ -714,8 +720,13 @@ const profileNavDrawerViewportClass = computed(() => {
 
 /** Conteneur type `.page` du demo off-canvas (perspective 1500px sur parent commun). */
 const profileNavOffcanvasRootClass = computed(() => {
+  /*
+   * Plus de perspective 3D : la transformation off-canvas est désormais purement
+   * 2D (cf. profileNavShellSurfaceClass) pour fiabilité cross-browser (Android).
+   * On garde la classe vide pour ne pas casser l'arity du :class array.
+   */
   if (!currentUser.value || !isMyProfile.value) return ''
-  return 'max-lg:[perspective:1500px] max-lg:motion-reduce:[perspective:none]'
+  return ''
 })
 
 watch(

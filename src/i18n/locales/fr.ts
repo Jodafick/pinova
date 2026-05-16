@@ -213,6 +213,9 @@ export const fr: Record<string, string> = {
   'create.upload.videoNotForStory':
     'Le format story accepte seulement une image ou un GIF. Désactive « Publier comme story » pour joindre une vidéo.',
   'create.publish.error': 'Erreur lors de la publication du pin.',
+  'create.pin.success': 'Pin publié avec succès.',
+  'create.story.success': 'Story publiée avec succès.',
+  'create.field.category.loading': 'Chargement des catégories…',
   'create.field.title': 'Titre *',
   'create.field.title.placeholder': 'Ajoutez un titre accrocheur',
   'create.field.description': 'Description',
@@ -314,6 +317,7 @@ export const fr: Record<string, string> = {
   'pin.edit.denied': 'Vous ne pouvez pas modifier ce pin.',
   'pin.edit.loadError': 'Impossible de charger ce pin pour modification.',
   'pin.edit.loadingSkeleton': 'Chargement du formulaire de modification…',
+  'pin.edit.success': 'Modifications enregistrées.',
   'pin.delete.confirmTitle': 'Supprimer ce pin ?',
   'pin.delete.confirmBody':
     'Cette action est définitive : le pin et ses commentaires associés seront supprimés.',

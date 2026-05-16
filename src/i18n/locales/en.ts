@@ -222,6 +222,9 @@ export const en: Record<string, string> = {
   'create.upload.videoNotForStory':
     'Story format is image or GIF only. Turn off « Publish as a 24h story » to attach a video.',
   'create.publish.error': 'Error while publishing the pin.',
+  'create.pin.success': 'Pin published successfully.',
+  'create.story.success': 'Story published successfully.',
+  'create.field.category.loading': 'Loading categories…',
   'create.field.title': 'Title *',
   'create.field.title.placeholder': 'Add a catchy title',
   'create.field.description': 'Description',
@@ -322,6 +325,7 @@ export const en: Record<string, string> = {
   'pin.edit.denied': 'You can’t edit this pin.',
   'pin.edit.loadError': 'Could not load this pin for editing.',
   'pin.edit.loadingSkeleton': 'Loading edit form…',
+  'pin.edit.success': 'Changes saved.',
   'pin.delete.confirmTitle': 'Delete this pin?',
   'pin.delete.confirmBody':
     'This can’t be undone. The pin and its comments will be removed.',
