@@ -827,6 +827,12 @@
     color: var(--card-text);
   }
 
+  /* Cartes Paramètres : fond déjà translucide (`--card-bg`) + flou aligné sur `.pinova-glass`. */
+  .pinova-settings-page .app-card {
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+  }
+
   .app-card-soft {
     background: var(--card-bg-soft);
     border: 1px solid var(--card-border);
@@ -2357,7 +2363,8 @@ html.pinova-motion-saver *::after {
 }
 html.pinova-motion-saver .pinova-glass,
 html.pinova-motion-saver .pinova-glass-strong,
-html.pinova-motion-saver .pinova-glass-rose {
+html.pinova-motion-saver .pinova-glass-rose,
+html.pinova-motion-saver .pinova-settings-page .app-card {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -2415,7 +2422,8 @@ html[data-pinova-quality="low"] {
 }
 html[data-pinova-quality="low"] .pinova-glass,
 html[data-pinova-quality="low"] .pinova-glass-strong,
-html[data-pinova-quality="low"] .pinova-glass-rose {
+html[data-pinova-quality="low"] .pinova-glass-rose,
+html[data-pinova-quality="low"] .pinova-settings-page .app-card {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }

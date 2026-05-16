@@ -1042,7 +1042,7 @@ watch(
 
 <template>
   <div
-    class="max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col h-full min-h-0 pt-6 sm:pt-10 md:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[min(100dvh,100svh)]"
+    class="pinova-settings-page max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col h-full min-h-0 pt-6 sm:pt-10 md:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[min(100dvh,100svh)]"
   >
     <h1 class="text-xl min-[400px]:text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-50 mb-2 break-words">{{ t('settings.title') }}</h1>
     <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-5 leading-relaxed">{{ t('settings.subtitle') }}</p>
