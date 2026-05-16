@@ -17,7 +17,7 @@ declare module 'vue-router' {
     guest?: boolean
     /** Conserver le composant en cache (KeepAlive). */
     keepAlive?: boolean
-    /** Si l'app native est installée, rediriger vers le deep-link. */
+    /** Réservé (non utilisé) : ancienne intention de deep-link automatique — l’app n’est proposée que via bannière ou `?openApp=1`. */
     preferAppRedirect?: boolean
 
     /* ───── Layer System (iOS-first) ───── */

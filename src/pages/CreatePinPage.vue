@@ -795,6 +795,7 @@ usePinovaHeaderSwipeDismiss({
 </script>
 
 <template>
+  <div class="create-pin-page-root flex w-full flex-1 flex-col min-h-0">
   <CreatePinEditSkeleton
     v-if="loadingEdit"
     class="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
@@ -803,7 +804,7 @@ usePinovaHeaderSwipeDismiss({
   <div
     v-else-if="isLgDown"
     ref="pinMobileShellRef"
-    class="fixed inset-0 z-[70] overflow-y-auto overflow-x-hidden bg-[#060408] text-white overscroll-y-contain"
+    class="pinova-create-flow-mobile flex min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#060408] text-white pinova-min-vh-fill"
   >
     <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange">
 
@@ -884,7 +885,7 @@ usePinovaHeaderSwipeDismiss({
 
     <div
       v-else-if="!isEditMode && mobileCreateStep === 'edit' && pinMobilePendingImage"
-      class="relative z-[80] min-h-[100svh]"
+      class="relative z-[80] flex min-h-0 flex-1 flex-col"
     >
       <StoryImageCropEditor
         export-profile="pin"
@@ -895,7 +896,7 @@ usePinovaHeaderSwipeDismiss({
     </div>
 
     <!-- Étape 3 mobile (création + édition) : aperçu cadré + formulaire scrollable -->
-    <div v-else class="pin-m-meta relative z-10 flex h-[100svh] flex-col overflow-hidden bg-[#060408]">
+    <div v-else class="pin-m-meta relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden bg-[#060408]">
       <header
         ref="pinMobileHeaderSwipeRef"
         class="relative z-30 flex shrink-0 items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]"
@@ -1620,6 +1621,7 @@ usePinovaHeaderSwipeDismiss({
         </div>
       </div>
     </div>
+  </div>
   </div>
 
 </template>

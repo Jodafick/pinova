@@ -144,7 +144,10 @@ provide(LAYER_CONTEXT_KEY, {
         paddingRight: safeRight + 'px',
       }"
     >
-      <component :is="layer.component" v-bind="layer.componentProps" />
+      <!-- WebKit iOS : chaîne flex explicite — sinon routes plein écran (création) ont hauteur 0. -->
+      <div class="pinova-layer-fullscreen__route-root">
+        <component :is="layer.component" v-bind="layer.componentProps" />
+      </div>
     </div>
   </div>
 </template>
@@ -169,7 +172,10 @@ provide(LAYER_CONTEXT_KEY, {
 .pinova-layer-fullscreen__surface {
   position: absolute;
   inset: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   background: #000;
@@ -177,6 +183,16 @@ provide(LAYER_CONTEXT_KEY, {
   animation: pinova-fs-in 360ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, border-radius;
   transform: translate3d(0, 0, 0);
+}
+
+.pinova-layer-fullscreen__route-root {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 @keyframes pinova-fs-in {

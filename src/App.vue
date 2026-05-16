@@ -14,6 +14,7 @@ import PinContextualMenu from './components/PinContextualMenu.vue'
 import OfflineExperience from './components/pwa/OfflineExperience.vue'
 import PwaSplash from './components/pwa/PwaSplash.vue'
 import PwaInstallExperience from './components/pwa/PwaInstallExperience.vue'
+import NativeAppSuggestBanner from './components/NativeAppSuggestBanner.vue'
 import AmbientGlow from './components/AmbientGlow.vue'
 import ImmersiveMediaViewer from './components/ui/ImmersiveMediaViewer.vue'
 import { useImmersiveViewer } from './composables/useImmersiveViewer'
@@ -552,6 +553,7 @@ const pageTransitionName = computed(() => {
   <PwaSplash :open="!appReady" />
   <OfflineExperience />
   <PwaInstallExperience />
+  <NativeAppSuggestBanner :app-ready="appReady" />
 
   <!-- Visionneuse média immersive singleton (image/vidéo fullscreen iOS). -->
   <ImmersiveMediaViewer

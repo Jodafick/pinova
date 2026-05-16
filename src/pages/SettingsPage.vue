@@ -19,6 +19,7 @@ import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
 import { useAppearance } from '../composables/useAppearance'
 import { usePwaContext } from '../composables/usePwaContext'
 import { reloadPwaApplication } from '../utils/pwaAppReload'
+import { requestPwaInstallModalOpen } from '../utils/pwaInstallBridge'
 import {
   activateWebPushNotifications,
   deactivateWebPushNotifications,
@@ -32,6 +33,7 @@ const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-notifications', icon: 'notifications', labelKey: 'settings.nav.notifications' },
   { id: 'settings-privacy', icon: 'lock', labelKey: 'settings.nav.privacy' },
   { id: 'settings-appearance', icon: 'dark_mode', labelKey: 'settings.nav.appearance' },
+  { id: 'settings-pwa-install', icon: 'install_mobile', labelKey: 'settings.nav.pwaInstall' },
   { id: 'settings-blocked', icon: 'block', labelKey: 'settings.nav.blocked' },
   { id: 'settings-access', icon: 'accessibility_new', labelKey: 'settings.nav.access' },
   { id: 'settings-tips', icon: 'payments', labelKey: 'settings.nav.tips' },
@@ -53,6 +55,10 @@ const { isStandalone } = usePwaContext()
 
 async function onReloadPwaFromSettings() {
   await reloadPwaApplication()
+}
+
+function openPwaInstallGuideFromSettings() {
+  requestPwaInstallModalOpen()
 }
 const { showAlert, showPrompt } = useAppModal()
 const {
@@ -1404,6 +1410,30 @@ watch(
             </button>
           </div>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">{{ t('settings.appearance.hint') }}</p>
+        </div>
+      </section>
+
+      <!-- Application / installation (navigateur / écran d’accueil) -->
+      <section
+        id="settings-pwa-install"
+        class="scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
+      >
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.pwaInstall.title') }}</h2>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.pwaInstall.subtitle') }}</p>
+        </div>
+        <div class="p-4 sm:p-6 space-y-3">
+          <p v-if="isStandalone" class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
+            {{ t('settings.pwaInstall.standaloneHint') }}
+          </p>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-pink-700 text-white text-sm font-semibold hover:bg-pink-800 transition dark:bg-pink-600 dark:hover:bg-pink-500"
+            @click="openPwaInstallGuideFromSettings"
+          >
+            <span class="material-symbols-outlined text-[20px]">install_mobile</span>
+            {{ t('settings.pwaInstall.openGuide') }}
+          </button>
         </div>
       </section>
 

@@ -43,6 +43,10 @@ export const fon: Record<string, string> = {
     'Blí Pinova é bé nà xwé hwenu mì, mì sú app alǒ fí sɔ́ yi wè ɖísíxwé kpɔ̀.',
   'pwa.pullToRefresh.release': 'Yi wé bo blí kpɔ̀',
 
+  'nativeApp.suggest.lead': 'App Pinova sɔ́ ɖe xwé hwenu mɛ.',
+  'nativeApp.suggest.open': 'Yi app ɖí',
+  'nativeApp.suggest.dismiss': 'Tɛ́n xwé nu',
+
   'app.loading': 'Pinova dò sɔ́...',
   'app.offline': 'É MA ƉÒ INTERNET JÍ Ǎ',
   'app.copyright': '© 2026 Pinova. Acɛ lɛ bǐ ɖò así tɔn.',
@@ -443,6 +447,11 @@ export const fon: Record<string, string> = {
 
   'settings.title': 'Ðòɖó',
   'settings.subtitle': 'Kpé profil towe kpó préférence towe lɛ kpó',
+  'settings.nav.pwaInstall': 'App ɖò xwé hwenu',
+  'settings.pwaInstall.title': 'Sɔ́ Pinova dó',
+  'settings.pwaInstall.subtitle': 'Sɔ́ dó xwé hwenu alǒ hwetu nǎ xwé hwenu towe lɛ.',
+  'settings.pwaInstall.openGuide': 'Hùn ɖyɔ sɔ́',
+  'settings.pwaInstall.standaloneHint': 'É lú app e ɖɔ dó lɛ ; ɖyɔ lɛ ɖyɔ bo wé mɛ sɔ́ dó xwé hwenu kpɔ̀.',
   'settings.saved': 'È mɔ profil ganji !',
   'settings.profile.title': 'Profil mɛ bǐ tɔn',
   'settings.profile.subtitle': 'Information lɛ é è ná mɔ̌ɛ ɖó utilisateur ɖevo lɛ',

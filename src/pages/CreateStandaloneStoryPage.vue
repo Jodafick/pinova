@@ -394,11 +394,12 @@ usePinovaHeaderSwipeDismiss({
 </script>
 
 <template>
+  <div class="create-story-page-root flex w-full flex-1 flex-col min-h-0">
   <div
     ref="storyCreateShellRef"
     :class="[
       isLgDown
-        ? 'fixed inset-0 z-[70] overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#060408] text-white'
+        ? 'flex min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#060408] text-white pinova-min-vh-fill'
         : 'story-create-shell pinova-min-vh-fill flex w-full flex-1 flex-col min-h-0 bg-[#060408] text-white overflow-hidden',
     ]"
   >
@@ -566,8 +567,7 @@ usePinovaHeaderSwipeDismiss({
     <div
       v-else-if="step === 'meta'"
       :class="[
-        'story-meta-step relative flex flex-col overflow-hidden bg-[#060408]',
-        isLgDown ? 'min-h-[100svh]' : 'min-h-0 flex-1',
+        'story-meta-step relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#060408]',
       ]"
     >
       <header
@@ -691,6 +691,7 @@ usePinovaHeaderSwipeDismiss({
       :pins="publishedStory ? [publishedStory] : []"
       @update:model-value="(open) => { if (!open) closePublishedStory() }"
     />
+  </div>
   </div>
 </template>
 

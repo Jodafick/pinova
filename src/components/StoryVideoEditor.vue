@@ -308,7 +308,7 @@ async function apply() {
 </script>
 
 <template>
-  <div class="story-editor-shell flex h-[100svh] max-h-[100dvh] flex-col overflow-hidden bg-[#060408] text-white">
+  <div class="story-editor-shell flex min-h-0 flex-1 flex-col overflow-hidden bg-[#060408] text-white pinova-min-vh-fill">
     <header
       class="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
     >

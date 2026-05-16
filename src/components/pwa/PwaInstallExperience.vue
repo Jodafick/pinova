@@ -40,8 +40,8 @@ const SNOOZE_MS = 7 * 24 * 3600 * 1000
 
 const isSnoozed = computed(() => isPwaInstallSnoozed())
 
+/** Ouvre le guide (réglages / pont). En PWA installée, affiche l’état « déjà installée ». */
 function open() {
-  if (isStandalone.value) return
   isOpen.value = true
 }
 
@@ -93,7 +93,6 @@ defineExpose({ open, close, isSnoozed, scenario })
   <PinovaModal
     v-model:open="isOpen"
     presentation="tallSheet"
-    rose
     :show-header="true"
     :title="t('pwa.install.title')"
     :subtitle="t('pwa.install.subtitle')"
@@ -105,115 +104,222 @@ defineExpose({ open, close, isSnoozed, scenario })
       </button>
     </template>
 
-    <!-- Hero : illustration logo + glow rose. -->
-    <div class="pwa-install__hero">
-      <div class="pwa-install__hero-glow" aria-hidden="true" />
-      <div class="pwa-install__hero-logo">
-        <img src="/logo.png" alt="Pinova" width="68" height="68" />
+    <!-- Hero : illustration logo + glow rose (adaptatif thème). -->
+    <div class="relative flex flex-col items-center justify-center px-0 pb-4 pt-2">
+      <div
+        class="pointer-events-none absolute size-44 rounded-full bg-[radial-gradient(circle,rgba(224,36,94,0.38)_0%,transparent_68%)] blur-md dark:bg-[radial-gradient(circle,rgba(244,114,182,0.34)_0%,transparent_70%)]"
+        aria-hidden="true"
+      />
+      <div
+        class="pwa-install__hero-logo relative grid size-[72px] place-items-center overflow-hidden rounded-[22px] bg-white shadow-lg shadow-pink-600/25 ring-1 ring-black/5 dark:bg-neutral-800 dark:shadow-black/40 dark:ring-white/10"
+      >
+        <img src="/logo.png" alt="Pinova" width="68" height="68" class="size-16 object-cover" />
       </div>
     </div>
 
     <!-- ── Scénario : déjà standalone (theoriquement impossible si on est mounted) ── -->
     <template v-if="scenario === 'standalone' || scenario === 'just-installed'">
-      <p class="pwa-install__lead">{{ t('pwa.install.alreadyInstalled') }}</p>
-      <button type="button" class="pwa-install__cta-secondary" @click="close">
+      <p class="mb-5 text-center text-[15px] leading-snug text-neutral-700 dark:text-neutral-200">
+        {{ t('pwa.install.alreadyInstalled') }}
+      </p>
+      <button
+        type="button"
+        class="mt-2 w-full rounded-xl border border-neutral-200/90 bg-transparent py-3 text-[15px] font-medium text-pink-600 transition active:opacity-55 dark:border-white/15 dark:text-pink-400"
+        @click="close"
+      >
         {{ t('common.close') }}
       </button>
     </template>
 
     <!-- ── Scénario : prompt natif (Chrome Android / bureau) + astuce menu ⋮ ── -->
     <template v-else-if="scenario === 'native-prompt'">
-      <p class="pwa-install__lead">{{ t('pwa.install.nativePromptLead') }}</p>
-      <ul class="pwa-install__bullets">
-        <li><span class="material-symbols-outlined">flash_on</span>{{ t('pwa.install.bullet.fast') }}</li>
-        <li><span class="material-symbols-outlined">offline_bolt</span>{{ t('pwa.install.bullet.offline') }}</li>
-        <li><span class="material-symbols-outlined">notifications_active</span>{{ t('pwa.install.bullet.notifs') }}</li>
+      <p class="mb-5 text-center text-[15px] leading-snug text-neutral-700 dark:text-neutral-200">
+        {{ t('pwa.install.nativePromptLead') }}
+      </p>
+      <ul class="mb-5 flex list-none flex-col gap-2 p-0">
+        <li class="flex items-center gap-2.5 text-[15px] text-neutral-800 dark:text-neutral-100">
+          <span class="material-symbols-outlined shrink-0 text-[22px] text-pink-600 dark:text-pink-400">flash_on</span>
+          <span>{{ t('pwa.install.bullet.fast') }}</span>
+        </li>
+        <li class="flex items-center gap-2.5 text-[15px] text-neutral-800 dark:text-neutral-100">
+          <span class="material-symbols-outlined shrink-0 text-[22px] text-pink-600 dark:text-pink-400">offline_bolt</span>
+          <span>{{ t('pwa.install.bullet.offline') }}</span>
+        </li>
+        <li class="flex items-center gap-2.5 text-[15px] text-neutral-800 dark:text-neutral-100">
+          <span class="material-symbols-outlined shrink-0 text-[22px] text-pink-600 dark:text-pink-400">notifications_active</span>
+          <span>{{ t('pwa.install.bullet.notifs') }}</span>
+        </li>
       </ul>
-      <p class="pwa-install__android-hint">{{ t('pwa.install.androidMenuHint') }}</p>
-      <button type="button" class="pwa-install__cta-primary" @click="clickInstall">
-        <span class="material-symbols-outlined">install_mobile</span>
+      <p
+        class="mb-5 rounded-2xl border border-pink-500/15 bg-pink-500/[0.08] px-3.5 py-3 text-center text-[13px] leading-snug text-neutral-600 dark:border-pink-400/25 dark:bg-pink-500/10 dark:text-neutral-300"
+      >
+        {{ t('pwa.install.androidMenuHint') }}
+      </p>
+      <button
+        type="button"
+        class="w-full flex items-center justify-center gap-2 rounded-2xl border-0 bg-gradient-to-br from-pink-600 to-pink-500 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-pink-600/30 transition [transition-property:transform,filter] active:scale-[0.98] active:brightness-[0.96] dark:shadow-pink-900/45"
+        @click="clickInstall"
+      >
+        <span class="material-symbols-outlined text-[22px]">install_mobile</span>
         {{ t('pwa.install.installNow') }}
       </button>
-      <button type="button" class="pwa-install__cta-ghost" @click="snooze">
+      <button
+        type="button"
+        class="mt-2 w-full rounded-xl border-0 py-3 text-[15px] font-medium text-neutral-600 transition active:opacity-55 dark:text-neutral-300"
+        @click="snooze"
+      >
         {{ t('pwa.install.later') }}
       </button>
     </template>
 
     <!-- ── iOS Safari : barre d’outils basse (⋯ → Partager → Sur l’écran d’accueil) ── -->
     <template v-else-if="scenario === 'ios-safari'">
-      <p class="pwa-install__lead">{{ t('pwa.install.iosLead') }}</p>
+      <p class="mb-5 text-center text-[15px] leading-snug text-neutral-700 dark:text-neutral-200">
+        {{ t('pwa.install.iosLead') }}
+      </p>
 
-      <div class="pwa-install__safari-mock" aria-hidden="true">
-        <div class="pwa-install__safari-url">
-          <span class="pwa-install__safari-lock material-symbols-outlined">lock</span>
-          <span class="pwa-install__safari-host">pinova…</span>
+      <div
+        class="pwa-install__safari-mock mb-[18px] rounded-2xl border border-neutral-200/90 bg-gradient-to-b from-white/80 to-neutral-50/95 px-3 py-3 shadow-md shadow-black/5 backdrop-blur-md dark:border-white/10 dark:from-neutral-900/90 dark:to-neutral-950/95 dark:shadow-black/50"
+        aria-hidden="true"
+      >
+        <div
+          class="mb-2.5 flex items-center justify-center gap-1.5 rounded-xl bg-black/[0.06] px-3 py-2 text-[13px] font-semibold text-neutral-800 dark:bg-white/10 dark:text-neutral-100"
+        >
+          <span class="pwa-install__safari-lock material-symbols-outlined !text-sm opacity-60">lock</span>
+          <span class="pwa-install__safari-host tracking-tight">pinova…</span>
         </div>
-        <div class="pwa-install__safari-toolbar">
-          <span class="pwa-install__safari-fab pwa-install__safari-fab--ghost material-symbols-outlined">chevron_backward</span>
-          <span class="pwa-install__safari-fab pwa-install__safari-fab--accent material-symbols-outlined">ios_share</span>
-          <span class="pwa-install__safari-fab pwa-install__safari-fab--accent material-symbols-outlined">more_horiz</span>
+        <div class="flex items-center justify-between gap-2 px-1 pb-0.5 pt-1.5">
+          <span
+            class="pwa-install__safari-fab pwa-install__safari-fab--ghost material-symbols-outlined grid size-10 place-items-center rounded-xl text-[22px] text-neutral-500 opacity-45 dark:text-neutral-400"
+          >chevron_backward</span>
+          <span
+            class="pwa-install__safari-fab pwa-install__safari-fab--accent material-symbols-outlined grid size-10 place-items-center rounded-xl bg-pink-500/18 text-[22px] text-pink-700 shadow-sm shadow-pink-600/15 dark:bg-pink-500/25 dark:text-pink-300 dark:shadow-pink-900/30"
+          >ios_share</span>
+          <span
+            class="pwa-install__safari-fab pwa-install__safari-fab--accent material-symbols-outlined grid size-10 place-items-center rounded-xl bg-pink-500/18 text-[22px] text-pink-700 shadow-sm shadow-pink-600/15 dark:bg-pink-500/25 dark:text-pink-300 dark:shadow-pink-900/30"
+          >more_horiz</span>
         </div>
       </div>
 
-      <ol class="pwa-install__steps">
-        <li class="pwa-install__step">
-          <div class="pwa-install__step-num">1</div>
-          <div class="pwa-install__step-body">
-            <div class="pwa-install__step-icon">
-              <span class="material-symbols-outlined">more_horiz</span>
+      <ol class="mb-[18px] flex list-none flex-col gap-3 p-0">
+        <li
+          class="flex gap-3 rounded-2xl border border-neutral-200/90 bg-white/75 px-3.5 py-3 dark:border-white/10 dark:bg-neutral-900/55"
+        >
+          <div
+            class="flex size-7 shrink-0 items-center justify-center rounded-full bg-pink-600 text-sm font-bold text-white dark:bg-pink-500"
+          >
+            1
+          </div>
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <div
+              class="grid size-[38px] shrink-0 place-items-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
+            >
+              <span class="material-symbols-outlined text-[22px]">more_horiz</span>
             </div>
-            <p>{{ t('pwa.install.step1') }}</p>
+            <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
+              {{ t('pwa.install.step1') }}
+            </p>
           </div>
         </li>
-        <li class="pwa-install__step">
-          <div class="pwa-install__step-num">2</div>
-          <div class="pwa-install__step-body">
-            <div class="pwa-install__step-icon">
-              <span class="material-symbols-outlined">ios_share</span>
+        <li
+          class="flex gap-3 rounded-2xl border border-neutral-200/90 bg-white/75 px-3.5 py-3 dark:border-white/10 dark:bg-neutral-900/55"
+        >
+          <div
+            class="flex size-7 shrink-0 items-center justify-center rounded-full bg-pink-600 text-sm font-bold text-white dark:bg-pink-500"
+          >
+            2
+          </div>
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <div
+              class="grid size-[38px] shrink-0 place-items-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
+            >
+              <span class="material-symbols-outlined text-[22px]">ios_share</span>
             </div>
-            <p>{{ t('pwa.install.step2') }}</p>
+            <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
+              {{ t('pwa.install.step2') }}
+            </p>
           </div>
         </li>
-        <li class="pwa-install__step">
-          <div class="pwa-install__step-num">3</div>
-          <div class="pwa-install__step-body">
-            <div class="pwa-install__step-icon">
-              <span class="material-symbols-outlined">add_box</span>
+        <li
+          class="flex gap-3 rounded-2xl border border-neutral-200/90 bg-white/75 px-3.5 py-3 dark:border-white/10 dark:bg-neutral-900/55"
+        >
+          <div
+            class="flex size-7 shrink-0 items-center justify-center rounded-full bg-pink-600 text-sm font-bold text-white dark:bg-pink-500"
+          >
+            3
+          </div>
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <div
+              class="grid size-[38px] shrink-0 place-items-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
+            >
+              <span class="material-symbols-outlined text-[22px]">add_box</span>
             </div>
-            <p>{{ t('pwa.install.step3') }}</p>
+            <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
+              {{ t('pwa.install.step3') }}
+            </p>
           </div>
         </li>
-        <li class="pwa-install__step">
-          <div class="pwa-install__step-num">4</div>
-          <div class="pwa-install__step-body">
-            <div class="pwa-install__step-icon">
-              <span class="material-symbols-outlined">touch_app</span>
+        <li
+          class="flex gap-3 rounded-2xl border border-neutral-200/90 bg-white/75 px-3.5 py-3 dark:border-white/10 dark:bg-neutral-900/55"
+        >
+          <div
+            class="flex size-7 shrink-0 items-center justify-center rounded-full bg-pink-600 text-sm font-bold text-white dark:bg-pink-500"
+          >
+            4
+          </div>
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <div
+              class="grid size-[38px] shrink-0 place-items-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
+            >
+              <span class="material-symbols-outlined text-[22px]">touch_app</span>
             </div>
-            <p>{{ t('pwa.install.step4') }}</p>
+            <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
+              {{ t('pwa.install.step4') }}
+            </p>
           </div>
         </li>
       </ol>
-      <button type="button" class="pwa-install__cta-ghost" @click="snooze">
+      <button
+        type="button"
+        class="mt-2 w-full rounded-xl border-0 py-3 text-[15px] font-medium text-neutral-600 transition active:opacity-55 dark:text-neutral-300"
+        @click="snooze"
+      >
         {{ t('pwa.install.later') }}
       </button>
     </template>
 
     <!-- ── Scénario : iOS hors-Safari (Chrome iOS, FF iOS) ── -->
     <template v-else-if="scenario === 'ios-other-browser'">
-      <p class="pwa-install__lead">{{ t('pwa.install.iosNonSafariLead') }}</p>
-      <div class="pwa-install__note">
-        <span class="material-symbols-outlined">info</span>
-        <p>{{ t('pwa.install.iosNonSafariNote') }}</p>
+      <p class="mb-4 text-center text-[15px] leading-snug text-neutral-700 dark:text-neutral-200">
+        {{ t('pwa.install.iosNonSafariLead') }}
+      </p>
+      <div
+        class="mb-4 flex items-start gap-2 rounded-2xl border border-pink-500/20 bg-pink-500/[0.07] px-3.5 py-3 dark:border-pink-400/30 dark:bg-pink-500/10"
+      >
+        <span class="material-symbols-outlined shrink-0 text-pink-600 dark:text-pink-400">info</span>
+        <p class="m-0 text-[14px] leading-snug text-neutral-800 dark:text-neutral-100">
+          {{ t('pwa.install.iosNonSafariNote') }}
+        </p>
       </div>
-      <button type="button" class="pwa-install__cta-primary" @click="snooze">
+      <button
+        type="button"
+        class="w-full flex items-center justify-center gap-2 rounded-2xl border-0 bg-gradient-to-br from-pink-600 to-pink-500 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-pink-600/30 transition [transition-property:transform,filter] active:scale-[0.98] active:brightness-[0.96] dark:shadow-pink-900/45"
+        @click="snooze"
+      >
         {{ t('common.ok') }}
       </button>
     </template>
 
     <!-- ── Scénario : desktop fallback (pas de prompt dispo) ── -->
     <template v-else>
-      <p class="pwa-install__lead">{{ t('pwa.install.desktopLead') }}</p>
-      <button type="button" class="pwa-install__cta-ghost" @click="close">
+      <p class="mb-5 text-center text-[15px] leading-snug text-neutral-700 dark:text-neutral-200">
+        {{ t('pwa.install.desktopLead') }}
+      </p>
+      <button
+        type="button"
+        class="mt-2 w-full rounded-xl border-0 py-3 text-[15px] font-medium text-neutral-600 transition active:opacity-55 dark:text-neutral-300"
+        @click="close"
+      >
         {{ t('common.close') }}
       </button>
     </template>
@@ -221,280 +327,25 @@ defineExpose({ open, close, isSnoozed, scenario })
 </template>
 
 <style scoped>
-.pwa-install__hero {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 8px 0 16px;
-}
-.pwa-install__hero-glow {
-  position: absolute;
-  width: 180px;
-  height: 180px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(224, 36, 94, 0.35) 0%, transparent 70%);
-  filter: blur(8px);
-  pointer-events: none;
-}
-.pwa-install__hero-logo {
-  position: relative;
-  width: 72px;
-  height: 72px;
-  border-radius: 22px;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: white;
-  box-shadow: 0 10px 30px rgba(224, 36, 94, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.4) inset;
-}
-.pwa-install__hero-logo img {
-  width: 64px;
-  height: 64px;
-  object-fit: cover;
-}
-
-.pwa-install__lead {
-  font-size: 15px;
-  line-height: 1.4;
-  color: rgba(60, 60, 67, 0.85);
-  margin: 0 0 18px;
-  text-align: center;
-}
-:global(.dark) .pwa-install__lead { color: rgba(235, 235, 245, 0.78); }
-
-.pwa-install__bullets {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pwa-install__bullets li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 15px;
-  color: var(--text, #111);
-}
-:global(.dark) .pwa-install__bullets li { color: #f5f5f7; }
-.pwa-install__bullets .material-symbols-outlined { color: var(--pinova-rose-500, #e0245e); font-size: 22px; }
-
-.pwa-install__android-hint {
-  margin: -6px 0 18px;
-  padding: 12px 14px;
-  font-size: 13px;
-  line-height: 1.45;
-  color: rgba(60, 60, 67, 0.72);
-  text-align: center;
-  border-radius: 14px;
-  background: rgba(224, 36, 94, 0.06);
-  border: 1px solid rgba(224, 36, 94, 0.14);
-}
-:global(.dark) .pwa-install__android-hint {
-  color: rgba(235, 235, 245, 0.72);
-  background: rgba(255, 107, 156, 0.1);
-  border-color: rgba(255, 107, 156, 0.22);
-}
-
-.pwa-install__safari-mock {
-  margin: 0 0 18px;
-  padding: 12px 12px 10px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(250, 250, 252, 0.9) 100%);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 12px 32px rgba(224, 36, 94, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-:global(.dark) .pwa-install__safari-mock {
-  background: linear-gradient(180deg, rgba(32, 32, 38, 0.92) 0%, rgba(22, 22, 28, 0.96) 100%);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-.pwa-install__safari-url {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
-  margin-bottom: 10px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.05);
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(60, 60, 67, 0.85);
-}
-:global(.dark) .pwa-install__safari-url {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(235, 235, 245, 0.88);
-}
-.pwa-install__safari-lock {
-  font-size: 14px !important;
-  opacity: 0.65;
-}
-.pwa-install__safari-host {
-  letter-spacing: -0.02em;
-}
-.pwa-install__safari-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 4px 2px;
-  gap: 8px;
-}
-.pwa-install__safari-fab {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  font-size: 22px !important;
-  color: rgba(60, 60, 67, 0.55);
-}
-:global(.dark) .pwa-install__safari-fab {
-  color: rgba(235, 235, 245, 0.5);
-}
-.pwa-install__safari-fab--ghost {
-  opacity: 0.45;
-}
-.pwa-install__safari-fab--accent {
-  background: linear-gradient(145deg, rgba(224, 36, 94, 0.18), rgba(255, 77, 125, 0.12));
-  color: var(--pinova-rose-600, #c2185b);
-  box-shadow: 0 2px 8px rgba(224, 36, 94, 0.2);
-}
-:global(.dark) .pwa-install__safari-fab--accent {
-  color: var(--pinova-rose-400, #ff6b9c);
-  background: linear-gradient(145deg, rgba(255, 107, 156, 0.22), rgba(224, 36, 94, 0.12));
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .pwa-install__safari-fab--accent {
     animation: pwa-install-pulse 2.4s ease-in-out infinite;
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .pwa-install__safari-fab--accent {
+    animation: none;
+  }
+}
 @keyframes pwa-install-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.04); opacity: 0.92; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.92;
+  }
 }
-
-.pwa-install__steps {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.pwa-install__step {
-  display: flex;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background-color: rgba(255, 255, 255, 0.6);
-  border: 1px solid var(--glass-border);
-}
-:global(.dark) .pwa-install__step { background-color: rgba(22, 22, 26, 0.5); }
-
-.pwa-install__step-num {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--pinova-rose-500, #e0245e);
-  color: white;
-  font-weight: 700;
-  font-size: 14px;
-}
-.pwa-install__step-body {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-}
-.pwa-install__step-body p {
-  margin: 0;
-  font-size: 14.5px;
-  color: var(--text, #111);
-  flex: 1;
-}
-:global(.dark) .pwa-install__step-body p { color: #f5f5f7; }
-
-.pwa-install__step-icon {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background-color: rgba(224, 36, 94, 0.08);
-  color: var(--pinova-rose-500, #e0245e);
-}
-:global(.dark) .pwa-install__step-icon {
-  background-color: rgba(255, 107, 156, 0.16);
-  color: var(--pinova-rose-400, #ff4d7d);
-}
-
-.pwa-install__note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background-color: rgba(224, 36, 94, 0.06);
-  border: 1px solid rgba(224, 36, 94, 0.18);
-  margin: 0 0 16px;
-}
-.pwa-install__note p { margin: 0; font-size: 14px; color: var(--text, #111); }
-:global(.dark) .pwa-install__note p { color: #f5f5f7; }
-
-.pwa-install__cta-primary {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 0;
-  background: linear-gradient(135deg, #e0245e 0%, #ff4d7d 100%);
-  color: white;
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: 0 8px 22px rgba(224, 36, 94, 0.35);
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--pinova-dur-ultraFast, 120ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1)), filter var(--pinova-dur-ultraFast, 120ms) ease;
-}
-.pwa-install__cta-primary:active {
-  transform: scale3d(0.97, 0.97, 1);
-  filter: brightness(0.96);
-}
-
-.pwa-install__cta-secondary,
-.pwa-install__cta-ghost {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
-  margin-top: 8px;
-  border-radius: 14px;
-  border: 1px solid var(--glass-border);
-  background-color: transparent;
-  color: var(--pinova-rose-500, #e0245e);
-  font-weight: 500;
-  font-size: 15px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: opacity var(--pinova-dur-ultraFast, 120ms) ease;
-}
-.pwa-install__cta-ghost { border: 0; color: rgba(60, 60, 67, 0.7); }
-:global(.dark) .pwa-install__cta-ghost { color: rgba(235, 235, 245, 0.7); }
-.pwa-install__cta-secondary:active,
-.pwa-install__cta-ghost:active { opacity: 0.55; }
 </style>

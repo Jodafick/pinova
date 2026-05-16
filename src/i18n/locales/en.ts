@@ -82,6 +82,10 @@ export const en: Record<string, string> = {
     'Refresh Pinova like in a browser, without closing or reinstalling the installed app.',
   'pwa.pullToRefresh.release': 'Release to refresh',
 
+  'nativeApp.suggest.lead': 'The Pinova app is available on this device.',
+  'nativeApp.suggest.open': 'Open app',
+  'nativeApp.suggest.dismiss': 'Stay on the web',
+
   'modal.prompt.hint': 'Enter to confirm · Esc or outside click to dismiss',
   'modal.errorTitle': 'Error',
   'modal.confirm.ok': 'Confirm',
@@ -958,6 +962,7 @@ export const en: Record<string, string> = {
   'settings.nav.notifications': 'Notifications',
   'settings.nav.privacy': 'Privacy',
   'settings.nav.appearance': 'Appearance',
+  'settings.nav.pwaInstall': 'App on this device',
   'settings.nav.blocked': 'Blocked accounts',
   'settings.nav.access': 'Display & data',
   'settings.nav.tips': 'Tips',
@@ -973,6 +978,14 @@ export const en: Record<string, string> = {
   'settings.appearance.light': 'Light',
   'settings.appearance.dark': 'Dark',
   'settings.appearance.hint': 'Your choice is saved in this browser (local storage).',
+
+  'settings.pwaInstall.title': 'Install Pinova',
+  'settings.pwaInstall.subtitle':
+    'Add Pinova to your home screen or see step-by-step instructions for your browser.',
+  'settings.pwaInstall.openGuide': 'Open install guide',
+  'settings.pwaInstall.standaloneHint':
+    'You’re already using the installed app; the guide mainly explains how to install Pinova from a browser.',
+
   'settings.saved': 'Profile updated successfully!',
   'settings.profile.title': 'Public profile',
   'settings.profile.subtitle': 'This information is visible to other users',

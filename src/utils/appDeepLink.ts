@@ -4,8 +4,6 @@ const APP_DEEP_LINK_SCHEME = (
   (import.meta.env.VITE_APP_DEEP_LINK_SCHEME as string | undefined)?.trim() || 'pinova'
 ).replace(/:\/\//g, '').replace(/:$/g, '')
 
-const APP_DEEP_LINK_TIMEOUT_MS = 1200
-
 /** iPhone / iPad / iPod : éviter `location.href = pinova://…` (Safari affiche souvent « adresse invalide » si l’app n’est pas installée). */
 function isIosMobileUa(): boolean {
   if (typeof navigator === 'undefined') return false
@@ -84,10 +82,53 @@ export function openMobileDeepLink(url: string): void {
   }
 }
 
-function isMobileBrowser(): boolean {
+export function isMobileBrowser(): boolean {
   if (typeof navigator === 'undefined') return false
   const ua = navigator.userAgent || ''
   return /Android|iPhone|iPad|iPod|Mobile/i.test(ua)
+}
+
+const NATIVE_APP_SUGGEST_DISMISSED_KEY = 'pinova:native-app-suggest-dismissed-v1'
+
+export function isNativeAppSuggestDismissed(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    return window.localStorage.getItem(NATIVE_APP_SUGGEST_DISMISSED_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+
+export function dismissNativeAppSuggest(): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(NATIVE_APP_SUGGEST_DISMISSED_KEY, '1')
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Bannière « ouvrir l’app » : mobile navigateur, pas PWA installée, pas déjà refusée (localStorage). */
+export function shouldOfferNativeAppOneTimeBanner(): boolean {
+  if (typeof window === 'undefined') return false
+  if (!isMobileBrowser()) return false
+  if (isInstalledPwaDisplay()) return false
+  if (isNativeAppSuggestDismissed()) return false
+  return true
+}
+
+/** Ouvre le schéma natif pour l’écran courant (action utilisateur, pas de redirection silencieuse). */
+export function openNativeAppForRoute(route: RouteLocationNormalized): void {
+  const deepLink = buildDeepLink(route)
+  if (!deepLink) return
+  try {
+    const probe = new URL(deepLink)
+    const expectedScheme = `${APP_DEEP_LINK_SCHEME.toLowerCase()}:`
+    if (probe.protocol.toLowerCase() !== expectedScheme) return
+  } catch {
+    return
+  }
+  openMobileDeepLink(deepLink)
 }
 
 function getRouteParam(
@@ -209,49 +250,16 @@ function buildDeepLink(route: RouteLocationNormalized): string | null {
   return `${APP_DEEP_LINK_SCHEME}://${screenPath}${qs ? `?${qs}` : ''}`
 }
 
+/**
+ * Ouvre l’app native uniquement si l’URL demande explicitement `?openApp=1`.
+ * Plus de redirection automatique à chaque navigation (cf. bannière une fois `shouldOfferNativeAppOneTimeBanner`).
+ */
 export function maybeRedirectWebToApp(route: RouteLocationNormalized): void {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return
+  if (typeof window === 'undefined') return
+  if (!hasTruthyQueryFlag(route, 'openApp')) return
   if (!isMobileBrowser()) return
   if (hasTruthyQueryFlag(route, 'web')) return
-  /* Déjà dans l’app web installée : ne pas tenter d’ouvrir l’app native par-dessus. */
   if (isInstalledPwaDisplay()) return
 
-  const explicitOpen = hasTruthyQueryFlag(route, 'openApp')
-
-  /**
-   * iOS : privilégier Safari + PWA (Ajouter à l’écran d’accueil). L’ouverture de
-   * `pinova://` perturbe l’UX et n’ouvre pas la PWA. Exception : `?openApp=1`.
-   */
-  if (isIosMobileUa() && !explicitOpen) return
-
-  const deepLink = buildDeepLink(route)
-  if (!deepLink) return
-
-  try {
-    const probe = new URL(deepLink)
-    const expectedScheme = `${APP_DEEP_LINK_SCHEME.toLowerCase()}:`
-    if (probe.protocol.toLowerCase() !== expectedScheme) return
-  } catch {
-    return
-  }
-
-  const cacheKey = `pinova:web-to-app-skip:${String(route.name ?? route.path)}`
-  if (!explicitOpen && window.sessionStorage.getItem(cacheKey) === '1') return
-
-  let didHide = false
-  const onVisibilityChange = () => {
-    if (document.hidden) didHide = true
-  }
-
-  document.addEventListener('visibilitychange', onVisibilityChange)
-
-  openMobileDeepLink(deepLink)
-
-  window.setTimeout(() => {
-    document.removeEventListener('visibilitychange', onVisibilityChange)
-    if (!didHide) {
-      // Evite de re-tenter en boucle si l'app n'est pas installée.
-      window.sessionStorage.setItem(cacheKey, '1')
-    }
-  }, APP_DEEP_LINK_TIMEOUT_MS)
+  openNativeAppForRoute(route)
 }
