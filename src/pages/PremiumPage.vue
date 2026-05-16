@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
 import api from '../api'
 import { devLog } from '../devLog'
+import { safeHttpUrl } from '../utils/safeHttpUrl'
 
 const { t, currentLang } = useI18n()
 const router = useRouter()
@@ -160,15 +161,7 @@ function yearlySavingsText(planId: string, currencyIso: string): string | null {
   return t('premium.yearlySavings', { amount: formatCurrency(s, currencyIso) })
 }
 
-watch(
-  () => currentUser.value?.subscription?.seatBundle,
-  (b) => {
-    const sub = currentUser.value?.subscription
-    if (!sub || sub.plan === 'free' || sub.isSeatMember) return
-    seatBundle.value = normalizeBundle(b)
-  },
-  { immediate: true },
-)
+
 
 const handleStartTrial = async () => {
   if (!isAuthenticated.value) {
@@ -295,6 +288,88 @@ const faqs = computed(() => [
   { q: t('premium.faq.q4'), a: t('premium.faq.a4') },
 ])
 
+/** Carrousel offres (< lg): Plus centré, voisins entrevus au scroll sans flèches. */
+const plansCarouselRef = ref<HTMLElement | null>(null)
+type PlanIdCarousel = 'free' | 'plus' | 'pro'
+const activeCarouselPlanId = ref<PlanIdCarousel>('plus')
+let carouselScrollRaf = 0
+
+function scrollCarouselToPlan(planId: PlanIdCarousel) {
+  const root = plansCarouselRef.value
+  if (!root) return
+  const slide = root.querySelector(`[data-plan-slide="${planId}"]`) as HTMLElement | null
+  if (!slide) return
+
+  const canScrollHoriz = root.scrollWidth > root.clientWidth + 2
+  if (canScrollHoriz) {
+    // scrollIntoView serait nuisible tant que overflow est visible (≥ lg grille).
+    slide.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' })
+  } else {
+    const left = slide.offsetLeft - root.clientWidth / 2 + slide.offsetWidth / 2
+    root.scrollTo({ left: Math.max(0, left), behavior: 'auto' })
+  }
+  activeCarouselPlanId.value = planId
+  requestAnimationFrame(() => updateActiveCarouselFromScroll())
+}
+
+async function flushScrollCarouselToPlus() {
+  await nextTick()
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => scrollCarouselToPlan('plus'))
+  })
+}
+
+/** Mensuel + Solo par défaut (connexion ou retour sur l’écran premium avec keep-alive). */
+watch(
+  () => currentUser.value?.id ?? null,
+  () => {
+    billingCycle.value = 'monthly'
+    seatBundle.value = 'solo'
+    void flushScrollCarouselToPlus()
+  },
+  { immediate: true },
+)
+
+onActivated(() => {
+  billingCycle.value = 'monthly'
+  seatBundle.value = 'solo'
+  void flushScrollCarouselToPlus()
+})
+
+function updateActiveCarouselFromScroll() {
+  const root = plansCarouselRef.value
+  if (!root) return
+  const cx = root.scrollLeft + root.clientWidth / 2
+  let best: PlanIdCarousel = 'plus'
+  let bestDist = Number.POSITIVE_INFINITY
+  for (const id of ['free', 'plus', 'pro'] as const) {
+    const el = root.querySelector(`[data-plan-slide="${id}"]`) as HTMLElement | null
+    if (!el) continue
+    const mid = el.offsetLeft + el.offsetWidth / 2
+    const d = Math.abs(mid - cx)
+    if (d < bestDist) {
+      bestDist = d
+      best = id
+    }
+  }
+  activeCarouselPlanId.value = best
+}
+
+function onPlansCarouselScroll() {
+  if (typeof window === 'undefined') return
+  if (carouselScrollRaf) return
+  carouselScrollRaf = window.requestAnimationFrame(() => {
+    carouselScrollRaf = 0
+    updateActiveCarouselFromScroll()
+  })
+}
+
+watch(pricingLoading, async (loading) => {
+  if (!loading) {
+    await flushScrollCarouselToPlus()
+  }
+})
+
 const confirmPaymentTransaction = async (
   transactionId: string,
   silent = false,
@@ -335,6 +410,16 @@ const confirmPaymentTransaction = async (
   }
 }
 
+async function goToProfileAfterSubscriptionUpdate() {
+  await fetchCurrentUser({ silent: true })
+  const username = currentUser.value?.username?.trim()
+  if (username) {
+    await router.replace(`/profile/${username}`)
+  } else {
+    await router.replace('/profile')
+  }
+}
+
 const handlePopupCallbackReturn = async () => {
   if (typeof window === 'undefined') return
   const params = new URLSearchParams(window.location.search)
@@ -365,6 +450,9 @@ const handlePopupCallbackReturn = async () => {
     }, 350)
   } else {
     await confirmPendingPayment(transactionId)
+    if (!window.localStorage.getItem(PENDING_TX_STORAGE_KEY)) {
+      await goToProfileAfterSubscriptionUpdate()
+    }
   }
 }
 
@@ -386,7 +474,7 @@ const handleCheckout = async (planId: string) => {
       billing_cycle: billingCycle.value,
       seat_bundle: seatBundle.value,
     })
-    const checkoutUrl = response.data?.checkout_url
+    const checkoutUrl = safeHttpUrl(response.data?.checkout_url)
     const transactionId = response.data?.transaction_id
     if (transactionId && typeof window !== 'undefined') {
       window.localStorage.setItem(PENDING_TX_STORAGE_KEY, String(transactionId))
@@ -448,10 +536,11 @@ const handlePaymentMessage = async (event: MessageEvent) => {
     await confirmPendingPayment(transactionId)
   } else {
     window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
+    await fetchCurrentUser({ silent: true })
   }
   const remainingTx = window.localStorage.getItem(PENDING_TX_STORAGE_KEY)
   if (!remainingTx) {
-    window.location.reload()
+    await goToProfileAfterSubscriptionUpdate()
   }
 }
 
@@ -464,6 +553,7 @@ onMounted(() => {
   }
   loadPricingCatalog()
   handlePopupCallbackReturn().catch(() => undefined)
+  void flushScrollCarouselToPlus()
 })
 
 onUnmounted(() => {
@@ -474,15 +564,35 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-neutral-900 dark:text-neutral-100">
+  <div class="premium-page relative isolate w-full overflow-x-hidden text-neutral-900 dark:text-neutral-100">
+    <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+      <div
+        class="absolute -top-44 left-[min(16vw,220px)] h-[min(400px,75vw)] w-[min(400px,92vw)] rounded-full bg-gradient-to-br from-pink-300/75 via-fuchsia-200/50 to-transparent blur-[104px] dark:from-pink-600/32 dark:via-fuchsia-600/22 dark:to-transparent dark:blur-[118px]"
+      />
+      <div
+        class="absolute top-[20%] -right-[14%] h-[min(360px,70vw)] w-[min(360px,92vw)] rounded-full bg-gradient-to-bl from-amber-200/70 via-rose-200/45 to-transparent blur-[96px] dark:from-amber-500/22 dark:via-rose-950/40 dark:to-transparent"
+      />
+      <div
+        class="absolute bottom-[-12%] left-1/2 h-[280px] w-[min(640px,100%)] -translate-x-1/2 rounded-full bg-neutral-200/65 blur-[88px] dark:bg-sky-950/40 dark:blur-[96px]"
+      />
+    </div>
+
+    <div
+      class="relative z-[1] w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 max-lg:pt-1 max-lg:pb-6 lg:py-10 xl:py-16"
+    >
     <!-- Hero -->
-    <div class="text-center mb-12">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600 text-xs font-semibold mb-4">
+    <div class="max-lg:mb-8 lg:mb-12 xl:mb-14">
+      <div
+        class="pinova-glass-rose text-center rounded-[1.75rem] px-5 py-9 sm:px-10 sm:py-11 ring-1 ring-white/45 dark:ring-white/[0.09] shadow-xl shadow-pink-900/[0.08] dark:shadow-black/50"
+      >
+      <div
+        class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-4 backdrop-blur-md bg-white/60 dark:bg-white/[0.08] text-pink-900 dark:text-pink-400 ring-1 ring-pink-200/65 dark:ring-pink-500/25 shadow-sm"
+      >
         <span class="material-symbols-outlined text-sm">block</span>
         {{ t('premium.adFree') }}
       </div>
       <h1 class="text-4xl sm:text-5xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-3">
-        {{ t('premium.title') }} <span class="text-pink-700">{{ t('premium.titleHighlight') }}</span>
+        {{ t('premium.title') }} <span class="text-pink-700 dark:text-pink-400">{{ t('premium.titleHighlight') }}</span>
       </h1>
       <p class="text-base sm:text-lg text-neutral-500 dark:text-neutral-400 max-w-2xl mx-auto">
         {{ t('premium.tagline') }}
@@ -493,7 +603,7 @@ onUnmounted(() => {
 
       <div
         v-if="isAuthenticated && isSeatMember"
-        class="mt-6 max-w-2xl mx-auto rounded-2xl border border-amber-200 bg-amber-50/95 px-4 py-3 text-sm text-amber-950 leading-snug text-center shadow-sm"
+        class="mt-6 max-w-2xl mx-auto rounded-2xl border border-amber-300/85 bg-amber-50/90 backdrop-blur-sm px-4 py-3 text-sm text-amber-950 dark:border-amber-500/35 dark:bg-amber-950/50 dark:text-amber-100 leading-snug text-center shadow-sm"
         role="status"
       >
         {{ t('premium.seatMember.manageNote') }}
@@ -501,14 +611,18 @@ onUnmounted(() => {
 
       <!-- Billing toggle -->
       <div
-        class="inline-flex items-center bg-neutral-100 dark:bg-neutral-800 rounded-full p-1 mt-8"
+        class="inline-flex items-center rounded-full p-1 mt-8 backdrop-blur-md bg-neutral-100/90 dark:bg-black/35 ring-1 ring-black/[0.07] dark:ring-white/12 shadow-inner"
         :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''"
       >
         <button
           class="px-5 py-2 rounded-full text-sm font-semibold transition"
           type="button"
           :disabled="isSeatMember"
-          :class="billingCycle === 'monthly' ? 'bg-white dark:bg-neutral-900 shadow text-neutral-900 dark:text-neutral-100' : 'text-neutral-500 dark:text-neutral-400'"
+          :class="
+            billingCycle === 'monthly'
+              ? 'bg-white dark:bg-neutral-900/95 shadow-md ring-1 ring-black/[0.05] dark:ring-white/[0.12] text-neutral-900 dark:text-neutral-50'
+              : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+          "
           @click="billingCycle = 'monthly'"
         >
           {{ t('premium.cycle.monthly') }}
@@ -517,13 +631,17 @@ onUnmounted(() => {
           class="px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2"
           type="button"
           :disabled="isSeatMember"
-          :class="billingCycle === 'yearly' ? 'bg-white dark:bg-neutral-900 shadow text-neutral-900 dark:text-neutral-100' : 'text-neutral-500 dark:text-neutral-400'"
+          :class="
+            billingCycle === 'yearly'
+              ? 'bg-white dark:bg-neutral-900/95 shadow-md ring-1 ring-black/[0.05] dark:ring-white/[0.12] text-neutral-900 dark:text-neutral-50'
+              : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+          "
           @click="billingCycle = 'yearly'"
         >
           {{ t('premium.cycle.yearly') }}
           <span
             v-if="annualDiscountPercent > 0"
-            class="text-[10px] uppercase tracking-wide bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold"
+            class="text-[10px] uppercase tracking-wide bg-emerald-100 dark:bg-emerald-950/65 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold"
           >{{ yearlyDiscountBadge }}</span>
         </button>
       </div>
@@ -533,8 +651,12 @@ onUnmounted(() => {
         <div class="inline-flex flex-wrap justify-center gap-2" :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''">
           <button
             type="button"
-            class="px-4 py-2 rounded-full text-xs font-semibold border transition"
-            :class="seatBundle === 'solo' ? 'border-pink-700 dark:border-pink-600 bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
+            class="px-4 py-2 rounded-full text-xs font-semibold border transition backdrop-blur-sm"
+            :class="
+              seatBundle === 'solo'
+                ? 'border-pink-700 dark:border-pink-500 bg-pink-50/95 dark:bg-pink-950/45 text-pink-800 dark:text-pink-300 shadow-sm ring-1 ring-pink-500/25'
+                : 'border-neutral-200/90 dark:border-white/14 bg-white/45 dark:bg-white/[0.05] text-neutral-600 dark:text-neutral-400 hover:bg-white/70 dark:hover:bg-white/[0.08]'
+            "
             :disabled="isSeatMember"
             @click="seatBundle = 'solo'"
           >
@@ -542,8 +664,12 @@ onUnmounted(() => {
           </button>
           <button
             type="button"
-            class="px-4 py-2 rounded-full text-xs font-semibold border transition"
-            :class="seatBundle === 'family' ? 'border-pink-700 dark:border-pink-600 bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
+            class="px-4 py-2 rounded-full text-xs font-semibold border transition backdrop-blur-sm"
+            :class="
+              seatBundle === 'family'
+                ? 'border-pink-700 dark:border-pink-500 bg-pink-50/95 dark:bg-pink-950/45 text-pink-800 dark:text-pink-300 shadow-sm ring-1 ring-pink-500/25'
+                : 'border-neutral-200/90 dark:border-white/14 bg-white/45 dark:bg-white/[0.05] text-neutral-600 dark:text-neutral-400 hover:bg-white/70 dark:hover:bg-white/[0.08]'
+            "
             :disabled="isSeatMember"
             @click="seatBundle = 'family'"
           >
@@ -551,8 +677,12 @@ onUnmounted(() => {
           </button>
           <button
             type="button"
-            class="px-4 py-2 rounded-full text-xs font-semibold border transition"
-            :class="seatBundle === 'team' ? 'border-pink-700 dark:border-pink-600 bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'"
+            class="px-4 py-2 rounded-full text-xs font-semibold border transition backdrop-blur-sm"
+            :class="
+              seatBundle === 'team'
+                ? 'border-pink-700 dark:border-pink-500 bg-pink-50/95 dark:bg-pink-950/45 text-pink-800 dark:text-pink-300 shadow-sm ring-1 ring-pink-500/25'
+                : 'border-neutral-200/90 dark:border-white/14 bg-white/45 dark:bg-white/[0.05] text-neutral-600 dark:text-neutral-400 hover:bg-white/70 dark:hover:bg-white/[0.08]'
+            "
             :disabled="isSeatMember"
             @click="seatBundle = 'team'"
           >
@@ -572,7 +702,7 @@ onUnmounted(() => {
 
       <div
         v-if="showTrialCta"
-        class="mt-10 max-w-lg mx-auto rounded-2xl border border-pink-200 dark:border-pink-900/60 bg-gradient-to-br from-pink-50 to-white dark:from-neutral-900 dark:to-neutral-900 p-5 text-left shadow-sm"
+        class="mt-10 max-w-lg mx-auto rounded-2xl border border-pink-200/90 dark:border-pink-500/25 backdrop-blur-md bg-gradient-to-br from-pink-50/92 to-white/88 dark:from-pink-950/45 dark:to-black/35 p-5 text-left shadow-lg shadow-pink-900/[0.07] dark:shadow-black/50 ring-1 ring-white/50 dark:ring-white/[0.08]"
       >
         <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trial.title') }}</p>
         <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{{ t('premium.trial.sub') }}</p>
@@ -585,21 +715,36 @@ onUnmounted(() => {
           {{ trialPending ? t('premium.trial.busy') : t('premium.trial.cta') }}
         </button>
       </div>
+      </div>
     </div>
 
-    <!-- Plans -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+    <!-- Plans — carrousel horizontal (sans flèches) tant que viewport &lt; lg ; grille colonnes ≥ lg -->
+    <div
+      ref="plansCarouselRef"
+      class="flex flex-row lg:grid lg:grid-cols-3 mb-10 max-lg:mb-12 lg:mb-16 gap-4 lg:gap-6 max-lg:-mx-4 max-lg:px-[9vw] overflow-x-auto lg:overflow-visible overscroll-x-contain touch-pan-x snap-x snap-mandatory lg:snap-none scroll-smooth no-scrollbar max-lg:py-6 max-lg:backdrop-blur-[2px]"
+      @scroll.passive="onPlansCarouselScroll"
+    >
       <div
         v-for="plan in plans"
         :key="plan.id"
-        class="app-card rounded-3xl border-2 p-6 relative transition-all"
-        :class="plan.color"
+        :data-plan-slide="plan.id"
+        class="pinova-glass-strong rounded-3xl border-2 p-6 relative transition-all max-lg:snap-center max-lg:shrink-0 max-lg:w-[82vw] max-lg:max-w-[360px] lg:max-w-none max-lg:origin-center max-lg:transition-[transform,opacity] max-lg:duration-300 max-lg:ease-out"
+        :class="[
+          plan.color,
+          activeCarouselPlanId === plan.id
+            ? 'max-lg:opacity-100 max-lg:scale-100 max-lg:z-[1]'
+            : 'max-lg:opacity-[0.68] max-lg:scale-[0.96]',
+        ]"
       >
         <!-- Badge -->
         <div
           v-if="plan.badge"
-          class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider"
-          :class="plan.id === 'plus' ? 'bg-pink-700 dark:bg-pink-600 text-white' : 'bg-amber-500 text-white'"
+          class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider shadow-md backdrop-blur-sm ring-1 ring-white/35 dark:ring-white/15"
+          :class="
+            plan.id === 'plus'
+              ? 'bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white'
+              : 'bg-gradient-to-r from-amber-500 to-orange-500 dark:from-amber-600 dark:to-orange-600 text-white'
+          "
         >
           {{ plan.badge }}
         </div>
@@ -633,8 +778,8 @@ onUnmounted(() => {
           :class="plan.id === 'plus'
             ? 'bg-pink-700 dark:bg-pink-600 text-white hover:bg-pink-800 dark:hover:opacity-90'
             : plan.id === 'pro'
-              ? 'bg-neutral-900 text-white hover:bg-neutral-800'
-              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 cursor-not-allowed'"
+              ? 'bg-neutral-900 dark:bg-neutral-50 text-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-white'
+              : 'bg-neutral-100/95 dark:bg-white/[0.07] backdrop-blur-sm text-neutral-500 dark:text-neutral-400 cursor-not-allowed border border-transparent dark:border-white/10'"
           :disabled="pricingLoading || !plan.isPriceReady || plan.tierLocked || checkoutPendingPlan === plan.id"
           @click="handleCheckout(plan.id)"
         >
@@ -660,9 +805,9 @@ onUnmounted(() => {
     </div>
 
     <!-- Trust banner -->
-    <div class="app-card rounded-3xl p-6 sm:p-10 mb-16">
+    <div class="pinova-glass-strong rounded-3xl p-6 sm:p-10 mb-10 max-lg:mb-12 lg:mb-16 ring-1 ring-white/40 dark:ring-white/[0.08]">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="app-card-soft rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+        <div class="rounded-2xl p-4 sm:p-5 flex items-start gap-3 backdrop-blur-md bg-white/55 dark:bg-white/[0.06] ring-1 ring-black/[0.06] dark:ring-white/12 shadow-sm">
           <div class="w-11 h-11 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/22 ring-1 ring-emerald-300/55 dark:ring-emerald-500/45 flex items-center justify-center shrink-0">
             <span class="material-symbols-outlined text-emerald-700 dark:text-emerald-300">block</span>
           </div>
@@ -671,7 +816,7 @@ onUnmounted(() => {
             <p class="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{{ t('premium.trust.planLimits.desc') }}</p>
           </div>
         </div>
-        <div class="app-card-soft rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+        <div class="rounded-2xl p-4 sm:p-5 flex items-start gap-3 backdrop-blur-md bg-white/55 dark:bg-white/[0.06] ring-1 ring-black/[0.06] dark:ring-white/12 shadow-sm">
           <div class="w-11 h-11 rounded-xl bg-blue-500/15 dark:bg-blue-500/22 ring-1 ring-blue-300/55 dark:ring-blue-500/45 flex items-center justify-center shrink-0">
             <span class="material-symbols-outlined text-blue-700 dark:text-blue-300">shield</span>
           </div>
@@ -680,7 +825,7 @@ onUnmounted(() => {
             <p class="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{{ t('premium.trust.noTracking.desc') }}</p>
           </div>
         </div>
-        <div class="app-card-soft rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+        <div class="rounded-2xl p-4 sm:p-5 flex items-start gap-3 backdrop-blur-md bg-white/55 dark:bg-white/[0.06] ring-1 ring-black/[0.06] dark:ring-white/12 shadow-sm">
           <div class="w-11 h-11 rounded-xl bg-pink-700/15 dark:bg-pink-600/15 dark:bg-pink-600/22 ring-1 ring-pink-300/55 dark:ring-pink-600/45 flex items-center justify-center shrink-0">
             <span class="material-symbols-outlined text-pink-700 dark:text-pink-600">favorite</span>
           </div>
@@ -694,7 +839,7 @@ onUnmounted(() => {
 
     <!-- FAQ -->
     <div>
-      <div class="max-w-2xl mx-auto mb-6 flex items-center justify-between gap-3">
+      <div class="max-w-2xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 backdrop-blur-md bg-white/50 dark:bg-white/[0.05] ring-1 ring-black/[0.07] dark:ring-white/12">
         <button
           class="app-btn app-btn-secondary app-btn-sm text-xs"
           :disabled="confirmPending"
@@ -709,7 +854,7 @@ onUnmounted(() => {
         <details
           v-for="(faq, i) in faqs"
           :key="i"
-          class="app-card rounded-2xl group"
+          class="pinova-glass rounded-2xl group ring-1 ring-white/35 dark:ring-white/[0.08]"
         >
           <summary class="px-5 py-4 cursor-pointer flex items-center justify-between text-sm font-semibold text-neutral-900 dark:text-neutral-100">
             {{ faq.q }}
@@ -721,5 +866,6 @@ onUnmounted(() => {
         </details>
       </div>
     </div>
+  </div>
   </div>
 </template>

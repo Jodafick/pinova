@@ -108,7 +108,25 @@ export interface UsePwaThemeReturn {
  */
 export function initPwaTheme(): void {
   startWatchingDark()
-  /* Premier apply synchrone pour éviter flash. */
+  /* Toute variation de `resolvedColor` (dark/light, override tiroir profil, etc.) → meta + body. */
+  watch(resolvedColor, (color) => applyThemeColor(color), { immediate: true })
+}
+
+/** Même teinte que le menu profil mobile — status bar / body PWA alignés. */
+const PROFILE_DRAWER_THEME: ThemeColors = {
+  light: '#e11d77',
+  dark: '#4c0d24',
+}
+
+export function setProfileDrawerPwaTheme(): void {
+  overrideColor.value = PROFILE_DRAWER_THEME
+  applyAppleStatusBarStyle('black-translucent')
+  applyThemeColor(resolvedColor.value)
+}
+
+export function clearProfileDrawerPwaTheme(): void {
+  overrideColor.value = null
+  applyAppleStatusBarStyle('black-translucent')
   applyThemeColor(resolvedColor.value)
 }
 

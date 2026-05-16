@@ -9,6 +9,7 @@ import { EMAIL_DELIVERY_UNAVAILABLE_CODE } from '../constants/authErrors'
 import { clearStoredReferralCode } from '../composables/useReferralIntent'
 import { extractDrfFieldErrors, firstErroredField } from '../utils/apiValidationErrors'
 import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
+import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 
 const router = useRouter()
 const { register, socialLogin } = useAuth()
@@ -121,8 +122,20 @@ const { login: googleLogin } = useTokenClient({
   },
   onError: () => {
     error.value = t('login.error.google')
-  }
+  },
 })
+
+async function handleGoogleClick() {
+  error.value = ''
+  fieldErrors.value = {}
+  const gsiReady = await waitForGoogleIdentityServices()
+  if (!gsiReady) {
+    error.value = t('login.error.googleNotReady')
+    return
+  }
+  await nextTick()
+  googleLogin()
+}
 </script>
 
 <template>
@@ -314,7 +327,7 @@ const { login: googleLogin } = useTokenClient({
         <div class="flex justify-center">
           <button
             type="button"
-            @click="googleLogin()"
+            @click="handleGoogleClick"
             class="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all text-sm font-bold text-neutral-700 dark:text-neutral-200 w-full"
             :class="suggestGoogleForEmail ? 'ring-2 ring-pink-700 dark:ring-pink-600 ring-offset-2' : ''"
           >

@@ -205,6 +205,13 @@ function performOpen(pin: Pin, originEl?: Element | null) {
   emit('open-pin', pin.slug)
 }
 
+/** Carte réutilisée par la virtualisation : toujours résoudre le pin depuis le slug DOM courant. */
+function resolvePinFromCard(cardEl: HTMLElement): Pin | undefined {
+  const slug = cardEl.dataset.pinSlug?.trim()
+  if (!slug) return undefined
+  return props.pins.find((p) => p.slug === slug)
+}
+
 function openContextMenu(pin: Pin, point: { x: number; y: number }) {
   const items = [
     { id: 'open',  label: t('pin.contextual.open'),  icon: 'open_in_new' },
@@ -254,8 +261,8 @@ const DOUBLE_TAP_DISTANCE = 16
 const LONG_PRESS_DELAY = 420
 const LONG_PRESS_DRIFT = 8
 
-function bindInteractions(el: HTMLElement | null, pin: Pin | undefined) {
-  if (!el || !pin || props.disablePremiumInteractions) return
+function bindInteractions(el: HTMLElement | null) {
+  if (!el || props.disablePremiumInteractions) return
   if (bindings.has(el)) return /* déjà attaché. */
 
   const binding: CardBinding = {
@@ -275,12 +282,12 @@ function bindInteractions(el: HTMLElement | null, pin: Pin | undefined) {
     const startX = e.clientX
     const startY = e.clientY
     binding.longPressTimer = setTimeout(() => {
-      const rect = el.getBoundingClientRect()
+      const pin = resolvePinFromCard(el)
+      if (!pin) return
       openContextMenu(pin, { x: startX, y: startY })
       /* Annule le double-tap pour cette interaction. */
       binding.firstTap = null
       binding.longPressTimer = null
-      void rect
     }, LONG_PRESS_DELAY)
   }
 
@@ -314,13 +321,20 @@ function bindInteractions(el: HTMLElement | null, pin: Pin | undefined) {
           binding.singleTapTimer = null
         }
         binding.firstTap = null
-        void performLike(pin, { x: e.clientX, y: e.clientY })
+        const pin = resolvePinFromCard(el)
+        if (pin) void performLike(pin, { x: e.clientX, y: e.clientY })
         return
       }
     }
     binding.firstTap = { x: e.clientX, y: e.clientY, time: now }
     if (binding.singleTapTimer) clearTimeout(binding.singleTapTimer)
     binding.singleTapTimer = setTimeout(() => {
+      const pin = resolvePinFromCard(el)
+      if (!pin) {
+        binding.firstTap = null
+        binding.singleTapTimer = null
+        return
+      }
       performOpen(pin, el)
       binding.firstTap = null
       binding.singleTapTimer = null
@@ -370,7 +384,8 @@ function pinCardLabel(pin: Pin) {
     <article
       v-for="vi in virtualItems"
       :key="(pins[vi.index]?.id ?? vi.index) + '-' + vi.lane"
-      :ref="(el) => bindInteractions(el as HTMLElement | null, pins[vi.index])"
+      :ref="(el) => bindInteractions(el as HTMLElement | null)"
+      :data-pin-slug="pins[vi.index]?.slug ?? ''"
       :data-index="vi.index"
       :data-lane="vi.lane"
       class="pin-virtual-grid__card lux-pin-card pinova-virtual-item pinova-gpu"

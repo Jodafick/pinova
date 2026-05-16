@@ -6,6 +6,69 @@ const APP_DEEP_LINK_SCHEME = (
 
 const APP_DEEP_LINK_TIMEOUT_MS = 1200
 
+/** iPhone / iPad / iPod : éviter `location.href = pinova://…` (Safari affiche souvent « adresse invalide » si l’app n’est pas installée). */
+function isIosMobileUa(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
+}
+
+/**
+ * Ouvre un deep link custom sans quitter la page WebKit (réduit les alertes Safari « adresse invalide »).
+ */
+function openCustomSchemeViaHiddenFrame(url: string): void {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return
+  try {
+    const iframe = document.createElement('iframe')
+    iframe.setAttribute('aria-hidden', 'true')
+    iframe.tabIndex = -1
+    Object.assign(iframe.style, {
+      position: 'fixed',
+      width: '1px',
+      height: '1px',
+      opacity: '0',
+      pointerEvents: 'none',
+      border: '0',
+      top: '0',
+      left: '0',
+    })
+    iframe.src = url
+    document.body.appendChild(iframe)
+    window.setTimeout(() => {
+      try {
+        iframe.remove()
+      } catch {
+        /* ignore */
+      }
+    }, 2000)
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Navigation vers une URL absolue https ou vers un schéma custom (ex. `pinova://`).
+ * Sur iOS, les schémas custom passent par une iframe cachée pour limiter l’alerte Safari « adresse invalide ».
+ */
+export function openMobileDeepLink(url: string): void {
+  if (typeof window === 'undefined') return
+  const s = String(url || '').trim()
+  if (!s) return
+  try {
+    const u = new URL(s)
+    if (u.protocol === 'http:' || u.protocol === 'https:') {
+      window.location.href = u.href
+      return
+    }
+    if (isIosMobileUa()) {
+      openCustomSchemeViaHiddenFrame(u.href)
+    } else {
+      window.location.href = u.href
+    }
+  } catch {
+    /* URL invalide — ne pas naviguer */
+  }
+}
+
 function isMobileBrowser(): boolean {
   if (typeof navigator === 'undefined') return false
   const ua = navigator.userAgent || ''
@@ -141,6 +204,14 @@ export function maybeRedirectWebToApp(route: RouteLocationNormalized): void {
   const deepLink = buildDeepLink(route)
   if (!deepLink) return
 
+  try {
+    const probe = new URL(deepLink)
+    const expectedScheme = `${APP_DEEP_LINK_SCHEME.toLowerCase()}:`
+    if (probe.protocol.toLowerCase() !== expectedScheme) return
+  } catch {
+    return
+  }
+
   const cacheKey = `pinova:web-to-app-skip:${String(route.name ?? route.path)}`
   if (!explicitOpen && window.sessionStorage.getItem(cacheKey) === '1') return
 
@@ -150,7 +221,8 @@ export function maybeRedirectWebToApp(route: RouteLocationNormalized): void {
   }
 
   document.addEventListener('visibilitychange', onVisibilityChange)
-  window.location.href = deepLink
+
+  openMobileDeepLink(deepLink)
 
   window.setTimeout(() => {
     document.removeEventListener('visibilitychange', onVisibilityChange)

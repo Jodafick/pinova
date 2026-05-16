@@ -19,6 +19,7 @@ import { useI18n } from '../i18n'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import { consumePinOverlayOrigin, type PinOverlayOriginRect } from '../utils/pinOverlayOrigin'
 import { shareUrlWithFallback } from '../utils/shareFallback'
+import { safeHttpUrl } from '../utils/safeHttpUrl'
 import PinDetailMobileFullscreen from './PinDetailMobileFullscreen.vue'
 import PinDetailDesktopModal from './PinDetailDesktopModal.vue'
 import ReportContentModal from './ReportContentModal.vue'
@@ -412,7 +413,12 @@ async function handleDownload() {
     const plan = currentUser.value?.subscription?.plan || 'free'
     const quality = plan === 'pro' ? 'hd' : 'standard'
     const result = await getPinDownload(p.slug, quality)
-    window.open(result.download_url as string, '_blank', 'noopener,noreferrer')
+    const dl = safeHttpUrl(result.download_url)
+    if (!dl) {
+      await showAlert(t('pin.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
+      return
+    }
+    window.open(dl, '_blank', 'noopener,noreferrer')
   } catch (err) {
     console.error('Erreur téléchargement overlay pin', err)
     await showAlert(t('pin.download.error'), { variant: 'danger', title: t('modal.errorTitle') })

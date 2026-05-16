@@ -61,6 +61,8 @@ const MAX_VIDEO_MS = 120_000
 
 const index = ref(0)
 const heartBurst = ref(false)
+const heartBurstKey = ref(0)
+let heartBurstHideTimer: ReturnType<typeof setTimeout> | null = null
 const expandedDesc = ref(false)
 const storyLikersOpen = ref(false)
 const reportStoryOpen = ref(false)
@@ -438,9 +440,12 @@ async function doLike() {
     return
   }
   if (isOwnerViewingStory.value) return
+  heartBurstKey.value += 1
   heartBurst.value = true
-  window.setTimeout(() => {
+  if (heartBurstHideTimer) clearTimeout(heartBurstHideTimer)
+  heartBurstHideTimer = window.setTimeout(() => {
     heartBurst.value = false
+    heartBurstHideTimer = null
   }, 980)
 
   const slug = pin.slug
@@ -475,6 +480,10 @@ async function doLike() {
     }
   } catch {
     heartBurst.value = false
+    if (heartBurstHideTimer) {
+      clearTimeout(heartBurstHideTimer)
+      heartBurstHideTimer = null
+    }
     storyLikedBySlug.value = { ...storyLikedBySlug.value, [slug]: prevLiked }
     storyReactionsBySlug.value = {
       ...storyReactionsBySlug.value,
@@ -551,6 +560,7 @@ onMounted(() => window.addEventListener('keydown', onKeydown))
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
   if (holdPauseTimer) clearTimeout(holdPauseTimer)
+  if (heartBurstHideTimer) clearTimeout(heartBurstHideTimer)
   clearAdvance()
 })
 </script>
@@ -778,6 +788,7 @@ onUnmounted(() => {
             <transition name="fade">
               <div
                 v-if="heartBurst"
+                :key="heartBurstKey"
                 class="pointer-events-none absolute inset-0 flex items-center justify-center z-[45]"
               >
                 <span class="material-symbols-outlined text-pink-700 dark:text-pink-600 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]">

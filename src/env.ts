@@ -1,4 +1,4 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://pinova-backend-4dt4.onrender.com'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://pinova-backend-8mlq.onrender.com'
 export const API_URL = `${API_BASE_URL.replace(/\/$/, '')}/api/`
 
 /** E-mail affiché sur la page Contact (surcharge `VITE_CONTACT_EMAIL`). */

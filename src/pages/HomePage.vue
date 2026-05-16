@@ -3,6 +3,10 @@ import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watc
 import { useRoute, useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
+import { useAppModal } from '../composables/useAppModal'
+import { useTokenClient } from 'vue3-google-signin'
+import { GOOGLE_SIGN_IN_SCOPES } from '../env'
+import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 import { useI18n } from '../i18n'
 import TopicScroller from '../components/TopicScroller.vue'
 import HomeStoriesStrip from '../components/HomeStoriesStrip.vue'
@@ -18,7 +22,8 @@ type TabKey = 'forYou' | 'explorer' | 'following'
 const { t, currentLang } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const { currentUser, isAuthenticated, toggleSavePin, toggleFollow } = useAuth()
+const { currentUser, isAuthenticated, toggleSavePin, toggleFollow, socialLogin } = useAuth()
+const { showAlert } = useAppModal()
 
 /** KeepAlive : vider le Teleport du header quand une autre route est au-dessus. */
 const isActiveHomeRoutePath = computed(() => route.name === 'home' || route.path === '/')
@@ -504,6 +509,39 @@ const followSuggestedUser = async (username: string) => {
 const openPin = (slug: string) => {
   router.push({ path: route.path, query: { ...route.query, pin: slug } })
 }
+
+const googleLandingBusy = ref(false)
+
+const { login: googleTokenLogin } = useTokenClient({
+  scope: GOOGLE_SIGN_IN_SCOPES,
+  onSuccess: async (response) => {
+    googleLandingBusy.value = true
+    try {
+      const result = await socialLogin('google', response.access_token)
+      if (result.success) {
+        await router.replace('/')
+      } else if (result.error) {
+        await showAlert(result.error, { variant: 'danger', title: t('modal.errorTitle') })
+      }
+    } finally {
+      googleLandingBusy.value = false
+    }
+  },
+  onError: async () => {
+    googleLandingBusy.value = false
+    await showAlert(t('login.error.google'), { variant: 'danger', title: t('modal.errorTitle') })
+  },
+})
+
+async function continueWithGoogleFromLanding() {
+  const gsiReady = await waitForGoogleIdentityServices()
+  if (!gsiReady) {
+    await showAlert(t('login.error.googleNotReady'), { variant: 'warning', title: t('modal.errorTitle') })
+    return
+  }
+  await nextTick()
+  googleTokenLogin()
+}
 </script>
 
 <template>
@@ -536,6 +574,25 @@ const openPin = (slug: string) => {
         >
           {{ t('home.landing.cta.login') }}
         </router-link>
+        <button
+          type="button"
+          class="inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full border border-neutral-200 dark:border-neutral-600 bg-white/90 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800 transition min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
+          :disabled="googleLandingBusy"
+          @click="continueWithGoogleFromLanding"
+        >
+          <span
+            v-if="googleLandingBusy"
+            class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0"
+            aria-hidden="true"
+          />
+          <img
+            v-else
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+            class="w-5 h-5 shrink-0"
+            alt=""
+          />
+          {{ t('login.googleCta') }}
+        </button>
         <router-link
           to="/explore"
           class="inline-flex justify-center items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold text-pink-700 dark:text-pink-600 hover:underline min-h-[44px]"

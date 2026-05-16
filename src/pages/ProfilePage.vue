@@ -33,8 +33,11 @@ import {
 } from '../composables/mediaAntiLeak'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
-import { useMobileCreateChooser } from '../composables/useMobileCreateChooser'
-import { setMobileProfileTrailing } from '../composables/mobileHeaderContext'
+import {
+  setMobileProfileTrailing,
+  setProfileNavMobileDrawerOpen,
+} from '../composables/mobileHeaderContext'
+import { clearProfileDrawerPwaTheme } from '../composables/usePwaTheme'
 import {
   initialStoryIndexForUser,
   isStoryRingAllCaughtUp,
@@ -46,7 +49,6 @@ const PROFILE_PINS_PAGE_SIZE = 24
 
 const { t, currentLang } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
-const { openMobileCreateChooser } = useMobileCreateChooser()
 
 const router = useRouter()
 const route = useRoute()
@@ -293,6 +295,31 @@ async function handleDeclineBoardInvite(inv: BoardInviteRow) {
   }
 }
 
+/** Liste tableaux du profil connecté : toujours alignée sur `GET boards/` (création, invitation acceptée, etc.). */
+async function syncMyBoardsFromApi() {
+  if (!profileUser.value) return
+  profileBoardsLoading.value = true
+  try {
+    const myBoards = await fetchMyBoards()
+    profileUser.value.boards = myBoards.map((board: any) => ({
+      id: board.id,
+      name: board.name,
+      pinCount: board.pin_count ?? board.pinCount ?? 0,
+      isPrivate: board.is_private ?? board.isPrivate ?? false,
+      isOwner: board.is_owner !== false,
+      ownerUsername:
+        board.owner_username ?? board.ownerUsername ?? profileUser.value?.username,
+      collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
+      previewImages: board.preview_images ?? board.previewImages ?? [],
+      shareToken: board.share_token ?? board.shareToken ?? undefined,
+    }))
+  } catch (err) {
+    console.error('Erreur chargement tableaux:', err)
+  } finally {
+    profileBoardsLoading.value = false
+  }
+}
+
 const loadProfile = async () => {
   resetSavedPinsState()
   profileBoardsLoading.value = false
@@ -342,37 +369,7 @@ const loadProfile = async () => {
   loading.value = !hasImmediateHeader
 
   if (useLocalOwnProfile) {
-    const cuOwn = currentUser.value!
-    const boardsFromMeBundle =
-      cuOwn.meCreatedPinsPage != null || cuOwn.meSavedPinsPage != null
-    const alreadyHasBoards = Array.isArray(cuOwn.boards) && cuOwn.boards.length > 0
-
-    if (boardsFromMeBundle || alreadyHasBoards) {
-      profileBoardsLoading.value = false
-    } else {
-      profileBoardsLoading.value = true
-      try {
-        const myBoards = await fetchMyBoards()
-        if (profileUser.value) {
-          profileUser.value.boards = myBoards.map((board: any) => ({
-            id: board.id,
-            name: board.name,
-            pinCount: board.pin_count ?? board.pinCount ?? 0,
-            isPrivate: board.is_private ?? board.isPrivate ?? false,
-            isOwner: board.is_owner !== false,
-            ownerUsername:
-              board.owner_username ?? board.ownerUsername ?? profileUser.value?.username,
-            collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
-            previewImages: board.preview_images ?? board.previewImages ?? [],
-            shareToken: board.share_token ?? board.shareToken ?? undefined,
-          }))
-        }
-      } catch (err) {
-        console.error('Erreur chargement tableaux:', err)
-      } finally {
-        profileBoardsLoading.value = false
-      }
-    }
+    await syncMyBoardsFromApi()
     isFollowing.value = false
   } else {
     const usernameParam = String(route.params.username || '').trim()
@@ -645,6 +642,8 @@ watch([activeTab, () => displayPins.value.length, profilePinsHasMore, savedPinsH
 onUnmounted(() => {
   disconnectInfiniteScroll()
   setMobileProfileTrailing(null)
+  setProfileNavMobileDrawerOpen(false)
+  clearProfileDrawerPwaTheme()
   organizeTouchDragging.value = false
   organizeTouchFrom.value = null
 })
@@ -660,6 +659,59 @@ const currentPlanLabel = computed(() => {
   return 'FREE'
 })
 const profileNavDrawerOpen = ref(false)
+
+const profileNavShellSurfaceClass = computed(() => {
+  if (!profileNavDrawerOpen.value || !currentUser.value || !isMyProfile.value) return ''
+  return [
+    'relative z-[40] isolate',
+    'max-lg:origin-left max-lg:[transform-style:preserve-3d]',
+    'max-lg:overflow-x-hidden max-lg:rounded-[32px]',
+    'max-lg:transition-[transform,box-shadow,border-radius] max-lg:duration-300 max-lg:[transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
+    'max-lg:motion-safe:[transform:translate3d(80vw,32px,-598px)_rotateY(-22deg)_scale(1.1)]',
+    'max-lg:motion-safe:shadow-[0_25px_25px_rgba(0,0,0,0.25)] dark:max-lg:motion-safe:shadow-[0_28px_55px_-8px_rgba(0,0,0,0.62)]',
+    'max-lg:motion-safe:ring-1 max-lg:motion-safe:ring-black/[0.07] dark:max-lg:motion-safe:ring-white/[0.1]',
+    'max-lg:motion-reduce:[transform:none] max-lg:motion-reduce:shadow-none max-lg:motion-reduce:ring-0 max-lg:motion-reduce:rounded-none',
+    'max-lg:bg-white/95 max-lg:dark:bg-neutral-950/95 max-lg:backdrop-blur-md',
+    /* La surface 3D est au-dessus du tiroir (z-40 > z-25) : sans ça elle intercepte les clics des router-link du menu. */
+    'max-lg:pointer-events-none',
+  ].join(' ')
+})
+
+/** Zone profil cliquable — reprend les événements quand le shell externe est en pointer-events-none. */
+const profileNavShellInnerClass = computed(() => {
+  if (!profileNavDrawerOpen.value || !currentUser.value || !isMyProfile.value) return ''
+  return 'max-lg:pointer-events-auto'
+})
+
+/** Ferme le menu mobile en tapant la « carte » profil (hors contrôles interactifs). */
+function onProfileDrawerSurfaceClick(ev: MouseEvent) {
+  if (!profileNavDrawerOpen.value || !currentUser.value || !isMyProfile.value) return
+  const el = ev.target as HTMLElement | null
+  if (!el) return
+  if (
+    el.closest(
+      'a,button,input,textarea,select,label,[role="button"],[contenteditable="true"],[data-prevent-drawer-close]',
+    )
+  ) {
+    return
+  }
+  profileNavDrawerOpen.value = false
+}
+
+/** Hauteur viewport figée + fond gradient (aligné menu) quand le tiroir est ouvert. */
+const profileNavDrawerViewportClass = computed(() => {
+  if (!profileNavDrawerOpen.value || !currentUser.value || !isMyProfile.value) return ''
+  return [
+    'max-lg:fixed max-lg:inset-0 max-lg:isolate max-lg:z-0 max-lg:flex max-lg:min-h-0 max-lg:h-[100dvh] max-lg:max-h-[100dvh] max-lg:w-full max-lg:flex-col max-lg:overflow-hidden',
+    'max-lg:bg-[linear-gradient(180deg,#e11d77_0%,#be185d_50%,#e11d77_75%,#be185d_100%)] dark:max-lg:bg-[linear-gradient(180deg,#1a0508_0%,#3d0a1a_38%,#5b1230_62%,#2d0612_100%)]',
+  ].join(' ')
+})
+
+/** Conteneur type `.page` du demo off-canvas (perspective 1500px sur parent commun). */
+const profileNavOffcanvasRootClass = computed(() => {
+  if (!currentUser.value || !isMyProfile.value) return ''
+  return 'max-lg:[perspective:1500px] max-lg:motion-reduce:[perspective:none]'
+})
 
 watch(
   () =>
@@ -680,6 +732,16 @@ watch(
         profileNavDrawerOpen.value = true
       },
     })
+  },
+  { immediate: true },
+)
+
+watch(
+  [profileNavDrawerOpen, isMyProfile, () => !!currentUser.value],
+  () => {
+    setProfileNavMobileDrawerOpen(
+      !!(profileNavDrawerOpen.value && currentUser.value && isMyProfile.value),
+    )
   },
   { immediate: true },
 )
@@ -707,6 +769,14 @@ const boardLimitHint = computed(() => {
 })
 const canSubmitBoardCreation = computed(() => !!newBoardName.value.trim() && canCreateSelectedBoardType.value)
 
+function onCreateBoardOpenChange(open: boolean) {
+  showCreateBoard.value = open
+  if (!open) {
+    newBoardName.value = ''
+    newBoardPrivate.value = false
+  }
+}
+
 const handleCreateBoard = async () => {
   if (!profileUser.value || !newBoardName.value.trim()) return
   if (!canCreateSelectedBoardType.value) {
@@ -716,25 +786,14 @@ const handleCreateBoard = async () => {
     return
   }
   try {
-    const board = await createBoard({
+    await createBoard({
       name: newBoardName.value.trim(),
       isPrivate: newBoardPrivate.value,
     })
-    const nextBoard = {
-      id: board.id,
-      name: board.name,
-      pinCount: board.pin_count ?? board.pinCount ?? 0,
-      isPrivate: board.is_private ?? board.isPrivate ?? false,
-      isOwner: true,
-      ownerUsername: profileUser.value.username,
-      collaboratorCount: board.collaborator_count ?? board.collaboratorCount ?? 0,
-      previewImages: [],
-      shareToken: board.share_token ?? board.shareToken ?? undefined,
-    }
-    profileUser.value.boards = [nextBoard, ...(profileUser.value.boards ?? [])]
     newBoardName.value = ''
     newBoardPrivate.value = false
     showCreateBoard.value = false
+    await syncMyBoardsFromApi()
     void loadBoardSuggestions()
   } catch (err) {
     console.error('Erreur création tableau:', err)
@@ -1192,13 +1251,24 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     <PinGrid class="w-full" :pins="[]" loading-initial />
   </div>
 
-  <div v-else-if="profileUser" class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+  <div
+    v-else-if="profileUser"
+    :class="['relative w-full min-w-0', profileNavOffcanvasRootClass, profileNavDrawerViewportClass]"
+  >
     <ProfileMobileNavDrawer
       v-if="currentUser && isMyProfile"
       v-model="profileNavDrawerOpen"
-      @create-pin="openMobileCreateChooser"
+      @share-profile="handleShareProfile"
     />
 
+    <div
+      :class="['relative w-full min-w-0', profileNavShellSurfaceClass]"
+    >
+      <div
+        class="relative z-0 w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12"
+        :class="profileNavShellInnerClass"
+        @click="onProfileDrawerSurfaceClick"
+      >
     <!-- Profile header -->
     <section class="flex flex-col items-center text-center mb-10 w-full">
       <button
@@ -1633,57 +1703,62 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </div>
     </section>
 
-    <!-- Create Board Modal -->
-    <div v-if="showCreateBoard" class="fixed inset-0 z-50 flex items-center justify-center px-4 app-modal-backdrop">
-      <div class="app-modal-surface rounded-3xl w-full max-w-md p-6 sm:p-8">
-        <h3 class="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">{{ t('profile.boards.modal.title') }}</h3>
-        <div class="space-y-5">
-          <div>
-            <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('profile.boards.modal.name') }}</label>
-            <input
-              v-model="newBoardName"
-              type="text"
-              :placeholder="t('profile.boards.modal.namePlaceholder')"
-              class="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 transition"
-            />
-          </div>
-          <div class="flex items-center gap-3">
-            <input
-              v-model="newBoardPrivate"
-              type="checkbox"
-              id="is_private"
-              class="w-5 h-5 accent-pink-700 dark:accent-pink-600 rounded cursor-pointer"
-              :disabled="isPrivateLimitReached"
-            />
-            <label for="is_private" class="text-sm text-neutral-700 cursor-pointer">
-              {{ t('profile.boards.modal.private') }}
-            </label>
-          </div>
-          <p v-if="boardLimitHint" class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            {{ boardLimitHint }}
-          </p>
-          <div class="flex gap-3 pt-4">
-            <button
-              class="app-btn app-btn-secondary flex-1 text-sm"
-              @click="showCreateBoard = false"
-            >
-              {{ t('common.cancel') }}
-            </button>
-            <button
-              class="app-btn app-btn-primary flex-1 text-sm"
-              :disabled="!canSubmitBoardCreation"
-              @click="handleCreateBoard"
-            >
-              {{ t('profile.boards.modal.create') }}
-            </button>
-          </div>
+    <!-- Création tableau — PinovaModal (sheet mobile, centrée desktop) -->
+    <PinovaModal
+      :open="showCreateBoard"
+      presentation="bottomSheet"
+      presentation-lg="center"
+      :presentation-lg-min-width="1024"
+      rose
+      :title="t('profile.boards.modal.title')"
+      @update:open="onCreateBoardOpenChange"
+    >
+      <div class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{{ t('profile.boards.modal.name') }}</label>
+          <input
+            v-model="newBoardName"
+            type="text"
+            :placeholder="t('profile.boards.modal.namePlaceholder')"
+            class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-pink-700/25 dark:focus:ring-pink-600/25 transition"
+          />
         </div>
+        <div class="flex items-center gap-3">
+          <input
+            v-model="newBoardPrivate"
+            type="checkbox"
+            id="profile_create_board_private"
+            class="w-5 h-5 accent-pink-700 dark:accent-pink-600 rounded cursor-pointer"
+            :disabled="isPrivateLimitReached"
+          />
+          <label for="profile_create_board_private" class="text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+            {{ t('profile.boards.modal.private') }}
+          </label>
+        </div>
+        <p v-if="boardLimitHint" class="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg px-3 py-2">
+          {{ boardLimitHint }}
+        </p>
       </div>
-    </div>
+      <template #footer>
+        <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px]" @click="onCreateBoardOpenChange(false)">
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px]"
+            :disabled="!canSubmitBoardCreation"
+            @click="handleCreateBoard"
+          >
+            {{ t('profile.boards.modal.create') }}
+          </button>
+        </div>
+      </template>
+    </PinovaModal>
 
       <div v-if="showFollowersModal || showFollowingModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:px-4 app-modal-backdrop" @click.self="showFollowersModal = false; showFollowingModal = false">
       <div class="app-modal-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] sm:max-h-[80vh] flex flex-col">
-        <div class="sm:hidden mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-neutral-300 dark:bg-neutral-600" aria-hidden="true" />
+        <div class="sm:hidden app-modal-sheet-handle" aria-hidden="true" />
         <div class="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
           <h3 class="font-semibold text-neutral-900 dark:text-neutral-100">
             {{ showFollowersModal ? t('profile.followers') : t('profile.following') }}
@@ -1854,6 +1929,8 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       :context-label="profileUser ? `@${profileUser.username} · ${profileUser.displayName}` : ''"
       @submit="handleSubmitProfileReport"
     />
+      </div>
+    </div>
   </div>
 
   <div v-else class="w-full min-w-0 max-w-md mx-auto px-6 py-20 text-center space-y-4">

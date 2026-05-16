@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from '../i18n'
 import { GOOGLE_CLIENT_ID, GOOGLE_SIGN_IN_SCOPES } from '../env'
 import api from '../api'
+import { openMobileDeepLink } from '../utils/appDeepLink'
 
 const { t } = useI18n()
 const loading = ref(false)
@@ -123,7 +124,7 @@ onMounted(() => {
       sessionStorage.removeItem(OAUTH_STATE_STORAGE_KEY)
       sessionStorage.removeItem(MOBILE_DEVICE_BINDING_STORAGE_KEY)
       sessionStorage.removeItem(MOBILE_STATE_STORAGE_KEY)
-      window.location.href = nextRedirect
+      openMobileDeepLink(nextRedirect)
 
       // Message de secours si la redirection ne se lance pas
       setTimeout(() => {

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useTokenClient } from 'vue3-google-signin'
 import { GOOGLE_SIGN_IN_SCOPES } from '../env'
 import { useI18n } from '../i18n'
+import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 
 const router = useRouter()
 const route = useRoute()
@@ -87,6 +88,18 @@ const { login: googleLogin } = useTokenClient({
     error.value = t('login.error.google')
   }
 })
+
+async function handleGoogleClick() {
+  error.value = ''
+  fieldErrors.value = {}
+  const gsiReady = await waitForGoogleIdentityServices()
+  if (!gsiReady) {
+    error.value = t('login.error.googleNotReady')
+    return
+  }
+  await nextTick()
+  googleLogin()
+}
 </script>
 
 <template>
@@ -209,7 +222,7 @@ const { login: googleLogin } = useTokenClient({
         <div class="flex justify-center">
           <button
             type="button"
-            @click="googleLogin()"
+            @click="handleGoogleClick"
             class="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all text-sm font-bold text-neutral-700 dark:text-neutral-200 w-full"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" />

@@ -748,6 +748,20 @@
     background: var(--surface-floating-item-active);
   }
 
+  /** Poignée sheet (même gabarit que ModalHeader / PinovaModal — une seule barre par modale). */
+  .app-modal-sheet-handle {
+    width: 38px;
+    height: 4px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background-color: rgb(120 120 128 / 0.36);
+    margin: 8px auto 6px;
+  }
+
+  .dark .app-modal-sheet-handle {
+    background-color: rgb(255 255 255 / 0.22);
+  }
+
   .app-modal-surface {
     background: var(--surface-modal-bg);
     border: 1px solid var(--surface-modal-border);

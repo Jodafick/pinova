@@ -2,8 +2,6 @@
 import { useRouter } from 'vue-router'
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '../i18n'
-import { useAppModal } from '../composables/useAppModal'
-import { setPendingStoryCaptureFile } from '../utils/storyCaptureDraft'
 import PinovaModal from './ui/PinovaModal.vue'
 
 const props = withDefaults(
@@ -22,8 +20,6 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const { t } = useI18n()
-const { showAlert } = useAppModal()
-const storyCameraInput = ref<HTMLInputElement | null>(null)
 
 const isDesktop = ref(false)
 let removeMql: (() => void) | null = null
@@ -52,62 +48,23 @@ function close() {
   emit('update:modelValue', false)
 }
 
-async function requestCameraAccess() {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    await showAlert(t('create.camera.unavailable'), { variant: 'info' })
-    return
-  }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' } },
-      audio: false,
-    })
-    stream.getTracks().forEach((track) => track.stop())
-  } catch {
-    await showAlert(t('create.camera.denied'), { variant: 'warning' })
-  }
-}
-
-async function choose(target: 'pin' | 'story') {
+function choose(target: 'pin' | 'story') {
   if (target === 'story' && !props.canCreateStory) return
   close()
-  if (target === 'story') {
-    storyCameraInput.value?.click()
-    return
-  }
-  await requestCameraAccess()
-  await router.push('/create')
-}
-
-async function handleStoryCameraCapture(ev: Event) {
-  const input = ev.target as HTMLInputElement
-  const file = input.files?.[0] ?? null
-  input.value = ''
-  if (!file) return
-  setPendingStoryCaptureFile(file)
-  await router.push({ path: '/story/create', query: { capture: 'camera' } })
+  void router.push(target === 'story' ? '/story/create' : '/create')
 }
 </script>
 
 <template>
-  <input
-    ref="storyCameraInput"
-    type="file"
-    accept="image/*,video/mp4,video/webm,video/quicktime,.mov"
-    capture="environment"
-    class="hidden"
-    @change="handleStoryCameraCapture"
-  >
-
   <PinovaModal
     :open="modalOpen"
     presentation="tallSheet"
+    rose
     :show-header="false"
     :depth-effect="true"
     @update:open="(v: boolean) => emit('update:modelValue', v)"
   >
     <div class="px-1 pb-1">
-      <div class="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-600 lg:hidden" aria-hidden="true" />
       <div class="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 class="text-lg font-black text-neutral-950 dark:text-neutral-50">{{ t('create.mobile.title') }}</h2>
@@ -115,7 +72,7 @@ async function handleStoryCameraCapture(ev: Event) {
         </div>
         <button
           type="button"
-          class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-600 hover:bg-black/[0.06] dark:text-neutral-300 dark:hover:bg-white/[0.08] transition"
+          class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-600 transition hover:bg-black/[0.06] dark:text-neutral-300 dark:hover:bg-white/[0.08]"
           :aria-label="t('common.close')"
           @click="close"
         >
@@ -129,7 +86,7 @@ async function handleStoryCameraCapture(ev: Event) {
           class="flex min-h-[4.25rem] items-center gap-3 rounded-2xl border border-pink-100 bg-pink-50/80 px-4 py-3 text-left text-pink-950 transition active:scale-[0.99] dark:border-pink-900/50 dark:bg-pink-950/35 dark:text-pink-100"
           @click="choose('pin')"
         >
-          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-pink-700 dark:bg-pink-600 text-white shadow-lg shadow-pink-900/20">
+          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-pink-700 text-white shadow-lg shadow-pink-900/20 dark:bg-pink-600">
             <span class="material-symbols-outlined text-2xl">add_photo_alternate</span>
           </span>
           <span class="min-w-0 flex-1">
@@ -165,7 +122,7 @@ async function handleStoryCameraCapture(ev: Event) {
       </div>
 
       <p class="mt-4 text-center text-xs text-neutral-500 dark:text-neutral-400">
-        {{ t('create.camera.requestHint') }}
+        {{ t('create.mobile.sourceChooserFootnote') }}
       </p>
     </div>
   </PinovaModal>

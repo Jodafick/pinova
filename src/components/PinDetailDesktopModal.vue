@@ -93,7 +93,7 @@ function onVideoMetadata(e: Event) {
     <section class="pin-desktop-modal hidden lg:flex fixed inset-0 z-[95] items-center justify-center px-8 py-7">
       <button
         type="button"
-        class="absolute inset-0 bg-neutral-950/55 backdrop-blur-2xl saturate-150"
+        class="absolute inset-0 bg-white/35 dark:bg-neutral-950/40 backdrop-blur-2xl saturate-150"
         :aria-label="t('common.close')"
         @click="emit('close')"
       />

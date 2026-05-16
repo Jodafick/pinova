@@ -119,6 +119,10 @@ const rootClasses = computed(() => ({
   transition: background-color var(--pinova-dur-fast, 180ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
+:global(.dark) .modal-header__handle {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
 .modal-header__row {
   display: grid;
   grid-template-columns: minmax(56px, auto) 1fr minmax(56px, auto);

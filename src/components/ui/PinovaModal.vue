@@ -12,7 +12,7 @@
  * Types supportés :
  *  - 'center'      : modal centré classique (confirmation, choix court)
  *  - 'bottomSheet' : sheet ~50% viewport, drag-to-dismiss, snap half/expanded
- *  - 'tallSheet'   : sur mobile plein viewport ; ~92dvh sur grand écran (listes / édition)
+ *  - 'tallSheet'   : feuille haute ; sur mobile hauteur adaptative (~92dvh max), sauf si `tallSheetMobileFullBleed`
  *  - 'fullscreen'  : couvre tout l'écran (édition pleine, story viewer)
  *  - 'floating'    : carte flottante centrée sans backdrop opaque (toasts, picker discret)
  *
@@ -83,6 +83,11 @@ interface Props {
   /** Active la scale+blur du background #app-shell. Default true. */
   depthEffect?: boolean
   /**
+   * `tallSheet` sur viewport &lt; lg : occupe toute la hauteur (ancien comportement).
+   * Par défaut false : hauteur adaptative (max ~92dvh) pour les feuilles « liste / formulaire ».
+   */
+  tallSheetMobileFullBleed?: boolean
+  /**
    * aria-labelledby personnalisé (si pas de `title`).
    * Sinon le `title` est utilisé en `aria-labelledby` auto.
    */
@@ -99,6 +104,7 @@ const props = withDefaults(defineProps<Props>(), {
   rose: false,
   depthEffect: true,
   maxWidth: 480,
+  tallSheetMobileFullBleed: false,
 })
 
 const emit = defineEmits<{
@@ -145,8 +151,8 @@ const resolvedPresentation = computed<Presentation>(() => {
   return props.presentation
 })
 
-/** Sous `lg` (1024px) : `tallSheet` en pleine hauteur pour masquer la page derrière. */
-const tallSheetFullBleed = ref(true)
+/** Viewport &lt; Tailwind `lg` : utilisé seulement si `tallSheetMobileFullBleed` est activé. */
+const viewportBelowLg = ref(false)
 let removeTallSheetBleedMql: (() => void) | null = null
 
 function syncTallSheetBleedMql() {
@@ -154,15 +160,19 @@ function syncTallSheetBleedMql() {
   removeTallSheetBleedMql = null
   if (typeof window === 'undefined') return
   const mql = window.matchMedia('(max-width: 1023px)')
-  tallSheetFullBleed.value = mql.matches
+  viewportBelowLg.value = mql.matches
   const onChange = () => {
-    tallSheetFullBleed.value = mql.matches
+    viewportBelowLg.value = mql.matches
   }
   mql.addEventListener('change', onChange)
   removeTallSheetBleedMql = () => mql.removeEventListener('change', onChange)
 }
 
 syncTallSheetBleedMql()
+
+const tallSheetUsesFullBleed = computed(
+  () => !!props.tallSheetMobileFullBleed && viewportBelowLg.value,
+)
 
 const surfaceRef = ref<HTMLElement | null>(null)
 const modalBodyRef = ref<HTMLElement | null>(null)
@@ -396,7 +406,7 @@ const surfaceStyles = computed<Record<string, string>>(() => {
     base.borderBottomRightRadius = '0'
     base.paddingBottom = `calc(${safeBottom.value}px + ${keyboardHeight.value}px)`
     if (pres === 'tallSheet') {
-      if (tallSheetFullBleed.value) {
+      if (tallSheetUsesFullBleed.value) {
         base.height = '100dvh'
         base.maxHeight = '100dvh'
       } else {
@@ -458,7 +468,7 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 
         <transition :name="transitionName" appear>
           <div
-            v-if="isOpenInternal && !isClosing"
+            v-if="isOpenInternal"
             ref="surfaceRef"
             class="pinova-modal-surface"
             :class="[
@@ -653,10 +663,10 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 
 .pinova-modal-sheet-drag-affordance::after {
   content: '';
-  width: 40px;
+  width: 38px;
   height: 4px;
   border-radius: 999px;
-  background-color: rgba(120, 120, 128, 0.42);
+  background-color: rgba(120, 120, 128, 0.36);
 }
 
 :global(.dark) .pinova-modal-sheet-drag-affordance::after {

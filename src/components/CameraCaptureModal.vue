@@ -1,26 +1,28 @@
 <script setup lang="ts">
 /**
- * CameraCaptureModal — capture photo via getUserMedia (webcam PC + caméra mobile).
- * Modal plein écran, blur, preview live, snap → File.
- *
- * Usage :
- *   <CameraCaptureModal v-model="open" @capture="(file) => onFile(file)" />
- *
- * - PC : utilise getUserMedia (front/back si dispo)
- * - Mobile : idem (résultat plus fiable que <input capture> sur PWA)
- * - Émet un File JPEG ~92 % qualité, dimensions natives du flux
- * - Permission refusée / pas de caméra : message d'erreur clair
- * - Bascule front / arrière si plusieurs devices
+ * CameraCaptureModal — capture photo (canvas JPEG) ou vidéo (MediaRecorder) via getUserMedia.
+ * Les permissions caméra (+ micro pour la vidéo) ne sont demandées qu’à l’ouverture du flux,
+ * après que l’utilisateur a explicitement choisi « Caméra ».
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from '../i18n'
 import { pushToast } from '../composables/useToast'
 
-const props = defineProps<{
-  modelValue: boolean
-  /** Préfixe nom de fichier (ex. "pin", "story"). Default "capture". */
-  filenamePrefix?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean
+    filenamePrefix?: string
+    /** Active l’onglet / mode vidéo (story mobile). Les pins mobile restent photo uniquement. */
+    allowVideo?: boolean
+    /** Durée max d’un clip caméra (secondes). */
+    maxVideoSeconds?: number
+  }>(),
+  {
+    filenamePrefix: 'capture',
+    allowVideo: false,
+    maxVideoSeconds: 120,
+  },
+)
 
 const emit = defineEmits<{
   (e: 'update:modelValue', open: boolean): void
@@ -36,10 +38,23 @@ const errorMessage = ref<string | null>(null)
 const facing = ref<'user' | 'environment'>('environment')
 const hasMultipleDevices = ref(false)
 
+/** Mode UX : photo ou vidéo (uniquement si allowVideo). */
+const captureKind = ref<'photo' | 'video'>('photo')
+
+const isRecording = ref(false)
+let mediaRecorder: MediaRecorder | null = null
+let recordingChunks: BlobPart[] = []
+let recordingMimeType = ''
+let recordTimerId: ReturnType<typeof setTimeout> | null = null
+
 const open = computed({
   get: () => props.modelValue,
   set: (v: boolean) => emit('update:modelValue', v),
 })
+
+const modalTitle = computed(() =>
+  captureKind.value === 'video' && props.allowVideo ? t('camera.titleVideo') : t('camera.title'),
+)
 
 async function detectMultipleCameras() {
   try {
@@ -51,18 +66,71 @@ async function detectMultipleCameras() {
   }
 }
 
+function preferredRecorderMime(): string | undefined {
+  if (typeof MediaRecorder === 'undefined') return undefined
+  const candidates = [
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+  ]
+  for (const mime of candidates) {
+    if (MediaRecorder.isTypeSupported(mime)) return mime
+  }
+  return undefined
+}
+
+/** Annule un enregistrement sans émettre de fichier (fermeture modale, changement de flux). */
+function abortActiveRecordingDiscard() {
+  if (recordTimerId) {
+    clearTimeout(recordTimerId)
+    recordTimerId = null
+  }
+  if (mediaRecorder) {
+    mediaRecorder.onstop = null
+    if (mediaRecorder.state !== 'inactive') {
+      try {
+        mediaRecorder.stop()
+      } catch {
+        /* ignore */
+      }
+    }
+    mediaRecorder = null
+  }
+  recordingChunks = []
+  isRecording.value = false
+}
+
+/** Arrêt demandé par l’utilisateur : laisse `onstop` assembler le fichier. */
+function stopRecordingUserFinalize() {
+  if (recordTimerId) {
+    clearTimeout(recordTimerId)
+    recordTimerId = null
+  }
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    try {
+      mediaRecorder.stop()
+    } catch {
+      finalizeRecording()
+    }
+  } else {
+    finalizeRecording()
+  }
+}
+
 async function startStream() {
   errorMessage.value = null
   initializing.value = true
+  abortActiveRecordingDiscard()
   try {
     if (!navigator.mediaDevices?.getUserMedia) {
       errorMessage.value = t('camera.error.unsupported')
       return
     }
-    /* Stop existing stream avant de relancer (switch facing). */
-    stopStream()
+    stopStreamInner()
+    const wantAudio = props.allowVideo && captureKind.value === 'video'
     const constraints: MediaStreamConstraints = {
-      audio: false,
+      audio: wantAudio ? { echoCancellation: true, noiseSuppression: true } : false,
       video: {
         facingMode: { ideal: facing.value },
         width: { ideal: 1920 },
@@ -76,14 +144,17 @@ async function startStream() {
       try {
         await videoEl.value.play()
       } catch {
-        /* autoplay refusé : l'utilisateur doit toucher la vidéo */
+        /* autoplay refusé */
       }
     }
     void detectMultipleCameras()
-  } catch (err: any) {
-    const name = err?.name || ''
+  } catch (err: unknown) {
+    const name = (err as { name?: string })?.name || ''
     if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-      errorMessage.value = t('camera.error.permission')
+      errorMessage.value =
+        captureKind.value === 'video' && props.allowVideo
+          ? t('camera.error.permissionAV')
+          : t('camera.error.permission')
     } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
       errorMessage.value = t('camera.error.noDevice')
     } else {
@@ -94,7 +165,8 @@ async function startStream() {
   }
 }
 
-function stopStream() {
+function stopStreamInner() {
+  abortActiveRecordingDiscard()
   if (stream.value) {
     stream.value.getTracks().forEach((trk) => trk.stop())
     stream.value = null
@@ -109,16 +181,24 @@ function stopStream() {
 }
 
 function close() {
-  stopStream()
+  stopStreamInner()
   open.value = false
 }
 
 async function flipCamera() {
+  if (isRecording.value) return
   facing.value = facing.value === 'environment' ? 'user' : 'environment'
   await startStream()
 }
 
-async function capture() {
+async function setCaptureKind(kind: 'photo' | 'video') {
+  if (!props.allowVideo && kind === 'video') return
+  if (captureKind.value === kind) return
+  captureKind.value = kind
+  await startStream()
+}
+
+async function capturePhoto() {
   if (!videoEl.value || !stream.value) return
   const v = videoEl.value
   const w = v.videoWidth
@@ -132,8 +212,6 @@ async function capture() {
   canvas.height = h
   const ctx = canvas.getContext('2d')
   if (!ctx) return
-  /* Miroir horizontal si caméra front (UX naturelle, mais on enregistre l'image
-     telle qu'elle apparaît). */
   if (facing.value === 'user') {
     ctx.translate(w, 0)
     ctx.scale(-1, 1)
@@ -153,19 +231,81 @@ async function capture() {
   close()
 }
 
+function finalizeRecording() {
+  isRecording.value = false
+  const mime = recordingMimeType || 'video/webm'
+  const blob = new Blob(recordingChunks, { type: mime })
+  recordingChunks = []
+  mediaRecorder = null
+  if (!blob.size) {
+    pushToast({ message: t('camera.error.recordEmpty'), kind: 'warning' })
+    return
+  }
+  const prefix = props.filenamePrefix || 'capture'
+  const ext = mime.includes('mp4') ? 'mp4' : 'webm'
+  const file = new File([blob], `${prefix}-${Date.now()}.${ext}`, { type: mime })
+  emit('capture', file)
+  close()
+}
+
+function toggleVideoRecord() {
+  if (!stream.value || initializing.value || errorMessage.value) return
+  if (!props.allowVideo || captureKind.value !== 'video') return
+
+  if (typeof MediaRecorder === 'undefined') {
+    pushToast({ message: t('camera.error.recordUnsupported'), kind: 'warning' })
+    return
+  }
+
+  if (!isRecording.value) {
+    const mimeType = preferredRecorderMime()
+    recordingChunks = []
+    recordingMimeType = mimeType || 'video/webm'
+    try {
+      mediaRecorder = mimeType
+        ? new MediaRecorder(stream.value, { mimeType })
+        : new MediaRecorder(stream.value)
+    } catch {
+      pushToast({ message: t('camera.error.recordUnsupported'), kind: 'warning' })
+      return
+    }
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) recordingChunks.push(e.data)
+    }
+    mediaRecorder.onstop = () => finalizeRecording()
+    mediaRecorder.start(250)
+    isRecording.value = true
+    const ms = Math.max(5, props.maxVideoSeconds) * 1000
+    recordTimerId = window.setTimeout(() => {
+      stopRecordingUserFinalize()
+    }, ms)
+    return
+  }
+
+  stopRecordingUserFinalize()
+}
+
 watch(
   () => props.modelValue,
   (v) => {
     if (v) {
+      if (!props.allowVideo) captureKind.value = 'photo'
       void startStream()
     } else {
-      stopStream()
+      stopStreamInner()
     }
   },
 )
 
+watch(
+  () => props.allowVideo,
+  (av) => {
+    if (!av) captureKind.value = 'photo'
+  },
+)
+
 onBeforeUnmount(() => {
-  stopStream()
+  stopStreamInner()
 })
 </script>
 
@@ -177,16 +317,16 @@ onBeforeUnmount(() => {
       @click.self="close"
     >
       <div
-        class="relative w-full h-full sm:h-auto sm:max-w-3xl sm:max-h-[90vh] sm:rounded-3xl overflow-hidden bg-black/85 backdrop-blur-2xl backdrop-saturate-150 ring-1 ring-white/10 flex flex-col"
+        class="relative flex h-full w-full flex-col overflow-hidden bg-neutral-100/95 text-neutral-900 shadow-xl ring-1 ring-black/[0.08] backdrop-blur-2xl dark:bg-black/85 dark:text-white dark:ring-white/10 sm:h-auto sm:max-h-[90vh] sm:max-w-3xl sm:rounded-3xl"
       >
         <!-- Header -->
-        <div class="flex items-center justify-between px-4 py-3 text-white border-b border-white/10">
-          <h2 class="text-sm font-semibold tracking-wide uppercase">
-            {{ t('camera.title') }}
+        <div class="flex shrink-0 items-center justify-between border-b border-neutral-200/90 px-4 py-3 dark:border-white/10">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-800 dark:text-white">
+            {{ modalTitle }}
           </h2>
           <button
             type="button"
-            class="grid h-9 w-9 place-items-center rounded-full bg-white/10 hover:bg-white/20 transition"
+            class="grid h-9 w-9 place-items-center rounded-full bg-neutral-200/80 text-neutral-800 transition hover:bg-neutral-300/90 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
             :aria-label="t('common.close')"
             @click="close"
           >
@@ -194,11 +334,41 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
+        <div
+          v-if="allowVideo"
+          class="flex shrink-0 justify-center gap-2 border-b border-neutral-200/80 px-4 py-2 dark:border-white/10"
+        >
+          <button
+            type="button"
+            class="rounded-full px-4 py-2 text-xs font-black uppercase tracking-wide transition"
+            :class="
+              captureKind === 'photo'
+                ? 'bg-pink-700 text-white dark:bg-pink-600'
+                : 'bg-neutral-200/80 text-neutral-600 dark:bg-white/10 dark:text-white/70'
+            "
+            @click="void setCaptureKind('photo')"
+          >
+            {{ t('camera.mode.photo') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-full px-4 py-2 text-xs font-black uppercase tracking-wide transition"
+            :class="
+              captureKind === 'video'
+                ? 'bg-pink-700 text-white dark:bg-pink-600'
+                : 'bg-neutral-200/80 text-neutral-600 dark:bg-white/10 dark:text-white/70'
+            "
+            @click="void setCaptureKind('video')"
+          >
+            {{ t('camera.mode.video') }}
+          </button>
+        </div>
+
         <!-- Preview -->
-        <div class="relative flex-1 min-h-0 bg-black">
+        <div class="relative min-h-0 flex-1 bg-neutral-950 dark:bg-black">
           <video
             ref="videoEl"
-            class="w-full h-full object-contain"
+            class="h-full w-full object-contain"
             :class="facing === 'user' ? 'scale-x-[-1]' : ''"
             playsinline
             muted
@@ -206,7 +376,7 @@ onBeforeUnmount(() => {
           />
           <div
             v-if="initializing"
-            class="absolute inset-0 grid place-items-center text-white/80 text-sm"
+            class="absolute inset-0 grid place-items-center text-sm text-neutral-100"
           >
             <div class="flex flex-col items-center gap-3">
               <div class="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -215,44 +385,87 @@ onBeforeUnmount(() => {
           </div>
           <div
             v-else-if="errorMessage"
-            class="absolute inset-0 grid place-items-center text-center text-white/85 text-sm px-6"
+            class="absolute inset-0 grid place-items-center px-6 text-center text-sm text-white/85"
           >
-            <div class="flex flex-col items-center gap-3 max-w-sm">
+            <div class="flex max-w-sm flex-col items-center gap-3">
               <span class="material-symbols-outlined text-4xl text-rose-300">videocam_off</span>
               <p>{{ errorMessage }}</p>
               <button
                 type="button"
-                class="mt-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold uppercase tracking-wider"
+                class="mt-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-white/20"
                 @click="startStream"
               >
                 {{ t('camera.retry') }}
               </button>
             </div>
           </div>
+          <div
+            v-if="isRecording"
+            class="pointer-events-none absolute left-4 top-4 flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/15 backdrop-blur-md"
+          >
+            <span class="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+            {{ t('camera.recording') }}
+          </div>
         </div>
 
         <!-- Controls -->
-        <div class="flex items-center justify-around px-4 py-4 bg-black/40 backdrop-blur-md border-t border-white/10">
+        <div class="flex shrink-0 items-center justify-around border-t border-white/10 bg-black/40 px-4 py-4 backdrop-blur-md">
           <button
             type="button"
-            class="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 transition disabled:opacity-30"
-            :disabled="!hasMultipleDevices || initializing"
+            class="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 disabled:opacity-30"
+            :disabled="!hasMultipleDevices || initializing || isRecording"
             :aria-label="t('camera.flip')"
             @click="flipCamera"
           >
             <span class="material-symbols-outlined">cameraswitch</span>
           </button>
+
+          <!-- Photo shutter -->
           <button
+            v-if="captureKind === 'photo' || !allowVideo"
             type="button"
-            class="relative grid h-16 w-16 place-items-center rounded-full bg-white text-pink-700 shadow-xl ring-4 ring-white/20 hover:scale-105 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            class="relative grid h-16 w-16 place-items-center rounded-full bg-white text-pink-700 shadow-xl ring-4 ring-white/20 transition hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="!stream || initializing || !!errorMessage"
             :aria-label="t('camera.shutter')"
-            @click="capture"
+            @click="capturePhoto"
           >
             <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1">photo_camera</span>
           </button>
+
+          <!-- Video record -->
+          <button
+            v-else
+            type="button"
+            class="relative grid h-16 w-16 place-items-center rounded-full shadow-xl ring-4 transition hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            :class="
+              isRecording
+                ? 'bg-red-600 text-white ring-red-400/40'
+                : 'bg-white text-red-600 ring-white/20'
+            "
+            :disabled="!stream || initializing || !!errorMessage"
+            :aria-label="isRecording ? t('camera.stopRecording') : t('camera.startRecording')"
+            @click="toggleVideoRecord"
+          >
+            <span
+              v-if="isRecording"
+              class="h-7 w-7 rounded-md bg-white"
+            />
+            <span
+              v-else
+              class="material-symbols-outlined text-4xl"
+              style="font-variation-settings: 'FILL' 1"
+            >fiber_manual_record</span>
+          </button>
+
           <span class="h-11 w-11" aria-hidden="true" />
         </div>
+
+        <p
+          v-if="allowVideo && captureKind === 'video' && !errorMessage"
+          class="shrink-0 px-4 pb-3 text-center text-[11px] leading-relaxed text-white/50"
+        >
+          {{ t('camera.videoModeHint') }}
+        </p>
       </div>
     </div>
   </Teleport>

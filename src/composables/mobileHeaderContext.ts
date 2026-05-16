@@ -21,6 +21,13 @@ export function setMobileProfileTrailing(payload: MobileProfileTrailing | null) 
   mobileProfileTrailing.value = payload
 }
 
+/** Tiroir navigation profil ouvert (mobile, mon profil) — masque barre page + FAB création dans `App.vue`. */
+export const profileNavMobileDrawerOpen = ref(false)
+
+export function setProfileNavMobileDrawerOpen(open: boolean) {
+  profileNavMobileDrawerOpen.value = open
+}
+
 /** Bouton « plus » tableau (détail board) — rendu dans `AppMobilePageHeader` (fixe). */
 export type MobileBoardMoreTrailing = {
   ariaLabel: string

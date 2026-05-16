@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useMobileCreateChooser } from '../composables/useMobileCreateChooser'
+import { profileNavMobileDrawerOpen } from '../composables/mobileHeaderContext'
 import { emitMicroFeedback } from '../composables/useMicroFeedback'
 
 const route = useRoute()
@@ -61,6 +62,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
 
       <div class="flex min-w-0 flex-1 flex-col items-center justify-start">
         <button
+          v-if="!profileNavMobileDrawerOpen"
           type="button"
           class="-mt-3 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pink-700 dark:bg-pink-600 text-white shadow-lg shadow-pink-700/30 transition hover:bg-pink-800 dark:hover:opacity-90 active:scale-95"
           :aria-label="t('nav.create')"

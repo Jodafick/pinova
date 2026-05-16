@@ -72,9 +72,10 @@ function openCameraCapture() {
 function onCameraCaptured(file: File) {
   void setMediaFile(file)
 }
-/** Retouche image (mobile, breakpoint lg) avant l'étape méta — même composant que les stories. */
+/** Retouche image (mobile, breakpoint lg) — étape 2 avant formulaire. */
 const pinMobilePendingImage = ref<File | null>(null)
-const pinMobileEditorOpen = ref(false)
+/** Après rognage : retour depuis l’étape 3 rouvre l’éditeur avec le fichier courant. */
+const mobileReturnToEditOnBack = ref(false)
 const pinMobileMetaScrollRef = ref<HTMLElement | null>(null)
 const pinMobileShellRef = ref<HTMLElement | null>(null)
 const pinMobileHeaderSwipeRef = ref<HTMLElement | null>(null)
@@ -158,7 +159,8 @@ const editSlug = computed(() => (route.name === 'edit-pin' ? String(route.params
 const isEditMode = computed(() => editSlug.value.length > 0)
 const loadingEdit = ref(false)
 const createStep = ref<1 | 2>(1)
-const mobileCreateStep = ref<'media' | 'meta'>(isEditMode.value ? 'meta' : 'media')
+type MobilePinStep = 'pick' | 'edit' | 'meta'
+const mobileCreateStep = ref<MobilePinStep>(isEditMode.value ? 'meta' : 'pick')
 
 const existingImageUrl = ref<string | null>(null)
 const existingStoryVideoUrl = ref<string | null>(null)
@@ -320,12 +322,13 @@ onMounted(async () => {
       loadingEdit.value = false
     }
   }
-
-  await loadBoards()
 })
-watch(currentUser, async () => {
-  await loadBoards()
-}, { immediate: true })
+
+watch(
+  () => currentUser.value?.boards,
+  () => void loadBoards(),
+  { immediate: true, deep: true },
+)
 
 watch(categorySearch, (value) => {
   if (categorySearchTimer) clearTimeout(categorySearchTimer)
@@ -348,6 +351,10 @@ function clearStoryVideo() {
 }
 
 async function runVideoModeration(file: File) {
+  if (isLgDown.value) {
+    pendingSensitiveBlur.value = false
+    return
+  }
   if (!file.type.startsWith('video/')) return
   const gen = ++mediaScanGeneration
   mediaModerationPending.value = true
@@ -377,6 +384,10 @@ async function runVideoModeration(file: File) {
 }
 
 async function runImageModeration(file: File) {
+  if (isLgDown.value) {
+    pendingSensitiveBlur.value = false
+    return
+  }
   if (!file.type.startsWith('image/')) return
   const gen = ++mediaScanGeneration
   mediaModerationPending.value = true
@@ -423,15 +434,15 @@ function pinMobileUsesCropEditor(file: File) {
 }
 
 function closePinMobileCropEditor() {
-  pinMobileEditorOpen.value = false
   pinMobilePendingImage.value = null
+  mobileCreateStep.value = 'pick'
 }
 
 function onPinMobileCropCancel() {
   closePinMobileCropEditor()
 }
 
-async function commitPickedImageFile(file: File) {
+async function commitPickedImageFile(file: File, opts?: { fromCrop?: boolean }) {
   if (storyVideoPreviewUrl.value) URL.revokeObjectURL(storyVideoPreviewUrl.value)
   storyVideoFile.value = null
   storyVideoPreviewUrl.value = null
@@ -439,17 +450,18 @@ async function commitPickedImageFile(file: File) {
   imageFile.value = file
   imagePreviewUrl.value = URL.createObjectURL(file)
   void runImageModeration(file)
+  mobileReturnToEditOnBack.value = !!opts?.fromCrop
   mobileCreateStep.value = 'meta'
   if (isLgDown.value) createStep.value = 2
 }
 
 async function onPinMobileCropped(file: File) {
-  closePinMobileCropEditor()
-  await commitPickedImageFile(file)
+  pinMobilePendingImage.value = null
+  await commitPickedImageFile(file, { fromCrop: true })
 }
 
 function mobilePinMetaBack() {
-  if (pinMobileEditorOpen.value) {
+  if (mobileCreateStep.value === 'edit') {
     closePinMobileCropEditor()
     return
   }
@@ -457,7 +469,19 @@ function mobilePinMetaBack() {
     leaveCreateFlow()
     return
   }
-  mobileCreateStep.value = 'media'
+  if (mobileCreateStep.value === 'meta') {
+    if (
+      mobileReturnToEditOnBack.value &&
+      imageFile.value &&
+      pinMobileUsesCropEditor(imageFile.value)
+    ) {
+      pinMobilePendingImage.value = imageFile.value
+      mobileCreateStep.value = 'edit'
+      return
+    }
+    clearStep2Media()
+    return
+  }
 }
 
 async function setMediaFile(file: File) {
@@ -478,6 +502,7 @@ async function setMediaFile(file: File) {
     storyVideoFile.value = file
     storyVideoPreviewUrl.value = URL.createObjectURL(file)
     void runVideoModeration(file)
+    mobileReturnToEditOnBack.value = false
     mobileCreateStep.value = 'meta'
     if (isLgDown.value) createStep.value = 2
     return
@@ -485,7 +510,7 @@ async function setMediaFile(file: File) {
   if (file.type.startsWith('image/')) {
     if (pinMobileUsesCropEditor(file)) {
       pinMobilePendingImage.value = file
-      pinMobileEditorOpen.value = true
+      mobileCreateStep.value = 'edit'
       return
     }
     await commitPickedImageFile(file)
@@ -522,7 +547,8 @@ const clearStep2Media = () => {
   clearStoryVideo()
   existingImageUrl.value = null
   existingStoryVideoUrl.value = null
-  mobileCreateStep.value = 'media'
+  mobileReturnToEditOnBack.value = false
+  mobileCreateStep.value = 'pick'
   if (isLgDown.value && !isEditMode.value) createStep.value = 1
 }
 
@@ -684,14 +710,6 @@ const selectCategory = (selected: TopicOption) => {
   showCategoryDropdown.value = false
 }
 
-/** Fond image/vidéo derrière le formulaire : hauteur viewport uniquement. */
-const pinMobileBackdropVisible = computed(
-  () =>
-    isLgDown.value &&
-    !pinMobileEditorOpen.value &&
-    (isEditMode.value || (!isEditMode.value && mobileCreateStep.value === 'meta')),
-)
-
 function setPinVisibility(id: 'public' | 'followers' | 'private') {
   visibility.value = id
 }
@@ -707,10 +725,10 @@ function scrollPinMobileMetaToEnd() {
 }
 
 watch(
-  [isLgDown, mobileCreateStep, pinMobileEditorOpen, loadingEdit, isEditMode],
+  [isLgDown, mobileCreateStep, loadingEdit, isEditMode],
   () => {
     if (!isLgDown.value || loadingEdit.value) return
-    if (pinMobileEditorOpen.value) return
+    if (mobileCreateStep.value === 'edit') return
     if (!isEditMode.value && mobileCreateStep.value !== 'meta') return
     scrollPinMobileMetaToEnd()
   },
@@ -718,7 +736,7 @@ watch(
 )
 
 function onCreateMobileEdgeDismiss() {
-  if (pinMobileEditorOpen.value) {
+  if (mobileCreateStep.value === 'edit') {
     closePinMobileCropEditor()
     return
   }
@@ -726,7 +744,7 @@ function onCreateMobileEdgeDismiss() {
     mobilePinMetaBack()
     return
   }
-  if (!isEditMode.value && mobileCreateStep.value === 'media') {
+  if (!isEditMode.value && mobileCreateStep.value === 'pick') {
     leaveCreateFlow()
     return
   }
@@ -736,7 +754,7 @@ function onCreateMobileEdgeDismiss() {
 }
 
 function createMobileEdgeUsesFullSlideOut() {
-  if (pinMobileEditorOpen.value) return false
+  if (mobileCreateStep.value === 'edit') return false
   if (!isEditMode.value && mobileCreateStep.value === 'meta') return false
   return true
 }
@@ -773,32 +791,8 @@ usePinovaHeaderSwipeDismiss({
   >
     <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange">
 
-    <!-- Fond média : hauteur viewport fixe, indépendante du scroll du formulaire -->
     <div
-      v-if="pinMobileBackdropVisible"
-      class="pointer-events-none fixed inset-x-0 top-0 z-[1] h-[100svh] max-h-[100dvh] w-full overflow-hidden bg-[#0c0812]"
-    >
-      <video
-        v-if="storyVideoPreviewUrl || (!imagePreviewUrl && (existingStoryVideoUrl || '').trim())"
-        :src="storyVideoPreviewUrl || existingStoryVideoUrl || ''"
-        class="h-full w-full object-contain object-center"
-        autoplay
-        muted
-        loop
-        playsinline
-      />
-      <img
-        v-else-if="imagePreviewUrl || (existingImageUrl || '').trim()"
-        :src="(imagePreviewUrl || existingImageUrl || '').trim()"
-        alt=""
-        class="h-full w-full object-contain object-center"
-      />
-      <div v-else class="absolute left-1/2 top-1/4 h-52 w-52 -translate-x-1/2 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
-      <div class="absolute inset-0 bg-gradient-to-b from-black/15 via-black/30 via-45% to-[#060408] to-80%" />
-    </div>
-
-    <div
-      v-if="!isEditMode && mobileCreateStep === 'media'"
+      v-if="!isEditMode && mobileCreateStep === 'pick'"
       class="relative min-h-[100svh] px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
     >
       <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
@@ -817,12 +811,16 @@ usePinovaHeaderSwipeDismiss({
         <span class="h-9 w-9" />
       </header>
 
-      <div class="relative z-10 mx-auto mt-4 flex max-w-sm items-center gap-2 px-8">
-        <span class="h-1.5 w-[22px] rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
-        <span class="h-1.5 flex-1 rounded-full bg-white/15" />
+      <div class="relative z-10 mx-auto mt-4 flex max-w-sm items-center gap-1.5 px-2">
+        <span class="h-1.5 min-w-[20px] flex-1 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
+        <span class="h-1.5 min-w-[20px] flex-1 rounded-full bg-white/15" />
+        <span class="h-1.5 min-w-[20px] flex-1 rounded-full bg-white/15" />
       </div>
+      <p class="relative z-10 mx-auto mt-2 max-w-sm text-center text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/35">
+        {{ t('create.mobile.stepPick') }}
+      </p>
 
-      <section class="relative z-10 mx-auto mt-9 max-w-sm">
+      <section class="relative z-10 mx-auto mt-7 max-w-sm">
         <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[0.25em] text-white/30">{{ t('create.pinMobile.stepBadge') }}</p>
         <h1 class="text-[2.35rem] font-black leading-[1.05] tracking-[-0.08em]">
           {{ t('create.pinMobile.mediaTitleLine1') }}<br>{{ t('create.pinMobile.mediaTitleLine2') }}
@@ -864,9 +862,25 @@ usePinovaHeaderSwipeDismiss({
       </div>
     </div>
 
-    <!-- Étape meta mobile (création + édition) — sheet en moitié basse, fond média visible en haut -->
-    <div v-else class="pin-m-meta relative z-10 flex h-[100svh] flex-col justify-end overflow-hidden">
-      <header class="fixed inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/55 to-transparent px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]" ref="pinMobileHeaderSwipeRef" data-pinova-swipe-dismiss-handle>
+    <div
+      v-else-if="!isEditMode && mobileCreateStep === 'edit' && pinMobilePendingImage"
+      class="relative z-[80] min-h-[100svh]"
+    >
+      <StoryImageCropEditor
+        export-profile="pin"
+        :file="pinMobilePendingImage"
+        @cancel="onPinMobileCropCancel"
+        @apply="onPinMobileCropped"
+      />
+    </div>
+
+    <!-- Étape 3 mobile (création + édition) : aperçu cadré + formulaire scrollable -->
+    <div v-else class="pin-m-meta relative z-10 flex h-[100svh] flex-col overflow-hidden bg-[#060408]">
+      <header
+        ref="pinMobileHeaderSwipeRef"
+        class="relative z-30 flex shrink-0 items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]"
+        data-pinova-swipe-dismiss-handle
+      >
         <button
           type="button"
           class="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/45 text-white transition active:scale-95"
@@ -885,16 +899,45 @@ usePinovaHeaderSwipeDismiss({
         </button>
       </header>
 
+      <div
+        v-if="storyVideoPreviewUrl || (!imagePreviewUrl && (existingStoryVideoUrl || '').trim()) || imagePreviewUrl || (existingImageUrl || '').trim()"
+        class="relative z-20 shrink-0 px-4 pb-2"
+      >
+        <div
+          class="mx-auto flex max-h-[min(36svh,300px)] w-full max-w-md items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/55"
+        >
+          <video
+            v-if="storyVideoPreviewUrl || (!imagePreviewUrl && (existingStoryVideoUrl || '').trim())"
+            :src="storyVideoPreviewUrl || existingStoryVideoUrl || ''"
+            class="max-h-[min(36svh,300px)] w-full object-contain"
+            autoplay
+            muted
+            loop
+            playsinline
+          />
+          <img
+            v-else
+            :src="(imagePreviewUrl || existingImageUrl || '').trim()"
+            alt=""
+            class="max-h-[min(36svh,300px)] w-full object-contain"
+          >
+        </div>
+      </div>
+
       <main
         ref="pinMobileMetaScrollRef"
-        class="pin-m-sheet relative z-20 max-h-[55svh] overflow-y-auto overscroll-y-contain rounded-t-[2rem] border-t border-white/10 bg-black/65 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pt-3 shadow-[0_-24px_60px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl backdrop-saturate-150"
+        class="pin-m-sheet relative z-20 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain rounded-t-[2rem] border-t border-white/10 bg-black/72 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pt-3 shadow-[0_-12px_40px_-18px_rgba(0,0,0,0.45)] backdrop-blur-2xl backdrop-saturate-150"
       >
-        <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-white/25" aria-hidden="true" />
-        <div class="flex min-h-full flex-col justify-end">
-          <div class="mx-auto mb-3 flex max-w-md justify-center gap-2">
-            <span class="h-1.5 w-[22px] rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
-            <span class="h-1.5 w-[22px] rounded-full bg-white/15" />
+        <div class="mx-auto mb-3 h-1.5 w-10 shrink-0 rounded-full bg-white/25" aria-hidden="true" />
+        <div class="flex min-h-min flex-col justify-end">
+          <div v-if="!isEditMode" class="mx-auto mb-2 flex max-w-md shrink-0 justify-center gap-1.5 px-2">
+            <span class="h-1.5 min-w-[18px] flex-1 rounded-full bg-white/22" />
+            <span class="h-1.5 min-w-[18px] flex-1 rounded-full bg-white/22" />
+            <span class="h-1.5 min-w-[18px] flex-1 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
           </div>
+          <p v-if="!isEditMode" class="mb-3 shrink-0 text-center text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/35">
+            {{ t('create.mobile.stepMeta') }}
+          </p>
           <div class="mx-auto w-full max-w-md space-y-3">
           <div v-if="needsBirthDateForMedia" class="rounded-2xl border border-amber-200/25 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-100">
             {{ t('create.banner.birthDate') }}
@@ -1099,15 +1142,6 @@ usePinovaHeaderSwipeDismiss({
           </div>
         </div>
       </main>
-    </div>
-
-    <div v-if="pinMobileEditorOpen && pinMobilePendingImage" class="fixed inset-0 z-[80]">
-      <StoryImageCropEditor
-        export-profile="pin"
-        :file="pinMobilePendingImage"
-        @cancel="onPinMobileCropCancel"
-        @apply="onPinMobileCropped"
-      />
     </div>
   </div>
 

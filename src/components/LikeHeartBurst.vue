@@ -72,7 +72,7 @@ defineExpose({ burstAt })
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 60;
+  z-index: 120;
   /* Pas de capture d'event. */
 }
 

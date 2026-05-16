@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch, nextTick } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
@@ -24,6 +24,7 @@ import ReportContentModal from '../components/ReportContentModal.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { useDataSaver } from '../composables/useDataSaver'
 import { shareUrlWithFallback } from '../utils/shareFallback'
+import { safeHttpUrl } from '../utils/safeHttpUrl'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 import {
@@ -112,6 +113,8 @@ const savingPin = ref(false)
 const likingPin = ref(false)
 const followingAuthor = ref(false)
 const pinHeartBurst = ref(false)
+const pinHeartBurstKey = ref(0)
+let pinHeartBurstHideTimer: ReturnType<typeof setTimeout> | null = null
 const translatingDescription = ref(false)
 const submittingComment = ref(false)
 const downloadingPin = ref(false)
@@ -238,14 +241,18 @@ const handleLike = async () => {
 }
 
 function triggerPinHeartBurst() {
-  pinHeartBurst.value = false
-  window.setTimeout(() => {
-    pinHeartBurst.value = true
-  }, 0)
-  window.setTimeout(() => {
+  pinHeartBurstKey.value += 1
+  pinHeartBurst.value = true
+  if (pinHeartBurstHideTimer) clearTimeout(pinHeartBurstHideTimer)
+  pinHeartBurstHideTimer = window.setTimeout(() => {
     pinHeartBurst.value = false
+    pinHeartBurstHideTimer = null
   }, 980)
 }
+
+onBeforeUnmount(() => {
+  if (pinHeartBurstHideTimer) clearTimeout(pinHeartBurstHideTimer)
+})
 
 const handleMediaDoubleLike = () => {
   triggerPinHeartBurst()
@@ -806,7 +813,16 @@ const handleDownload = async () => {
     const plan = currentUser.value?.subscription?.plan || 'free'
     const quality = plan === 'pro' ? 'hd' : 'standard'
     const result = await getPinDownload(pin.value.slug, quality)
-    const url = result.download_url as string
+    const url = safeHttpUrl(result.download_url)
+    if (!url) {
+      try {
+        tab?.close()
+      } catch {
+        /* ignore */
+      }
+      await showAlert(t('pin.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
+      return
+    }
     if (tab && !tab.closed) {
       tab.location.href = url
       return
@@ -976,7 +992,7 @@ async function deletePinFromMenu() {
                 />
               </PinSensitiveMedia>
               <transition name="pin-detail-heart">
-                <div v-if="pinHeartBurst" class="pin-detail-heart-burst pointer-events-none">
+                <div v-if="pinHeartBurst" :key="pinHeartBurstKey" class="pin-detail-heart-burst pointer-events-none">
                   <span class="material-symbols-outlined">favorite</span>
                 </div>
               </transition>

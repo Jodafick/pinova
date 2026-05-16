@@ -427,8 +427,12 @@ async function applyCrop() {
 </script>
 
 <template>
-  <div class="story-editor-shell min-h-[100svh] bg-[#060408] text-white">
-    <header class="flex items-center justify-between px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
+  <div
+    class="story-editor-shell flex h-[100svh] max-h-[100dvh] flex-col overflow-hidden bg-[#060408] text-white"
+  >
+    <header
+      class="flex shrink-0 items-center justify-between border-b border-white/10 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
+    >
       <button type="button" class="story-editor-icon-btn" @click="emit('cancel')">
         <span class="material-symbols-outlined text-xl">close</span>
       </button>
@@ -438,12 +442,19 @@ async function applyCrop() {
       </button>
     </header>
 
-    <main class="px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]">
-      <section
-        ref="stageRef"
-        class="story-crop-stage relative mx-auto mt-2 aspect-[3/4] max-h-[min(58svh,520px)] w-full max-w-[min(92vw,440px)] touch-none overflow-visible"
+    <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <!-- Zone média ~ moitié d’écran, centrée, avec marge pour les poignées de rognage -->
+      <div
+        class="flex flex-1 min-h-0 items-center justify-center px-6 pb-3 pt-4 sm:px-8"
       >
-        <div class="absolute inset-0 overflow-hidden rounded-[1.6rem] border border-white/10 bg-black">
+        <div
+          class="max-w-full rounded-[1.75rem] border border-white/12 bg-black/35 p-4 shadow-[inset_0_1px_0_rgb(255255255/0.06)] sm:p-5"
+        >
+          <section
+            ref="stageRef"
+            class="story-crop-stage relative aspect-[3/4] h-[50svh] max-h-[50dvh] w-auto max-w-full touch-none overflow-hidden rounded-xl border border-white/15 bg-black"
+          >
+        <div class="absolute inset-0 overflow-hidden rounded-[inherit] bg-black">
           <div class="absolute inset-0 flex items-center justify-center">
             <div
               class="flex max-h-full max-w-full items-center justify-center will-change-transform"
@@ -477,7 +488,7 @@ async function applyCrop() {
           @pointercancel="onPointerUpRoot"
         >
           <div
-            class="absolute z-[2] box-border border-[2.5px] border-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+            class="absolute z-[2] box-border border-[2px] border-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
             :style="cropStyle()"
           >
             <div class="pointer-events-none absolute inset-0 border border-white/25" />
@@ -486,41 +497,47 @@ async function applyCrop() {
             <div class="pointer-events-none absolute inset-y-0 left-1/3 w-px bg-white/30" />
             <div class="pointer-events-none absolute inset-y-0 left-2/3 w-px bg-white/30" />
 
-            <div data-crop-move="1" class="absolute inset-[14px] z-[1] cursor-move touch-none" />
+            <div data-crop-move="1" class="absolute inset-[10px] z-[1] cursor-move touch-none sm:inset-[14px]" />
 
             <button
               type="button"
               data-crop-handle="nw"
-              class="absolute -left-1.5 -top-1.5 z-[3] grid h-9 w-9 touch-none place-items-center rounded-md border-2 border-white bg-pink-700 dark:bg-pink-600 shadow-md"
+              class="absolute left-0 top-0 z-[3] grid h-8 w-8 touch-none place-items-center rounded-md border-2 border-white bg-pink-700 dark:bg-pink-600 shadow-md sm:h-9 sm:w-9"
               tabindex="-1"
               aria-hidden="true"
             />
             <button
               type="button"
               data-crop-handle="ne"
-              class="absolute -right-1.5 -top-1.5 z-[3] grid h-9 w-9 touch-none place-items-center rounded-md border-2 border-white bg-pink-700 dark:bg-pink-600 shadow-md"
+              class="absolute right-0 top-0 z-[3] grid h-8 w-8 touch-none place-items-center rounded-md border-2 border-white bg-pink-700 dark:bg-pink-600 shadow-md sm:h-9 sm:w-9"
               tabindex="-1"
               aria-hidden="true"
             />
             <button
               type="button"
               data-crop-handle="sw"
-              class="absolute -bottom-1.5 -left-1.5 z-[3] grid h-9 w-9 touch-none place-items-center rounded-md border-2 border-white bg-pink-700 dark:bg-pink-600 shadow-md"
+              class="absolute bottom-0 left-0 z-[3] grid h-8 w-8 touch-none place-items-center rounded-md border-2 border-white bg-pink-700 dark:bg-pink-600 shadow-md sm:h-9 sm:w-9"
               tabindex="-1"
               aria-hidden="true"
             />
             <button
               type="button"
               data-crop-handle="se"
-              class="absolute -bottom-1.5 -right-1.5 z-[3] grid h-9 w-9 touch-none place-items-center rounded-md border-2 border-white bg-pink-700 dark:bg-pink-600 shadow-md"
+              class="absolute bottom-0 right-0 z-[3] grid h-8 w-8 touch-none place-items-center rounded-md border-2 border-white bg-pink-700 dark:bg-pink-600 shadow-md sm:h-9 sm:w-9"
               tabindex="-1"
               aria-hidden="true"
             />
           </div>
         </div>
-      </section>
+        </section>
+        </div>
+      </div>
 
-      <div class="mx-auto mt-4 flex w-full max-w-[min(92vw,440px)] flex-nowrap justify-center gap-1 px-0.5">
+      <!-- Actions collées au bas de l’écran -->
+      <footer
+        class="shrink-0 border-t border-white/10 bg-[#060408]/95 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-3 backdrop-blur-xl"
+      >
+        <div class="mx-auto flex w-full max-w-[min(92vw,440px)] flex-nowrap justify-center gap-1 px-0.5">
         <button
           v-for="a in aspectOptions"
           :key="a.key"
@@ -536,9 +553,9 @@ async function applyCrop() {
           <span class="material-symbols-outlined shrink-0 text-[18px] leading-none sm:text-[20px]">{{ a.icon }}</span>
           <span class="line-clamp-2 w-full text-center leading-tight">{{ a.label }}</span>
         </button>
-      </div>
+        </div>
 
-      <section class="mx-auto mt-4 max-w-md space-y-3 rounded-[1.5rem] border border-white/10 bg-white/[0.055] p-4 backdrop-blur">
+        <section class="mx-auto mt-3 max-w-md space-y-3 rounded-[1.25rem] border border-white/10 bg-white/[0.055] p-3 backdrop-blur sm:p-4">
         <div class="grid grid-cols-4 gap-2">
           <button type="button" class="story-editor-tool-btn" @click.stop="rotation = (rotation + 270) % 360">
             <span class="material-symbols-outlined text-xl sm:text-2xl">rotate_left</span>
@@ -557,8 +574,9 @@ async function applyCrop() {
             <span class="story-editor-tool-caption">{{ t('story.editor.flipVertical') }}</span>
           </button>
         </div>
-        <button type="button" class="w-full text-xs font-bold text-white/50" @click.stop="reset">{{ t('story.editor.reset') }}</button>
-      </section>
+        <button type="button" class="w-full pb-0.5 text-xs font-bold text-white/50" @click.stop="reset">{{ t('story.editor.reset') }}</button>
+        </section>
+      </footer>
     </main>
   </div>
 </template>

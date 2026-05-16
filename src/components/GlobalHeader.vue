@@ -429,7 +429,10 @@ onUnmounted(() => {
 
 watch(
   () => [route.fullPath, isAuthenticated.value],
-  () => void nextTick(() => syncHeaderHeightCssVar()),
+  () => {
+    closeDropdowns()
+    void nextTick(() => syncHeaderHeightCssVar())
+  },
 )
 </script>
 

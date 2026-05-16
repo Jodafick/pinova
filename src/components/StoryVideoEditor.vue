@@ -308,9 +308,10 @@ async function apply() {
 </script>
 
 <template>
-  <div class="story-editor-shell flex h-[100svh] flex-col bg-[#060408] text-white overflow-hidden">
-    <!-- Sticky header -->
-    <header class="sticky top-0 z-30 flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#060408]/85 px-4 py-3 backdrop-blur-xl" style="padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem)">
+  <div class="story-editor-shell flex h-[100svh] max-h-[100dvh] flex-col overflow-hidden bg-[#060408] text-white">
+    <header
+      class="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
+    >
       <button type="button" class="story-editor-icon-btn" :aria-label="t('common.cancel')" @click="emit('cancel')">
         <span class="material-symbols-outlined text-xl">close</span>
       </button>
@@ -324,42 +325,50 @@ async function apply() {
       </button>
     </header>
 
-    <main class="flex flex-1 min-h-0 flex-col overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]">
-      <!-- Preview -->
-      <section class="story-editor-stage mx-auto mt-4 flex w-full max-w-[min(78vw,420px)] items-center justify-center overflow-hidden rounded-[1.6rem] border border-white/10 bg-black">
-        <div class="story-editor-stage__frame relative aspect-[9/16] w-full">
-          <video
-            ref="videoRef"
-            :src="previewUrl"
-            class="absolute inset-0 m-auto h-full w-full object-contain"
-            :style="transformStyle"
-            playsinline
-            :muted="mutedExport"
-            preload="auto"
-            @loadedmetadata="onLoadedMetadata"
-            @timeupdate="onTimeUpdate"
-            @play="onPlay"
-            @pause="onPause"
-          />
-          <!-- Custom play/pause overlay -->
-          <button
-            type="button"
-            class="absolute inset-0 grid place-items-center text-white transition-opacity"
-            :class="isPlaying ? 'opacity-0 hover:opacity-100' : 'opacity-100'"
-            :aria-label="t('story.editor.playPause')"
-            @click="togglePlay"
-          >
-            <span class="grid h-16 w-16 place-items-center rounded-full bg-black/55 ring-1 ring-white/20 backdrop-blur-md">
-              <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1">
-                {{ isPlaying ? 'pause' : 'play_arrow' }}
+    <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <!-- Lecteur ~ moitié d’écran, pleine largeur, sans padding autour -->
+      <div class="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+        <section
+          class="story-editor-stage relative flex h-[50svh] max-h-[50dvh] w-full shrink-0 items-center justify-center bg-black"
+        >
+          <div class="story-editor-stage__frame relative h-full w-full overflow-hidden">
+            <video
+              ref="videoRef"
+              :src="previewUrl"
+              class="absolute inset-0 m-auto max-h-full max-w-full object-contain"
+              :style="transformStyle"
+              playsinline
+              :muted="mutedExport"
+              preload="auto"
+              @loadedmetadata="onLoadedMetadata"
+              @timeupdate="onTimeUpdate"
+              @play="onPlay"
+              @pause="onPause"
+            />
+            <!-- Custom play/pause overlay -->
+            <button
+              type="button"
+              class="absolute inset-0 grid place-items-center text-white transition-opacity"
+              :class="isPlaying ? 'opacity-0 hover:opacity-100' : 'opacity-100'"
+              :aria-label="t('story.editor.playPause')"
+              @click="togglePlay"
+            >
+              <span class="grid h-16 w-16 place-items-center rounded-full bg-black/55 ring-1 ring-white/20 backdrop-blur-md">
+                <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1">
+                  {{ isPlaying ? 'pause' : 'play_arrow' }}
+                </span>
               </span>
-            </span>
-          </button>
-        </div>
-      </section>
+            </button>
+          </div>
+        </section>
+      </div>
 
-      <!-- Trim dual-range (single bar, deux poignées) -->
-      <section class="mx-auto mt-5 w-full max-w-md rounded-[1.5rem] border border-white/10 bg-white/[0.05] p-4 backdrop-blur">
+      <!-- Même logique que l’éditeur image : tout le reste en bas -->
+      <footer
+        class="shrink-0 border-t border-white/10 bg-[#060408]/95 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-3 backdrop-blur-xl"
+      >
+        <!-- Trim dual-range -->
+        <section class="mx-auto w-full max-w-md rounded-[1.25rem] border border-white/10 bg-white/[0.05] p-3 backdrop-blur sm:p-4">
         <div class="mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.12em] text-white/55">
           <span>{{ t('story.editor.trim') }}</span>
           <span class="font-mono text-[10px] text-white/55">{{ formatSeconds(startTime) }} → {{ formatSeconds(endTime || duration) }}</span>
@@ -403,7 +412,7 @@ async function apply() {
       </section>
 
       <!-- Transformations -->
-      <section class="mx-auto mt-3 w-full max-w-md rounded-[1.5rem] border border-white/10 bg-white/[0.05] p-4 backdrop-blur">
+      <section class="mx-auto mt-3 w-full max-w-md rounded-[1.25rem] border border-white/10 bg-white/[0.05] p-3 backdrop-blur sm:p-4">
         <p class="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white/55">{{ t('story.editor.transform') }}</p>
         <div class="grid grid-cols-4 gap-2">
           <button
@@ -449,7 +458,7 @@ async function apply() {
       </section>
 
       <!-- Audio + hint -->
-      <section class="mx-auto mt-3 w-full max-w-md space-y-3 rounded-[1.5rem] border border-white/10 bg-white/[0.05] p-4 backdrop-blur">
+      <section class="mx-auto mt-3 w-full max-w-md space-y-3 rounded-[1.25rem] border border-white/10 bg-white/[0.05] p-3 backdrop-blur sm:p-4">
         <button
           type="button"
           class="story-editor-toggle"
@@ -461,6 +470,7 @@ async function apply() {
         </button>
         <p class="text-[11px] leading-5 text-white/38">{{ t('story.editor.videoHint') }}</p>
       </section>
+      </footer>
     </main>
   </div>
 </template>

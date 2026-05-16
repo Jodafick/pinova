@@ -81,8 +81,12 @@ const commentsOpen = ref(false)
 const actionsOpen = ref(false)
 const chromeVisible = ref(true)
 const heartBurst = ref(false)
+const heartBurstKey = ref(0)
+let heartBurstHideTimer: ReturnType<typeof setTimeout> | null = null
 const surfaceDragX = ref(0)
 const surfaceDragY = ref(0)
+/** Doigt / pointeur actif sur la surface — transitions CSS coupées pour suivre le geste sans « combat » visuel. */
+const surfacePointerActive = ref(false)
 const gestureStart = ref<{ x: number; y: number; at: number } | null>(null)
 const gestureIntent = ref<'none' | 'vertical' | 'horizontal'>('none')
 const followBadgeState = ref<'idle' | 'checking' | 'done'>(props.pin.isFollowing ? 'done' : 'idle')
@@ -141,14 +145,21 @@ const mediaSlides = computed(() => [
  * containing block `transform` + `overflow:hidden` qui casse les `fixed` et les `<transition>` des feuilles. */
 const surfaceStyle = computed(() => {
   if (isExitClosing.value) return undefined
+  const transition =
+    surfacePointerActive.value && (surfaceDragY.value > 0 || gestureIntent.value !== 'none')
+      ? 'none'
+      : undefined
   if (surfaceDragY.value > 0) {
-    const scale = Math.max(0.9, 1 - surfaceDragY.value / 1800)
+    const y = Math.round(surfaceDragY.value * 4) / 4
+    const scale = Math.max(0.9, 1 - y / 1800)
+    const radius = Math.min(22, Math.round(y / 7))
     return {
-      transform: `translate3d(0, ${surfaceDragY.value}px, 0) scale(${scale})`,
-      borderRadius: `${Math.min(22, surfaceDragY.value / 7)}px`,
+      ...(transition ? { transition } : {}),
+      transform: `translate3d(0, ${y}px, 0) scale(${scale})`,
+      borderRadius: `${radius}px`,
     }
   }
-  return undefined
+  return transition ? { transition } : undefined
 })
 const openingOriginStyle = computed<CSSProperties>(() => {
   const rect = props.openingOriginRect
@@ -199,12 +210,12 @@ function onVideoMetadata(e: Event) {
 }
 
 function burstAndLike() {
-  heartBurst.value = false
-  window.setTimeout(() => {
-    heartBurst.value = true
-  }, 0)
-  window.setTimeout(() => {
+  heartBurstKey.value += 1
+  heartBurst.value = true
+  if (heartBurstHideTimer) clearTimeout(heartBurstHideTimer)
+  heartBurstHideTimer = window.setTimeout(() => {
     heartBurst.value = false
+    heartBurstHideTimer = null
   }, 900)
 }
 
@@ -235,6 +246,7 @@ function clearLongPressTimer() {
 function beginGesture(x: number, y: number) {
   if (isExitClosing.value) return
   if (commentsOpen.value || actionsOpen.value) return
+  surfacePointerActive.value = true
   gestureStart.value = { x, y, at: Date.now() }
   gestureIntent.value = 'none'
   surfaceDragX.value = 0
@@ -269,7 +281,7 @@ function moveGesture(x: number, y: number) {
   if (absX > 12 || absY > 12) clearLongPressTimer()
 
   if (gestureIntent.value === 'vertical') {
-    surfaceDragY.value = Math.max(0, dy)
+    surfaceDragY.value = Math.max(0, Math.round(dy * 4) / 4)
     surfaceDragX.value = 0
   } else {
     const hasTarget = dx < 0 ? !!props.nextPin : !!props.previousPin
@@ -287,80 +299,84 @@ function resetSurfaceGesture() {
 }
 
 function endGesture(x: number, y: number) {
-  if (isExitClosing.value) return
-  const start = gestureStart.value
-  gestureStart.value = null
-  if (commentsOpen.value || actionsOpen.value) {
-    clearLongPressTimer()
-    longPressTriggered = false
-    resetSurfaceGesture()
-    return
-  }
-  if (!start) {
-    resetSurfaceGesture()
-    return
-  }
-  clearLongPressTimer()
-  if (longPressTriggered) {
-    longPressTriggered = false
-    resetSurfaceGesture()
-    return
-  }
-
-  const dx = x - start.x
-  const dy = y - start.y
-  const absX = Math.abs(dx)
-  const absY = Math.abs(dy)
-  const elapsed = Date.now() - start.at
-
-  if (absY > 74 && absY > absX * 1.12) {
-    clearSingleTapTimer()
-    if (dy > 0) {
-      gestureIntent.value = 'none'
-      startDismissClose()
+  try {
+    if (isExitClosing.value) return
+    const start = gestureStart.value
+    gestureStart.value = null
+    if (commentsOpen.value || actionsOpen.value) {
+      clearLongPressTimer()
+      longPressTriggered = false
+      resetSurfaceGesture()
       return
     }
-    resetSurfaceGesture()
-    commentsOpen.value = true
-    return
-  }
-
-  if (absX > 58 && absX > absY * 1.12) {
-    clearSingleTapTimer()
-    resetSurfaceGesture()
-    if (dx < 0 && props.nextPin) {
-      emit('next-pin')
-    } else if (dx > 0 && props.previousPin) {
-      emit('prev-pin')
+    if (!start) {
+      resetSurfaceGesture()
+      return
     }
-    return
-  }
+    clearLongPressTimer()
+    if (longPressTriggered) {
+      longPressTriggered = false
+      resetSurfaceGesture()
+      return
+    }
 
-  resetSurfaceGesture()
+    const dx = x - start.x
+    const dy = y - start.y
+    const absX = Math.abs(dx)
+    const absY = Math.abs(dy)
+    const elapsed = Date.now() - start.at
 
-  if (absX > 12 || absY > 12 || elapsed > 420) return
+    if (absY > 74 && absY > absX * 1.12) {
+      clearSingleTapTimer()
+      if (dy > 0) {
+        gestureIntent.value = 'none'
+        startDismissClose()
+        return
+      }
+      resetSurfaceGesture()
+      commentsOpen.value = true
+      return
+    }
 
-  const now = Date.now()
-  const doubleTap =
-    now - lastTapAt < 320 &&
-    Math.abs(x - lastTapX) < 34 &&
-    Math.abs(y - lastTapY) < 34
+    if (absX > 58 && absX > absY * 1.12) {
+      clearSingleTapTimer()
+      resetSurfaceGesture()
+      if (dx < 0 && props.nextPin) {
+        emit('next-pin')
+      } else if (dx > 0 && props.previousPin) {
+        emit('prev-pin')
+      }
+      return
+    }
 
-  if (doubleTap) {
+    resetSurfaceGesture()
+
+    if (absX > 12 || absY > 12 || elapsed > 420) return
+
+    const now = Date.now()
+    const doubleTap =
+      now - lastTapAt < 320 &&
+      Math.abs(x - lastTapX) < 34 &&
+      Math.abs(y - lastTapY) < 34
+
+    if (doubleTap) {
+      clearSingleTapTimer()
+      lastTapAt = 0
+      handleDoubleTapLike()
+      return
+    }
+
+    lastTapAt = now
+    lastTapX = x
+    lastTapY = y
     clearSingleTapTimer()
-    lastTapAt = 0
-    handleDoubleTapLike()
-    return
+    singleTapTimer = setTimeout(() => {
+      singleTapTimer = null
+      chromeVisible.value = !chromeVisible.value
+    }, 280)
+  } finally {
+    surfacePointerActive.value = false
   }
-
-  lastTapAt = now
-  lastTapX = x
-  lastTapY = y
-  clearSingleTapTimer()
-  singleTapTimer = setTimeout(() => {
-    singleTapTimer = null
-    chromeVisible.value = !chromeVisible.value
-  }, 280)
 }
 
 function onSurfacePointerDown(e: PointerEvent) {
@@ -380,6 +396,7 @@ function onSurfacePointerUp(e: PointerEvent) {
 }
 
 function onSurfacePointerCancel() {
+  surfacePointerActive.value = false
   clearLongPressTimer()
   longPressTriggered = false
   gestureStart.value = null
@@ -427,6 +444,7 @@ watch(
     chromeVisible.value = true
     commentsOpen.value = false
     actionsOpen.value = false
+    surfacePointerActive.value = false
     clearSingleTapTimer()
     clearLongPressTimer()
     resetSurfaceGesture()
@@ -455,6 +473,7 @@ watch(
 
 onUnmounted(() => {
   clearExitCloseTimer()
+  if (heartBurstHideTimer) clearTimeout(heartBurstHideTimer)
 })
 </script>
 
@@ -553,7 +572,14 @@ onUnmounted(() => {
             <div v-show="chromeVisible" class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/5 via-35% to-black/86 transition-opacity" />
             <div v-show="chromeVisible" class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-black/55 to-transparent transition-opacity" />
 
-            <aside v-show="chromeVisible" class="pin-mobile-rail">
+            <aside
+              v-show="chromeVisible"
+              class="pin-mobile-rail"
+              @touchstart.stop
+              @touchend.stop
+              @touchcancel.stop
+              @pointerdown.stop
+            >
               <div class="pin-mobile-avatar-wrap">
                 <router-link
                   :to="`/profile/${slide.pin.username}`"
@@ -678,7 +704,14 @@ onUnmounted(() => {
               </div>
             </aside>
 
-            <main v-show="chromeVisible" class="pin-mobile-caption">
+            <main
+              v-show="chromeVisible"
+              class="pin-mobile-caption"
+              @touchstart.stop
+              @touchend.stop
+              @touchcancel.stop
+              @pointerdown.stop
+            >
               <router-link
                 :to="`/profile/${slide.pin.username}`"
                 class="mb-1.5 block max-w-[calc(100%-3rem)] drop-shadow"
@@ -735,7 +768,7 @@ onUnmounted(() => {
     </div>
 
     <transition name="pin-mobile-heart">
-      <div v-if="heartBurst" class="pin-mobile-heart pointer-events-none">
+      <div v-if="heartBurst" :key="heartBurstKey" class="pin-mobile-heart pointer-events-none">
         <span class="pin-mobile-filled material-symbols-outlined">favorite</span>
         <span class="pin-mobile-heart-particles" aria-hidden="true">
           <span v-for="n in 7" :key="n" class="pin-mobile-filled pin-mobile-heart-particle material-symbols-outlined">favorite</span>

@@ -8,6 +8,7 @@ import { useI18n } from '../i18n'
 import StoryViewer from '../components/StoryViewer.vue'
 import StoryImageCropEditor from '../components/StoryImageCropEditor.vue'
 import StoryVideoEditor from '../components/StoryVideoEditor.vue'
+import CameraCaptureModal from '../components/CameraCaptureModal.vue'
 import {
   hasRequiredBirthDateForMediaPublish,
   isVerifiedAdultFromBirthDate,
@@ -39,13 +40,19 @@ const storyHeaderSwipeRef = ref<HTMLElement | null>(null)
 const { showAlert } = useAppModal()
 const { isAuthenticated, currentUser, fetchCurrentUser } = useAuth()
 
-/* 'caption' = étape 1 sur desktop (médiaquérie md+) : on saisit la légende avant
-   de choisir le media. Sur mobile, on garde le flux historique (media first). */
-const step = ref<'caption' | 'media' | 'image-edit' | 'video-edit' | 'meta'>(
-  isLgDown.value ? 'media' : 'caption',
+/* Desktop : étape « légende » puis choix média. Mobile : étape 1 = fichier ou caméra. */
+const step = ref<'caption' | 'pick' | 'image-edit' | 'video-edit' | 'meta'>(
+  isLgDown.value ? 'pick' : 'caption',
 )
+const storyCameraModalOpen = ref(false)
+function openStoryCameraCapture() {
+  storyCameraModalOpen.value = true
+}
+function onStoryCameraCaptured(file: File) {
+  void applyMediaFile(file)
+}
 function goCaptionToMedia() {
-  step.value = 'media'
+  step.value = 'pick'
 }
 const description = ref('')
 const imageFile = ref<File | null>(null)
@@ -55,7 +62,6 @@ const storyVideoPreviewUrl = ref<string | null>(null)
 const editingImageFile = ref<File | null>(null)
 const editingVideoFile = ref<File | null>(null)
 const galleryInput = ref<HTMLInputElement | null>(null)
-const cameraInput = ref<HTMLInputElement | null>(null)
 const publishedStory = ref<Pin | null>(null)
 const storyViewerOpen = ref(false)
 const storyMetaMainRef = ref<HTMLElement | null>(null)
@@ -105,8 +111,25 @@ function clearMediaSelection() {
   pendingSensitiveBlur.value = false
 }
 
-function goMediaStep() {
-  step.value = 'media'
+function goPickStep() {
+  editingImageFile.value = null
+  editingVideoFile.value = null
+  step.value = 'pick'
+}
+
+function storyMetaBack() {
+  if (imageFile.value && imagePreviewUrl.value && imageFile.value.type.startsWith('image/')) {
+    editingImageFile.value = imageFile.value
+    step.value = 'image-edit'
+    return
+  }
+  if (storyVideoFile.value && storyVideoPreviewUrl.value) {
+    editingVideoFile.value = storyVideoFile.value
+    step.value = 'video-edit'
+    return
+  }
+  goPickStep()
+  clearMediaSelection()
 }
 
 function setEditedImage(file: File) {
@@ -128,6 +151,10 @@ function setEditedVideo(file: File) {
 }
 
 async function runImageModeration(file: File) {
+  if (isLgDown.value) {
+    pendingSensitiveBlur.value = false
+    return
+  }
   if (!file.type.startsWith('image/')) return
   const gen = ++mediaScanGeneration
   mediaModerationPending.value = true
@@ -157,6 +184,10 @@ async function runImageModeration(file: File) {
 }
 
 async function runVideoModeration(file: File) {
+  if (isLgDown.value) {
+    pendingSensitiveBlur.value = false
+    return
+  }
   if (!isSupportedStoryVideoFile(file)) return
   const gen = ++mediaScanGeneration
   mediaModerationPending.value = true
@@ -319,15 +350,23 @@ watch(
 )
 
 function onStoryEdgeDismiss() {
-  if (step.value === 'media') {
+  if (step.value === 'pick') {
     leaveStoryFlow()
     return
   }
-  goMediaStep()
+  if (step.value === 'meta') {
+    storyMetaBack()
+    return
+  }
+  if (step.value === 'image-edit' || step.value === 'video-edit') {
+    goPickStep()
+    return
+  }
+  leaveStoryFlow()
 }
 
 function storyEdgeUsesFullSlideOut() {
-  return step.value === 'media'
+  return step.value === 'pick'
 }
 
 useEdgeSwipeBack(storyCreateShellRef, {
@@ -355,15 +394,6 @@ usePinovaHeaderSwipeDismiss({
       ref="galleryInput"
       type="file"
       accept="image/*,video/mp4,video/webm,video/quicktime,.mov"
-      class="hidden"
-      :disabled="mediaModerationPending || saving"
-      @change="(e) => void pickMedia(e)"
-    >
-    <input
-      ref="cameraInput"
-      type="file"
-      accept="image/*,video/mp4,video/webm,video/quicktime,.mov"
-      capture="environment"
       class="hidden"
       :disabled="mediaModerationPending || saving"
       @change="(e) => void pickMedia(e)"
@@ -418,7 +448,7 @@ usePinovaHeaderSwipeDismiss({
       </section>
     </div>
 
-    <div v-else-if="step === 'media'" class="story-media-step relative min-h-[100svh] px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
+    <div v-else-if="step === 'pick'" class="story-media-step relative min-h-[100svh] px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
       <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
       <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />
 
@@ -435,12 +465,16 @@ usePinovaHeaderSwipeDismiss({
         <span class="h-9 w-9" />
       </header>
 
-      <div class="relative z-10 mx-auto mt-4 flex max-w-sm items-center gap-2 px-8">
-        <span class="h-1.5 flex-1 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
-        <span class="h-1.5 flex-1 rounded-full bg-white/15" />
+      <div class="relative z-10 mx-auto mt-4 flex max-w-sm items-center gap-1.5 px-4">
+        <span class="h-1.5 min-w-[20px] flex-1 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
+        <span class="h-1.5 min-w-[20px] flex-1 rounded-full bg-white/15" />
+        <span class="h-1.5 min-w-[20px] flex-1 rounded-full bg-white/15" />
       </div>
+      <p class="relative z-10 mx-auto mt-2 max-w-sm text-center text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/35">
+        {{ t('create.mobile.stepPick') }}
+      </p>
 
-      <section class="relative z-10 mx-auto mt-9 max-w-sm story-enter-down">
+      <section class="relative z-10 mx-auto mt-7 max-w-sm story-enter-down">
         <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[0.25em] text-white/30">{{ t('story.standalone.stepBadge') }}</p>
         <h1 class="text-[2.35rem] font-black leading-[1.05] tracking-[-0.08em]">{{ t('story.standalone.mediaTitle') }}</h1>
         <p class="mt-3 text-sm leading-6 text-white/40">{{ t('story.standalone.mediaHint') }}</p>
@@ -464,7 +498,7 @@ usePinovaHeaderSwipeDismiss({
           type="button"
           class="story-pick-card min-h-40 border border-white/10 bg-white/[0.03]"
           :disabled="mediaModerationPending || saving"
-          @click="cameraInput?.click()"
+          @click="openStoryCameraCapture()"
         >
           <span class="story-pick-icon bg-white/5 text-pink-700 dark:text-pink-600">
             <span class="material-symbols-outlined text-3xl">videocam</span>
@@ -485,63 +519,90 @@ usePinovaHeaderSwipeDismiss({
     <StoryImageCropEditor
       v-else-if="step === 'image-edit' && editingImageFile"
       :file="editingImageFile"
-      @cancel="goMediaStep"
+      @cancel="goPickStep"
       @apply="setEditedImage"
     />
 
     <StoryVideoEditor
       v-else-if="step === 'video-edit' && editingVideoFile"
       :file="editingVideoFile"
-      @cancel="goMediaStep"
+      @cancel="goPickStep"
       @apply="setEditedVideo"
     />
 
     <div v-else-if="step === 'meta'" class="story-meta-step relative flex h-[100svh] flex-col overflow-hidden bg-[#060408]">
-      <div class="absolute inset-0 bg-[#0c0812]">
-        <img
-          v-if="imagePreviewUrl"
-          :src="imagePreviewUrl"
-          alt=""
-          class="h-full w-full object-contain"
-        >
-        <video
-          v-else-if="storyVideoPreviewUrl"
-          :src="storyVideoPreviewUrl"
-          class="h-full w-full object-contain"
-          autoplay
-          muted
-          loop
-          playsinline
-        />
-        <div v-else class="absolute left-1/2 top-1/4 h-52 w-52 -translate-x-1/2 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
-        <div class="absolute inset-0 bg-gradient-to-b from-black/15 via-black/30 via-45% to-[#060408] to-80%" />
-      </div>
-
-      <header ref="storyHeaderSwipeRef" class="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]" data-pinova-swipe-dismiss-handle>
+      <header
+        ref="storyHeaderSwipeRef"
+        class="relative z-30 flex shrink-0 items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]"
+        data-pinova-swipe-dismiss-handle
+      >
         <button
           type="button"
           class="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/45 text-white active:scale-95 transition"
           :aria-label="t('common.back')"
-          @click="goMediaStep"
+          @click="storyMetaBack()"
         >
           <span class="material-symbols-outlined text-xl">chevron_left</span>
         </button>
-        <button
-          type="button"
-          class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3 py-2 text-xs font-bold text-white/80 active:scale-95 transition"
-          :disabled="mediaModerationPending || saving"
-          @click="galleryInput?.click()"
-        >
-          <span class="material-symbols-outlined text-base">imagesmode</span>
-          {{ t('story.standalone.changeMedia') }}
-        </button>
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3 py-2 text-xs font-bold text-white/80 active:scale-95 transition"
+            :disabled="mediaModerationPending || saving"
+            @click="galleryInput?.click()"
+          >
+            <span class="material-symbols-outlined text-base">imagesmode</span>
+            {{ t('story.standalone.changeMedia') }}
+          </button>
+          <button
+            type="button"
+            class="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-black/50 text-white active:scale-95 transition"
+            :aria-label="t('story.standalone.cameraLabel')"
+            :disabled="mediaModerationPending || saving"
+            @click="openStoryCameraCapture()"
+          >
+            <span class="material-symbols-outlined text-xl">photo_camera</span>
+          </button>
+        </div>
       </header>
+
+      <div
+        v-if="imagePreviewUrl || storyVideoPreviewUrl"
+        class="relative z-20 shrink-0 px-4 pb-2"
+      >
+        <div class="mx-auto flex max-h-[min(36svh,300px)] w-full max-w-md items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/55">
+          <img
+            v-if="imagePreviewUrl"
+            :src="imagePreviewUrl"
+            alt=""
+            class="max-h-[min(36svh,300px)] w-full object-contain"
+          >
+          <video
+            v-else
+            :src="storyVideoPreviewUrl || ''"
+            class="max-h-[min(36svh,300px)] w-full object-contain"
+            autoplay
+            muted
+            loop
+            playsinline
+          />
+        </div>
+      </div>
 
       <main
         ref="storyMetaMainRef"
-        class="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-28"
+        class="relative z-20 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain rounded-t-[2rem] border-t border-white/10 bg-black/72 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-3 backdrop-blur-xl"
       >
-        <div class="flex min-h-full flex-col justify-end">
+        <div class="mx-auto mb-2 h-1.5 w-10 shrink-0 rounded-full bg-white/25" aria-hidden="true" />
+        <div class="mx-auto mb-2 flex max-w-md shrink-0 justify-center gap-1.5 px-2">
+          <span class="h-1.5 min-w-[18px] flex-1 rounded-full bg-white/22" />
+          <span class="h-1.5 min-w-[18px] flex-1 rounded-full bg-white/22" />
+          <span class="h-1.5 min-w-[18px] flex-1 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 via-rose-400 to-fuchsia-500" />
+        </div>
+        <p class="mb-3 shrink-0 text-center text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/35">
+          {{ t('create.mobile.stepMeta') }}
+        </p>
+        <div class="flex min-h-min flex-col justify-end">
           <div class="mx-auto w-full max-w-md space-y-3">
           <div v-if="mediaModerationPending" class="story-glass-card flex items-center gap-2 text-xs text-white/70 story-enter-up">
             <span class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-pink-700 border-t-transparent" />
@@ -590,6 +651,13 @@ usePinovaHeaderSwipeDismiss({
       v-model="storyViewerOpen"
       :pins="publishedStory ? [publishedStory] : []"
       @update:model-value="(open) => { if (!open) closePublishedStory() }"
+    />
+
+    <CameraCaptureModal
+      v-model="storyCameraModalOpen"
+      filename-prefix="story"
+      allow-video
+      @capture="onStoryCameraCaptured"
     />
   </div>
 </template>

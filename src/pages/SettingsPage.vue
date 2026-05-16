@@ -17,6 +17,12 @@ import { useAppModal } from '../composables/useAppModal'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
 import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
 import { useAppearance } from '../composables/useAppearance'
+import {
+  activateWebPushNotifications,
+  isWebPushActiveForUi,
+  isWebPushSupported,
+  type WebPushActivateError,
+} from '../utils/webPushClient'
 
 const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-profile', icon: 'person', labelKey: 'settings.nav.profile' },
@@ -265,41 +271,9 @@ const currencyOptionLabel = (currency: string) => {
   }
 }
 
-const urlBase64ToUint8Array = (base64String: string) => {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = window.atob(base64)
-  const outputArray = new Uint8Array(rawData.length)
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i)
-  }
-  return outputArray
-}
-
 const syncWebNotificationState = async () => {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-    webNotificationsEnabled.value = false
-    return
-  }
-  if (Notification.permission !== 'granted') {
-    webNotificationsEnabled.value = false
-    return
-  }
   try {
-    const keyResp = await api.get('notifications/push_public_key/')
-    const publicKey = String(keyResp.data?.public_key || '')
-    const enabled = !!keyResp.data?.enabled && !!publicKey
-    if (!enabled) {
-      webNotificationsEnabled.value = false
-      return
-    }
-    const registration = await navigator.serviceWorker.register('/pinova-push-sw.js', { scope: '/push/' })
-    const existingSub = await registration.pushManager.getSubscription()
-    if (!existingSub) {
-      webNotificationsEnabled.value = false
-      return
-    }
-    webNotificationsEnabled.value = true
+    webNotificationsEnabled.value = await isWebPushActiveForUi(api)
   } catch {
     webNotificationsEnabled.value = false
   }
@@ -307,44 +281,26 @@ const syncWebNotificationState = async () => {
 
 const activateWebNotifications = async () => {
   if (webNotificationsLoading.value) return
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+  if (!isWebPushSupported()) {
     webNotificationsError.value = t('settings.notifications.web.errorUnsupported')
     return
   }
   webNotificationsLoading.value = true
   webNotificationsError.value = ''
-  try {
-    const permission = await Notification.requestPermission()
-    if (permission !== 'granted') {
-      webNotificationsEnabled.value = false
-      webNotificationsError.value = t('settings.notifications.web.errorDenied')
-      return
-    }
-    const keyResp = await api.get('notifications/push_public_key/')
-    const publicKey = String(keyResp.data?.public_key || '')
-    const enabled = !!keyResp.data?.enabled && !!publicKey
-    if (!enabled) {
-      webNotificationsError.value = t('settings.notifications.web.errorUnavailable')
-      return
-    }
-    const registration = await navigator.serviceWorker.register('/pinova-push-sw.js', { scope: '/push/' })
-    const existingSub = await registration.pushManager.getSubscription()
-    const subscription = existingSub || await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
-    })
-    const json = subscription.toJSON() as any
-    await api.post('notifications/push_subscribe/', {
-      endpoint: json.endpoint,
-      p256dh: json.keys?.p256dh,
-      auth: json.keys?.auth,
-    })
+  const result = await activateWebPushNotifications(api)
+  webNotificationsLoading.value = false
+  if (result.ok) {
     webNotificationsEnabled.value = true
-  } catch {
-    webNotificationsError.value = t('settings.notifications.web.errorGeneric')
-  } finally {
-    webNotificationsLoading.value = false
+    return
   }
+  webNotificationsEnabled.value = false
+  const map: Record<WebPushActivateError, string> = {
+    unsupported: t('settings.notifications.web.errorUnsupported'),
+    denied: t('settings.notifications.web.errorDenied'),
+    unavailable: t('settings.notifications.web.errorUnavailable'),
+    generic: t('settings.notifications.web.errorGeneric'),
+  }
+  webNotificationsError.value = map[result.error]
 }
 
 onMounted(() => {

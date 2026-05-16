@@ -11,6 +11,25 @@ export const fr: Record<string, string> = {
   'camera.error.generic': 'Impossible d’accéder à la caméra.',
   'camera.error.notReady': 'La caméra n’est pas encore prête.',
   'camera.error.encode': 'L’encodage de la photo a échoué.',
+  'camera.titleVideo': 'Caméra',
+  'camera.mode.photo': 'Photo',
+  'camera.mode.video': 'Vidéo',
+  'camera.recording': 'Enregistrement…',
+  'camera.startRecording': 'Enregistrer une vidéo',
+  'camera.stopRecording': 'Arrêter',
+  'camera.videoModeHint':
+    'Le micro est utilisé pour le son de la vidéo. Touchez le cercle pour démarrer ou arrêter.',
+  'camera.error.permissionAV':
+    'Accès caméra ou micro refusé. Autorisez-les dans les paramètres du navigateur.',
+  'camera.error.recordUnsupported': 'L’enregistrement vidéo n’est pas pris en charge ici.',
+  'camera.error.recordEmpty': 'Vidéo vide — réessayez un peu plus longtemps.',
+
+  'create.mobile.stepPick': 'Étape 1',
+  'create.mobile.stepEdit': 'Étape 2',
+  'create.mobile.stepMeta': 'Étape 3',
+
+  'create.mobile.sourceChooserFootnote':
+    'À l’étape suivante : importer un fichier ou ouvrir la caméra — les permissions ne sont demandées qu’avec la caméra.',
 
   'story.standalone.captionFirstTitle': 'Donnez vie à votre story',
   'story.standalone.captionFirstHint': 'Une légende, une intention — vous choisirez votre média juste après.',
@@ -90,6 +109,16 @@ export const fr: Record<string, string> = {
   'nav.logout': 'Se déconnecter',
   'nav.premium': 'Passer à Premium',
   'nav.premium.badge': 'PLANS',
+  'mobile.profile.drawerHome': 'Fil d’actualité',
+  'mobile.profile.drawerSectionNav': 'Navigation',
+  'mobile.profile.drawerSectionOffers': 'Offres & création',
+  'mobile.profile.drawerSectionHelp': 'Aide et contact',
+  'mobile.profile.drawerSectionLegal': 'Mentions légales',
+  'mobile.profile.drawerPremium': 'Premium',
+  'mobile.profile.drawerCreator': 'Espace créateur',
+  'mobile.profile.drawerContact': 'Contact',
+  'mobile.profile.drawerReferralContest': 'Concours parrainage',
+  'mobile.profile.drawerReferralInvite': 'Inviter (parrainage)',
   'header.search.placeholder': 'Pins, créateurs, idées…',
   'header.nav.more': 'Plus',
   'header.search.results': 'Résultats',
@@ -601,6 +630,13 @@ export const fr: Record<string, string> = {
   'notifications.unreadCount': '{count} non lue(s)',
   'notifications.loadError': 'Impossible de charger les notifications.',
   'notifications.emptyHint': 'Vos notifications apparaîtront ici lorsque quelqu’un interagira avec vous.',
+  'notifications.prompt.title': 'Activer les notifications ?',
+  'notifications.prompt.body':
+    'Recevez une alerte dans votre navigateur quand quelqu’un vous suit, enregistre un pin ou vous envoie une activité. Vous pourrez toujours modifier ou désactiver cela dans Paramètres.',
+  'notifications.prompt.enable': 'Activer les notifications',
+  'notifications.prompt.later': 'Me le rappeler plus tard',
+  'notifications.prompt.decline': 'Non merci, ne plus proposer',
+  'notifications.prompt.enabledToast': 'Notifications navigateur activées.',
   'search.tryOther': 'Essayez d’autres mots-clés ou parcourez Explorer.',
   'search.promptHint': 'Tapez votre recherche puis appuyez sur Entrée ou Rechercher.',
 
@@ -830,6 +866,8 @@ export const fr: Record<string, string> = {
   'login.error.empty': 'Veuillez remplir tous les champs.',
   'login.error.generic': 'Erreur de connexion.',
   'login.error.google': 'Erreur de connexion avec Google.',
+  'login.error.googleNotReady':
+    'Google met encore à charger. Patientez une seconde ou actualisez la page, puis réessayez.',
   'login.error.field.noAccount': 'Aucun compte n’est associé à cette adresse e-mail.',
   'login.error.field.wrongPassword': 'Mot de passe incorrect.',
   'login.error.field.inactive': 'Ce compte est désactivé. Contactez le support si besoin.',

@@ -17,6 +17,7 @@ import AmbientGlow from './components/AmbientGlow.vue'
 import ImmersiveMediaViewer from './components/ui/ImmersiveMediaViewer.vue'
 import { useImmersiveViewer } from './composables/useImmersiveViewer'
 import AppToast from './components/AppToast.vue'
+import NotificationEnablePrompt from './components/NotificationEnablePrompt.vue'
 import { initPwaTheme } from './composables/usePwaTheme'
 import { initPwaContext } from './composables/usePwaContext'
 import { useEdgeSwipeBack } from './composables/useEdgeSwipeBack'
@@ -35,7 +36,9 @@ import {
   mobileHeaderTitleOverride,
   mobileMarkAllReadTrailing,
   mobileProfileTrailing,
+  profileNavMobileDrawerOpen,
 } from './composables/mobileHeaderContext'
+import { useNotificationPrompt } from './composables/useNotificationPrompt'
 
 /** Réf. du bouton ⋮ board : assignée dans le template ; `void` évite TS6133 (usage non vu par vue-tsc côté script). */
 void mobileBoardMoreButtonRef
@@ -47,6 +50,11 @@ const appShellRef = ref<HTMLElement | null>(null)
 /** Route « derrière » pour l’aperçu du geste edge-back (libellé discret). */
 const edgePeekSourcePath = ref('')
 const { fetchCurrentUser, isAuthenticated, currentUser } = useAuth()
+const {
+  notificationPromptOpen,
+  notificationPromptSnooze,
+  notificationPromptDecline,
+} = useNotificationPrompt()
 const { mobileCreateChooserOpen, openMobileCreateChooser } = useMobileCreateChooser()
 const { t, setLang, currentLang, languages } = useI18n()
 // Apply current language on app start (sets html lang/dir attributes).
@@ -173,12 +181,18 @@ const isMobileFullscreenRoute = computed(() => typeof route.query.pin === 'strin
  */
 const isHomeRoute = computed(() => route.name === 'home' || route.path === '/')
 
+/** Barre titre mobile + FAB créer masqués quand le menu latéral profil est ouvert. */
+const suppressMobileChromeForProfileDrawer = computed(
+  () => profileNavMobileDrawerOpen.value && route.name === 'profile',
+)
+
 /** FAB création mobile : uniquement home et profil (évite d'encombrer explore, réglages, etc.). */
 const showMobileCreateFab = computed(
   () =>
     isAuthenticated.value &&
     !isAuthPage.value &&
     !isMobileFullscreenRoute.value &&
+    !suppressMobileChromeForProfileDrawer.value &&
     (route.name === 'home' || route.name === 'profile'),
 )
 
@@ -194,8 +208,13 @@ const hideAppMobileSubheader = computed(
   () => (route.meta as { hideAppMobileSubheader?: boolean }).hideAppMobileSubheader === true,
 )
 
-/** Barre titre mobile (retour + titre + actions) — absente sur la home et sur les routes à en-tête custom (ex. recherche). */
-const showAppMobileSubheader = computed(() => showMobileBackButton.value && !hideAppMobileSubheader.value)
+/** Barre page mobile (retour + titre + actions) — absente sur la home, routes custom, ou menu profil ouvert. */
+const showAppMobileSubheader = computed(
+  () =>
+    showMobileBackButton.value &&
+    !hideAppMobileSubheader.value &&
+    !suppressMobileChromeForProfileDrawer.value,
+)
 
 /** Barre page mobile : fond flou après un léger scroll (hors home). */
 const mobilePageHeaderScrolled = ref(false)
@@ -385,9 +404,12 @@ const pageTransitionName = computed(() => {
       class="flex min-h-0 flex-1 flex-col max-lg:overflow-y-auto max-lg:overscroll-y-contain max-lg:[-webkit-overflow-scrolling:touch]"
       :class="[
         !isAuthPage && !isMobileFullscreenRoute
-          ? 'max-lg:pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-0'
+          ? suppressMobileChromeForProfileDrawer
+            ? ''
+            : /* Ancien espace réservé tab bar (~5rem) : `AppMobileTabBar` n’est pas montée — évite un vide généralisé sous le contenu. On garde la safe-area + une marge tactile minimale. */
+              'max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] lg:pb-0'
           : '',
-        needsMainChromeTopPad
+        needsMainChromeTopPad && !suppressMobileChromeForProfileDrawer
           ? 'pt-[var(--pinova-global-header-h,calc(3.5rem+env(safe-area-inset-top,0px)+var(--pinova-pwa-extra-top-inset,0px)))]'
           : '',
       ]"
@@ -488,6 +510,13 @@ const pageTransitionName = computed(() => {
 
   <!-- Toast singleton (queue gérée par useToast.ts). -->
   <AppToast />
+
+  <NotificationEnablePrompt
+    v-if="isAuthenticated"
+    v-model:open="notificationPromptOpen"
+    @snooze="notificationPromptSnooze"
+    @decline="notificationPromptDecline"
+  />
 
   <!-- FAB création (mobile / tablette) — hors #app-shell. -->
   <Teleport to="body">
