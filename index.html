@@ -3,6 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <!--
+      Thème avant le 1er paint : aligné sur `useAppearance` (localStorage `pinova-appearance`).
+      Sans cela, un utilisateur en « dark » avec OS clair voyait un flash / splash trop clair.
+    -->
+    <script>
+      (function () {
+        try {
+          var key = 'pinova-appearance'
+          var stored = localStorage.getItem(key)
+          var dark =
+            stored === 'dark' ||
+            (stored !== 'light' &&
+              typeof window.matchMedia === 'function' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (_) {
+          /* ignore */
+        }
+      })()
+    </script>
+    <!--
       viewport-fit=cover : safe areas iOS (Dynamic Island, Home Indicator).
       interactive-widget=resizes-content : iOS 17+ — le clavier ne redimensionne
       plus le layout brutalement, on gère via visualViewport.
@@ -78,9 +98,13 @@
     -->
     <style>
       :root { color-scheme: light dark; }
-      html, body { background-color: #faf7f9; }
-      @media (prefers-color-scheme: dark) {
-        html, body { background-color: #050506; }
+      html,
+      body {
+        background-color: #faf7f9;
+      }
+      html.dark,
+      html.dark body {
+        background-color: #050506;
       }
       body {
         margin: 0;

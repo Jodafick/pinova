@@ -298,10 +298,10 @@ onMounted(() => {
 /* ─── Thème sombre (classe `dark` sur `<html>`, même source que Tailwind) ─── */
 :global(html.dark) .pwa-splash__bg {
   background:
-    radial-gradient(ellipse 140% 90% at 50% -30%, rgba(224, 36, 94, 0.35) 0%, transparent 58%),
-    radial-gradient(circle at 22% 35%, rgba(190, 24, 90, 0.45) 0%, transparent 45%),
-    radial-gradient(circle at 78% 70%, rgba(120, 20, 55, 0.55) 0%, transparent 50%),
-    linear-gradient(160deg, #020203 0%, #0a0a0c 38%, #120a10 72%, #1a0d16 100%);
+    radial-gradient(ellipse 130% 85% at 50% -25%, rgba(160, 20, 70, 0.22) 0%, transparent 55%),
+    radial-gradient(circle at 22% 32%, rgba(90, 10, 40, 0.5) 0%, transparent 48%),
+    radial-gradient(circle at 82% 72%, rgba(45, 8, 24, 0.65) 0%, transparent 52%),
+    linear-gradient(165deg, #010101 0%, #050506 35%, #0a080c 68%, #100a14 100%);
 }
 
 :global(html.dark) .pwa-splash__particle {
