@@ -25,26 +25,20 @@
  *   import { openPwaInstall } from './PwaInstallExperience.vue'
  *   openPwaInstall()
  */
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import PinovaModal from '../ui/PinovaModal.vue'
 import { usePwaContext } from '../../composables/usePwaContext'
 import { useI18n } from '../../i18n'
+import { registerPwaInstallOpener } from '../../utils/pwaInstallBridge'
+import { PWA_INSTALL_SNOOZE_KEY, isPwaInstallSnoozed } from '../../utils/pwaInstallStorage'
 
 const isOpen = ref(false)
 const { isStandalone, isIos, isAndroid, isSafariIos, isChromeIos, canPromptInstall, promptInstall, wasJustInstalled } = usePwaContext()
 const { t } = useI18n()
 
-const SNOOZE_KEY = 'pinova:pwa:install:snoozedUntil'
 const SNOOZE_MS = 7 * 24 * 3600 * 1000
 
-const isSnoozed = computed(() => {
-  if (typeof localStorage === 'undefined') return false
-  const raw = localStorage.getItem(SNOOZE_KEY)
-  if (!raw) return false
-  const until = parseInt(raw, 10)
-  if (Number.isNaN(until)) return false
-  return Date.now() < until
-})
+const isSnoozed = computed(() => isPwaInstallSnoozed())
 
 function open() {
   if (isStandalone.value) return
@@ -57,10 +51,17 @@ function close() {
 
 function snooze() {
   if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_MS))
+    localStorage.setItem(PWA_INSTALL_SNOOZE_KEY, String(Date.now() + SNOOZE_MS))
   }
   close()
 }
+
+onMounted(() => {
+  registerPwaInstallOpener(() => open())
+})
+onBeforeUnmount(() => {
+  registerPwaInstallOpener(null)
+})
 
 async function clickInstall() {
   if (!canPromptInstall.value) return
@@ -120,7 +121,7 @@ defineExpose({ open, close, isSnoozed, scenario })
       </button>
     </template>
 
-    <!-- ── Scénario : prompt natif disponible (Android / Chrome desktop) ── -->
+    <!-- ── Scénario : prompt natif (Chrome Android / bureau) + astuce menu ⋮ ── -->
     <template v-else-if="scenario === 'native-prompt'">
       <p class="pwa-install__lead">{{ t('pwa.install.nativePromptLead') }}</p>
       <ul class="pwa-install__bullets">
@@ -128,6 +129,7 @@ defineExpose({ open, close, isSnoozed, scenario })
         <li><span class="material-symbols-outlined">offline_bolt</span>{{ t('pwa.install.bullet.offline') }}</li>
         <li><span class="material-symbols-outlined">notifications_active</span>{{ t('pwa.install.bullet.notifs') }}</li>
       </ul>
+      <p class="pwa-install__android-hint">{{ t('pwa.install.androidMenuHint') }}</p>
       <button type="button" class="pwa-install__cta-primary" @click="clickInstall">
         <span class="material-symbols-outlined">install_mobile</span>
         {{ t('pwa.install.installNow') }}
@@ -137,24 +139,28 @@ defineExpose({ open, close, isSnoozed, scenario })
       </button>
     </template>
 
-    <!-- ── Scénario : iOS Safari, pas encore installé → onboarding visuel ── -->
+    <!-- ── iOS Safari : barre d’outils basse (⋯ → Partager → Sur l’écran d’accueil) ── -->
     <template v-else-if="scenario === 'ios-safari'">
       <p class="pwa-install__lead">{{ t('pwa.install.iosLead') }}</p>
+
+      <div class="pwa-install__safari-mock" aria-hidden="true">
+        <div class="pwa-install__safari-url">
+          <span class="pwa-install__safari-lock material-symbols-outlined">lock</span>
+          <span class="pwa-install__safari-host">pinova…</span>
+        </div>
+        <div class="pwa-install__safari-toolbar">
+          <span class="pwa-install__safari-fab pwa-install__safari-fab--ghost material-symbols-outlined">chevron_backward</span>
+          <span class="pwa-install__safari-fab pwa-install__safari-fab--accent material-symbols-outlined">ios_share</span>
+          <span class="pwa-install__safari-fab pwa-install__safari-fab--accent material-symbols-outlined">more_horiz</span>
+        </div>
+      </div>
+
       <ol class="pwa-install__steps">
         <li class="pwa-install__step">
           <div class="pwa-install__step-num">1</div>
           <div class="pwa-install__step-body">
             <div class="pwa-install__step-icon">
-              <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
-                <path
-                  d="M12 3v12m0-12-4 4m4-4 4 4M5 14v4a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-4"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <span class="material-symbols-outlined">more_horiz</span>
             </div>
             <p>{{ t('pwa.install.step1') }}</p>
           </div>
@@ -163,10 +169,7 @@ defineExpose({ open, close, isSnoozed, scenario })
           <div class="pwa-install__step-num">2</div>
           <div class="pwa-install__step-body">
             <div class="pwa-install__step-icon">
-              <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
-                <rect x="3.5" y="3.5" width="17" height="17" rx="3.6" fill="none" stroke="currentColor" stroke-width="1.8" />
-                <path d="M12 8v8m-4-4h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-              </svg>
+              <span class="material-symbols-outlined">ios_share</span>
             </div>
             <p>{{ t('pwa.install.step2') }}</p>
           </div>
@@ -175,9 +178,18 @@ defineExpose({ open, close, isSnoozed, scenario })
           <div class="pwa-install__step-num">3</div>
           <div class="pwa-install__step-body">
             <div class="pwa-install__step-icon">
-              <span class="material-symbols-outlined">touch_app</span>
+              <span class="material-symbols-outlined">add_box</span>
             </div>
             <p>{{ t('pwa.install.step3') }}</p>
+          </div>
+        </li>
+        <li class="pwa-install__step">
+          <div class="pwa-install__step-num">4</div>
+          <div class="pwa-install__step-body">
+            <div class="pwa-install__step-icon">
+              <span class="material-symbols-outlined">touch_app</span>
+            </div>
+            <p>{{ t('pwa.install.step4') }}</p>
           </div>
         </li>
       </ol>
@@ -190,7 +202,7 @@ defineExpose({ open, close, isSnoozed, scenario })
     <template v-else-if="scenario === 'ios-other-browser'">
       <p class="pwa-install__lead">{{ t('pwa.install.iosNonSafariLead') }}</p>
       <div class="pwa-install__note">
-        <span class="material-sympols-outlined material-symbols-outlined">info</span>
+        <span class="material-symbols-outlined">info</span>
         <p>{{ t('pwa.install.iosNonSafariNote') }}</p>
       </div>
       <button type="button" class="pwa-install__cta-primary" @click="snooze">
@@ -268,6 +280,103 @@ defineExpose({ open, close, isSnoozed, scenario })
 }
 :global(.dark) .pwa-install__bullets li { color: #f5f5f7; }
 .pwa-install__bullets .material-symbols-outlined { color: var(--pinova-rose-500, #e0245e); font-size: 22px; }
+
+.pwa-install__android-hint {
+  margin: -6px 0 18px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(60, 60, 67, 0.72);
+  text-align: center;
+  border-radius: 14px;
+  background: rgba(224, 36, 94, 0.06);
+  border: 1px solid rgba(224, 36, 94, 0.14);
+}
+:global(.dark) .pwa-install__android-hint {
+  color: rgba(235, 235, 245, 0.72);
+  background: rgba(255, 107, 156, 0.1);
+  border-color: rgba(255, 107, 156, 0.22);
+}
+
+.pwa-install__safari-mock {
+  margin: 0 0 18px;
+  padding: 12px 12px 10px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(250, 250, 252, 0.9) 100%);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 12px 32px rgba(224, 36, 94, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+:global(.dark) .pwa-install__safari-mock {
+  background: linear-gradient(180deg, rgba(32, 32, 38, 0.92) 0%, rgba(22, 22, 28, 0.96) 100%);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.pwa-install__safari-url {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.05);
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(60, 60, 67, 0.85);
+}
+:global(.dark) .pwa-install__safari-url {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(235, 235, 245, 0.88);
+}
+.pwa-install__safari-lock {
+  font-size: 14px !important;
+  opacity: 0.65;
+}
+.pwa-install__safari-host {
+  letter-spacing: -0.02em;
+}
+.pwa-install__safari-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 2px;
+  gap: 8px;
+}
+.pwa-install__safari-fab {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 22px !important;
+  color: rgba(60, 60, 67, 0.55);
+}
+:global(.dark) .pwa-install__safari-fab {
+  color: rgba(235, 235, 245, 0.5);
+}
+.pwa-install__safari-fab--ghost {
+  opacity: 0.45;
+}
+.pwa-install__safari-fab--accent {
+  background: linear-gradient(145deg, rgba(224, 36, 94, 0.18), rgba(255, 77, 125, 0.12));
+  color: var(--pinova-rose-600, #c2185b);
+  box-shadow: 0 2px 8px rgba(224, 36, 94, 0.2);
+}
+:global(.dark) .pwa-install__safari-fab--accent {
+  color: var(--pinova-rose-400, #ff6b9c);
+  background: linear-gradient(145deg, rgba(255, 107, 156, 0.22), rgba(224, 36, 94, 0.12));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pwa-install__safari-fab--accent {
+    animation: pwa-install-pulse 2.4s ease-in-out infinite;
+  }
+}
+@keyframes pwa-install-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.04); opacity: 0.92; }
+}
 
 .pwa-install__steps {
   list-style: none;

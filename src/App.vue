@@ -13,6 +13,7 @@ import LayerHost from './components/layers/LayerHost.vue'
 import PinContextualMenu from './components/PinContextualMenu.vue'
 import OfflineExperience from './components/pwa/OfflineExperience.vue'
 import PwaSplash from './components/pwa/PwaSplash.vue'
+import PwaInstallExperience from './components/pwa/PwaInstallExperience.vue'
 import AmbientGlow from './components/AmbientGlow.vue'
 import ImmersiveMediaViewer from './components/ui/ImmersiveMediaViewer.vue'
 import { useImmersiveViewer } from './composables/useImmersiveViewer'
@@ -39,6 +40,7 @@ import {
   profileNavMobileDrawerOpen,
 } from './composables/mobileHeaderContext'
 import { useNotificationPrompt } from './composables/useNotificationPrompt'
+import { usePwaInstallPrompt } from './composables/usePwaInstallPrompt'
 import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
 import { reloadPwaApplication } from './utils/pwaAppReload'
 
@@ -58,6 +60,7 @@ const {
   notificationPromptSnooze,
   notificationPromptDecline,
 } = useNotificationPrompt()
+usePwaInstallPrompt()
 const { mobileCreateChooserOpen, openMobileCreateChooser } = useMobileCreateChooser()
 const { t, setLang, currentLang, languages } = useI18n()
 // Apply current language on app start (sets html lang/dir attributes).
@@ -548,6 +551,7 @@ const pageTransitionName = computed(() => {
   <!-- PWA premium experience : splash boot + bannière offline. -->
   <PwaSplash :open="!appReady" />
   <OfflineExperience />
+  <PwaInstallExperience />
 
   <!-- Visionneuse média immersive singleton (image/vidéo fullscreen iOS). -->
   <ImmersiveMediaViewer

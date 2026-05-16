@@ -63,10 +63,15 @@ export const en: Record<string, string> = {
   'pwa.install.bullet.notifs': 'Native notifications',
   'pwa.install.installNow': 'Install now',
   'pwa.install.later': 'Later',
-  'pwa.install.iosLead': 'Add Pinova to your home screen in 3 steps:',
-  'pwa.install.step1': 'Tap the Share button in the Safari bar.',
-  'pwa.install.step2': 'Select "Add to Home Screen".',
-  'pwa.install.step3': 'Open Pinova from your home screen.',
+  'pwa.install.androidMenuHint':
+    'On Android, you can also use the browser menu (⋮) → Install app or Add to Home screen.',
+  'pwa.install.iosLead': 'In Safari, four quick steps to add Pinova to your Home Screen:',
+  'pwa.install.step1':
+    'At the bottom, tap ⋯ (More) if the toolbar is hidden — that reveals Share and other actions.',
+  'pwa.install.step2': 'Tap Share (square with an arrow pointing up), usually bottom center or right on iPhone.',
+  'pwa.install.step3': 'In the sheet, scroll the action list and tap Add to Home Screen.',
+  'pwa.install.step4':
+    'Confirm the name “Pinova”, tap Add, then launch Pinova from the icon — that opens the full app-style experience.',
   'pwa.install.iosNonSafariLead': 'Installation on iOS is only possible from Safari.',
   'pwa.install.iosNonSafariNote': 'Open Pinova in Safari then use the Share button to add it to your home screen.',
   'pwa.install.desktopLead': 'Installation is not available in this browser. Try Chrome or Edge to install Pinova.',

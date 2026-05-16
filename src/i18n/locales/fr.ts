@@ -64,10 +64,16 @@ export const fr: Record<string, string> = {
   'pwa.install.bullet.notifs': 'Notifications natives',
   'pwa.install.installNow': 'Installer maintenant',
   'pwa.install.later': 'Plus tard',
-  'pwa.install.iosLead': 'Ajoutez Pinova à votre écran d’accueil en 3 étapes :',
-  'pwa.install.step1': 'Appuyez sur le bouton Partager dans la barre Safari.',
-  'pwa.install.step2': 'Sélectionnez "Sur l’écran d’accueil".',
-  'pwa.install.step3': 'Ouvrez Pinova depuis votre écran d’accueil.',
+  'pwa.install.androidMenuHint':
+    'Sur Android, vous pouvez aussi ouvrir le menu du navigateur (⋮) → « Installer l’application » ou « Ajouter à l’écran d’accueil ».',
+  'pwa.install.iosLead': 'Dans Safari, quatre gestes pour une app sur votre écran d’accueil :',
+  'pwa.install.step1':
+    'En bas, touchez ⋯ (Plus) si la barre d’outils est masquée — elle affiche les icônes dont Partager.',
+  'pwa.install.step2': 'Touchez Partager (flèche qui sort d’un carré), en bas au centre ou à droite selon votre iPhone.',
+  'pwa.install.step3':
+    'Dans la feuille, faites défiler la liste d’actions et touchez « Sur l’écran d’accueil ».',
+  'pwa.install.step4':
+    'Vérifiez le nom « Pinova », touchez « Ajouter », puis ouvrez Pinova depuis l’icône : c’est la version plein écran type app.',
   'pwa.install.iosNonSafariLead': 'L’installation iOS n’est possible que depuis Safari.',
   'pwa.install.iosNonSafariNote': 'Ouvrez Pinova dans Safari puis utilisez le bouton Partager pour l’ajouter à votre écran d’accueil.',
   'pwa.install.desktopLead': 'Installation indisponible sur ce navigateur. Essayez Chrome ou Edge pour installer Pinova.',

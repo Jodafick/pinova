@@ -4,6 +4,7 @@ function localeTag(lang: LangCode): string {
   const map: Record<LangCode, string> = {
     fr: 'fr-FR',
     en: 'en-US',
+    fon: 'fr-BJ',
   }
   return map[lang] ?? 'en-US'
 }

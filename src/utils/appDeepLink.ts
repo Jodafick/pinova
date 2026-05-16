@@ -12,6 +12,21 @@ function isIosMobileUa(): boolean {
   return /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
 }
 
+/** Déjà dans une PWA installée (Android `display-mode` ou iOS `navigator.standalone`). */
+function isInstalledPwaDisplay(): boolean {
+  if (typeof window === 'undefined') return false
+  const nav = navigator as Navigator & { standalone?: boolean }
+  if (nav.standalone === true) return true
+  try {
+    if (window.matchMedia('(display-mode: standalone)').matches) return true
+    if (window.matchMedia('(display-mode: fullscreen)').matches) return true
+    if (window.matchMedia('(display-mode: minimal-ui)').matches) return true
+  } catch {
+    /* ignore */
+  }
+  return false
+}
+
 /**
  * Ouvre un deep link custom sans quitter la page WebKit (réduit les alertes Safari « adresse invalide »).
  */
@@ -198,8 +213,16 @@ export function maybeRedirectWebToApp(route: RouteLocationNormalized): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return
   if (!isMobileBrowser()) return
   if (hasTruthyQueryFlag(route, 'web')) return
+  /* Déjà dans l’app web installée : ne pas tenter d’ouvrir l’app native par-dessus. */
+  if (isInstalledPwaDisplay()) return
 
   const explicitOpen = hasTruthyQueryFlag(route, 'openApp')
+
+  /**
+   * iOS : privilégier Safari + PWA (Ajouter à l’écran d’accueil). L’ouverture de
+   * `pinova://` perturbe l’UX et n’ouvre pas la PWA. Exception : `?openApp=1`.
+   */
+  if (isIosMobileUa() && !explicitOpen) return
 
   const deepLink = buildDeepLink(route)
   if (!deepLink) return
