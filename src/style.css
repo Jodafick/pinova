@@ -16,11 +16,20 @@
 }
 
 @media (max-width: 1023px) {
+  /*
+   * Coque mobile bornée au viewport : sinon `#app-shell` en `flex-1` ne reçoit pas
+   * une hauteur définie (parent en `height:auto`), `#main-content` suit la hauteur du
+   * contenu et ne scroll pas alors que ce wrapper est en `overflow:hidden` → page figée
+   * (Chrome responsive, Android). `100dvh` suit la barre d’adresse ; `svh` en repli.
+   */
   .pinova-chrome-stack {
     min-height: 100svh;
     min-height: -webkit-fill-available;
-    height: auto;
-    max-height: none;
+    height: 100svh;
+    max-height: 100svh;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
   }
 
   /**

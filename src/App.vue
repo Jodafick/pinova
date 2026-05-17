@@ -467,6 +467,7 @@ const pageTransitionName = computed(() => {
     {{ t('a11y.skipToContent') || 'Aller au contenu' }}
   </a>
 
+  <!-- Mobile : hauteur viewport pilotée par `style.css` (.pinova-chrome-stack) pour le scroll interne #main-content. -->
   <div
     class="pinova-chrome-stack relative flex w-full flex-col min-h-screen max-lg:overflow-hidden"
   >
