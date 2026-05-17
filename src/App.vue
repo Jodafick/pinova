@@ -70,8 +70,26 @@ setLang(currentLang.value)
 /* PWA bootstrap : capture beforeinstallprompt + theme-color dynamique. */
 initPwaContext()
 initPwaTheme()
-/* Splash : caché dès que la première fetch user est résolue (ou 700ms max). */
-const appReady = ref(false)
+
+/*
+ * Saut du splash quand on arrive depuis un `<a href>` interne marqué (ex.
+ * chooser mobile → /create). Donne une impression de continuité au lieu
+ * du gros écran de boot rose au milieu de l'action utilisateur.
+ */
+const SKIP_SPLASH_FLAG = 'pinova-skip-splash'
+let skipSplashOnBoot = false
+try {
+  if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(SKIP_SPLASH_FLAG)) {
+    skipSplashOnBoot = true
+    sessionStorage.removeItem(SKIP_SPLASH_FLAG)
+  }
+} catch {
+  /* ignore */
+}
+
+/* Splash : caché dès que la première fetch user est résolue (ou 700ms max),
+   ou immédiatement si on arrive depuis un lien marqué `skip-splash`. */
+const appReady = ref(skipSplashOnBoot)
 /* Immersive media viewer singleton — ouvert via `openImmersiveViewer({...})` partout. */
 const immersiveViewer = useImmersiveViewer()
 

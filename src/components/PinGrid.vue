@@ -19,7 +19,7 @@ import {
 } from '../composables/mediaAntiLeak'
 
 const { isPinSavePending, toggleLike, deletePin } = usePins()
-const { isAuthenticated, currentUser } = useAuth()
+const { isAuthenticated, currentUser, fetchCurrentUser } = useAuth()
 const router = useRouter()
 const { t } = useI18n()
 const { showConfirm, showAlert } = useAppModal()
@@ -248,6 +248,8 @@ async function confirmDeleteGridOwnedPin(slug: string) {
   if (!ok) return
   try {
     await deletePin(slug)
+    /* Compteurs /me (pins_count) doivent décroître immédiatement → refresh forcé + localStorage. */
+    void fetchCurrentUser({ force: true, silent: true })
     emit('pin-deleted', slug)
   } catch {
     await showAlert(t('pin.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })

@@ -8,6 +8,7 @@ import { useI18n } from '../i18n'
 import StoryViewer from '../components/StoryViewer.vue'
 import StoryImageCropEditor from '../components/StoryImageCropEditor.vue'
 import StoryVideoEditor from '../components/StoryVideoEditor.vue'
+import BirthDateRequiredModal from '../components/BirthDateRequiredModal.vue'
 import {
   hasRequiredBirthDateForMediaPublish,
   isVerifiedAdultFromBirthDate,
@@ -222,10 +223,8 @@ async function applyMediaFile(f: File | null) {
   }
   await fetchCurrentUser({ silent: true })
   if (!hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
-    await showAlert(t('moderation.publishRequiresBirthDate'), {
-      variant: 'warning',
-      title: t('moderation.publishBirthDateTitle'),
-    })
+    /* Modal de saisie inline plutôt que renvoyer l'utilisateur en Paramètres. */
+    showBirthDateModal.value = true
     return
   }
   if (isVideo) {
@@ -246,6 +245,10 @@ async function pickMedia(ev: Event) {
   await applyMediaFile(f)
 }
 
+/* Modal date de naissance : ouvert auto à l'arrivée si l'utilisateur n'a pas
+   sa date renseignée, et bloque la publication tant qu'elle manque. */
+const showBirthDateModal = ref(false)
+
 onMounted(async () => {
   if (!isAuthenticated.value) {
     router.push('/login')
@@ -258,6 +261,9 @@ onMounted(async () => {
     await showAlert(t('story.standalone.needPlus'), { variant: 'info', title: t('story.standalone.title') })
     router.push('/premium')
     return
+  }
+  if (!hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
+    showBirthDateModal.value = true
   }
   const capturedFile = consumePendingStoryCaptureFile()
   if (capturedFile) {
@@ -272,10 +278,8 @@ onUnmounted(() => {
 
 async function submit() {
   if (!hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
-    await showAlert(t('moderation.publishRequiresBirthDate'), {
-      variant: 'warning',
-      title: t('moderation.publishBirthDateTitle'),
-    })
+    /* Modal de saisie inline plutôt que renvoyer l'utilisateur en Paramètres. */
+    showBirthDateModal.value = true
     return
   }
   if (!imageFile.value && !storyVideoFile.value) {
@@ -692,6 +696,8 @@ usePinovaHeaderSwipeDismiss({
       @update:model-value="(open) => { if (!open) closePublishedStory() }"
     />
   </div>
+
+  <BirthDateRequiredModal v-model="showBirthDateModal" required />
   </div>
 </template>
 

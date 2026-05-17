@@ -665,34 +665,23 @@ const currentPlanLabel = computed(() => {
 })
 const profileNavDrawerOpen = ref(false)
 
+/*
+ * Classes pilotant l'animation off-canvas via du CSS classique défini dans
+ * `style.css` (`.pinova-profile-shell` + variante `--open`). Les valeurs
+ * Tailwind arbitraires avec virgules (`translate3d(78vw,18px,0)`) pouvaient
+ * être mal générées dans certaines configs Android → shell sans transform,
+ * fond blanc qui couvrait toute la page. Le passage en CSS classique
+ * garantit aussi un toggle propre du `pointer-events: none` (donc plus de
+ * scroll bloqué quand le menu est fermé).
+ */
 const profileNavShellSurfaceClass = computed(() => {
-  if (!profileNavDrawerOpen.value || !currentUser.value || !isMyProfile.value) return ''
-  /*
-   * Anim simplifiée 2D (slide + scale + ombre) au lieu d'une transformation 3D
-   * `rotateY + translateZ(-598px)` : sur Android Chromium / certaines puces GPU,
-   * la perspective négative culait le contenu hors du compositor → page blanche.
-   * Le rendu visuel reste proche (carte qui glisse à droite), garanti cross-browser.
-   */
-  return [
-    'relative z-[40] isolate',
-    'max-lg:origin-left',
-    'max-lg:overflow-x-hidden max-lg:rounded-[32px]',
-    'max-lg:transition-[transform,box-shadow,border-radius] max-lg:duration-300 max-lg:[transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
-    'max-lg:motion-safe:[transform:translate3d(78vw,18px,0)_scale(0.92)]',
-    'max-lg:motion-safe:shadow-[0_25px_25px_rgba(0,0,0,0.25)] dark:max-lg:motion-safe:shadow-[0_28px_55px_-8px_rgba(0,0,0,0.62)]',
-    'max-lg:motion-safe:ring-1 max-lg:motion-safe:ring-black/[0.07] dark:max-lg:motion-safe:ring-white/[0.1]',
-    'max-lg:motion-reduce:[transform:none] max-lg:motion-reduce:shadow-none max-lg:motion-reduce:ring-0 max-lg:motion-reduce:rounded-none',
-    'max-lg:bg-white/95 max-lg:dark:bg-neutral-950/95 max-lg:backdrop-blur-md',
-    /* La surface est au-dessus du tiroir (z-40 > z-25) : sans pointer-events:none elle interceptait les clics des router-link du menu. */
-    'max-lg:pointer-events-none',
-  ].join(' ')
+  if (!currentUser.value || !isMyProfile.value) return ''
+  return profileNavDrawerOpen.value
+    ? 'pinova-profile-shell pinova-profile-shell--open'
+    : 'pinova-profile-shell'
 })
 
-/** Zone profil cliquable — reprend les événements quand le shell externe est en pointer-events-none. */
-const profileNavShellInnerClass = computed(() => {
-  if (!profileNavDrawerOpen.value || !currentUser.value || !isMyProfile.value) return ''
-  return 'max-lg:pointer-events-auto'
-})
+const profileNavShellInnerClass = computed(() => '')
 
 /** Ferme le menu mobile en tapant la « carte » profil (hors contrôles interactifs). */
 function onProfileDrawerSurfaceClick(ev: MouseEvent) {
@@ -810,6 +799,9 @@ const handleCreateBoard = async () => {
     newBoardPrivate.value = false
     showCreateBoard.value = false
     await syncMyBoardsFromApi()
+    /* Compteurs /me (boards_count, etc.) doivent refléter le nouveau tableau
+       immédiatement — refresh forcé + écriture localStorage via fetchCurrentUser. */
+    void fetchCurrentUser({ force: true, silent: true })
     void loadBoardSuggestions()
   } catch (err: any) {
     console.error('Erreur création tableau:', err)

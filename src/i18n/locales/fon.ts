@@ -1,5 +1,13 @@
 export const fon: Record<string, string> = {
   'common.cancel': 'Gbɛ',
+  'birthDateModal.title': 'Sɔ́ nyikɔ azǎn tɔ̀wè é ji tɔ́wè ɔ́ jɔ̀ hwenu è na tɔ́n',
+  'birthDateModal.description': 'Bo na tɔ́n alé ɖó video ɖó image, Pinova ɖó hudo na yɔ̀n hwe nu è ji wè. É na cyɔ̀n bo ma sɔ́ ɖɔ̀ ɖó profil tɔ́wè jí ǎ.',
+  'birthDateModal.label': 'Azǎn tɔ̀wè é ji ɔ́',
+  'birthDateModal.save': 'Sɔ́ ɖó',
+  'birthDateModal.saving': 'È sɔ́ ɖó…',
+  'birthDateModal.invalid': 'Sɔ́ azǎn tɔ̀wè é ji ɖagbe (è ɖó hwénu kpé ǎ).',
+  'birthDateModal.saved': 'Azǎn ɔ́ sɔ́ ɖó.',
+  'birthDateModal.saveError': 'É kpé sɔ́ azǎn ɔ́ ɖó ǎ. Tɛ́nkpɔ́n ɖevo.',
   'common.save': 'Bɛ̀',
   'common.delete': 'Súnsún',
   'common.edit': 'Jrɔ',

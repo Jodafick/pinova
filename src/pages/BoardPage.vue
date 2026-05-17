@@ -35,7 +35,7 @@ const { showAlert, showPrompt, showConfirm } = useAppModal()
 const route = useRoute()
 const router = useRouter()
 const { toggleSave } = usePins()
-const { currentUser, updateBoard, deleteBoard, addBoardCollaborator } = useAuth()
+const { currentUser, updateBoard, deleteBoard, addBoardCollaborator, fetchCurrentUser } = useAuth()
 
 const currentPlan = computed<'free' | 'plus' | 'pro'>(() => {
   const p = currentUser.value?.subscription?.plan
@@ -514,6 +514,9 @@ async function submitBoardMeta() {
     }
     boardEditOpen.value = false
     persistBoardClientCache()
+    /* Snapshot /me en localStorage : nom/visibilité du board peut influer
+       sur les compteurs publics/privés et le résumé profil. */
+    void fetchCurrentUser({ force: true, silent: true })
   } catch (err: unknown) {
     const ax = err as { response?: { data?: Record<string, unknown> | string } }
     const data = ax.response?.data
@@ -544,6 +547,8 @@ async function confirmDeleteBoard() {
   boardDeletePending.value = true
   try {
     await deleteBoard(boardId.value)
+    /* Compteurs boards de /me doivent décroître immédiatement (header, profil). */
+    void fetchCurrentUser({ force: true, silent: true })
     const owner = ownerUsername.value.trim()
     router.replace(owner ? `/profile/${owner}` : '/')
   } catch {

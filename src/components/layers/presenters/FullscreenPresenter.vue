@@ -14,15 +14,12 @@ import { computed, onMounted, provide, ref, watch } from 'vue'
 import { layerManager } from '../../../navigation/layerManager'
 import { LAYER_CONTEXT_KEY } from '../../../navigation/useLayer'
 import type { Layer } from '../../../navigation/layerTypes'
-import { useSafeArea } from '../../../composables/useSafeArea'
 import { useGestureEngine } from '../../../composables/useGestureEngine'
 import { useSpring } from '../../../composables/useSpring'
 import { GESTURE, SPRINGS } from '../../../theme/motion'
 import { getAdaptiveGesture } from '../../../navigation/adaptiveNavigator'
 
 const props = defineProps<{ layer: Layer }>()
-
-const { top: safeTop, bottom: safeBottom, left: safeLeft, right: safeRight } = useSafeArea()
 
 const rootRef = ref<HTMLElement | null>(null)
 const surfaceRef = ref<HTMLElement | null>(null)
@@ -139,20 +136,14 @@ provide(LAYER_CONTEXT_KEY, {
       :class="{ 'pinova-no-transition': gesture.isDragging.value }"
     >
       <!--
-        WebKit iOS : on positionne le route-root en `absolute; inset: 0` et on
-        applique la safe-area en padding ici (box-sizing: border-box). La chaîne
-        de hauteurs en pourcentage à travers flex échouait sur Safari iOS
-        (création pin/story → contenu hauteur 0 → écran noir).
+        WebKit iOS : route-root en `absolute; inset: 0` (la chaîne flex avec
+        height:100% s'effondrait sur Safari). La safe-area N'EST PLUS appliquée
+        ici : chaque page de création gère déjà son propre
+        `pb-[calc(env(safe-area-inset-bottom)+…)]` (et le top via
+        `pt-[calc(env(safe-area-inset-top)+…)]`). Un padding ici en plus
+        provoquait un double espace vide visible en PWA standalone.
       -->
-      <div
-        class="pinova-layer-fullscreen__route-root"
-        :style="{
-          paddingTop: safeTop + 'px',
-          paddingBottom: safeBottom + 'px',
-          paddingLeft: safeLeft + 'px',
-          paddingRight: safeRight + 'px',
-        }"
-      >
+      <div class="pinova-layer-fullscreen__route-root">
         <component :is="layer.component" v-bind="layer.componentProps" />
       </div>
     </div>

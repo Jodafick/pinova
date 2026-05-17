@@ -132,6 +132,9 @@ const router = createRouter({
         statusBar: 'auto',
         disableEdgeBack: true,
         hideAppMobileSubheader: true,
+        /* Pas d'anim de transition : navigation depuis le chooser mobile via
+           `<a href>` doit donner une impression de continuité. */
+        noTransition: true,
       },
     },
     {
@@ -146,6 +149,7 @@ const router = createRouter({
         statusBar: 'light',
         disableEdgeBack: true,
         hideAppMobileSubheader: true,
+        noTransition: true,
       },
     },
     {

@@ -9,6 +9,7 @@ import { pushToast } from '../composables/useToast'
 import PrivateTags from '../components/PrivateTags.vue'
 import CreatePinEditSkeleton from '../components/CreatePinEditSkeleton.vue'
 import StoryImageCropEditor from '../components/StoryImageCropEditor.vue'
+import BirthDateRequiredModal from '../components/BirthDateRequiredModal.vue'
 import api from '../api'
 import {
   moderationScanText,
@@ -188,10 +189,10 @@ async function goStep2() {
   }
   await fetchCurrentUser({ silent: true })
   if (!hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
-    await showAlert(t('moderation.publishRequiresBirthDate'), {
-      variant: 'warning',
-      title: t('moderation.publishBirthDateTitle'),
-    })
+    /* Au lieu d'une simple alerte qui force un détour vers Paramètres, on
+       affiche directement un modal de saisie pour débloquer la publication
+       sans quitter le flux de création. */
+    showBirthDateModal.value = true
     return
   }
   createStep.value = 2
@@ -273,11 +274,24 @@ const loadBoards = async () => {
   }
 }
 
+/* Modal de saisie de date de naissance — affiché automatiquement à l'ouverture
+   de la page si l'utilisateur authentifié n'a pas encore renseigné sa date,
+   et bloque la publication tant qu'elle n'est pas fournie. */
+const showBirthDateModal = ref(false)
+
+function maybePromptBirthDate() {
+  if (!isAuthenticated.value) return
+  if (!hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
+    showBirthDateModal.value = true
+  }
+}
+
 onMounted(async () => {
   if (isAuthenticated.value && !currentUser.value) {
     await fetchCurrentUser({ silent: true })
   }
   await loadTopics('')
+  maybePromptBirthDate()
 
   if (isEditMode.value) {
     loadingEdit.value = true
@@ -430,10 +444,8 @@ async function runImageModeration(file: File) {
 async function ensureBirthDateBeforeMedia(): Promise<boolean> {
   await fetchCurrentUser({ silent: true })
   if (hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) return true
-  await showAlert(t('moderation.publishRequiresBirthDate'), {
-    variant: 'warning',
-    title: t('moderation.publishBirthDateTitle'),
-  })
+  /* Ouvre le modal directement plutôt qu'une alerte d'avertissement. */
+  showBirthDateModal.value = true
   createStep.value = 1
   return false
 }
@@ -593,10 +605,9 @@ const submitPin = async () => {
       (existingStoryVideoUrl.value || '').trim()
     )
   if (hasMedia && !hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate)) {
-    await showAlert(t('moderation.publishRequiresBirthDate'), {
-      variant: 'warning',
-      title: t('moderation.publishBirthDateTitle'),
-    })
+    /* Dernière barrière avant l'envoi : on ouvre le modal de saisie au lieu
+       d'un alert dead-end. */
+    showBirthDateModal.value = true
     createStep.value = 1
     return
   }
@@ -650,6 +661,10 @@ const submitPin = async () => {
       const un = currentUser.value?.username?.trim()
       if (un) invalidateProfileActiveStories(un)
     }
+    /* Rafraîchit /me et le snapshot localStorage : les compteurs (pins_count,
+       stories_count, etc.) du profil courant doivent refléter la nouvelle
+       publication immédiatement (header, profil, suggestions). */
+    void fetchCurrentUser({ force: true, silent: true })
     const successMessage = isEditMode.value
       ? t('pin.edit.success')
       : isStory.value
@@ -1150,7 +1165,7 @@ usePinovaHeaderSwipeDismiss({
           <button
             type="button"
             class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 py-4 text-base font-black text-white shadow-lg shadow-pink-700/35 transition active:scale-[0.98] disabled:opacity-50"
-            :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending"
+            :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending || needsBirthDateForMedia"
             @click="submitPin"
           >
             <svg v-if="saving || mediaModerationPending" class="h-5 w-5 shrink-0 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
@@ -1229,7 +1244,7 @@ usePinovaHeaderSwipeDismiss({
           v-if="createStep === 2"
           type="button"
           class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition flex items-center gap-2 shadow-lg shadow-pink-700/30"
-          :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending"
+          :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending || needsBirthDateForMedia"
           @click="submitPin"
         >
           <svg v-if="saving || mediaModerationPending" class="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24">
@@ -1250,7 +1265,7 @@ usePinovaHeaderSwipeDismiss({
           v-else
           type="button"
           class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition shadow-lg shadow-pink-700/30"
-          :disabled="!title.trim()"
+          :disabled="!title.trim() || needsBirthDateForMedia"
           @click="goStep2"
         >
           {{ t('create.step.next') }}
@@ -1635,6 +1650,14 @@ usePinovaHeaderSwipeDismiss({
       </div>
     </div>
   </div>
+
+  <!-- Modal date de naissance : ouvert auto si manquante ; bloque la
+       publication tant qu'elle n'est pas saisie. -->
+  <BirthDateRequiredModal
+    v-model="showBirthDateModal"
+    required
+    @saved="() => { /* refresh déjà géré dans le composant via fetchCurrentUser */ }"
+  />
   </div>
 
 </template>
