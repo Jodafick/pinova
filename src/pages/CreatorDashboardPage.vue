@@ -537,11 +537,14 @@ onMounted(async () => {
 
 <template>
   <main
-    class="w-full min-w-0 min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-8rem)]
-           bg-gradient-to-b from-violet-50/40 via-white to-neutral-50/80
-           dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
+    class="creator-dashboard-page relative w-full min-w-0 min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-8rem)] overflow-x-hidden
+           bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"
   >
-    <div class="w-full min-w-0 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-10 lg:py-12">
+    <div
+      class="pointer-events-none absolute inset-x-0 top-0 h-[min(52rem,85vh)] bg-[radial-gradient(ellipse_95%_72%_at_50%_-8%,rgba(192,38,211,0.14),transparent_58%),radial-gradient(ellipse_70%_55%_at_100%_0%,rgba(99,102,241,0.12),transparent_50%),radial-gradient(ellipse_55%_50%_at_0%_20%,rgba(244,114,182,0.1),transparent_48%)] dark:bg-[radial-gradient(ellipse_95%_72%_at_50%_-8%,rgba(192,38,211,0.16),transparent_58%),radial-gradient(ellipse_70%_55%_at_100%_0%,rgba(99,102,241,0.14),transparent_52%),radial-gradient(ellipse_55%_50%_at_0%_20%,rgba(244,114,182,0.08),transparent_50%)]"
+      aria-hidden="true"
+    />
+    <div class="relative w-full min-w-0 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-11 lg:py-14">
 
       <!-- Loading skeleton -->
       <div v-if="loading" aria-busy="true">
@@ -551,166 +554,149 @@ onMounted(async () => {
 
       <template v-else>
 
-        <!-- ── Breadcrumb / nav ─────────────────────────────────── -->
+        <!-- ── Navigation ───────────────────────────────────────── -->
         <nav
-          class="flex flex-wrap gap-3 items-center justify-between mb-8 sm:mb-10"
+          class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-10 sm:mb-12"
           aria-label="breadcrumb"
         >
           <router-link
             to="/"
-            class="inline-flex items-center gap-2 text-sm font-semibold
-                   text-neutral-600 dark:text-neutral-400
-                   hover:text-pink-800 dark:hover:text-pink-800
-                   transition-colors rounded-xl px-3 py-2 -ml-1
-                   hover:bg-white/80 dark:hover:bg-neutral-800/80
-                   border border-transparent
-                   hover:border-neutral-200/80 dark:hover:border-neutral-700/80"
+            class="group inline-flex items-center justify-center gap-3 rounded-full border border-neutral-200/90 bg-white/75 px-3 py-2 pr-4 text-sm font-semibold text-neutral-700 shadow-sm backdrop-blur-xl transition hover:border-neutral-300 hover:bg-white hover:shadow-md dark:border-white/[0.08] dark:bg-neutral-900/55 dark:text-neutral-200 dark:hover:bg-neutral-900/85 dark:hover:border-white/[0.12]"
           >
-            <i class="fa-solid fa-house text-[18px]" aria-hidden="true"></i>
+            <span
+              class="flex size-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 ring-1 ring-black/[0.04] transition group-hover:bg-neutral-200/90 dark:bg-neutral-800 dark:ring-white/[0.06] dark:group-hover:bg-neutral-700"
+            >
+              <i class="fa-solid fa-house block text-[15px] leading-none text-neutral-700 dark:text-neutral-200" aria-hidden="true"></i>
+            </span>
             {{ t('nav.home') }}
           </router-link>
 
           <router-link
             to="/create"
-            class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold
-                   bg-white dark:bg-neutral-900
-                   text-neutral-900 dark:text-neutral-100
-                   border border-neutral-200 dark:border-neutral-700
-                   shadow-sm shadow-neutral-900/10 dark:shadow-black/30
-                   hover:bg-neutral-50 dark:hover:bg-neutral-800
-                   transition-colors
-                   focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
-                   focus-visible:outline-pink-700 dark:outline-pink-600"
+            class="inline-flex items-center justify-center gap-3 rounded-full border border-pink-500/25 bg-gradient-to-r from-pink-600 to-fuchsia-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-pink-600/28 transition [transition-property:transform,box-shadow,filter] hover:brightness-[1.05] hover:shadow-pink-600/40 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 dark:shadow-pink-900/40"
           >
-            <i class="fa-solid fa-plus text-base" aria-hidden="true"></i>
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30">
+              <i class="fa-solid fa-plus block text-[14px] leading-none" aria-hidden="true"></i>
+            </span>
             {{ t('nav.create') }}
           </router-link>
         </nav>
 
-        <!-- ── Hero banner ─────────────────────────────────────── -->
-        <div class="relative overflow-hidden rounded-[1.65rem] sm:rounded-[2rem]
-                    bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900
-                    dark:from-fuchsia-700 dark:via-purple-800 dark:to-indigo-950
-                    text-white shadow-2xl shadow-purple-950/35
-                    ring-1 ring-black/10 dark:ring-white/5
-                    mb-10 sm:mb-12 isolate">
+        <!-- ── Hero ─────────────────────────────────────────────── -->
+        <div
+          class="relative mb-11 sm:mb-14 overflow-hidden rounded-[1.85rem] sm:rounded-[2.25rem] isolate
+                 bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-950
+                 text-white shadow-[0_28px_80px_-24px_rgba(76,29,149,0.55)]
+                 ring-1 ring-white/15 dark:ring-white/10"
+        >
+          <div class="pointer-events-none absolute -right-20 -top-32 size-[22rem] rounded-full bg-white/14 blur-3xl" aria-hidden="true" />
+          <div class="pointer-events-none absolute -bottom-36 -left-20 size-[18rem] rounded-full bg-fuchsia-400/22 blur-3xl" aria-hidden="true" />
+          <div
+            class="pointer-events-none absolute inset-0 bg-[linear-gradient(165deg,transparent_35%,rgba(255,255,255,0.07)_52%,transparent_68%)]"
+            aria-hidden="true"
+          />
 
-          <!-- Decorative blobs -->
-          <div class="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-white/12 blur-3xl" aria-hidden="true" />
-          <div class="pointer-events-none absolute -bottom-32 -left-16 h-64 w-64 rounded-full bg-fuchsia-400/18 blur-3xl" aria-hidden="true" />
-          <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom_right,_transparent_48%,rgba(255,255,255,0.05)_72%,transparent)]" aria-hidden="true" />
-
-          <div class="relative p-6 sm:p-9 md:p-10 flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-12 lg:justify-between">
-            <div class="flex gap-4 sm:gap-6 min-w-0 flex-1">
-              <!-- Icon -->
+          <div
+            class="relative flex flex-col items-center gap-8 px-6 py-10 text-center sm:px-10 sm:py-11 md:px-12 md:py-12 lg:flex-row lg:items-end lg:justify-between lg:gap-12 lg:text-left"
+          >
+            <div class="flex w-full max-w-3xl flex-col items-center gap-6 lg:max-w-none lg:flex-row lg:items-end lg:gap-8">
               <div
-                class="hidden sm:flex size-14 md:size-[4.5rem] shrink-0 rounded-[1rem] md:rounded-2xl
-                       bg-white/12 backdrop-blur-md items-center justify-center
-                       ring-2 ring-white/25 shadow-inner"
+                class="flex size-[4.25rem] shrink-0 items-center justify-center rounded-[1.35rem] bg-white/16 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ring-2 ring-white/25 backdrop-blur-md sm:size-[4.75rem] md:size-[5rem]"
                 aria-hidden="true"
               >
-                <i class="fa-solid fa-chart-line text-[30px] md:text-[36px] text-white/95" aria-hidden="true"></i>
+                <i class="fa-solid fa-chart-line block text-[1.85rem] leading-none text-white sm:text-[2rem]" aria-hidden="true"></i>
               </div>
-              <!-- Heading -->
-              <header class="min-w-0 flex-1">
-                <p class="text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em] text-white/70 mb-2 sm:mb-3">
+              <header class="min-w-0 flex-1 space-y-3">
+                <p class="text-[11px] font-bold uppercase tracking-[0.28em] text-white/75">
                   {{ t('creator.badge') }}
                 </p>
-                <h1 class="text-2xl sm:text-3xl md:text-4xl font-auth-title font-auth-title--black tracking-tight text-white mb-3 sm:mb-4 drop-shadow-sm">
+                <h1
+                  class="font-auth-title font-auth-title--black text-3xl tracking-tight text-white sm:text-[2.15rem] md:text-4xl md:leading-[1.12]"
+                >
                   {{ t('creator.title') }}
                 </h1>
-                <p class="text-sm sm:text-[15px] leading-relaxed text-white/80 max-w-2xl">
+                <p class="mx-auto max-w-xl text-[15px] leading-relaxed text-white/82 lg:mx-0 lg:max-w-2xl">
                   {{ t('creator.subtitle') }}
                 </p>
               </header>
             </div>
 
-            <!-- Settings CTA -->
-            <div class="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto lg:max-w-xs">
-              <router-link
-                to="/settings"
-                class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5
-                       text-sm font-semibold
-                       bg-white/12 hover:bg-white/20
-                       backdrop-blur-md border border-white/25
-                       text-white transition-colors text-center"
-              >
-                <i class="fa-solid fa-sliders text-base" aria-hidden="true"></i>
-                {{ t('nav.settings') }}
-              </router-link>
-            </div>
+            <router-link
+              to="/settings"
+              class="inline-flex w-full shrink-0 items-center justify-center gap-3 rounded-full border border-white/30 bg-white/14 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-black/10 backdrop-blur-md transition hover:bg-white/22 lg:w-auto"
+            >
+              <span class="flex size-10 items-center justify-center rounded-full bg-black/10 ring-1 ring-white/20">
+                <i class="fa-solid fa-sliders block text-[15px] leading-none" aria-hidden="true"></i>
+              </span>
+              {{ t('nav.settings') }}
+            </router-link>
           </div>
         </div>
 
         <!-- ── Error state ──────────────────────────────────────── -->
         <div
           v-if="errorMsg"
-          class="mb-10 rounded-2xl border
-                 border-rose-200/90 dark:border-rose-800/60
-                 bg-rose-50/90 dark:bg-rose-950/30
-                 px-5 py-6 sm:px-7 sm:py-8 text-center shadow-sm"
+          class="mb-10 rounded-[1.35rem] border border-rose-200/90 bg-rose-50/95 px-6 py-10 text-center shadow-lg shadow-rose-900/5 dark:border-rose-800/50 dark:bg-rose-950/35 dark:shadow-black/20"
           role="alert"
         >
-          <i class="fa-solid fa-circle-exclamation text-rose-500 dark:text-rose-400 text-[40px] mb-3 inline-block leading-none" aria-hidden="true"></i>
-          <p class="text-sm sm:text-base text-rose-900 dark:text-rose-300 font-medium">{{ errorMsg }}</p>
+          <span
+            class="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-rose-500/15 ring-1 ring-rose-400/30 dark:bg-rose-500/20 dark:ring-rose-500/25"
+          >
+            <i class="fa-solid fa-circle-exclamation block text-[1.65rem] leading-none text-rose-600 dark:text-rose-400" aria-hidden="true"></i>
+          </span>
+          <p class="text-sm font-medium text-rose-950 dark:text-rose-200 sm:text-base">{{ errorMsg }}</p>
           <button
             type="button"
-            class="mt-5 inline-flex items-center justify-center gap-2 rounded-full px-6 py-2.5
-                   text-sm font-bold
-                   bg-rose-600 dark:bg-rose-500 text-white
-                   hover:bg-rose-500 dark:hover:bg-rose-400
-                   transition-colors"
+            class="mt-6 inline-flex items-center justify-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-white shadow-lg shadow-rose-600/25 transition hover:brightness-105 active:scale-[0.98]
+                   bg-gradient-to-r from-rose-600 to-rose-500 dark:shadow-rose-900/40"
             @click="load"
           >
-            <i class="fa-solid fa-arrow-rotate-right text-base" aria-hidden="true"></i>
+            <i class="fa-solid fa-arrow-rotate-right block text-[15px] leading-none" aria-hidden="true"></i>
             {{ t('creator.retry') }}
           </button>
         </div>
 
         <!-- ── KPI Totals ───────────────────────────────────────── -->
-        <section id="totaux" aria-labelledby="creator-totals-heading" class="mb-10 sm:mb-12 scroll-mt-28">
-          <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 sm:mb-6">
-            <h2
-              id="creator-totals-heading"
-              class="text-xl sm:text-2xl font-bold tracking-tight
-                     text-neutral-950 dark:text-neutral-100"
+        <section id="totaux" aria-labelledby="creator-totals-heading" class="mb-11 sm:mb-14 scroll-mt-28">
+          <div class="mb-6 flex flex-col gap-2 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+            <div>
+              <h2
+                id="creator-totals-heading"
+                class="text-2xl font-bold tracking-tight text-neutral-950 dark:text-neutral-50 sm:text-[1.65rem]"
+              >
+                {{ t('creator.sectionTotals') }}
+              </h2>
+            </div>
+            <span
+              class="inline-flex items-center justify-center self-start rounded-full border border-neutral-200/90 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 backdrop-blur-md dark:border-white/[0.08] dark:bg-neutral-900/60 dark:text-neutral-400 sm:self-auto"
             >
-              {{ t('creator.sectionTotals') }}
-            </h2>
-            <span class="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
               {{ t('creator.badge') }}
             </span>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-5">
             <template v-for="item in kpis" :key="item.key">
 
               <!-- Pins → link to profile -->
               <router-link
                 v-if="item.key === 'pins' && currentUser?.username"
                 :to="{ path: `/profile/${encodeURIComponent(currentUser.username)}` }"
-                class="group rounded-2xl border p-4 sm:p-5 min-h-[9.5rem]
-                       flex flex-col items-center text-center gap-3
-                       ring-4 transition-all duration-200
-                       hover:shadow-lg hover:-translate-y-0.5
-                       bg-gradient-to-br no-underline text-inherit
-                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-700 dark:outline-pink-600"
+                class="creator-kpi-card group relative flex min-h-[11rem] flex-col items-center gap-5 rounded-[1.35rem] border bg-gradient-to-b px-5 pb-6 pt-7 text-center no-underline text-inherit shadow-[0_14px_42px_-28px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.03] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_-24px_rgba(15,23,42,0.42)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 dark:shadow-black/40 dark:ring-white/[0.05] dark:hover:shadow-black/55"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
               >
-                <div class="flex items-center justify-center w-full">
-                  <i
-                    class="fa-solid shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
-                    :class="[item.iconWrap, item.darkIconWrap, item.fa]"
-                    aria-hidden="true"
-                  ></i>
+                <div
+                  class="creator-kpi-icon-well relative flex size-[3.75rem] shrink-0 items-center justify-center rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] ring-1 ring-black/[0.07] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] dark:ring-white/[0.14]"
+                  :class="[item.iconWrap, item.darkIconWrap]"
+                >
+                  <i class="fa-solid block text-[1.2rem] leading-none" :class="item.fa" aria-hidden="true"></i>
                 </div>
-                <div class="min-w-0 flex-1 w-full flex flex-col items-center">
-                  <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
-                             text-neutral-500 dark:text-neutral-400 mb-1">
+                <div class="flex w-full min-w-0 flex-col items-center gap-1">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                     {{ item.label }}
                   </p>
-                  <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold
-                             text-neutral-950 dark:text-neutral-50 tracking-tight">
+                  <p
+                    class="tabular-nums text-[1.65rem] font-black tracking-tight text-neutral-950 dark:text-neutral-50 sm:text-[1.75rem]"
+                  >
                     {{ item.formatted }}
                   </p>
                 </div>
@@ -720,26 +706,23 @@ onMounted(async () => {
               <button
                 v-else-if="item.key === 'pins'"
                 type="button"
-                class="group rounded-2xl border p-4 sm:p-5 min-h-[9.5rem]
-                       flex flex-col items-center text-center gap-3
-                       ring-4 bg-gradient-to-br text-left text-inherit opacity-50 cursor-not-allowed"
+                class="creator-kpi-card relative flex min-h-[11rem] cursor-not-allowed flex-col items-center gap-5 rounded-[1.35rem] border bg-gradient-to-b px-5 pb-6 pt-7 text-center text-inherit opacity-55 ring-1 ring-black/[0.03] dark:ring-white/[0.05]"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
                 disabled
               >
-                <div class="flex items-center justify-center w-full">
-                  <i
-                    class="fa-solid shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
-                    :class="[item.iconWrap, item.darkIconWrap, item.fa]"
-                    aria-hidden="true"
-                  ></i>
+                <div
+                  class="creator-kpi-icon-well relative flex size-[3.75rem] shrink-0 items-center justify-center rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] ring-1 ring-black/[0.07] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] dark:ring-white/[0.14]"
+                  :class="[item.iconWrap, item.darkIconWrap]"
+                >
+                  <i class="fa-solid block text-[1.2rem] leading-none" :class="item.fa" aria-hidden="true"></i>
                 </div>
-                <div class="min-w-0 flex-1 w-full flex flex-col items-center">
-                  <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
-                             text-neutral-500 dark:text-neutral-400 mb-1">
+                <div class="flex w-full min-w-0 flex-col items-center gap-1">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                     {{ item.label }}
                   </p>
-                  <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold
-                             text-neutral-950 dark:text-neutral-50 tracking-tight">
+                  <p
+                    class="tabular-nums text-[1.65rem] font-black tracking-tight text-neutral-950 dark:text-neutral-50 sm:text-[1.75rem]"
+                  >
                     {{ item.formatted }}
                   </p>
                 </div>
@@ -749,33 +732,26 @@ onMounted(async () => {
               <button
                 v-else
                 type="button"
-                class="group rounded-2xl border p-4 sm:p-5 min-h-[9.5rem]
-                       flex flex-col items-center text-center gap-3
-                       ring-4 transition-all duration-200
-                       hover:shadow-lg hover:-translate-y-0.5
-                       bg-gradient-to-br text-left text-inherit
-                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-700 dark:outline-pink-600
-                       cursor-pointer"
+                class="creator-kpi-card group relative flex min-h-[11rem] cursor-pointer flex-col items-center gap-5 rounded-[1.35rem] border bg-gradient-to-b px-5 pb-6 pt-7 text-center text-inherit shadow-[0_14px_42px_-28px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.03] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_-24px_rgba(15,23,42,0.42)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 dark:shadow-black/40 dark:ring-white/[0.05] dark:hover:shadow-black/55"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
                 @click="openAudiencePanel(item.key)"
               >
-                <div class="flex items-center justify-center w-full">
-                  <i
-                    class="fa-solid shrink-0 size-11 sm:size-[3.125rem] rounded-xl grid place-items-center leading-none text-[22px]"
-                    :class="[item.iconWrap, item.darkIconWrap, item.fa]"
-                    aria-hidden="true"
-                  ></i>
+                <div
+                  class="creator-kpi-icon-well relative flex size-[3.75rem] shrink-0 items-center justify-center rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] ring-1 ring-black/[0.07] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] dark:ring-white/[0.14]"
+                  :class="[item.iconWrap, item.darkIconWrap]"
+                >
+                  <i class="fa-solid block text-[1.2rem] leading-none" :class="item.fa" aria-hidden="true"></i>
                 </div>
-                <div class="min-w-0 flex-1 w-full flex flex-col items-center">
-                  <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide
-                             text-neutral-500 dark:text-neutral-400 mb-1">
+                <div class="flex w-full min-w-0 flex-col items-center gap-1">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                     {{ item.label }}
                   </p>
-                  <p class="tabular-nums text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold
-                             text-neutral-950 dark:text-neutral-50 tracking-tight">
+                  <p
+                    class="tabular-nums text-[1.65rem] font-black tracking-tight text-neutral-950 dark:text-neutral-50 sm:text-[1.75rem]"
+                  >
                     {{ item.formatted }}
                   </p>
-                  <p class="mt-1 text-[10px] sm:text-[11px] font-semibold text-center" :class="item.accent">
+                  <p class="mt-1 max-w-[14rem] text-center text-[10px] font-bold uppercase tracking-wide" :class="item.accent">
                     {{ t('creator.audience.cta') }}
                   </p>
                 </div>
@@ -788,58 +764,54 @@ onMounted(async () => {
         <!-- ── Cockpit : récents + modération ───────────────────── -->
         <section
           id="cockpit"
-          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem]
-                 border border-neutral-200/80 dark:border-neutral-700/60
-                 bg-white/92 dark:bg-neutral-900/92 shadow-lg shadow-neutral-950/[0.03]
-                 overflow-hidden scroll-mt-28"
+          class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/75 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-white/[0.07] dark:bg-neutral-900/55 dark:shadow-black/50"
           aria-labelledby="creator-hub-heading"
         >
           <div
-            class="px-5 py-5 sm:px-7 sm:py-6 border-b border-neutral-100 dark:border-neutral-800
-                   flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            class="flex flex-col gap-5 border-b border-neutral-200/70 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-8 sm:py-7 dark:border-white/[0.06]"
           >
-            <div>
-              <h2 id="creator-hub-heading" class="text-lg sm:text-xl font-bold text-neutral-950 dark:text-neutral-100">
+            <div class="min-w-0 space-y-1.5 text-center sm:text-left">
+              <h2 id="creator-hub-heading" class="text-xl font-bold text-neutral-950 dark:text-neutral-50">
                 {{ t('creator.hubTitle') }}
               </h2>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1 max-w-prose">
+              <p class="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
                 {{ t('creator.hubSubtitle') }}
               </p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="grid grid-cols-1 gap-2.5 sm:flex sm:flex-wrap sm:justify-end">
               <router-link
                 to="/contest/live"
-                class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
-                       bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-900 dark:text-fuchsia-200
-                       border border-fuchsia-200/80 dark:border-fuchsia-800/60"
+                class="inline-flex items-center justify-center gap-3 rounded-full border border-fuchsia-200/90 bg-gradient-to-r from-fuchsia-500/[0.12] to-pink-500/[0.1] px-4 py-2.5 text-sm font-semibold text-fuchsia-950 shadow-sm backdrop-blur-sm transition hover:border-fuchsia-300 hover:from-fuchsia-500/18 dark:border-fuchsia-500/25 dark:from-fuchsia-500/15 dark:to-pink-500/10 dark:text-fuchsia-100"
               >
-                <i class="fa-solid fa-trophy text-[18px]" aria-hidden="true"></i>
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/70 ring-1 ring-fuchsia-200/80 dark:bg-neutral-900/60 dark:ring-fuchsia-500/40">
+                  <i class="fa-solid fa-trophy block text-[15px] leading-none text-fuchsia-600 dark:text-fuchsia-300" aria-hidden="true"></i>
+                </span>
                 {{ t('creator.contestLink') }}
               </router-link>
               <router-link
                 to="/settings#settings-tips"
-                class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
-                       bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100
-                       border border-neutral-200 dark:border-neutral-700"
+                class="inline-flex items-center justify-center gap-3 rounded-full border border-neutral-200/90 bg-white/85 px-4 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm backdrop-blur-sm transition hover:bg-white dark:border-neutral-600 dark:bg-neutral-800/80 dark:text-neutral-100 dark:hover:bg-neutral-800"
               >
-                <i class="fa-solid fa-money-bill-wave text-[18px]" aria-hidden="true"></i>
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 ring-1 ring-black/[0.05] dark:bg-neutral-700 dark:ring-white/10">
+                  <i class="fa-solid fa-money-bill-wave block text-[15px] leading-none text-neutral-600 dark:text-neutral-200" aria-hidden="true"></i>
+                </span>
                 {{ t('creator.settingsTips') }}
               </router-link>
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
-                       bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900
-                       disabled:opacity-50"
+                class="inline-flex items-center justify-center gap-3 rounded-full border border-neutral-900/90 bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-neutral-900/25 transition hover:bg-neutral-900 disabled:opacity-50 dark:border-white/15 dark:bg-white dark:text-neutral-950 dark:shadow-none dark:hover:bg-neutral-100"
                 :disabled="exportLoading"
                 @click="exportCsvWeb"
               >
-                <i class="fa-solid fa-download text-[18px]" aria-hidden="true"></i>
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 dark:bg-neutral-950/10 dark:ring-neutral-950/20">
+                  <i class="fa-solid fa-download block text-[15px] leading-none" aria-hidden="true"></i>
+                </span>
                 {{ exportLoading ? t('creator.exporting') : t('creator.exportCsv') }}
               </button>
             </div>
           </div>
 
-          <div class="p-4 sm:p-6 md:p-7 space-y-8">
+          <div class="space-y-10 bg-gradient-to-b from-transparent via-neutral-50/[0.35] to-transparent px-4 py-7 sm:px-8 sm:py-9 dark:via-neutral-950/40">
             <div>
               <h3 class="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">
                 {{ t('creator.recentPinsTitle') }}
@@ -968,29 +940,28 @@ onMounted(async () => {
         <!-- ── Weekly pins ─────────────────────────────────────── -->
         <section
           id="fenetre"
-          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem]
-                 border border-neutral-200/80 dark:border-neutral-700/60
-                 bg-white/92 dark:bg-neutral-900/92
-                 backdrop-blur-sm
-                 shadow-xl shadow-neutral-950/[0.04] dark:shadow-black/20
-                 ring-1 ring-black/[0.03] dark:ring-white/[0.04]
-                 overflow-hidden scroll-mt-28"
+          class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/78 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.38)] backdrop-blur-xl ring-1 ring-black/[0.02] dark:border-white/[0.07] dark:bg-neutral-900/55 dark:shadow-black/55 dark:ring-white/[0.04]"
         >
           <!-- Header -->
-          <div class="border-b border-neutral-100 dark:border-neutral-800
-                      px-5 py-5 sm:px-7 sm:py-7
-                      bg-gradient-to-br from-neutral-50/98 to-white
-                      dark:from-neutral-900 dark:to-neutral-900/80">
-            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-              <div class="min-w-0 flex-1">
-                <h2
-                  id="creator-week-heading"
-                  class="text-lg sm:text-xl font-bold
-                         text-neutral-950 dark:text-neutral-100 mb-2"
-                >
-                  {{ t('creator.sectionWeekly') }}
-                </h2>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-prose">
+          <div
+            class="border-b border-neutral-200/75 px-5 py-6 sm:px-8 sm:py-8 dark:border-white/[0.06] bg-gradient-to-br from-white via-neutral-50/85 to-white dark:from-neutral-900 dark:via-neutral-900/95 dark:to-neutral-950"
+          >
+            <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+              <div class="min-w-0 flex-1 space-y-3">
+                <div class="flex items-center gap-3">
+                  <span
+                    class="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500/18 to-fuchsia-600/14 ring-1 ring-pink-500/25 dark:from-pink-500/25 dark:to-fuchsia-600/18 dark:ring-pink-400/20"
+                  >
+                    <i class="fa-solid fa-chart-line block text-[1.05rem] leading-none text-pink-700 dark:text-pink-300" aria-hidden="true"></i>
+                  </span>
+                  <h2
+                    id="creator-week-heading"
+                    class="text-xl font-bold text-neutral-950 dark:text-neutral-50 sm:text-[1.35rem]"
+                  >
+                    {{ t('creator.sectionWeekly') }}
+                  </h2>
+                </div>
+                <p class="max-w-prose text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
                   {{ t('creator.weeklyExplain') }}
                 </p>
                 <div class="flex flex-wrap gap-2 mt-4">
@@ -998,11 +969,11 @@ onMounted(async () => {
                     v-for="d in ([7, 14, 28] as const)"
                     :key="d"
                     type="button"
-                    class="rounded-full px-4 py-2 text-xs font-bold transition-colors border"
+                    class="rounded-full px-4 py-2 text-xs font-bold transition-[transform,box-shadow,colors] border"
                     :class="
                       periodDays === d
-                        ? 'bg-pink-600 border-pink-600 text-white shadow-sm'
-                        : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-300 hover:border-pink-300'
+                        ? 'border-pink-600 bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white shadow-md shadow-pink-600/30 scale-[1.02]'
+                        : 'border-neutral-200/90 bg-white/90 text-neutral-600 shadow-sm backdrop-blur-sm hover:border-pink-300 hover:bg-white dark:border-neutral-600 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:border-pink-500/50'
                     "
                     @click="setPeriodDaysChoice(d)"
                   >
@@ -1046,23 +1017,16 @@ onMounted(async () => {
           </div>
 
           <!-- List body -->
-          <div class="p-4 sm:p-6 md:p-7">
-            <ul v-if="weeklyPins.length" class="flex flex-col gap-3 md:gap-4">
+          <div class="bg-gradient-to-b from-neutral-50/40 to-transparent px-4 py-6 sm:px-8 sm:py-8 dark:from-neutral-950/30">
+            <ul v-if="weeklyPins.length" class="flex flex-col gap-4 md:gap-5">
               <li
                 v-for="(p, idx) in weeklyPins"
                 :key="p.id"
-                class="flex gap-4 rounded-2xl
-                       border border-neutral-100 dark:border-neutral-800
-                       bg-neutral-50/60 dark:bg-neutral-800/30
-                       hover:bg-white dark:hover:bg-neutral-800/70
-                       hover:border-pink-200/80 dark:hover:border-pink-700/50
-                       hover:shadow-md dark:hover:shadow-black/20
-                       transition-all duration-200 overflow-hidden group"
+                class="group flex gap-4 overflow-hidden rounded-[1.35rem] border border-neutral-200/75 bg-white/85 shadow-[0_12px_36px_-28px_rgba(15,23,42,0.28)] transition-all duration-200 hover:border-pink-200/90 hover:shadow-[0_18px_44px_-26px_rgba(219,39,119,0.22)] dark:border-white/[0.06] dark:bg-neutral-900/40 dark:hover:border-pink-500/35"
               >
                 <!-- Rank badge -->
                 <span
-                  class="mt-5 ms-5 flex size-10 shrink-0 items-center justify-center rounded-full
-                         text-lg font-black tabular-nums shadow-sm ring-2"
+                  class="ms-4 flex size-11 shrink-0 self-center rounded-full text-base font-black tabular-nums shadow-inner ring-2 sm:ms-5"
                   :class="rankAccent(idx)"
                   aria-hidden="true"
                 >{{ idx + 1 }}</span>
@@ -1070,8 +1034,8 @@ onMounted(async () => {
                 <!-- Thumbnail -->
                 <router-link
                   :to="`/pin/${p.slug}`"
-                  class="shrink-0 w-[4.75rem] h-[4.75rem] sm:w-[5.25rem] sm:h-[5.25rem]
-                         my-5 rounded-xl overflow-hidden
+                  class="my-4 shrink-0 w-[4.75rem] h-[4.75rem] sm:my-5 sm:h-[5.25rem] sm:w-[5.25rem]
+                         rounded-xl overflow-hidden
                          bg-neutral-200 dark:bg-neutral-700
                          ring-1 ring-neutral-200/85 dark:ring-neutral-700/60"
                   :aria-label="p.title"
@@ -1196,21 +1160,20 @@ onMounted(async () => {
           v-if="topAllTime.length"
           id="top-classement"
           aria-labelledby="creator-top-heading"
-          class="mb-10 sm:mb-12 rounded-[1.5rem] sm:rounded-[1.85rem]
-                 border border-neutral-200/80 dark:border-neutral-700/60
-                 bg-white/95 dark:bg-neutral-900/95
-                 shadow-lg shadow-neutral-950/[0.03] dark:shadow-black/20
-                 overflow-hidden scroll-mt-28"
+          class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/78 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-white/[0.07] dark:bg-neutral-900/55 dark:shadow-black/50"
         >
           <!-- Header -->
-          <div class="px-5 py-5 sm:px-7 sm:py-6
-                      border-b border-neutral-100 dark:border-neutral-800
-                      bg-gradient-to-r from-neutral-50 to-white
-                      dark:from-neutral-900 dark:to-neutral-900/80">
+          <div
+            class="flex items-center gap-3 border-b border-neutral-200/75 px-5 py-5 sm:px-8 sm:py-6 dark:border-white/[0.06] bg-gradient-to-r from-neutral-50/95 via-white to-neutral-50/90 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950"
+          >
+            <span
+              class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400/25 to-orange-500/20 ring-1 ring-amber-500/25 dark:from-amber-400/20 dark:to-orange-500/15"
+            >
+              <i class="fa-solid fa-medal block text-[15px] leading-none text-amber-800 dark:text-amber-200" aria-hidden="true"></i>
+            </span>
             <h2
               id="creator-top-heading"
-              class="text-lg sm:text-xl font-bold
-                     text-neutral-950 dark:text-neutral-100"
+              class="text-xl font-bold text-neutral-950 dark:text-neutral-50"
             >
               {{ t('creator.sectionTopAll') }}
             </h2>
@@ -1229,8 +1192,7 @@ onMounted(async () => {
               <!-- Left: rank + title -->
               <div class="flex items-center gap-4 min-w-0 flex-1">
                 <span
-                  class="flex size-9 shrink-0 items-center justify-center rounded-full
-                         text-sm font-black tabular-nums ring-2 shadow-sm"
+                  class="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-black tabular-nums shadow-inner ring-2"
                   :class="rankAccent(idx)"
                   aria-hidden="true"
                 >{{ idx + 1 }}</span>
@@ -1292,17 +1254,19 @@ onMounted(async () => {
         </section>
 
         <!-- ── Footer hint ─────────────────────────────────────── -->
-        <footer class="pt-5 border-t border-neutral-200/80 dark:border-neutral-800/80">
+        <footer class="border-t border-neutral-200/75 pt-8 dark:border-white/[0.06]">
           <div
-            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
-                   rounded-2xl border border-neutral-200/80 dark:border-neutral-700/60
-                   px-5 py-4 bg-white/70 dark:bg-neutral-900/60"
+            class="flex flex-col gap-5 rounded-[1.35rem] border border-neutral-200/75 bg-white/70 px-5 py-5 shadow-[0_16px_48px_-36px_rgba(15,23,42,0.28)] backdrop-blur-xl dark:border-white/[0.07] dark:bg-neutral-900/50 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-7 sm:py-6"
           >
-            <div class="flex items-start gap-3 min-w-0">
-              <i
-                class="fa-solid fa-envelope text-xl text-neutral-400 dark:text-neutral-500 shrink-0 mt-0.5 leading-none"
-                aria-hidden="true"
-              ></i>
+            <div class="flex items-start gap-4 min-w-0">
+              <span
+                class="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-neutral-100 ring-1 ring-black/[0.04] dark:bg-neutral-800 dark:ring-white/[0.06]"
+              >
+                <i
+                  class="fa-solid fa-envelope block text-[16px] leading-none text-neutral-500 dark:text-neutral-300"
+                  aria-hidden="true"
+                ></i>
+              </span>
               <div>
                 <p class="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
                   {{ t('creator.digestToggle') }}
@@ -1508,3 +1472,15 @@ onMounted(async () => {
     </div>
   </main>
 </template>
+
+<style scoped>
+/* Font Awesome : centrage optique des glyphes dans les pastilles KPI */
+.creator-kpi-icon-well > i.fa-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  line-height: 1;
+}
+</style>

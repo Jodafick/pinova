@@ -268,6 +268,52 @@ export type FetchUserProfileResult = {
   blocked?: boolean
 }
 
+/**
+ * GET `me/` puis mise à jour de `currentUser`, du cache profil et du snapshot
+ * `pinova_me_payload_v1` dans localStorage.
+ * Exporté pour les actions hors `useAuth()` (ex. follow depuis `usePins`).
+ */
+export async function fetchCurrentUser(opts?: { silent?: boolean; force?: boolean }) {
+  const force = !!opts?.force
+  if (
+    !force &&
+    currentUser.value &&
+    currentUserLastFetchAt > 0 &&
+    Date.now() - currentUserLastFetchAt < CURRENT_USER_CACHE_TTL_MS
+  ) {
+    return
+  }
+  if (currentUserFetchPromise) {
+    await currentUserFetchPromise
+    return
+  }
+  currentUserFetchPromise = (async () => {
+    devLog('📡 Fetching user from API...')
+    try {
+      const response = await api.get('me/')
+      if (response.data) {
+        devLog('✅ User received:', response.data.username)
+        currentUser.value = mapDjangoUserToFrontend(response.data)
+        persistMePayloadFromApi(response.data)
+        currentUserLastFetchAt = Date.now()
+        const u = currentUser.value
+        if (u) {
+          setCachedProfileUser(profileDetailCacheKey(u.username, ''), u)
+        }
+        void resyncWebPushSubscriptionForCurrentUser(api).catch(() => undefined)
+      }
+    } catch (err) {
+      if (!currentUser.value) {
+        currentUser.value = null
+      }
+      console.warn('❌ Session absente ou expirée.')
+    } finally {
+      currentUserFetchPromise = null
+    }
+  })()
+  await currentUserFetchPromise
+}
+
 export function useAuth() {
   const { t } = useI18n()
   function buildUpdateProfileSignature(data: {
@@ -357,47 +403,6 @@ export function useAuth() {
     api.defaults.headers.common.Authorization = `Bearer ${inMemoryAccessToken.value}`
   }
 
-  async function fetchCurrentUser(opts?: { silent?: boolean; force?: boolean }) {
-    const force = !!opts?.force
-    if (
-      !force &&
-      currentUser.value &&
-      currentUserLastFetchAt > 0 &&
-      Date.now() - currentUserLastFetchAt < CURRENT_USER_CACHE_TTL_MS
-    ) {
-      return
-    }
-    if (currentUserFetchPromise) {
-      await currentUserFetchPromise
-      return
-    }
-    currentUserFetchPromise = (async () => {
-      devLog('📡 Fetching user from API...')
-      try {
-        const response = await api.get('me/')
-        if (response.data) {
-          devLog('✅ User received:', response.data.username)
-          currentUser.value = mapDjangoUserToFrontend(response.data)
-          persistMePayloadFromApi(response.data)
-          currentUserLastFetchAt = Date.now()
-          const u = currentUser.value
-          if (u) {
-            setCachedProfileUser(profileDetailCacheKey(u.username, ''), u)
-          }
-          void resyncWebPushSubscriptionForCurrentUser(api).catch(() => undefined)
-        }
-      } catch (err) {
-        if (!currentUser.value) {
-          currentUser.value = null
-        }
-        console.warn('❌ Session absente ou expirée.')
-      } finally {
-        currentUserFetchPromise = null
-      }
-    })()
-    await currentUserFetchPromise
-  }
-
   async function fetchUserProfile(
     username: string,
     opts?: { share?: string | null; force?: boolean },
@@ -426,6 +431,8 @@ export function useAuth() {
   async function toggleFollow(username: string) {
     try {
       const response = await api.post(`profiles/${username}/follow/`)
+      /* Compteurs `following_count` / snapshot offline : même source que GET me/. */
+      void fetchCurrentUser({ force: true, silent: true })
       return response.data
     } catch (err) {
       console.error('Error toggling follow:', err)
@@ -764,13 +771,13 @@ export function useAuth() {
     extra?: { target_plan?: 'plus' | 'free' },
   ) {
     const response = await api.post('subscription/manage/', { action, ...extra })
-    await fetchCurrentUser({ force: true })
+    await fetchCurrentUser({ force: true, silent: true })
     return response.data
   }
 
   async function startPlusTrial() {
     const response = await api.post('subscription/trial/start/')
-    await fetchCurrentUser({ force: true })
+    await fetchCurrentUser({ force: true, silent: true })
     return response.data
   }
 

@@ -14,6 +14,7 @@ import {
   invalidateProfileCreatedPinsCacheForUsername,
 } from '../pinClientCache'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
+import { fetchCurrentUser } from './useAuth'
 
 type PaginatedResponse<T> = {
   count: number
@@ -711,14 +712,16 @@ export function usePins() {
     try {
       const response = await api.post(`profiles/${username}/follow/`)
       const isFollowed = response.data.status === 'followed'
-      
+
       // Update all pins from this author
-      pins.value.forEach(pin => {
+      pins.value.forEach((pin) => {
         if (pin.username === username) {
           pin.isFollowing = isFollowed
         }
       })
-      
+
+      void fetchCurrentUser({ force: true, silent: true })
+
       return response.data
     } catch (err) {
       affectedPins.forEach((pin, index) => {

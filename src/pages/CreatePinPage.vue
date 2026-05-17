@@ -835,6 +835,15 @@ usePinovaHeaderSwipeDismiss({
     class="pinova-create-flow-mobile flex min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#060408] text-white pinova-min-vh-fill"
   >
     <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange">
+    <!-- Même entrée que desktop : absent ici, `openCameraCapture()` ne ciblait aucun élément. -->
+    <input
+      ref="nativeCameraInput"
+      type="file"
+      class="hidden"
+      accept="image/*"
+      capture="environment"
+      @change="onFileChange"
+    >
 
     <div
       v-if="!isEditMode && mobileCreateStep === 'pick'"

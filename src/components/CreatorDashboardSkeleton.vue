@@ -7,33 +7,30 @@ import CreatorStatsSkeleton from './CreatorStatsSkeleton.vue'
   <div class="app-skeleton-wave space-y-10 sm:space-y-12" aria-hidden="true">
 
     <!-- Breadcrumb / nav bar -->
-    <nav class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2 animate-pulse">
-        <span class="size-9 rounded-xl bg-neutral-200 dark:bg-neutral-800" />
-        <span class="h-4 rounded-full bg-neutral-200 dark:bg-neutral-800 w-16" />
+    <nav class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3 animate-pulse">
+        <span class="size-10 rounded-full bg-neutral-200 dark:bg-neutral-800" />
+        <span class="h-4 rounded-full bg-neutral-200 dark:bg-neutral-800 w-20" />
       </div>
-      <span class="h-10 rounded-xl bg-neutral-200 dark:bg-neutral-800 w-32 animate-pulse" />
+      <span class="h-11 rounded-full bg-neutral-200 dark:bg-neutral-800 w-40 animate-pulse sm:max-w-[13rem]" />
     </nav>
 
     <!-- Hero banner -->
-    <div class="relative overflow-hidden rounded-[1.65rem] sm:rounded-[2rem] animate-pulse">
-      <div class="bg-gradient-to-br from-neutral-300 via-neutral-200 to-neutral-300 dark:from-neutral-800 dark:via-neutral-700 dark:to-neutral-800 p-6 sm:p-9 md:p-10">
-        <div class="flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-12 lg:justify-between">
-          <div class="flex gap-4 sm:gap-6 flex-1 min-w-0">
-            <!-- Icon block -->
-            <div class="hidden sm:flex size-14 md:size-[4.5rem] shrink-0 rounded-[1rem] md:rounded-2xl bg-white/25 dark:bg-white/10 items-center justify-center ring-2 ring-white/20" />
-            <!-- Text lines -->
-            <div class="flex-1 min-w-0 space-y-3 sm:space-y-4 pt-1">
-              <div class="h-3 rounded-full bg-white/50 dark:bg-white/20 w-28" />
-              <div class="h-8 sm:h-10 rounded-xl bg-white/65 dark:bg-white/20 w-[min(100%,20rem)]" />
-              <div class="space-y-2 max-w-xl pt-1">
+    <div class="relative overflow-hidden rounded-[1.85rem] sm:rounded-[2.25rem] animate-pulse">
+      <div class="bg-gradient-to-br from-neutral-300 via-neutral-200 to-neutral-300 dark:from-neutral-800 dark:via-neutral-700 dark:to-neutral-800 px-6 py-10 sm:px-10 sm:py-11">
+        <div class="flex flex-col items-center gap-6 text-center lg:flex-row lg:items-end lg:justify-between lg:text-left">
+          <div class="flex w-full flex-col items-center gap-6 lg:flex-row lg:items-end">
+            <div class="size-[4.25rem] shrink-0 rounded-[1.35rem] bg-white/35 dark:bg-white/15 ring-2 ring-white/30" />
+            <div class="flex-1 min-w-0 w-full space-y-3 sm:space-y-4">
+              <div class="h-3 rounded-full bg-white/50 dark:bg-white/20 w-28 mx-auto lg:mx-0" />
+              <div class="h-9 sm:h-10 rounded-xl bg-white/65 dark:bg-white/20 w-[min(100%,20rem)] mx-auto lg:mx-0" />
+              <div class="space-y-2 max-w-xl mx-auto lg:mx-0 pt-1">
                 <div class="h-3 rounded-full bg-white/45 dark:bg-white/15 w-[min(100%,22rem)]" />
                 <div class="h-3 rounded-full bg-white/35 dark:bg-white/10 w-[min(100%,16rem)]" />
               </div>
             </div>
           </div>
-          <!-- CTA button -->
-          <div class="h-10 w-36 rounded-xl bg-white/30 dark:bg-white/10 shrink-0" />
+          <div class="h-12 w-full max-w-xs rounded-full bg-white/35 dark:bg-white/15 shrink-0 lg:w-52" />
         </div>
       </div>
     </div>

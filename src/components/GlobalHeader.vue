@@ -15,25 +15,6 @@ import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismis
 
 const { t, currentLang } = useI18n()
 
-const props = withDefaults(
-  defineProps<{
-    /** Home mobile : bandeau transparent tant qu’on n’a pas scrollé (vitrage piloté par App.vue). */
-    homeMobileGlass?: boolean
-    homeMobileGlassScrolled?: boolean
-    /**
-     * Desktop (toutes routes) : bandeau transparent au repos, puis vitré au
-     * moindre scroll. Permet de garder une cohérence visuelle avec le mobile,
-     * et de laisser le contenu (feed, image héros) « respirer » sous la barre.
-     */
-    desktopGlassScrolled?: boolean
-  }>(),
-  {
-    homeMobileGlass: false,
-    homeMobileGlassScrolled: false,
-    desktopGlassScrolled: false,
-  },
-)
-
 const route = useRoute()
 const router = useRouter()
 const { currentUser, isAuthenticated, logout } = useAuth()
@@ -45,28 +26,9 @@ const isHomeRouteHeader = computed(() => route.name === 'home' || route.path ===
 /** Home connectée : slot header pour stories + onglets (uniquement &lt; lg, Teleport). */
 const homeHeaderChrome = computed(() => isHomeRouteHeader.value && isAuthenticated.value)
 
-const headerShellToneClass = computed(() => {
-  /*
-   * Header transparent au repos, vitré (bg semi-transparent + blur) au scroll.
-   *
-   * - Mobile (`homeMobileGlass`) : transparent tant que pas scrollé (home),
-   *   sinon vitré direct.
-   * - Desktop (`desktopGlassScrolled`) : transparent au top, vitré au scroll.
-   */
-  const mobileGlassy = !props.homeMobileGlass || props.homeMobileGlassScrolled
-  const desktopGlassy = props.desktopGlassScrolled
-
-  const mobileTone = mobileGlassy
-    ? 'max-lg:bg-white/85 dark:max-lg:bg-neutral-950/80 max-lg:backdrop-blur-xl max-lg:backdrop-saturate-150 max-lg:border-b max-lg:border-neutral-200/70 dark:max-lg:border-neutral-800/70 max-lg:shadow-[0_8px_24px_-18px_rgba(0,0,0,0.18)] dark:max-lg:shadow-[0_10px_28px_-20px_rgba(0,0,0,0.6)]'
-    : 'max-lg:bg-transparent max-lg:backdrop-blur-none max-lg:border-b-transparent max-lg:shadow-none'
-
-  const desktopTone = desktopGlassy
-    ? 'lg:bg-white/85 dark:lg:bg-neutral-950/80 lg:backdrop-blur-xl lg:backdrop-saturate-150 lg:border-b lg:border-neutral-200/70 dark:lg:border-neutral-800/70 lg:shadow-[0_8px_24px_-18px_rgba(0,0,0,0.18)] dark:lg:shadow-[0_10px_28px_-20px_rgba(0,0,0,0.6)]'
-    : 'lg:bg-transparent lg:backdrop-blur-none lg:border-b-transparent lg:shadow-none'
-
-  /* Transition héritée du `<header>` (déjà définie dans la classe statique). */
-  return `${mobileTone} ${desktopTone}`
-})
+/** Fond vitré permanent (<lg et desktop) : lisibilité + zone stories/onglets home dans la même coque. */
+const HEADER_SHELL_GLASS =
+  'max-lg:bg-white/85 dark:max-lg:bg-neutral-950/80 max-lg:backdrop-blur-xl max-lg:backdrop-saturate-150 max-lg:border-b max-lg:border-neutral-200/70 dark:max-lg:border-neutral-800/70 max-lg:shadow-[0_8px_24px_-18px_rgba(0,0,0,0.18)] dark:max-lg:shadow-[0_10px_28px_-20px_rgba(0,0,0,0.6)] lg:bg-white/85 dark:lg:bg-neutral-950/80 lg:backdrop-blur-xl lg:backdrop-saturate-150 lg:border-b lg:border-neutral-200/70 dark:lg:border-neutral-800/70 lg:shadow-[0_8px_24px_-18px_rgba(0,0,0,0.18)] dark:lg:shadow-[0_10px_28px_-20px_rgba(0,0,0,0.6)]'
 
 let headerHeightRo: ResizeObserver | null = null
 
@@ -482,7 +444,7 @@ watch(
   <header
     ref="headerShellRef"
     class="app-global-header-shell pinova-app-chrome-safe-pt flex flex-col w-full px-2 sm:px-4 lg:px-5 pb-0 fixed inset-x-0 top-0 z-[40] transition-[background-color,backdrop-filter,border-color,box-shadow] duration-200 ease-out"
-    :class="[headerShellToneClass, homeHeaderChrome ? 'max-lg:overflow-hidden max-lg:rounded-b-3xl' : '']"
+    :class="[HEADER_SHELL_GLASS, homeHeaderChrome ? 'max-lg:overflow-hidden max-lg:rounded-b-3xl' : '']"
   >
     <div class="flex w-full min-w-0 items-center gap-1.5 sm:gap-3 lg:gap-4 pb-1.5 sm:pb-2">
     <!-- Logo -->

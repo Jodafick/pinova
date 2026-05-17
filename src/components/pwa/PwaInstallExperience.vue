@@ -188,16 +188,19 @@ defineExpose({ open, close, isSnoozed, scenario })
           <span class="pwa-install__safari-lock material-symbols-outlined !text-sm opacity-60">lock</span>
           <span class="pwa-install__safari-host tracking-tight">pinova…</span>
         </div>
-        <div class="flex items-center justify-between gap-2 px-1 pb-0.5 pt-1.5">
+        <div class="flex items-center justify-center gap-4 px-1 pb-1 pt-2">
           <span
-            class="pwa-install__safari-fab pwa-install__safari-fab--ghost material-symbols-outlined grid size-10 place-items-center rounded-xl text-[22px] text-neutral-500 opacity-45 dark:text-neutral-400"
-          >chevron_backward</span>
+            class="pwa-install__glass-icon-btn material-symbols-outlined text-[22px] leading-none text-neutral-900 dark:text-white"
+            style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+          ><span class="block translate-y-px opacity-[0.38]">chevron_backward</span></span>
           <span
-            class="pwa-install__safari-fab pwa-install__safari-fab--accent material-symbols-outlined grid size-10 place-items-center rounded-xl bg-pink-500/18 text-[22px] text-pink-700 shadow-sm shadow-pink-600/15 dark:bg-pink-500/25 dark:text-pink-300 dark:shadow-pink-900/30"
-          >ios_share</span>
+            class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse material-symbols-outlined text-[22px] leading-none text-neutral-900 dark:text-white"
+            style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+          ><span class="block translate-y-px">ios_share</span></span>
           <span
-            class="pwa-install__safari-fab pwa-install__safari-fab--accent material-symbols-outlined grid size-10 place-items-center rounded-xl bg-pink-500/18 text-[22px] text-pink-700 shadow-sm shadow-pink-600/15 dark:bg-pink-500/25 dark:text-pink-300 dark:shadow-pink-900/30"
-          >more_horiz</span>
+            class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
+            style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+          ><span class="block translate-y-px">more_horiz</span></span>
         </div>
       </div>
 
@@ -212,10 +215,9 @@ defineExpose({ open, close, isSnoozed, scenario })
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
             <div
-              class="grid size-[38px] shrink-0 place-items-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
-            >
-              <span class="material-symbols-outlined text-[22px]">more_horiz</span>
-            </div>
+              class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
+              style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+            ><span class="block translate-y-px">more_horiz</span></div>
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step1') }}
             </p>
@@ -231,10 +233,9 @@ defineExpose({ open, close, isSnoozed, scenario })
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
             <div
-              class="grid size-[38px] shrink-0 place-items-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
-            >
-              <span class="material-symbols-outlined text-[22px]">ios_share</span>
-            </div>
+              class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
+              style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+            ><span class="block translate-y-px">ios_share</span></div>
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step2') }}
             </p>
@@ -250,10 +251,9 @@ defineExpose({ open, close, isSnoozed, scenario })
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
             <div
-              class="grid size-[38px] shrink-0 place-items-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
-            >
-              <span class="material-symbols-outlined text-[22px]">add_box</span>
-            </div>
+              class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
+              style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+            ><span class="block translate-y-px">add_box</span></div>
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step3') }}
             </p>
@@ -269,10 +269,9 @@ defineExpose({ open, close, isSnoozed, scenario })
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
             <div
-              class="grid size-[38px] shrink-0 place-items-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
-            >
-              <span class="material-symbols-outlined text-[22px]">touch_app</span>
-            </div>
+              class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
+              style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+            ><span class="block translate-y-px">touch_app</span></div>
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step4') }}
             </p>
@@ -327,13 +326,43 @@ defineExpose({ open, close, isSnoozed, scenario })
 </template>
 
 <style scoped>
+/* Bouton circulaire « liquid glass » + icône monochrome (aligné Safari réel). */
+.pwa-install__glass-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  margin: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 6px 20px -10px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+}
+:global(.dark) .pwa-install__glass-icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 10px 28px -14px rgba(0, 0, 0, 0.75);
+}
+
+.pwa-install__glass-icon-btn--sm {
+  width: 2.375rem;
+  height: 2.375rem;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .pwa-install__safari-fab--accent {
+  .pwa-install__glass-icon-btn--pulse {
     animation: pwa-install-pulse 2.4s ease-in-out infinite;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pwa-install__safari-fab--accent {
+  .pwa-install__glass-icon-btn--pulse {
     animation: none;
   }
 }
@@ -345,7 +374,7 @@ defineExpose({ open, close, isSnoozed, scenario })
   }
   50% {
     transform: scale(1.04);
-    opacity: 0.92;
+    opacity: 0.94;
   }
 }
 </style>

@@ -57,7 +57,12 @@ async function markAllAsRead() {
 }
 
 function syncNotificationsMobileHeader() {
-  if (!isAuthenticated.value) {
+  /*
+   * KeepAlive : ce composant reste monté hors route. Sans garde, chaque update du
+   * compteur (via GlobalHeader) réinjectait sous-titre + bouton dans App.vue pour
+   * TOUTES les pages — il faut ne synchroniser que lorsque /notifications est active.
+   */
+  if (route.name !== 'notifications' || !isAuthenticated.value) {
     setMobileHeaderSubtitle(null)
     setMobileMarkAllReadTrailing(null)
     return
@@ -199,6 +204,17 @@ watch(isAuthenticated, (auth) => {
     syncNotificationsMobileHeader()
   }
 })
+
+/** Quitte /notifications : vide le contexte header tout de suite (avant KeepAlive / callbacks différés). */
+watch(
+  () => route.name,
+  (name) => {
+    if (name !== 'notifications') {
+      setMobileHeaderSubtitle(null)
+      setMobileMarkAllReadTrailing(null)
+    }
+  },
+)
 </script>
 
 <template>

@@ -13,7 +13,7 @@ const props = withDefaults(
     subtitle?: string
     showBack?: boolean
     backAriaLabel?: string
-    /** Fond vitré + blur après scroll (barre page mobile). */
+    /** Accentue l’ombre après scroll (le fond vitré est toujours présent). */
     elevated?: boolean
   }>(),
   {
@@ -33,10 +33,10 @@ const resolvedBackAria = computed(() => props.backAriaLabel || t('common.back'))
 
 <template>
   <header
-    class="app-mobile-page-header lg:hidden pointer-events-none fixed inset-x-0 top-0 z-[55] bg-transparent transition-[background-color,backdrop-filter,box-shadow] duration-200 ease-out"
+    class="app-mobile-page-header lg:hidden pointer-events-none fixed inset-x-0 top-0 z-[55] border-b border-neutral-200/70 bg-white/85 backdrop-blur-xl backdrop-saturate-150 shadow-[0_8px_24px_-18px_rgba(0,0,0,0.18)] transition-[box-shadow] duration-200 ease-out dark:border-neutral-800/70 dark:bg-neutral-950/80 dark:shadow-[0_10px_28px_-20px_rgba(0,0,0,0.6)]"
     :class="
       elevated
-        ? 'border-b border-neutral-200/55 bg-white/72 shadow-sm backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-neutral-950/65'
+        ? 'shadow-[0_12px_28px_-14px_rgba(0,0,0,0.22)] dark:shadow-[0_14px_32px_-18px_rgba(0,0,0,0.62)]'
         : ''
     "
     data-pinova-no-edge-back
