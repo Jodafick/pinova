@@ -319,7 +319,21 @@ function attachAppScrollListener() {
   detachAppScrollListener = null
   if (typeof document === 'undefined') return
   const target = getAppScrollRoot()
-  const onScroll = () => updateMobileHeaderScroll()
+  /*
+   * rAF-batched : on coalesce les événements scroll (60+ par seconde sur des
+   * appareils rapides) en un seul update par frame. Les bindings réactifs
+   * Vue (header tone, FAB, edge peek) ne sont re-évalués qu'une fois par
+   * frame au lieu de potentiellement plusieurs dizaines.
+   */
+  let rafScheduled = false
+  const onScroll = () => {
+    if (rafScheduled) return
+    rafScheduled = true
+    requestAnimationFrame(() => {
+      rafScheduled = false
+      updateMobileHeaderScroll()
+    })
+  }
   target.addEventListener('scroll', onScroll, { passive: true })
   detachAppScrollListener = () => {
     target.removeEventListener('scroll', onScroll)
@@ -345,6 +359,29 @@ watch(
     void nextTick(() => {
       attachAppScrollListener()
     })
+    /*
+     * Quand on arrive sur une route « page » classique (pas un layer
+     * `fullscreen`/`modal`), on ferme toute couche orpheline qui aurait
+     * survécu à la navigation (cas typique : layer ouvert → router.push
+     * vers `/` sans passer par le bridge). Sans ça, le layer persistait
+     * visuellement + son scroll-lock body bloquait toute la nouvelle page.
+     */
+    const meta = (route.meta as { presentation?: string }) || {}
+    const targetIsLayer = meta.presentation === 'fullscreen' || meta.presentation === 'modal' || meta.presentation === 'sheet'
+    if (!targetIsLayer && layerManager.hasLayers.value) {
+      layerManager.popAll()
+    }
+    /*
+     * Garde-fou : si aucun layer n'est ouvert mais que le verrou body est
+     * resté actif (modal qui ne s'est pas démontée proprement, race au
+     * démontage, etc.), on relâche. Sans ça, le scroll restait bloqué après
+     * navigation depuis certaines vues qui ouvrent des modals.
+     */
+    if (typeof document !== 'undefined' && !layerManager.hasLayers.value) {
+      document.documentElement.classList.remove('pinova-layer-scroll-lock')
+      document.body.classList.remove('pinova-modal-scroll-lock')
+      resetPinovaBodyScrollLock()
+    }
   },
 )
 

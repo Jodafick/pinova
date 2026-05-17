@@ -349,10 +349,16 @@ onMounted(async () => {
   }
 })
 
+/*
+ * `deep: true` rechargeait les boards à chaque mutation interne (renommage,
+ * is_private toggle, etc.) → cycles inutiles + appels API redondants. On
+ * surveille seulement la longueur et la liste des IDs : suffisant pour
+ * détecter "nouveau board ajouté" / "board supprimé" / "réordonnement".
+ */
 watch(
-  () => currentUser.value?.boards,
+  () => (currentUser.value?.boards || []).map((b) => b.id).join(','),
   () => void loadBoards(),
-  { immediate: true, deep: true },
+  { immediate: true },
 )
 
 watch(categorySearch, (value) => {
