@@ -1,9 +1,19 @@
 import { computed, onUnmounted, ref, watch, type ComputedRef, type Ref } from 'vue'
 
-const DEFAULT_THRESHOLD_PX = 68
-const MAX_PULL_PX = 100
+/**
+ * Seuil de déclenchement du rechargement (px). Augmenté pour rendre le geste
+ * moins sensible : l'utilisateur doit tirer plus franchement avant que le
+ * reload ne soit armé (sinon un simple over-scroll en haut déclenchait par
+ * accident le rechargement complet de l'app PWA).
+ */
+const DEFAULT_THRESHOLD_PX = 110
+const MAX_PULL_PX = 140
 /** Tolérance « tout en haut » du scroll racine (#main-content). */
 const TOP_EPS_PX = 2
+/** Distance à laquelle on commence à dessiner la bulle (deadzone). */
+const PULL_DEADZONE_PX = 28
+/** Coefficient de résistance : 1 = direct ; <1 = il faut tirer plus loin que dy. */
+const PULL_RESISTANCE = 0.32
 
 function isRootAtTop(scrollRoot: HTMLElement | null): boolean {
   return !!scrollRoot && scrollRoot.scrollTop <= TOP_EPS_PX
@@ -100,9 +110,9 @@ export function useMobilePullToRefresh(options: {
       return
     }
     /* Tirer vers le bas uniquement ; pas de preventDefault (listeners passifs) pour ne pas bloquer le scroll natif. */
-    if (dy <= 12) return
+    if (dy <= PULL_DEADZONE_PX) return
 
-    pullDistance.value = Math.min((dy - 12) * 0.45, MAX_PULL_PX)
+    pullDistance.value = Math.min((dy - PULL_DEADZONE_PX) * PULL_RESISTANCE, MAX_PULL_PX)
   }
 
   function onTouchEndOrCancel() {

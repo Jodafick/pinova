@@ -710,12 +710,12 @@ const profileNavDrawerViewportClass = computed(() => {
 /** Conteneur type `.page` du demo off-canvas (perspective 1500px sur parent commun). */
 const profileNavOffcanvasRootClass = computed(() => {
   /*
-   * Plus de perspective 3D : la transformation off-canvas est désormais purement
-   * 2D (cf. profileNavShellSurfaceClass) pour fiabilité cross-browser (Android).
-   * On garde la classe vide pour ne pas casser l'arity du :class array.
+   * Active la perspective 3D sur l'ancêtre quand on est sur sa propre page profil
+   * (effet "wow" iOS / desktop). Sur Android, le CSS désactive la perspective
+   * via `html.pinova-platform-android` pour basculer en transformation 2D.
    */
   if (!currentUser.value || !isMyProfile.value) return ''
-  return ''
+  return 'pinova-profile-offcanvas-root'
 })
 
 watch(

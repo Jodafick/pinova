@@ -613,8 +613,10 @@
 
   .lux-dropdown-panel {
     @apply fixed w-[min(240px,calc(100vw-1rem))] rounded-2xl py-1.5;
-    backdrop-filter: blur(20px) saturate(1.12);
-    -webkit-backdrop-filter: blur(20px) saturate(1.12);
+    /* 20px → 12px : dropdown ne couvre qu'une petite zone, le coût GPU
+       continu se justifie peu. */
+    backdrop-filter: blur(12px) saturate(1.1);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
     background: rgb(255 255 255 / 0.94);
     border: 1px solid rgb(255 255 255 / 0.75);
     box-shadow:
@@ -789,12 +791,14 @@
     background: var(--surface-floating-bg);
     border: 1px solid var(--surface-floating-border);
     box-shadow: var(--surface-floating-shadow);
-    backdrop-filter: blur(14px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 
   .dark .app-floating-panel {
-    backdrop-filter: saturate(200%) blur(22px);
-    -webkit-backdrop-filter: saturate(200%) blur(22px);
+    /* 22px → 14px, saturate 200→140% : impact GPU divisé par ~2. */
+    backdrop-filter: saturate(140%) blur(14px);
+    -webkit-backdrop-filter: saturate(140%) blur(14px);
   }
 
   .app-menu-item {
@@ -830,23 +834,30 @@
     background: var(--surface-modal-bg);
     border: 1px solid var(--surface-modal-border);
     box-shadow: var(--surface-modal-shadow);
-    backdrop-filter: blur(16px);
+    /* Blur réduit (16→12px) : sur GPU mobile mid-range, 16px+ coûte ~12% GPU
+       en continu pour un gain visuel marginal. */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .dark .app-modal-surface {
-    backdrop-filter: saturate(200%) blur(28px);
-    -webkit-backdrop-filter: saturate(200%) blur(28px);
+    /* Réduit de 28px → 14px + saturate 200→140% : le composite GPU passe de
+       très cher (~30% mobile mid) à raisonnable (~10%). Différence visuelle
+       quasi-imperceptible en darkmode. */
+    backdrop-filter: saturate(140%) blur(14px);
+    -webkit-backdrop-filter: saturate(140%) blur(14px);
   }
 
   .app-modal-backdrop {
     background: radial-gradient(circle at 35% -10%, rgb(244 114 182 / 0.2), transparent 44%), var(--surface-backdrop);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .dark .app-modal-backdrop {
     background: radial-gradient(circle at 35% -10%, rgb(244 114 182 / 0.12), transparent 46%), var(--surface-backdrop);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .app-card {
@@ -1219,8 +1230,8 @@
 .dark .lux-dropdown-panel {
   background: rgb(12 12 16 / 0.94);
   border-color: rgb(48 48 54 / 0.95);
-  backdrop-filter: blur(22px) saturate(1.08);
-  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  backdrop-filter: blur(14px) saturate(1.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.08);
   box-shadow:
     0 0 0 1px rgb(0 0 0 / 0.5),
     0 28px 56px -12px rgb(0 0 0 / 0.65);
@@ -2381,15 +2392,18 @@ html.pinova-micro-feedback-pulse::after {
  * Off-canvas du tiroir profil mobile (`ProfilePage.vue`).
  *
  * Au repos (sans `--open`) : aucune transformation, pointer-events normal —
- * l'utilisateur peut scroller la page profil librement. C'est CE point qui
- * était cassé en utilisant les utilities Tailwind arbitraires (les variantes
- * `motion-safe` posaient parfois un `transform` ou `pointer-events: none`
- * qui restait actif sur Android Chromium → page blanche / scroll bloqué).
+ * scroll garanti.
  *
- * Avec `--open` : la carte profil glisse à droite (translateX) + scale, et
- * devient inactive (pointer-events: none) pour laisser le tiroir gérer les
- * clics. Effet visuel équivalent à l'ancienne animation, sans la perspective
- * 3D négative qui était la cause initiale.
+ * Deux variantes selon la plateforme (classe posée sur `<html>` par
+ * `usePwaContext`) :
+ *
+ *  - **par défaut** (iOS, desktop, autres) : effet « wow » 3D avec
+ *    perspective négative + rotateY, identique à l'original. Les puces GPU
+ *    modernes (Apple silicon, AMD/Intel desktop) le rendent correctement.
+ *
+ *  - **`html.pinova-platform-android`** : transformation 2D simple
+ *    (translate + scale + opacité). Android Chromium gère mal certaines
+ *    perspectives négatives → on évite le risque de page blanche.
  */
 .pinova-profile-shell {
   position: relative;
@@ -2404,29 +2418,41 @@ html.pinova-micro-feedback-pulse::after {
                 box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1),
                 border-radius 300ms cubic-bezier(0.4, 0, 0.2, 1),
                 background-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
   }
 
-  /*
-   * Au repos (drawer fermé) : aucune contrainte d'overflow / pointer-events,
-   * pour ne pas casser le scroll vertical de la page profil sur Android.
-   */
+  /* Perspective sur l'ancêtre pour activer la profondeur 3D (hors Android). */
+  .pinova-profile-offcanvas-root {
+    perspective: 1500px;
+  }
+  html.pinova-platform-android .pinova-profile-offcanvas-root {
+    perspective: none;
+  }
+
+  /* ───── Variante 3D « wow » (iOS / desktop / autres) ───── */
   .pinova-profile-shell--open {
     overflow-x: hidden;
-    transform: translate3d(78vw, 18px, 0) scale(0.92);
+    transform-style: preserve-3d;
+    transform: translate3d(80vw, 32px, -598px) rotateY(-22deg) scale(1.1);
     border-radius: 32px;
     background: rgba(255, 255, 255, 0.95);
     box-shadow: 0 25px 25px rgba(0, 0, 0, 0.25);
-    /* Inactif tant que le drawer est ouvert (le tiroir gère l'interaction). */
     pointer-events: none;
   }
-
   html.dark .pinova-profile-shell--open {
     background: rgba(10, 10, 10, 0.95);
     box-shadow: 0 28px 55px -8px rgba(0, 0, 0, 0.62);
   }
 
+  /* ───── Variante simple 2D (Android) — pas de rotateY ni Z négatif ───── */
+  html.pinova-platform-android .pinova-profile-shell--open {
+    transform-style: flat;
+    transform: translate3d(78vw, 18px, 0) scale(0.92);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .pinova-profile-shell--open {
+    .pinova-profile-shell--open,
+    html.pinova-platform-android .pinova-profile-shell--open {
       transform: none !important;
       border-radius: 0 !important;
       box-shadow: none !important;

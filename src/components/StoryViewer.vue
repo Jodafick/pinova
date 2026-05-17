@@ -600,12 +600,22 @@ watch(
   },
 )
 
+/*
+ * `deep: true` faisait recalculer à chaque mutation profonde du tableau (likes,
+ * reactions, etc.) → cycles de re-render lourds qui finissaient par geler le
+ * modal sur certains appareils. On surveille maintenant seulement les
+ * signaux qui changent vraiment l'engagement à synchroniser (longueur + slug
+ * du pin courant), ce qui suffit pour le cas usage réel.
+ */
 watch(
-  () => props.pins,
+  [
+    () => props.modelValue,
+    () => props.pins.length,
+    () => props.pins[index.value]?.slug ?? '',
+  ],
   () => {
     if (props.modelValue && props.pins.length > 0) syncStoryEngagementFromProps()
   },
-  { deep: true },
 )
 
 watch(index, () => {
@@ -970,11 +980,22 @@ function onKeydown(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
-  if (heartBurstHideTimer) clearTimeout(heartBurstHideTimer)
+  if (heartBurstHideTimer) {
+    clearTimeout(heartBurstHideTimer)
+    heartBurstHideTimer = null
+  }
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
   clearAdvance()
   clearVideoSafetyTimer()
   clearExitCloseTimer()
   detachStoryTouchGestures?.()
+  /* Reset des états module-level qui survivaient au démontage (cas re-monté
+     immédiat après fermeture → ancres temporelles stales). */
+  segmentTimerAnchorAt = null
+  longPressTriggered = false
 })
 </script>
 
@@ -1052,7 +1073,14 @@ onUnmounted(() => {
         </div>
 
         <div class="relative flex min-h-0 flex-1 flex-col">
-          <div class="relative flex flex-1 items-center justify-center px-3 pb-28 pt-14 sm:px-8">
+          <!--
+            Padding symétrique : auparavant `pt-14 pb-28` poussait l'image
+            visuellement vers le bas de l'écran. On utilise maintenant la même
+            valeur haut/bas (assez pour que le titre auteur en haut et le
+            bouton « voir le pin » en bas ne se superposent pas trop, mais sans
+            décentrer l'image par rapport au viewport).
+          -->
+          <div class="relative flex flex-1 items-center justify-center px-3 py-16 sm:px-8">
             <div
               v-if="current"
               class="relative w-full max-w-[min(100%,520px)] overflow-hidden rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-white/10"

@@ -283,6 +283,9 @@ const SCROLL_BLUR_THRESHOLD = 4
 
 const mobilePageHeaderScrolled = ref(false)
 const homeGlobalHeaderScrolled = ref(false)
+/** État de scroll universel (mobile + desktop, toutes routes) : utilisé pour
+ *  poser un fond glassy sur le `GlobalHeader` desktop dès le moindre défilement. */
+const globalHeaderScrolled = ref(false)
 
 function updateMobileHeaderScroll() {
   if (typeof document === 'undefined') return
@@ -300,6 +303,9 @@ function updateMobileHeaderScroll() {
   } else {
     homeGlobalHeaderScrolled.value = false
   }
+
+  /* Suivi universel : déclenche le vitrage sur GlobalHeader desktop également. */
+  globalHeaderScrolled.value = past
 }
 
 watch(showAppMobileSubheader, () => {
@@ -460,6 +466,7 @@ const pageTransitionName = computed(() => {
       :class="isHomeRoute ? '' : 'max-lg:hidden'"
       :home-mobile-glass="isHomeRoute && isLgDown"
       :home-mobile-glass-scrolled="homeGlobalHeaderScrolled"
+      :desktop-glass-scrolled="globalHeaderScrolled"
     />
 
   <div

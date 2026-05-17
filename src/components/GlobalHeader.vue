@@ -20,10 +20,17 @@ const props = withDefaults(
     /** Home mobile : bandeau transparent tant qu’on n’a pas scrollé (vitrage piloté par App.vue). */
     homeMobileGlass?: boolean
     homeMobileGlassScrolled?: boolean
+    /**
+     * Desktop (toutes routes) : bandeau transparent au repos, puis vitré au
+     * moindre scroll. Permet de garder une cohérence visuelle avec le mobile,
+     * et de laisser le contenu (feed, image héros) « respirer » sous la barre.
+     */
+    desktopGlassScrolled?: boolean
   }>(),
   {
     homeMobileGlass: false,
     homeMobileGlassScrolled: false,
+    desktopGlassScrolled: false,
   },
 )
 
@@ -39,11 +46,26 @@ const isHomeRouteHeader = computed(() => route.name === 'home' || route.path ===
 const homeHeaderChrome = computed(() => isHomeRouteHeader.value && isAuthenticated.value)
 
 const headerShellToneClass = computed(() => {
-  const solid =
-    'bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md border-b border-neutral-200/80 dark:border-neutral-800/80'
-  if (!props.homeMobileGlass) return solid
-  if (props.homeMobileGlassScrolled) return solid
-  return `${solid} max-lg:bg-transparent max-lg:backdrop-blur-none max-lg:border-b-transparent max-lg:shadow-none`
+  /*
+   * Header transparent au repos, vitré (bg semi-transparent + blur) au scroll.
+   *
+   * - Mobile (`homeMobileGlass`) : transparent tant que pas scrollé (home),
+   *   sinon vitré direct.
+   * - Desktop (`desktopGlassScrolled`) : transparent au top, vitré au scroll.
+   */
+  const mobileGlassy = !props.homeMobileGlass || props.homeMobileGlassScrolled
+  const desktopGlassy = props.desktopGlassScrolled
+
+  const mobileTone = mobileGlassy
+    ? 'max-lg:bg-white/85 dark:max-lg:bg-neutral-950/80 max-lg:backdrop-blur-xl max-lg:backdrop-saturate-150 max-lg:border-b max-lg:border-neutral-200/70 dark:max-lg:border-neutral-800/70 max-lg:shadow-[0_8px_24px_-18px_rgba(0,0,0,0.18)] dark:max-lg:shadow-[0_10px_28px_-20px_rgba(0,0,0,0.6)]'
+    : 'max-lg:bg-transparent max-lg:backdrop-blur-none max-lg:border-b-transparent max-lg:shadow-none'
+
+  const desktopTone = desktopGlassy
+    ? 'lg:bg-white/85 dark:lg:bg-neutral-950/80 lg:backdrop-blur-xl lg:backdrop-saturate-150 lg:border-b lg:border-neutral-200/70 dark:lg:border-neutral-800/70 lg:shadow-[0_8px_24px_-18px_rgba(0,0,0,0.18)] dark:lg:shadow-[0_10px_28px_-20px_rgba(0,0,0,0.6)]'
+    : 'lg:bg-transparent lg:backdrop-blur-none lg:border-b-transparent lg:shadow-none'
+
+  /* Transition héritée du `<header>` (déjà définie dans la classe statique). */
+  return `${mobileTone} ${desktopTone}`
 })
 
 let headerHeightRo: ResizeObserver | null = null
