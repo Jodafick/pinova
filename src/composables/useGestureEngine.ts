@@ -281,7 +281,17 @@ export function useGestureEngine(
 
     if (direction.value == null) {
       if (Math.abs(rawDx) < dirThreshold && Math.abs(rawDy) < dirThreshold) return
-      direction.value = Math.abs(rawDx) > Math.abs(rawDy) ? 'horizontal' : 'vertical'
+      /*
+       * Edge horizontal : exiger une dominance horizontaire nette (sinon Chrome Android
+       * verrouille souvent le scroll après un léger dx depuis le bord gauche).
+       */
+      const edgeHoriz =
+        options.axis === 'horizontal' &&
+        options.edge != null &&
+        (options.edge === 'left' || options.edge === 'right')
+      const ratio = edgeHoriz ? 1.28 : 1
+      direction.value =
+        Math.abs(rawDx) >= Math.abs(rawDy) * ratio ? 'horizontal' : 'vertical'
 
       /* Axis lock : si l'axe choisi n'est pas autorisé → cancel. */
       if (

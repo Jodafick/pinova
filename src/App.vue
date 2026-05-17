@@ -28,8 +28,8 @@ import { devLog } from './devLog'
 import { resetPinovaBodyScrollLock } from './utils/pinovaModalBodyLock'
 import { getAppScrollRoot } from './utils/appScrollRoot'
 import { layerManager } from './navigation/layerManager'
+import { adaptiveProfile, getPageTransitionNames } from './navigation/adaptiveNavigator'
 import { pop as nativeStackPop } from './navigation/nativeStack'
-import { getPageTransitionNames } from './navigation/adaptiveNavigator'
 import { pageNavDirection, pageNavIsInitial } from './navigation/routerViewTransition'
 import {
   mobileBoardMoreButtonRef,
@@ -138,6 +138,11 @@ const edgePeekLabel = computed(() => {
 
 const appShellEdgeBackEnabled = () =>
   isLgDown.value &&
+  /*
+   * Chrome Android : zone de bord élargie + `preventScroll` peut classer un geste
+   * vertical comme horizontal → scroll principal bloqué. Le retour natif OS suffit.
+   */
+  adaptiveProfile.value.motionLanguage !== 'material' &&
   !isAuthPage.value &&
   !layerManager.hasLayers.value &&
   !isMobileFullscreenRoute.value &&
@@ -518,7 +523,7 @@ const pageTransitionName = computed(() => {
           : '',
       ]"
     >
-      <div class="pinova-page-transition-host relative flex flex-1 flex-col w-full">
+      <div class="pinova-page-transition-host relative flex min-h-0 flex-1 flex-col w-full">
       <!--
         Transitions : pile session (routerViewTransition) → forward / back.
         Clé `r.path` (pas fullPath) : éviter remount feed quand seule la query ?pin change.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins, mapDjangoPinToFrontend, isAlreadyReportedError } from '../composables/usePins'
 import type { User, Pin } from '../types'
@@ -664,6 +664,11 @@ const currentPlanLabel = computed(() => {
   return 'FREE'
 })
 const profileNavDrawerOpen = ref(false)
+
+/** KeepAlive + tiroir ouvert : sinon `overflow:hidden` sur #main-content fuit vers les autres routes (scroll mort). */
+onBeforeRouteLeave(() => {
+  profileNavDrawerOpen.value = false
+})
 
 /*
  * Classes pilotant l'animation off-canvas via du CSS classique défini dans
