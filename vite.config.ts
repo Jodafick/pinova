@@ -127,6 +127,20 @@ export default defineConfig({
            On évite STRICTEMENT les endpoints qui retournent du contenu
            authentifié sans Cache-Control headers (auth, tokens, etc.). */
         runtimeCaching: [
+          {
+            urlPattern: ({ url }) =>
+              /\/media\//i.test(url.pathname) ||
+              /\/pins\/.+\/(image|video|thumbnail)/i.test(url.pathname),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'pinova-api-media',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 7 * 24 * 3600,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           /* Images Pinova : stale-while-revalidate (retour cache instant). */
           {
             urlPattern: ({ request }) => request.destination === 'image',

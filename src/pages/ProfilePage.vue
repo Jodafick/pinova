@@ -24,7 +24,10 @@ import {
   getCachedProfileCreatedFirstPage,
   profileCreatedPinsCacheKey,
   setCachedProfileCreatedFirstPage,
+  getSavedPinsPageFromDisk,
+  setSavedPinsPageToDisk,
 } from '../pinClientCache'
+import { prefetchPinsMediaForOffline } from '../media/offlineCache'
 import { displayInitials } from '../utils/displayInitials'
 import { shareUrlWithFallback } from '../utils/shareFallback'
 import {
@@ -128,6 +131,7 @@ async function loadProfilePins(username: string, reset: boolean) {
       profilePinsHasMore.value = warmPins.hasMore
       profilePinsNextPage.value = warmPins.nextPage
       profilePinsLoading.value = false
+      prefetchPinsMediaForOffline(warmPins.pins)
       return
     }
     profilePins.value = []
@@ -162,9 +166,25 @@ async function loadProfilePins(username: string, reset: boolean) {
         profilePinsNextPage.value,
       )
     }
+    prefetchPinsMediaForOffline(batch)
   } catch (err) {
     console.error('Erreur chargement pins du profil:', err)
-    if (reset) profilePins.value = []
+    if (reset) {
+      const uname = String(username || '').trim()
+      if (uname) {
+        const warm = getCachedProfileCreatedFirstPage(profileCreatedPinsCacheKey(uname, currentLang.value))
+        if (warm) {
+          profilePins.value = warm.pins
+          profilePinsHasMore.value = warm.hasMore
+          profilePinsNextPage.value = warm.nextPage
+          prefetchPinsMediaForOffline(warm.pins)
+        } else {
+          profilePins.value = []
+        }
+      } else {
+        profilePins.value = []
+      }
+    }
     profilePinsHasMore.value = false
   } finally {
     profilePinsLoading.value = false
@@ -188,7 +208,20 @@ const savedPinsEverOpened = ref(false)
 
 async function loadSavedPins(reset: boolean) {
   if (!currentUser.value) return
+  const diskUser = currentUser.value.username
+  const lang = currentLang.value
+  const offline = typeof navigator !== 'undefined' && !navigator.onLine
+
   if (reset) {
+    const fromDisk = getSavedPinsPageFromDisk(diskUser, lang)
+    if (offline && fromDisk) {
+      savedPinsList.value = fromDisk.pins.map((p) => ({ ...p }))
+      savedPinsHasMore.value = fromDisk.hasMore
+      savedPinsNextPage.value = fromDisk.nextPage
+      savedPinsLoading.value = false
+      prefetchPinsMediaForOffline(fromDisk.pins)
+      return
+    }
     savedPinsList.value = []
     savedPinsNextPage.value = 1
     savedPinsHasMore.value = true
@@ -204,7 +237,7 @@ async function loadSavedPins(reset: boolean) {
         saved_by_me: '1',
         page,
         page_size: PROFILE_PINS_PAGE_SIZE,
-        lang: currentLang.value,
+        lang,
       },
     })
     const batch = (res.data.results || []).map(mapDjangoPinToFrontend)
@@ -212,9 +245,26 @@ async function loadSavedPins(reset: boolean) {
     const hasMore = !!res.data.next
     savedPinsHasMore.value = hasMore && batch.length > 0
     if (hasMore && batch.length > 0) savedPinsNextPage.value = page + 1
+
+    if (reset && page === 1) {
+      setSavedPinsPageToDisk(diskUser, lang, {
+        pins: [...savedPinsList.value],
+        hasMore: savedPinsHasMore.value,
+        nextPage: savedPinsNextPage.value,
+      })
+    }
+    prefetchPinsMediaForOffline(batch)
   } catch (err) {
     console.error('Erreur chargement pins enregistrés:', err)
-    if (reset) savedPinsList.value = []
+    const warm = getSavedPinsPageFromDisk(diskUser, lang)
+    if (warm) {
+      savedPinsList.value = warm.pins.map((p) => ({ ...p }))
+      savedPinsHasMore.value = warm.hasMore
+      savedPinsNextPage.value = warm.nextPage
+      prefetchPinsMediaForOffline(warm.pins)
+    } else if (reset) {
+      savedPinsList.value = []
+    }
     savedPinsHasMore.value = false
   } finally {
     savedPinsLoading.value = false

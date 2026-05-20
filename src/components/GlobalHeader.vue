@@ -7,6 +7,7 @@ import { fetchHeaderSearch, type HeaderSearchUser, type HeaderSearchBoard } from
 import type { Pin } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api'
+import { navigateWebNotificationDeepLink } from '../utils/notificationDeepLink'
 import { subscribeUnreadCountFromHeader } from '../notificationRefresh'
 import AvatarDisc from './AvatarDisc.vue'
 import { displayInitials } from '../utils/displayInitials'
@@ -289,29 +290,21 @@ const handleNotificationClick = async (notification: any) => {
     }
   }
 
-  const meta = notification.metadata && typeof notification.metadata === 'object' ? notification.metadata : {}
-  const metadataKind = String((meta as Record<string, unknown>).kind || '').trim().toLowerCase()
-  const isStoryPin = Boolean(meta.is_story && notification.pin_slug)
-
-  if (metadataKind === 'contest_rank_update') {
-    router.push('/contest/live')
-  } else if (isStoryPin && notification.pin_slug) {
-    const query: Record<string, string> = { story: String(notification.pin_slug) }
-    if (notification.comment_id) {
-      query.commentId = String(notification.comment_id)
-    }
-    router.push({ path: '/', query })
-  } else if (notification.pin_slug) {
-    const query: Record<string, string> = {}
-    if (notification.comment_id) {
-      query.commentId = String(notification.comment_id)
-    }
-    router.push({ path: `/pin/${notification.pin_slug}`, query })
-  } else if (notification.pin_id) {
-    router.push('/')
-  } else if (notification.action_url) {
-    router.push(String(notification.action_url))
-  }
+  const meta =
+    notification.metadata && typeof notification.metadata === 'object' ? notification.metadata : null
+  navigateWebNotificationDeepLink(
+    router,
+    {
+      metadata: meta,
+      pin_slug: notification.pin_slug ?? null,
+      pin_id: notification.pin_id ?? null,
+      comment_id: notification.comment_id ?? null,
+      action_url: notification.action_url ?? null,
+      notification_type: notification.notification_type ?? null,
+      sender_username: notification.sender_username ?? null,
+    },
+    'header',
+  )
   closeDropdowns()
 }
 
@@ -342,18 +335,35 @@ const handleWorkerMessage = (event: MessageEvent) => {
       meta = {}
     }
   }
-  const metadataKind = String(meta.kind || '').trim().toLowerCase()
-  if (metadataKind === 'contest_rank_update') {
-    router.push('/contest/live')
-    return
+
+  const rawId = payload.notification_id
+  const nid =
+    rawId !== undefined && rawId !== null && rawId !== ''
+      ? parseInt(String(rawId), 10)
+      : NaN
+  if (Number.isFinite(nid) && nid > 0) {
+    void api.post(`notifications/${nid}/mark_as_read/`).catch(() => undefined)
   }
-  if (typeof payload.pin_slug === 'string' && payload.pin_slug.trim()) {
-    router.push(`/pin/${encodeURIComponent(payload.pin_slug.trim())}`)
-    return
-  }
-  if (payload.action_url) {
-    router.push(String(payload.action_url))
-  }
+
+  const cidRaw = payload.comment_id
+  const comment_id =
+    cidRaw !== undefined && cidRaw !== null && String(cidRaw).trim() !== ''
+      ? cidRaw
+      : undefined
+
+  navigateWebNotificationDeepLink(
+    router,
+    {
+      metadata: meta,
+      pin_slug: typeof payload.pin_slug === 'string' ? payload.pin_slug : null,
+      pin_id: null,
+      comment_id,
+      action_url: typeof payload.action_url === 'string' ? payload.action_url : null,
+      notification_type: typeof payload.notification_type === 'string' ? payload.notification_type : null,
+      sender_username: typeof payload.sender_username === 'string' ? payload.sender_username : null,
+    },
+    'header',
+  )
 }
 
 const closeDropdowns = () => {

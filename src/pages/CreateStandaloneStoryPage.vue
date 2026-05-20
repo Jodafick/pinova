@@ -19,6 +19,7 @@ import {
 import { mapDjangoPinToFrontend } from '../composables/usePins'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import { consumePendingStoryCaptureFile } from '../utils/storyCaptureDraft'
+import { supportsBrowserStoryVideoEditing } from '../utils/supportsBrowserStoryVideoEditing'
 import { useIsLgDown } from '../composables/useIsLgDown'
 import { useEdgeSwipeBack } from '../composables/useEdgeSwipeBack'
 import { usePinovaHeaderSwipeDismiss } from '../composables/usePinovaHeaderSwipeDismiss'
@@ -229,8 +230,15 @@ async function applyMediaFile(f: File | null) {
   }
   if (isVideo) {
     clearMediaSelection()
-    editingVideoFile.value = f
-    step.value = 'video-edit'
+    if (supportsBrowserStoryVideoEditing()) {
+      editingVideoFile.value = f
+      step.value = 'video-edit'
+      return
+    }
+    storyVideoFile.value = f
+    storyVideoPreviewUrl.value = URL.createObjectURL(f)
+    void runVideoModeration(f)
+    step.value = 'meta'
     return
   }
   clearMediaSelection()

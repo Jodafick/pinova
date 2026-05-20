@@ -140,10 +140,40 @@ function getRouteParam(
   return null
 }
 
+function firstRouteQuery(
+  route: RouteLocationNormalized,
+  key: string,
+): string | null {
+  const value = route.query[key]
+  if (typeof value === 'string' && value.trim()) return value.trim()
+  if (Array.isArray(value)) {
+    const v = value.find((item) => item != null && String(item).trim() !== '')
+    if (v != null) return String(v).trim()
+  }
+  return null
+}
+
+/**
+ * Pour certaines routes, une partie de la query est déjà représentée dans le chemin `pinova://`.
+ */
+function queryKeysOmittedWhenBuildingDeepLink(
+  route: RouteLocationNormalized,
+): Set<string> {
+  const omit = new Set<string>()
+  if (route.name === 'home') {
+    const pin = firstRouteQuery(route, 'pin')
+    if (pin) omit.add('pin')
+  }
+  return omit
+}
+
 function buildScreenPath(route: RouteLocationNormalized): string | null {
   switch (route.name) {
-    case 'home':
+    case 'home': {
+      const pin = firstRouteQuery(route, 'pin')
+      if (pin) return `pin/${encodeURIComponent(pin)}`
       return 'home'
+    }
     case 'notifications':
       return 'notifications'
     case 'contest-notifications':
@@ -154,6 +184,8 @@ function buildScreenPath(route: RouteLocationNormalized): string | null {
       return 'explore/boards'
     case 'following':
       return 'following'
+    case 'search':
+      return 'search'
     case 'pin-detail': {
       const slug = getRouteParam(route.params, 'slug')
       return slug ? `pin/${encodeURIComponent(slug)}` : null
@@ -235,7 +267,9 @@ function buildDeepLink(route: RouteLocationNormalized): string | null {
   if (!screenPath) return null
 
   const query = new URLSearchParams()
+  const omitKeys = queryKeysOmittedWhenBuildingDeepLink(route)
   for (const [key, rawValue] of Object.entries(route.query)) {
+    if (omitKeys.has(key)) continue
     if (key === 'openApp' || key === 'web') continue
     if (Array.isArray(rawValue)) {
       rawValue.forEach((value) => {
@@ -251,15 +285,19 @@ function buildDeepLink(route: RouteLocationNormalized): string | null {
 }
 
 /**
- * Ouvre l’app native uniquement si l’URL demande explicitement `?openApp=1`.
- * Plus de redirection automatique à chaque navigation (cf. bannière une fois `shouldOfferNativeAppOneTimeBanner`).
+ * Avec `?openApp=1` : tentative d’ouverture uniquement si **non connecté au web**
+ * (un autre compte sur le téléphone est courant ; la bannière sert pour le reste).
  */
-export function maybeRedirectWebToApp(route: RouteLocationNormalized): void {
+export function maybeRedirectWebToApp(
+  route: RouteLocationNormalized,
+  opts?: { isAuthenticated?: boolean },
+): void {
   if (typeof window === 'undefined') return
   if (!hasTruthyQueryFlag(route, 'openApp')) return
   if (!isMobileBrowser()) return
   if (hasTruthyQueryFlag(route, 'web')) return
   if (isInstalledPwaDisplay()) return
+  if (opts?.isAuthenticated) return
 
   openNativeAppForRoute(route)
 }

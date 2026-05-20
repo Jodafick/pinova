@@ -17,7 +17,7 @@
  */
 
 const RUNTIME_CACHE = 'pinova-media-v1'
-const MAX_RUNTIME_ENTRIES = 320
+const MAX_RUNTIME_ENTRIES = 480
 
 const fallbackThumbnails = new Map<string, string>()
 const stalePosters = new Map<string, string>()
@@ -153,5 +153,33 @@ export function offlineMediaStats(): {
   return {
     fallbackThumbnails: fallbackThumbnails.size,
     stalePosters: stalePosters.size,
+  }
+}
+
+/* ───────────────────────── Prefetch listes de pins (PWA offline) ──────────── */
+
+export type OfflineMediaPinLike = {
+  imageUrl?: string
+  storyVideoUrl?: string
+  userAvatarUrl?: string
+}
+
+/**
+ * Télécharge en tâche de fond les médias des pins pour le Cache API (vignettes, avatars, vidéos story).
+ * Best-effort : les fichiers volumineux ne seront mis en cache que si le réseau y parvient.
+ */
+export function prefetchPinsMediaForOffline(pins: readonly OfflineMediaPinLike[]): void {
+  if (typeof window === 'undefined' || !pins.length) return
+  const seen = new Set<string>()
+  const push = (u: string | undefined) => {
+    const s = (u || '').trim()
+    if (!s || seen.has(s)) return
+    seen.add(s)
+    void cacheMediaForOffline(s)
+  }
+  for (const p of pins) {
+    push(p.imageUrl)
+    push(p.userAvatarUrl)
+    push(p.storyVideoUrl)
   }
 }

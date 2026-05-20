@@ -13,6 +13,7 @@ import {
   clearFeedFirstPageClientCache,
   invalidateProfileCreatedPinsCacheForUsername,
 } from '../pinClientCache'
+import { prefetchPinsMediaForOffline } from '../media/offlineCache'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 import { fetchCurrentUser } from './useAuth'
 
@@ -281,6 +282,7 @@ export function usePins() {
         })
         const mapped = mapDjangoPinToFrontend(response.data)
         setCachedPinDetail(slug, mapped)
+        prefetchPinsMediaForOffline([mapped])
         const idx = pins.value.findIndex((p) => p.slug === slug)
         if (idx >= 0) {
           pins.value[idx] = { ...pins.value[idx], ...mapped }
@@ -302,6 +304,7 @@ export function usePins() {
     const mapped = mapDjangoPinToFrontend(response.data)
     invalidatePinDetailClientCache(slug)
     setCachedPinDetail(slug, mapped)
+    prefetchPinsMediaForOffline([mapped])
     const idx = pins.value.findIndex((p) => p.slug === slug)
     if (idx >= 0) {
       pins.value[idx] = { ...pins.value[idx], ...mapped }

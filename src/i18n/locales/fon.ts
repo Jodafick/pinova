@@ -54,6 +54,15 @@ export const fon: Record<string, string> = {
   'nativeApp.suggest.lead': 'App Pinova sɔ́ ɖe xwé hwenu mɛ.',
   'nativeApp.suggest.open': 'Yi app ɖí',
   'nativeApp.suggest.dismiss': 'Tɛ́n xwé nu',
+  'nativeApp.manual.title': 'Yi app Pinova',
+  'nativeApp.manual.lead':
+    'Kplɔzi app nu nɛ app bɛ to; mì kpɔ xixɔ kpo mì do xixɔ nɔ app mɛ kpɔ',
+  'nativeApp.manual.loggedInNote':
+    'Wò kpo ɖò xwé — app mɛ a nɔ xixɔ wɛ a; mi dó kɛn',
+  'nativeApp.manual.notInstalled':
+    'Nɛ app ma de mì dó kpɔ kpɔ ɖɔ mì si app ma to o.',
+  'nativeApp.manual.openNative': 'Yi Pinova',
+  'nativeApp.manual.continueWeb': 'Tɛ́n xwé nu',
 
   'app.loading': 'Pinova dò sɔ́...',
   'app.offline': 'É MA ƉÒ INTERNET JÍ Ǎ',

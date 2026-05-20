@@ -86,6 +86,16 @@ export const en: Record<string, string> = {
   'nativeApp.suggest.open': 'Open app',
   'nativeApp.suggest.dismiss': 'Stay on the web',
 
+  'nativeApp.manual.title': 'Open in the Pinova app',
+  'nativeApp.manual.lead':
+    'Use the button below to open the native app when it is installed. We do not redirect automatically—you may use a different account on your phone.',
+  'nativeApp.manual.loggedInNote':
+    'You are signed in on the web; the app may still be signed into another profile. Opening the app is always optional.',
+  'nativeApp.manual.notInstalled':
+    'If nothing happens, the app may not be installed or the OS blocked opening it.',
+  'nativeApp.manual.openNative': 'Open Pinova',
+  'nativeApp.manual.continueWeb': 'Stay on web',
+
   'modal.prompt.hint': 'Enter to confirm · Esc or outside click to dismiss',
   'modal.errorTitle': 'Error',
   'modal.confirm.ok': 'Confirm',

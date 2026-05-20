@@ -88,6 +88,16 @@ export const fr: Record<string, string> = {
   'nativeApp.suggest.open': 'Ouvrir l’app',
   'nativeApp.suggest.dismiss': 'Continuer sur le web',
 
+  'nativeApp.manual.title': 'Ouvrir dans l’app Pinova',
+  'nativeApp.manual.lead':
+    'Tapez ci-dessous pour lancer l’app si elle est installée. Nous ne redirigeons pas automatiquement : vous pouvez avoir un autre compte sur le téléphone.',
+  'nativeApp.manual.loggedInNote':
+    'Vous êtes connecté sur le navigateur ; la même action dans l’app peut utiliser un compte différent. Ouvrir l’app reste facultatif.',
+  'nativeApp.manual.notInstalled':
+    'Si rien ne se passe, l’application n’est pas installée ou le système bloque l’ouverture.',
+  'nativeApp.manual.openNative': 'Ouvrir Pinova',
+  'nativeApp.manual.continueWeb': 'Continuer sur le web',
+
   'modal.prompt.hint': 'Entrée pour valider · Échap ou clic à l’extérieur pour fermer',
   'modal.errorTitle': 'Erreur',
   'modal.confirm.ok': 'Confirmer',

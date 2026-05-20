@@ -4,9 +4,95 @@
  */
 import type { Pin, User } from './types'
 
+export type BoardDetailSnapshot = {
+  boardName: string
+  ownerUsername: string
+  boardDescription: string
+  viewerCanManage: boolean
+  boardIsPrivate: boolean
+  boardIsOwner: boolean
+  boardPins: Pin[]
+}
+
 const ENTITY_TTL_MS = 7 * 24 * 60 * 60 * 1000 /* 7 jours */
 const PROFILE_LS_PREFIX = 'pinova_entity_profile_v1:'
 const PROFILE_LS_MAX_ENTRIES = 48
+const BOARD_LS_PREFIX = 'pinova_entity_board_v1:'
+const BOARD_LS_MAX_ENTRIES = 32
+
+function boardLocalStorageKey(cacheKey: string): string {
+  return BOARD_LS_PREFIX + encodeURIComponent(cacheKey)
+}
+
+function pruneBoardLocalStorage(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const entries: { key: string; t: number }[] = []
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (!key || !key.startsWith(BOARD_LS_PREFIX)) continue
+      const raw = window.localStorage.getItem(key)
+      if (!raw) continue
+      try {
+        const parsed = JSON.parse(raw) as { t?: number }
+        if (typeof parsed.t === 'number') entries.push({ key, t: parsed.t })
+      } catch {
+        /* ignore */
+      }
+    }
+    if (entries.length <= BOARD_LS_MAX_ENTRIES) return
+    entries.sort((a, b) => a.t - b.t)
+    const excess = entries.length - BOARD_LS_MAX_ENTRIES
+    for (let i = 0; i < excess; i++) {
+      window.localStorage.removeItem(entries[i].key)
+    }
+  } catch {
+    /* quota */
+  }
+}
+
+function persistBoardSnapshotToStorage(cacheKey: string, snapshot: BoardDetailSnapshot): void {
+  if (typeof window === 'undefined' || !cacheKey) return
+  try {
+    const lsKey = boardLocalStorageKey(cacheKey)
+    window.localStorage.setItem(lsKey, JSON.stringify({ t: Date.now(), snapshot }))
+    pruneBoardLocalStorage()
+  } catch {
+    /* quota */
+  }
+}
+
+function readBoardSnapshotFromStorage(cacheKey: string): { t: number; snapshot: BoardDetailSnapshot } | null {
+  if (typeof window === 'undefined' || !cacheKey) return null
+  try {
+    const raw = window.localStorage.getItem(boardLocalStorageKey(cacheKey))
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { t?: number; snapshot?: BoardDetailSnapshot }
+    if (
+      typeof parsed.t !== 'number' ||
+      !parsed.snapshot ||
+      typeof parsed.snapshot !== 'object'
+    ) {
+      return null
+    }
+    if (Date.now() - parsed.t > ENTITY_TTL_MS) {
+      window.localStorage.removeItem(boardLocalStorageKey(cacheKey))
+      return null
+    }
+    return { t: parsed.t, snapshot: parsed.snapshot }
+  } catch {
+    return null
+  }
+}
+
+function removeBoardSnapshotFromStorage(cacheKey: string): void {
+  if (typeof window === 'undefined' || !cacheKey) return
+  try {
+    window.localStorage.removeItem(boardLocalStorageKey(cacheKey))
+  } catch {
+    /* ignore */
+  }
+}
 
 function profileLocalStorageKey(cacheKey: string): string {
   return PROFILE_LS_PREFIX + encodeURIComponent(cacheKey)
@@ -76,16 +162,6 @@ function removeProfileUserFromStorage(cacheKey: string): void {
   }
 }
 
-export type BoardDetailSnapshot = {
-  boardName: string
-  ownerUsername: string
-  boardDescription: string
-  viewerCanManage: boolean
-  boardIsPrivate: boolean
-  boardIsOwner: boolean
-  boardPins: Pin[]
-}
-
 const profileByKey = new Map<string, { t: number; user: User }>()
 const boardByKey = new Map<string, { t: number; snapshot: BoardDetailSnapshot }>()
 
@@ -97,7 +173,7 @@ export function clearEntityClientCaches(): void {
       const toRemove: string[] = []
       for (let i = 0; i < window.localStorage.length; i++) {
         const k = window.localStorage.key(i)
-        if (k && k.startsWith(PROFILE_LS_PREFIX)) toRemove.push(k)
+        if (k && (k.startsWith(PROFILE_LS_PREFIX) || k.startsWith(BOARD_LS_PREFIX))) toRemove.push(k)
       }
       for (const k of toRemove) {
         window.localStorage.removeItem(k)
@@ -149,11 +225,23 @@ export function invalidateProfileDetailCache(key: string): void {
 
 export function getCachedBoardDetail(key: string): BoardDetailSnapshot | null {
   const hit = boardByKey.get(key)
-  if (!hit || Date.now() - hit.t > ENTITY_TTL_MS) return null
-  return {
-    ...hit.snapshot,
-    boardPins: hit.snapshot.boardPins.map((p) => ({ ...p })),
+  if (hit && Date.now() - hit.t <= ENTITY_TTL_MS) {
+    return {
+      ...hit.snapshot,
+      boardPins: hit.snapshot.boardPins.map((p) => ({ ...p })),
+    }
   }
+  if (hit) boardByKey.delete(key)
+
+  const fromDisk = readBoardSnapshotFromStorage(key)
+  if (fromDisk) {
+    boardByKey.set(key, { t: fromDisk.t, snapshot: { ...fromDisk.snapshot } })
+    return {
+      ...fromDisk.snapshot,
+      boardPins: fromDisk.snapshot.boardPins.map((p) => ({ ...p })),
+    }
+  }
+  return null
 }
 
 export function setCachedBoardDetail(key: string, snapshot: BoardDetailSnapshot): void {
@@ -165,8 +253,13 @@ export function setCachedBoardDetail(key: string, snapshot: BoardDetailSnapshot)
       boardPins: snapshot.boardPins.map((p) => ({ ...p })),
     },
   })
+  persistBoardSnapshotToStorage(key, {
+    ...snapshot,
+    boardPins: snapshot.boardPins.map((p) => ({ ...p })),
+  })
 }
 
 export function invalidateBoardDetailCache(key: string): void {
   if (key) boardByKey.delete(key)
+  removeBoardSnapshotFromStorage(key)
 }

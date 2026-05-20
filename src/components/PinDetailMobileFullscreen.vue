@@ -15,6 +15,8 @@ import {
   pinMediaAntiLeakImgBindings,
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
+import OfflineImg from './OfflineImg.vue'
+import OfflineVideo from './OfflineVideo.vue'
 
 type CommentSubmitPayload = {
   text: string
@@ -533,7 +535,7 @@ onUnmounted(() => {
             media-type="image"
             wrapper-class="h-full w-full flex items-center justify-center"
           >
-            <img
+            <OfflineImg
               :src="slide.pin.imageUrl"
               :alt="slide.pin.title ? `${slide.pin.title} - ${slide.pin.user}` : t('feed.pinImageFallback', { user: slide.pin.user })"
               :fetchpriority="slide.active ? detailImageFetchPriority : 'low'"
@@ -542,7 +544,7 @@ onUnmounted(() => {
               :class="[PIN_MEDIA_ANTI_LEAK_CLASS, 'pin-mobile-media']"
               @load="slide.active ? onImageLoad($event) : undefined"
               v-bind="pinMediaAntiLeakImgBindings()"
-            >
+            />
           </PinSensitiveMedia>
 
           <PinSensitiveMedia
@@ -554,7 +556,7 @@ onUnmounted(() => {
             media-type="video"
             wrapper-class="h-full w-full flex items-center justify-center"
           >
-            <video
+            <OfflineVideo
               :src="slide.pin.storyVideoUrl"
               class="pin-mobile-media"
               :controls="slide.active"
@@ -592,7 +594,12 @@ onUnmounted(() => {
                     text-class="text-white"
                     :has-image="!!slide.pin.userAvatarUrl"
                   >
-                    <img v-if="slide.pin.userAvatarUrl" :src="slide.pin.userAvatarUrl" alt="" class="h-full w-full object-cover">
+                    <OfflineImg
+                      v-if="slide.pin.userAvatarUrl"
+                      :src="slide.pin.userAvatarUrl"
+                      alt=""
+                      class="h-full w-full object-cover"
+                    />
                     <span v-else class="avatar-text">{{ displayInitials(slide.pin.user) }}</span>
                   </AvatarDisc>
                 </router-link>

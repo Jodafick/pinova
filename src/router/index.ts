@@ -480,7 +480,8 @@ router.beforeEach(async (to, from) => {
 
 router.afterEach((to) => {
   devLog(`✅ Navigated to ${String(to.name)}`)
-  maybeRedirectWebToApp(to)
+  const { isAuthenticated } = useAuth()
+  maybeRedirectWebToApp(to, { isAuthenticated: isAuthenticated.value })
 })
 
 router.onError((error) => {

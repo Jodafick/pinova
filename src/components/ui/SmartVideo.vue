@@ -33,7 +33,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useVideoPool } from '../../composables/useVideoPool'
 import { blurhashToDataUrl } from '../../composables/useBlurhash'
-import { mediaProfile, pauseVideo, playVideo, rememberVideoPoster } from '../../media'
+import { mediaProfile, pauseVideo, playVideo, rememberVideoPoster, cacheMediaForOffline } from '../../media'
 
 interface Props {
   src: string
@@ -204,6 +204,7 @@ function onReady() {
   if (!isReady.value) {
     isReady.value = true
     emit('firstframe')
+    if (props.src) void cacheMediaForOffline(props.src)
   }
 }
 

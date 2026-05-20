@@ -2,6 +2,10 @@
 import { computed, onActivated, onDeactivated, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api'
+import {
+  navigateWebNotificationDeepLink,
+  type WebNotificationNavInput,
+} from '../utils/notificationDeepLink'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import AvatarDisc from '../components/AvatarDisc.vue'
@@ -31,6 +35,7 @@ type NotificationRow = {
   comment_id?: number | null
   action_url?: string | null
   metadata?: Record<string, unknown> | null
+  notification_type?: string | null
 }
 
 const notifications = ref<NotificationRow[]>([])
@@ -132,29 +137,23 @@ async function handleClick(notification: NotificationRow) {
       console.error('NotificationsPage: mark read error', err)
     }
   }
-  const meta = (notification.metadata && typeof notification.metadata === 'object'
-    ? notification.metadata
-    : {}) as Record<string, unknown>
-  const metadataKind = String(meta.kind || '').trim().toLowerCase()
-  const isStoryPin = Boolean(meta.is_story && notification.pin_slug)
-
-  if (metadataKind === 'contest_rank_update') {
-    router.push('/contest/live')
-  } else if (isStoryPin && notification.pin_slug) {
-    const query: Record<string, string> = { story: String(notification.pin_slug) }
-    if (notification.comment_id) query.commentId = String(notification.comment_id)
-    router.push({ path: '/', query })
-  } else if (notification.pin_slug) {
-    const query: Record<string, string> = {
-      pin: String(notification.pin_slug),
-    }
-    if (notification.comment_id) query.commentId = String(notification.comment_id)
-    router.push({ path: route.path, query })
-  } else if (notification.pin_id) {
-    router.push('/')
-  } else if (notification.action_url) {
-    router.push(String(notification.action_url))
+  const meta =
+    notification.metadata && typeof notification.metadata === 'object'
+      ? (notification.metadata as Record<string, unknown>)
+      : null
+  const input: WebNotificationNavInput = {
+    metadata: meta,
+    pin_slug: notification.pin_slug ?? null,
+    pin_id: notification.pin_id ?? null,
+    comment_id: notification.comment_id ?? null,
+    action_url: notification.action_url ?? null,
+    notification_type: notification.notification_type ?? null,
+    sender_username: notification.sender_username ?? null,
   }
+  navigateWebNotificationDeepLink(router, input, 'notificationsPage', {
+    path: route.path,
+    query: route.query as Record<string, string | string[]>,
+  })
 }
 
 onMounted(() => {

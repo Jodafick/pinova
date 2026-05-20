@@ -17,6 +17,8 @@ self.addEventListener('push', (event) => {
       notification_type: payload.notification_type || '',
       metadata_json: payload.metadata_json || '',
       notification_id: payload.notification_id,
+      comment_id: payload.comment_id != null && payload.comment_id !== '' ? String(payload.comment_id) : '',
+      sender_username: payload.sender_username || '',
     },
   }
   event.waitUntil(self.registration.showNotification(title, options))
@@ -24,24 +26,34 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const targetPath = (event.notification.data && event.notification.data.action_url) || '/'
-  const payload = (event.notification && event.notification.data) || {}
+  const raw = (event.notification && event.notification.data) || {}
+  const targetPath = raw.action_url || '/'
+  const payload = {
+    type: 'pinova_push_click',
+    action_url: targetPath,
+    pin_slug: raw.pin_slug || '',
+    notification_type: raw.notification_type || '',
+    metadata_json: raw.metadata_json || '',
+    notification_id: raw.notification_id,
+    comment_id: raw.comment_id || '',
+    sender_username: raw.sender_username || '',
+  }
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientsArr) => {
+      const origin = self.location.origin
+      const openUrl =
+        typeof targetPath === 'string' && (targetPath.startsWith('http://') || targetPath.startsWith('https://'))
+          ? targetPath
+          : `${origin}${targetPath.startsWith('/') ? '' : '/'}${targetPath}`
+
       for (const client of clientsArr) {
         if ('focus' in client) {
-          client.postMessage({
-            type: 'pinova_push_click',
-            action_url: targetPath,
-            pin_slug: payload.pin_slug || '',
-            notification_type: payload.notification_type || '',
-            metadata_json: payload.metadata_json || '',
-          })
+          client.postMessage(payload)
           return client.focus()
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow(targetPath)
+        return self.clients.openWindow(openUrl)
       }
       return undefined
     })

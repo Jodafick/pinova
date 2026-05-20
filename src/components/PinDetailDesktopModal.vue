@@ -13,6 +13,8 @@ import {
   pinMediaAntiLeakImgBindings,
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
+import OfflineImg from './OfflineImg.vue'
+import OfflineVideo from './OfflineVideo.vue'
 
 type CommentSubmitPayload = {
   text: string
@@ -125,7 +127,7 @@ function onVideoMetadata(e: Event) {
                 media-type="image"
                 wrapper-class="w-full h-full flex justify-center items-center"
               >
-                <img
+                <OfflineImg
                   :src="pin.imageUrl"
                   :alt="pin.title ? `${pin.title} - ${pin.user}` : t('feed.pinImageFallback', { user: pin.user })"
                   :fetchpriority="detailImageFetchPriority"
@@ -135,7 +137,7 @@ function onVideoMetadata(e: Event) {
                   @load="onImageLoad"
                   @dblclick.prevent="emit('double-like')"
                   v-bind="pinMediaAntiLeakImgBindings()"
-                >
+                />
               </PinSensitiveMedia>
               <PinSensitiveMedia
                 v-else-if="pin.storyVideoUrl"
@@ -146,7 +148,7 @@ function onVideoMetadata(e: Event) {
                 media-type="video"
                 wrapper-class="w-full h-full flex justify-center items-center"
               >
-                <video
+                <OfflineVideo
                   :src="pin.storyVideoUrl"
                   controls
                   playsinline

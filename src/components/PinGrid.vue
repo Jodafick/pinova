@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { Pin } from '../types'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
@@ -17,6 +17,9 @@ import {
   pinMediaAntiLeakImgBindings,
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
+import OfflineImg from './OfflineImg.vue'
+import OfflineVideo from './OfflineVideo.vue'
+import { prefetchPinsMediaForOffline } from '../media/offlineCache'
 
 const { isPinSavePending, toggleLike, deletePin } = usePins()
 const { isAuthenticated, currentUser, fetchCurrentUser } = useAuth()
@@ -111,6 +114,20 @@ const columns = computed(() => {
 const gridBusy = computed(
   () =>
     (props.loadingInitial && props.pins.length === 0) || props.loadingMore,
+)
+
+let prefetchDebounce: ReturnType<typeof setTimeout> | null = null
+watch(
+  () => props.pins,
+  (pins) => {
+    if (!pins?.length) return
+    if (prefetchDebounce) clearTimeout(prefetchDebounce)
+    prefetchDebounce = setTimeout(() => {
+      prefetchPinsMediaForOffline(pins)
+      prefetchDebounce = null
+    }, 450)
+  },
+  { deep: true },
 )
 
 /** Menu ⋯ propriétaire (modifier / supprimer) */
@@ -309,7 +326,7 @@ onUnmounted(() => {
             media-type="image"
             wrapper-class="w-full"
           >
-            <img
+            <OfflineImg
               :src="cell.pin.imageUrl"
               :alt="cell.pin.title ? `${cell.pin.title} — ${cell.pin.user}` : t('feed.pinImageFallback', { user: cell.pin.user })"
               :sizes="gridImageSizes"
@@ -335,7 +352,7 @@ onUnmounted(() => {
             media-type="video"
             wrapper-class="w-full"
           >
-            <video
+            <OfflineVideo
               :src="cell.pin.storyVideoUrl"
               muted
               playsinline

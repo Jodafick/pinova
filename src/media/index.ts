@@ -25,6 +25,7 @@ export {
   getOfflineMediaUrl,
   getStaleVideoPreview,
   offlineMediaStats,
+  prefetchPinsMediaForOffline,
   rememberVideoPoster,
   releaseFallbackThumbnail,
   setFallbackThumbnail,

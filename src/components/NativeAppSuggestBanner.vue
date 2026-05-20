@@ -2,6 +2,7 @@
 import { onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from '../i18n'
+import { useAuth } from '../composables/useAuth'
 import {
   dismissNativeAppSuggest,
   openNativeAppForRoute,
@@ -12,6 +13,7 @@ const props = defineProps<{ appReady: boolean }>()
 
 const route = useRoute()
 const { t } = useI18n()
+const { isAuthenticated } = useAuth()
 
 const open = ref(false)
 const DELAY_MS = 2000
@@ -28,18 +30,21 @@ function scheduleShow() {
   clearTimer()
   open.value = false
   if (!props.appReady) return
+  /** Connecté au web : on ne propose pas « ouvrir l’app » (compte mobile souvent différent). */
+  if (isAuthenticated.value) return
   if (route.meta.guest === true) return
   if (!shouldOfferNativeAppOneTimeBanner()) return
   timer = window.setTimeout(() => {
     timer = null
     if (route.meta.guest === true) return
+    if (isAuthenticated.value) return
     if (!shouldOfferNativeAppOneTimeBanner()) return
     open.value = true
   }, DELAY_MS)
 }
 
 watch(
-  () => [props.appReady, route.fullPath] as const,
+  () => [props.appReady, route.fullPath, isAuthenticated.value] as const,
   () => {
     scheduleShow()
   },
