@@ -184,10 +184,16 @@ const profileDirectTo = computed(() =>
 
 type NavItem = { name: string; label: string; to: string }
 
-const navMain = computed<NavItem[]>(() => [
-  { name: 'home', label: t('nav.home'), to: '/' },
-  { name: 'explore', label: t('nav.explore'), to: '/explore' },
-])
+const navMain = computed<NavItem[]>(() => {
+  const base: NavItem[] = [
+    { name: 'home', label: t('nav.home'), to: '/' },
+    { name: 'explore', label: t('nav.explore'), to: '/explore' },
+  ]
+  if (!isAuthenticated.value) {
+    base.push({ name: 'premium', label: t('nav.pricing'), to: '/premium' })
+  }
+  return base
+})
 
 /** Concours, parrainage, suivis — réservé compte connecté. */
 const navCommunity = computed<NavItem[]>(() => {
@@ -985,6 +991,7 @@ watch(
                 {{ t('nav.settings') }}
               </router-link>
               <router-link
+                v-if="currentUser?.subscription?.hasBillingHistory !== false"
                 to="/billing"
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
@@ -1030,11 +1037,16 @@ watch(
 
       <template v-else>
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+          <!--
+            Compact (&lt; lg) : la nav grille n’est pas visible — lien Tarifs +
+            une seule CTA inscription (Connexion/Gmail restent dans le hero).
+            À partir de lg : « Tarifs » est dans navMain ; ici inscription seulement.
+          -->
           <router-link
-            to="/login"
-            class="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition whitespace-nowrap"
+            to="/premium"
+            class="lg:hidden px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-pink-700 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-950/35 transition whitespace-nowrap"
           >
-            {{ t('nav.login') }}
+            {{ t('nav.pricing') }}
           </router-link>
           <router-link
             to="/register"

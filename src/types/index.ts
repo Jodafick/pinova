@@ -78,7 +78,9 @@ export type PinLikersResponse = {
   likers: PinLikerEntry[]
 }
 
-export type User = {
+import type { UserProfileExtended } from './profileExtended'
+
+export type User = UserProfileExtended & {
   id: number
   username: string
   displayName: string
@@ -122,6 +124,8 @@ export type User = {
     seatMaxInvitees?: number
     /** Dernier cycle facturé (paiement approuvé) — pour activer le changement mensuel/annuel */
     activeBillingCycle?: 'monthly' | 'yearly' | null
+    /** Au moins une entrée d’historique de paiement (API `has_billing_history`) */
+    hasBillingHistory?: boolean
     /** Plus/Pro — flouter les médias marqués sensibles par défaut (client) */
     sensitiveMediaBlurByDefault?: boolean
     /** Majeur vérifié — masquer totalement les pins sensibles d'autrui */

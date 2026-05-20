@@ -155,7 +155,7 @@ async function handleGoogleClick() {
           </div>
           <span class="text-3xl font-auth-title">Pinova</span>
         </div>
-        <h1 class="text-5xl font-auth-title font-auth-title--black leading-tight mb-4">
+        <h1 class="text-[3.35rem] font-auth-title font-auth-title--black leading-tight mb-4">
           {{ t('register.hero.title') }}
         </h1>
         <p class="text-lg text-white/90 max-w-md">

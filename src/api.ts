@@ -64,16 +64,46 @@ function clearStoredTokens() {
   window.dispatchEvent(new Event(AUTH_INVALIDATED_EVENT))
 }
 
+/** Comme Pinova-Mobile : évite de tout effacer après un lag réseau / 5xx sur POST refresh. */
+function shouldClearAuthAfterRefreshError(error: unknown): boolean {
+  const e = error as { code?: unknown; message?: unknown; response?: { status?: number } }
+  const status = e.response?.status
+  const code = String(e.code || '')
+  const message = String(e.message || '').toLowerCase()
+  if (status === 400 || status === 401) return true
+  if (status !== undefined && status >= 500) return false
+  if (
+    code === 'ECONNABORTED' ||
+    code === 'ETIMEDOUT' ||
+    code === 'ERR_TIMEOUT' ||
+    code === 'ERR_NETWORK' ||
+    message.includes('timeout') ||
+    message.includes('network')
+  ) {
+    return false
+  }
+  return false
+}
+
 async function refreshAccessWithSingleFlight(refreshToken: string): Promise<string | null> {
   if (refreshInFlightPromise) return refreshInFlightPromise
   refreshInFlightPromise = (async () => {
     try {
+      const deviceId = typeof window !== 'undefined' ? ensureDeviceBindingId() : ''
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (deviceId) headers['X-Pinova-Device-Binding'] = deviceId
+      const lc = getCurrentWebLang()
+      headers['X-Pinova-Lang'] = lc
+      headers['Accept-Language'] =
+        lc === 'en' ? 'en, fr;q=0.82' : lc === 'fon' ? 'fon, fr;q=0.92' : 'fr, en;q=0.6'
+
       const { data } = await axios.post<{ access?: string; refresh?: string }>(
         `${API_URL}auth/token/refresh/`,
         { refresh: refreshToken },
         {
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           timeout: API_REQUEST_TIMEOUT_MS,
+          withCredentials: true,
         },
       )
       const newAccess = data?.access
@@ -90,8 +120,10 @@ async function refreshAccessWithSingleFlight(refreshToken: string): Promise<stri
       }
       api.defaults.headers.common.Authorization = `Bearer ${newAccess}`
       return newAccess
-    } catch {
-      clearStoredTokens()
+    } catch (error) {
+      if (shouldClearAuthAfterRefreshError(error)) {
+        clearStoredTokens()
+      }
       return null
     } finally {
       refreshInFlightPromise = null
@@ -118,6 +150,12 @@ export async function proactiveRefreshIfStale(): Promise<void> {
 }
 
 api.interceptors.request.use((config) => {
+  const lc = getCurrentWebLang()
+  config.headers = config.headers ?? {}
+  ;(config.headers as Record<string, string>)['X-Pinova-Lang'] = lc
+  ;(config.headers as Record<string, string>)['Accept-Language'] =
+    lc === 'en' ? 'en, fr;q=0.82' : lc === 'fon' ? 'fon, fr;q=0.92' : 'fr, en;q=0.6'
+
   const method = String(config.method || 'get').toLowerCase()
   if (method === 'get') {
     const params = (config.params || {}) as Record<string, unknown>
@@ -168,11 +206,20 @@ api.interceptors.response.use(
     }
 
     const originalRequest = error?.config || {}
-    const requestUrl = originalRequest.url || ''
+    const requestUrl =
+      `${String(originalRequest.baseURL ?? '')}${String(originalRequest.url ?? '')}`
     const isRefreshRequest = requestUrl.includes('auth/token/refresh/')
     const isRetried = !!originalRequest._retry
-
-    if (status === 401 && !isRefreshRequest && !isRetried) {
+    const skipRefreshRetry =
+      requestUrl.includes('auth/login/') ||
+      requestUrl.includes('auth/registration/') ||
+      requestUrl.includes('token/verify/')
+    if (
+      status === 401 &&
+      !isRefreshRequest &&
+      !isRetried &&
+      !skipRefreshRetry
+    ) {
       const refreshToken = typeof window !== 'undefined' ? window.localStorage.getItem('pinova_refresh_token') : null
       if (!refreshToken) {
         clearStoredTokens()
@@ -188,9 +235,10 @@ api.interceptors.response.use(
         originalRequest.headers = originalRequest.headers || {}
         originalRequest.headers.Authorization = `Bearer ${newAccess}`
         return api.request(originalRequest)
-      } catch (refreshError) {
-        clearStoredTokens()
-        return Promise.reject(refreshError)
+      } catch (retryErr) {
+        const st = (retryErr as { response?: { status?: number } })?.response?.status
+        if (st === 401) clearStoredTokens()
+        return Promise.reject(retryErr)
       }
     }
 

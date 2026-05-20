@@ -401,6 +401,24 @@ async function runVideoModeration(file: File) {
       })
       return
     }
+    if (r.level === 'video_too_small') {
+      pendingSensitiveBlur.value = false
+      clearStoryVideo()
+      await showAlert(t('moderation.videoTooShort', { minMb: r.minSizeMb }), {
+        variant: 'warning',
+        title: t('modal.errorTitle'),
+      })
+      return
+    }
+    if (r.level === 'video_too_large') {
+      pendingSensitiveBlur.value = false
+      clearStoryVideo()
+      await showAlert(t('moderation.videoTooHeavy', { maxMb: r.maxSizeMb }), {
+        variant: 'warning',
+        title: t('modal.errorTitle'),
+      })
+      return
+    }
     if (r.level === 'blur') {
       pendingSensitiveBlur.value = true
       await showAlert(t('moderation.blurTierPublish'), { variant: 'info' })
@@ -758,12 +776,13 @@ function setPinVisibility(id: 'public' | 'followers' | 'private') {
   visibility.value = id
 }
 
-function scrollPinMobileMetaToEnd() {
+function scrollPinMobileMetaToStart() {
   void nextTick(() => {
     requestAnimationFrame(() => {
       const el = pinMobileMetaScrollRef.value
       if (!el) return
-      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+      el.scrollTop = 0
+      titleInput.value?.focus({ preventScroll: true })
     })
   })
 }
@@ -774,7 +793,7 @@ watch(
     if (!isLgDown.value || loadingEdit.value) return
     if (mobileCreateStep.value === 'edit') return
     if (!isEditMode.value && mobileCreateStep.value !== 'meta') return
-    scrollPinMobileMetaToEnd()
+    scrollPinMobileMetaToStart()
   },
   { flush: 'post', immediate: true },
 )
@@ -962,12 +981,12 @@ usePinovaHeaderSwipeDismiss({
         class="relative z-20 shrink-0 px-4 pb-2"
       >
         <div
-          class="mx-auto flex max-h-[min(36svh,300px)] w-full max-w-md items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/55"
+          class="mx-auto flex max-h-[min(24svh,220px)] w-full max-w-md items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/55"
         >
           <video
             v-if="storyVideoPreviewUrl || (!imagePreviewUrl && (existingStoryVideoUrl || '').trim())"
             :src="storyVideoPreviewUrl || existingStoryVideoUrl || ''"
-            class="max-h-[min(36svh,300px)] w-full object-contain"
+            class="max-h-[min(24svh,220px)] w-full object-contain"
             autoplay
             muted
             loop
@@ -977,7 +996,7 @@ usePinovaHeaderSwipeDismiss({
             v-else
             :src="(imagePreviewUrl || existingImageUrl || '').trim()"
             alt=""
-            class="max-h-[min(36svh,300px)] w-full object-contain"
+            class="max-h-[min(24svh,220px)] w-full object-contain"
           >
         </div>
       </div>
@@ -1018,7 +1037,7 @@ usePinovaHeaderSwipeDismiss({
                 v-model="title"
                 type="text"
                 :placeholder="t('create.field.title.placeholder')"
-                class="w-full border-0 border-b border-white/10 bg-transparent pb-3 text-2xl font-black tracking-tight text-white outline-none placeholder:text-white/25 focus:border-pink-700/60 dark:border-pink-600/60"
+                class="w-full border-0 border-b-2 border-white/14 bg-transparent pb-3 text-2xl font-black tracking-tight text-white outline-none placeholder:text-white/38 focus:border-pink-700/60 dark:border-pink-600/60"
               />
               <p v-if="fieldErrors.title" class="mt-1 text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.title }}</p>
             </div>
@@ -1029,7 +1048,7 @@ usePinovaHeaderSwipeDismiss({
                 rows="3"
                 maxlength="1000"
                 :placeholder="t('create.field.description.placeholder')"
-                class="w-full resize-none border-0 border-b border-white/8 bg-transparent pb-3 text-sm text-white/75 outline-none placeholder:text-white/25 focus:border-pink-700/50 dark:border-pink-600/50"
+                class="w-full resize-none border-0 border-b-2 border-white/11 bg-transparent pb-3 text-sm text-white/75 outline-none placeholder:text-white/38 focus:border-pink-700/50 dark:border-pink-600/50"
               />
               <p v-if="fieldErrors.description" class="mt-1 text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.description }}</p>
             </div>
@@ -1040,7 +1059,7 @@ usePinovaHeaderSwipeDismiss({
                 v-model="link"
                 type="url"
                 :placeholder="t('create.field.link.placeholder')"
-                class="min-w-0 flex-1 bg-transparent py-2 text-sm text-white/70 outline-none placeholder:text-white/25"
+                class="min-w-0 flex-1 bg-transparent py-2 text-sm text-white/70 outline-none placeholder:text-white/38"
               />
             </div>
             <p v-if="fieldErrors.link" class="text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.link }}</p>
@@ -1053,7 +1072,7 @@ usePinovaHeaderSwipeDismiss({
                   v-model="categorySearch"
                   type="text"
                   :placeholder="t('create.field.category.placeholder')"
-                  class="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-pink-700/70"
+                  class="w-full rounded-2xl border border-white/13 bg-white/[0.055] px-4 py-3 text-sm text-white outline-none placeholder:text-white/38 focus:border-pink-700/70"
                   @focus="showCategoryDropdown = true"
                 />
                 <button
@@ -1131,7 +1150,7 @@ usePinovaHeaderSwipeDismiss({
               v-model="publicTagsInput"
               type="text"
               :placeholder="t('create.field.publicTags.placeholder')"
-              class="w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"
+              class="w-full rounded-2xl border border-white/13 bg-white/[0.065] px-4 py-3 text-sm text-white outline-none placeholder:text-white/38"
             />
             <p v-if="fieldErrors.public_tags_input" class="text-xs text-pink-700 dark:text-pink-600">{{ fieldErrors.public_tags_input }}</p>
             <div v-if="myBoards.length" class="border-t border-white/10 pt-3">
@@ -1244,7 +1263,7 @@ usePinovaHeaderSwipeDismiss({
     <!-- Header -->
     <div class="flex items-center justify-between mb-8" data-pinova-swipe-dismiss-handle>
       <div>
-        <h1 class="text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ isEditMode ? t('pin.edit.title') : t('create.title') }}</h1>
+        <h1 class="text-[1.9375rem] sm:text-[2.1875rem] font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ isEditMode ? t('pin.edit.title') : t('create.title') }}</h1>
         <p class="text-sm text-neutral-500 dark:text-neutral-300 mt-1">{{ isEditMode ? t('pin.edit.subtitle') : t('create.subtitle') }}</p>
         <p v-if="createStep === 1" class="text-xs text-pink-700 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
       </div>

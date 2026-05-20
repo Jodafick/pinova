@@ -24,6 +24,7 @@ import { useIsLgDown } from '../composables/useIsLgDown'
 import { useEdgeSwipeBack } from '../composables/useEdgeSwipeBack'
 import { usePinovaHeaderSwipeDismiss } from '../composables/usePinovaHeaderSwipeDismiss'
 import { useLayer } from '../navigation/useLayer'
+import { STORY_VIDEO_MAX_SIZE_MB } from '../constants/mediaRequirements'
 import type { Pin } from '../types'
 
 const { t } = useI18n()
@@ -63,6 +64,7 @@ const galleryInput = ref<HTMLInputElement | null>(null)
 const publishedStory = ref<Pin | null>(null)
 const storyViewerOpen = ref(false)
 const storyMetaMainRef = ref<HTMLElement | null>(null)
+const storyDescriptionMetaRef = ref<HTMLTextAreaElement | null>(null)
 const saving = ref(false)
 const mediaModerationPending = ref(false)
 const pendingSensitiveBlur = ref(false)
@@ -197,6 +199,24 @@ async function runVideoModeration(file: File) {
       clearMediaSelection()
       await showAlert(t('moderation.imageSensitiveBlocked'), {
         variant: 'danger',
+        title: t('modal.errorTitle'),
+      })
+      return
+    }
+    if (r.level === 'video_too_small') {
+      pendingSensitiveBlur.value = false
+      clearMediaSelection()
+      await showAlert(t('moderation.videoTooShort', { minMb: r.minSizeMb }), {
+        variant: 'warning',
+        title: t('modal.errorTitle'),
+      })
+      return
+    }
+    if (r.level === 'video_too_large') {
+      pendingSensitiveBlur.value = false
+      clearMediaSelection()
+      await showAlert(t('moderation.videoTooHeavy', { maxMb: r.maxSizeMb }), {
+        variant: 'warning',
         title: t('modal.errorTitle'),
       })
       return
@@ -339,12 +359,13 @@ function closePublishedStory() {
   router.push('/')
 }
 
-function scrollStoryMetaToEnd() {
+function scrollStoryMetaToStart() {
   void nextTick(() => {
     requestAnimationFrame(() => {
       const el = storyMetaMainRef.value
       if (!el) return
-      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+      el.scrollTop = 0
+      storyDescriptionMetaRef.value?.focus({ preventScroll: true })
     })
   })
 }
@@ -352,7 +373,7 @@ function scrollStoryMetaToEnd() {
 watch(
   step,
   (s) => {
-    if (s === 'meta') scrollStoryMetaToEnd()
+    if (s === 'meta') scrollStoryMetaToStart()
   },
   { flush: 'post', immediate: true },
 )
@@ -523,7 +544,7 @@ usePinovaHeaderSwipeDismiss({
       <section class="relative z-10 mx-auto mt-7 max-w-sm story-enter-down">
         <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[0.25em] text-white/30">{{ t('story.standalone.stepBadge') }}</p>
         <h1 class="text-[2.35rem] font-black leading-[1.05] tracking-[-0.08em]">{{ t('story.standalone.mediaTitle') }}</h1>
-        <p class="mt-3 text-sm leading-6 text-white/40">{{ t('story.standalone.mediaHint') }}</p>
+        <p class="mt-3 text-sm leading-6 text-white/40">{{ t('story.standalone.mediaHint', { maxMb: STORY_VIDEO_MAX_SIZE_MB }) }}</p>
       </section>
 
       <section class="relative z-10 mx-auto mt-10 grid max-w-sm gap-3 story-enter-up">
@@ -621,17 +642,17 @@ usePinovaHeaderSwipeDismiss({
         v-if="imagePreviewUrl || storyVideoPreviewUrl"
         class="relative z-20 shrink-0 px-4 pb-2"
       >
-        <div class="mx-auto flex max-h-[min(36svh,300px)] w-full max-w-md items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/55">
+        <div class="mx-auto flex max-h-[min(24svh,220px)] w-full max-w-md items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/55">
           <img
             v-if="imagePreviewUrl"
             :src="imagePreviewUrl"
             alt=""
-            class="max-h-[min(36svh,300px)] w-full object-contain"
+            class="max-h-[min(24svh,220px)] w-full object-contain"
           >
           <video
             v-else
             :src="storyVideoPreviewUrl || ''"
-            class="max-h-[min(36svh,300px)] w-full object-contain"
+            class="max-h-[min(24svh,220px)] w-full object-contain"
             autoplay
             muted
             loop
@@ -675,10 +696,11 @@ usePinovaHeaderSwipeDismiss({
               {{ t('story.standalone.caption') }}
             </label>
             <textarea
+              ref="storyDescriptionMetaRef"
               v-model="description"
               rows="4"
               maxlength="1000"
-              class="min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-medium text-white outline-none transition placeholder:text-white/25 focus:border-pink-700/70 focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20"
+              class="min-h-24 w-full resize-none rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 text-sm font-medium text-white outline-none transition placeholder:text-white/38 focus:border-pink-700/70 focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20"
               :placeholder="t('story.standalone.captionPlaceholder')"
             />
           </div>

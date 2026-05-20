@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuth } from '../composables/useAuth'
+import { userNeedsOnboarding } from '../utils/onboarding'
 import { devLog } from '../devLog'
 import { maybeRedirectWebToApp } from '../utils/appDeepLink'
 
@@ -175,6 +176,18 @@ const router = createRouter({
         preferAppRedirect: true,
         presentation: 'page',
         gestureDismiss: true,
+        statusBar: 'auto',
+      },
+    },
+    {
+      path: '/onboarding',
+      name: 'onboarding',
+      component: () => import('../pages/OnboardingPage.vue'),
+      meta: {
+        requiresAuth: true,
+        keepAlive: false,
+        presentation: 'page',
+        gestureDismiss: false,
         statusBar: 'auto',
       },
     },
@@ -447,7 +460,7 @@ const router = createRouter({
 // Navigation Guard
 router.beforeEach(async (to, from) => {
   devLog(`🧭 Navigating from ${String(from.name)} to ${String(to.name)}`)
-  const { isAuthenticated, fetchCurrentUser } = useAuth()
+  const { isAuthenticated, fetchCurrentUser, currentUser } = useAuth()
 
   const hasStoredToken =
     typeof window !== 'undefined' && !!window.localStorage.getItem('pinova_token')
@@ -474,6 +487,19 @@ router.beforeEach(async (to, from) => {
   // Si l'utilisateur est déjà connecté et essaie d'aller sur login/register
   if (to.meta.guest && isAuthenticated.value) {
     devLog('🚪 Already logged in, redirecting to home...')
+    return { name: 'home' }
+  }
+
+  if (
+    isAuthenticated.value &&
+    userNeedsOnboarding(currentUser.value) &&
+    to.name !== 'onboarding' &&
+    to.meta.requiresAuth
+  ) {
+    return { name: 'onboarding' }
+  }
+
+  if (to.name === 'onboarding' && isAuthenticated.value && !userNeedsOnboarding(currentUser.value)) {
     return { name: 'home' }
   }
 })

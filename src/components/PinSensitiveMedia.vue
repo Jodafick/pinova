@@ -68,7 +68,12 @@ async function runClientScan() {
       birthDate: currentUser.value?.birthDate,
       isAuthenticated: isAuthenticated.value,
     })
-    clientSideLevel.value = result.level
+    if (result.level === 'video_too_small' || result.level === 'video_too_large') {
+      clientSideLevel.value = 'ok'
+      return
+    }
+    clientSideLevel.value =
+      result.level === 'blur' ? 'blur' : result.level === 'block' ? 'block' : 'ok'
   } catch (err) {
     console.warn('Double verification failed for', props.mediaUrl)
   } finally {

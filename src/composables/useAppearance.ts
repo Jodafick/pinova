@@ -1,11 +1,15 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 export type AppearanceMode = 'light' | 'dark'
+export type AppearancePreference = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'pinova-appearance'
+const PREF_STORAGE_KEY = 'pinova-appearance-pref'
 
-/** État singleton (SSR-safe : défaut light). */
+/** Mode effectif appliqué (light/dark). */
 const mode = ref<AppearanceMode>('light')
+/** Préférence utilisateur incluant « système ». */
+const preference = ref<AppearancePreference>('system')
 let syncedFromStorage = false
 
 function detectSystemAppearance(): AppearanceMode {
@@ -17,42 +21,89 @@ function detectSystemAppearance(): AppearanceMode {
   }
 }
 
+function resolveEffectiveMode(pref: AppearancePreference): AppearanceMode {
+  if (pref === 'system') return detectSystemAppearance()
+  return pref
+}
+
 export function initAppearance(): void {
   if (typeof document === 'undefined') return
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw === 'dark' || raw === 'light') {
-      mode.value = raw
+    const prefRaw = localStorage.getItem(PREF_STORAGE_KEY)
+    if (prefRaw === 'dark' || prefRaw === 'light' || prefRaw === 'system') {
+      preference.value = prefRaw
     } else {
-      mode.value = detectSystemAppearance()
+      const legacy = localStorage.getItem(STORAGE_KEY)
+      if (legacy === 'dark' || legacy === 'light') {
+        preference.value = legacy
+      } else {
+        preference.value = 'system'
+      }
     }
+    mode.value = resolveEffectiveMode(preference.value)
     syncedFromStorage = true
   } catch {
+    preference.value = 'system'
     mode.value = detectSystemAppearance()
     syncedFromStorage = true
   }
   applyAppearanceClass(mode.value)
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    try {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      mq.addEventListener('change', () => {
+        if (preference.value === 'system') {
+          mode.value = detectSystemAppearance()
+          applyAppearanceClass(mode.value)
+        }
+      })
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 export function applyAppearanceClass(m: AppearanceMode): void {
   if (typeof document === 'undefined') return
   document.documentElement.classList.toggle('dark', m === 'dark')
+  document.documentElement.dataset.pinovaAccent =
+    (typeof document !== 'undefined' && document.documentElement.dataset.pinovaAccent) || 'rose'
 }
 
-function persistAppearance(m: AppearanceMode): void {
+export function applyAccentColor(accentId: string): void {
+  if (typeof document === 'undefined') return
+  document.documentElement.dataset.pinovaAccent = accentId || 'rose'
+}
+
+function persistAppearance(pref: AppearancePreference, effective: AppearanceMode): void {
   if (typeof localStorage === 'undefined') return
   try {
-    localStorage.setItem(STORAGE_KEY, m)
+    localStorage.setItem(PREF_STORAGE_KEY, pref)
+    localStorage.setItem(STORAGE_KEY, effective)
   } catch {
     /* ignore */
   }
 }
 
+export function syncAppearanceFromProfile(themeMode?: string | null): void {
+  const pref =
+    themeMode === 'light' || themeMode === 'dark' || themeMode === 'system' ? themeMode : preference.value
+  preference.value = pref
+  mode.value = resolveEffectiveMode(pref)
+  persistAppearance(pref, mode.value)
+  applyAppearanceClass(mode.value)
+}
+
 export function useAppearance() {
+  const setPreference = (pref: AppearancePreference) => {
+    preference.value = pref
+    mode.value = resolveEffectiveMode(pref)
+    persistAppearance(pref, mode.value)
+    applyAppearanceClass(mode.value)
+  }
+
   const setMode = (m: AppearanceMode) => {
-    mode.value = m
-    persistAppearance(m)
-    applyAppearanceClass(m)
+    setPreference(m)
   }
 
   const toggle = () => {
@@ -63,10 +114,11 @@ export function useAppearance() {
 
   return {
     mode,
+    preference,
     isDark,
     setMode,
+    setPreference,
     toggle,
-    /** Pour tests / hydratation */
     syncedFromStorage: () => syncedFromStorage,
   }
 }

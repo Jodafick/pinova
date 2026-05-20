@@ -71,7 +71,7 @@ const wrapClass = computed(() => {
 
 function chipClass() {
   if (props.variant === 'podium') {
-    return 'inline-flex items-center gap-0.5 shrink-0 leading-none text-[rgba(240,237,232,0.5)] text-[11px] lg:text-[10px]'
+    return 'inline-flex items-center gap-0.5 shrink-0 leading-none text-neutral-600 dark:text-[rgba(240,237,232,0.5)] text-[11px] lg:text-[10px]'
   }
   if (props.variant === 'grid') {
     return 'flex basis-[30%] grow-0 min-w-[2.25rem] max-w-[33%] justify-center items-center gap-0.5 text-[9px] font-bold tabular-nums text-neutral-600 dark:text-neutral-400'
@@ -81,7 +81,7 @@ function chipClass() {
 
 function iconToneClass(m: { tone: string }) {
   if (props.neutralIcons) return 'text-neutral-500 dark:text-neutral-400'
-  if (props.variant === 'podium') return 'text-[rgba(240,237,232,0.55)]'
+  if (props.variant === 'podium') return `${m.tone} opacity-[0.88] dark:opacity-100`
   return m.tone
 }
 </script>

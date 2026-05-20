@@ -134,7 +134,7 @@ const myRankDockRankIsNumeric = computed(() => {
           <!-- 2e -->
           <div class="flex min-w-0 flex-1 max-w-[9.25rem] sm:max-w-[14.375rem] flex-col items-center">
             <div
-              class="w-full min-h-[11.5rem] sm:min-h-[12rem] rounded-2xl rounded-b-none border border-neutral-200/65 dark:border-neutral-700/90 bg-[#1a1b20]/90 dark:bg-[#131519] p-2.5 sm:p-3 flex flex-col items-center gap-2 animate-pulse"
+              class="w-full min-h-[11.5rem] sm:min-h-[12rem] rounded-2xl rounded-b-none border border-neutral-200/80 dark:border-neutral-700/90 bg-white/95 dark:bg-[#131519] shadow-[0_10px_32px_-20px_rgba(15,23,42,0.1)] dark:shadow-none p-2.5 sm:p-3 flex flex-col items-center gap-2 animate-pulse"
             >
               <div class="h-12 w-12 rounded-full bg-neutral-400/35 dark:bg-white/15" />
               <div class="h-2 w-16 rounded bg-neutral-400/30 dark:bg-white/12" />
@@ -145,7 +145,7 @@ const myRankDockRankIsNumeric = computed(() => {
               </div>
               <div class="h-5 w-[72%] max-w-[6.5rem] rounded-full bg-neutral-400/22 dark:bg-white/10" />
             </div>
-            <div class="w-full h-14 sm:h-16 rounded-b-lg border-t border-neutral-300/50 dark:border-white/12 bg-neutral-300/45 dark:bg-white/12 animate-pulse" />
+            <div class="w-full h-14 sm:h-16 rounded-b-lg border-t border-neutral-300/60 dark:border-white/12 bg-neutral-300/55 dark:bg-white/12 animate-pulse" />
           </div>
           <!-- 1er -->
           <div class="flex min-w-0 flex-1 max-w-[9.25rem] sm:max-w-[14.375rem] flex-col items-center">
@@ -168,7 +168,7 @@ const myRankDockRankIsNumeric = computed(() => {
           <!-- 3e -->
           <div class="flex min-w-0 flex-1 max-w-[9.25rem] sm:max-w-[14.375rem] flex-col items-center">
             <div
-              class="w-full min-h-[10.5rem] sm:min-h-[11rem] rounded-2xl rounded-b-none border border-neutral-200/65 dark:border-neutral-700/90 bg-[#1a1b20]/90 dark:bg-[#131519] p-2.5 sm:p-3 flex flex-col items-center gap-2 animate-pulse"
+              class="w-full min-h-[10.5rem] sm:min-h-[11rem] rounded-2xl rounded-b-none border border-neutral-200/80 dark:border-neutral-700/90 bg-white/95 dark:bg-[#131519] shadow-[0_10px_32px_-20px_rgba(120,74,42,0.1)] dark:shadow-none p-2.5 sm:p-3 flex flex-col items-center gap-2 animate-pulse"
             >
               <div class="h-12 w-12 rounded-full bg-neutral-400/35 dark:bg-white/15" />
               <div class="h-2 w-16 rounded bg-neutral-400/30 dark:bg-white/12" />

@@ -600,6 +600,14 @@ async function continueWithGoogleFromLanding() {
           {{ t('home.landing.cta.explore') }}
           <span class="material-symbols-outlined text-lg" aria-hidden="true">arrow_forward</span>
         </router-link>
+        <!-- Tarifs (&lt; lg) : sur grand écran le lien figure déjà dans le header -->
+        <router-link
+          to="/premium"
+          class="lg:hidden w-full sm:w-auto inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full border border-pink-200/90 dark:border-pink-700/70 bg-white/95 dark:bg-neutral-900 text-pink-700 dark:text-pink-400 text-sm font-semibold hover:bg-pink-50 dark:hover:bg-pink-950/40 transition min-h-[44px]"
+        >
+          <span class="material-symbols-outlined text-xl leading-none shrink-0" aria-hidden="true">payments</span>
+          {{ t('home.landing.cta.pricing') }}
+        </router-link>
       </div>
       <ul class="mt-8 grid sm:grid-cols-3 gap-3 sm:gap-4 text-left text-sm text-neutral-600 dark:text-neutral-300 max-w-3xl mx-auto">
         <li class="flex gap-2 rounded-2xl bg-white/70 dark:bg-neutral-900/50 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3">

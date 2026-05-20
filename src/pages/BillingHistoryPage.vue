@@ -8,7 +8,8 @@ import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfMo
 import { useI18n } from '../i18n'
 
 const router = useRouter()
-const { fetchSubscriptionInvoices, fetchSubscriptionInvoiceReceipt, fetchCurrentUser } = useAuth()
+const { fetchSubscriptionInvoices, fetchSubscriptionInvoiceReceipt, fetchCurrentUser, currentUser } =
+  useAuth()
 const { t, currentLang } = useI18n()
 
 type InvoiceRow = {
@@ -127,6 +128,11 @@ function viewReceipt(inv: InvoiceRow) {
 onMounted(async () => {
   loading.value = true
   await fetchCurrentUser({ silent: true })
+  if (currentUser.value?.subscription?.hasBillingHistory === false) {
+    loading.value = false
+    router.replace({ path: '/settings', hash: '#settings-subscription' })
+    return
+  }
   try {
     billingInvoices.value = (await fetchSubscriptionInvoices()) as InvoiceRow[]
   } catch {

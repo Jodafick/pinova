@@ -625,7 +625,7 @@ onUnmounted(() => {
         <span class="material-symbols-outlined text-sm">block</span>
         {{ t('premium.adFree') }}
       </div>
-      <h1 class="text-4xl sm:text-5xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-3">
+      <h1 class="text-4xl sm:text-[3.5rem] font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-3">
         {{ t('premium.title') }} <span class="text-pink-700 dark:text-pink-400">{{ t('premium.titleHighlight') }}</span>
       </h1>
       <p class="text-base sm:text-lg text-neutral-500 dark:text-neutral-400 max-w-2xl mx-auto">

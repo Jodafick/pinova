@@ -20,6 +20,8 @@ import { clearStoredReferralCode, getStoredReferralCode } from './useReferralInt
 import { useI18n } from '../i18n'
 import { extractDrfFieldErrors } from '../utils/apiValidationErrors'
 import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
+import { mapProfileExtendedFromApi } from '../utils/mapProfileExtended'
+import { applyAccentColor, syncAppearanceFromProfile } from './useAppearance'
 
 export { DEFAULT_AVATAR_COLOR_CLASS }
 
@@ -198,11 +200,14 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
   const boards =
     meBundle != null ? meBundle.boards : mapUserBoardsFromApi(djangoUser.boards)
   // id = clé utilisateur Django (User.pk), indispensable pour payloads cohérents.
+  const extended = mapProfileExtendedFromApi(profile as Record<string, unknown>)
   return {
+    ...extended,
     id: djangoUser.id,
     username: djangoUser.username,
     displayName: profile.display_name || djangoUser.username,
     email: djangoUser.email ?? '',
+    coverImageUrl: getFullMediaUrl(profile.cover_image),
     preferredLanguage: profile.preferred_language || 'fr',
     preferredCurrency: profile.preferred_currency || 'XOF',
     countryCode: profile.country_code || '',
@@ -232,6 +237,10 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       trialConsumedAt: djangoUser.subscription?.trial_consumed_at ?? profile.subscription_trial_consumed_at ?? null,
       digestCreatorWeekly: djangoUser.subscription?.digest_creator_weekly ?? true,
       activeBillingCycle: djangoUser.subscription?.active_billing_cycle ?? null,
+      hasBillingHistory:
+        typeof djangoUser.subscription?.has_billing_history === 'boolean'
+          ? djangoUser.subscription.has_billing_history
+          : undefined,
       sensitiveMediaBlurByDefault:
         djangoUser.subscription?.sensitive_media_blur_by_default !== undefined
           ? !!djangoUser.subscription.sensitive_media_blur_by_default
@@ -299,6 +308,8 @@ export async function fetchCurrentUser(opts?: { silent?: boolean; force?: boolea
         const u = currentUser.value
         if (u) {
           setCachedProfileUser(profileDetailCacheKey(u.username, ''), u)
+          syncAppearanceFromProfile(u.themeMode)
+          applyAccentColor(u.accentColor || 'rose')
         }
         void resyncWebPushSubscriptionForCurrentUser(api).catch(() => undefined)
       }

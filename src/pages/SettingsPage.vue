@@ -12,6 +12,7 @@ import BillingReceiptPdfModal from '../components/BillingReceiptPdfModal.vue'
 import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+import SettingsProfileExtended from '../components/settings/SettingsProfileExtended.vue'
 import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
@@ -30,6 +31,11 @@ import {
 
 const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-profile', icon: 'person', labelKey: 'settings.nav.profile' },
+  { id: 'settings-identity-extended', icon: 'badge', labelKey: 'settings.profileExtended.title' },
+  { id: 'settings-social', icon: 'interests', labelKey: 'settings.nav.social' },
+  { id: 'settings-personalization', icon: 'palette', labelKey: 'settings.nav.personalization' },
+  { id: 'settings-presence', icon: 'online_prediction', labelKey: 'settings.nav.presence' },
+  { id: 'settings-security', icon: 'shield', labelKey: 'settings.nav.security' },
   { id: 'settings-notifications', icon: 'notifications', labelKey: 'settings.nav.notifications' },
   { id: 'settings-privacy', icon: 'lock', labelKey: 'settings.nav.privacy' },
   { id: 'settings-appearance', icon: 'dark_mode', labelKey: 'settings.nav.appearance' },
@@ -751,6 +757,11 @@ const handleReactivateSubscription = async () => {
 
 const loadBillingInvoices = async () => {
   if (!currentUser.value) return
+  if (currentUser.value.subscription?.hasBillingHistory === false) {
+    billingInvoices.value = []
+    billingInvoicesLoading.value = false
+    return
+  }
   billingInvoicesLoading.value = true
   try {
     billingInvoices.value = await fetchSubscriptionInvoices()
@@ -760,6 +771,17 @@ const loadBillingInvoices = async () => {
     billingInvoicesLoading.value = false
   }
 }
+
+watch(
+  () => currentUser.value?.subscription?.hasBillingHistory,
+  (has) => {
+    if (has === true) void loadBillingInvoices()
+    if (has === false) {
+      billingInvoices.value = []
+      billingInvoicesLoading.value = false
+    }
+  },
+)
 
 const handleSchedulePlusAtRenewal = async () => {
   subscriptionActionPending.value = true
@@ -1233,6 +1255,25 @@ watch(
             </button>
           </div>
         </div>
+      </section>
+
+      <section id="settings-identity-extended" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+        <SettingsProfileExtended section="identity" />
+      </section>
+      <section id="settings-social" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+        <SettingsProfileExtended section="social" />
+      </section>
+      <section id="settings-personalization" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+        <SettingsProfileExtended section="personalization" />
+      </section>
+      <section id="settings-presence" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+        <SettingsProfileExtended section="presence" />
+      </section>
+      <section id="settings-security" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+        <h2 class="text-lg font-semibold text-neutral-900 dark:text-white mb-2">{{ t('settings.nav.security') }}</h2>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">{{ t('settings.security.sessionsSoon') }}</p>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{{ t('settings.security.phoneSoon') }}</p>
+        <p class="text-xs text-neutral-400 mt-4">{{ t('settings.security.passwordHint') }}</p>
       </section>
 
       <!-- Notifications preferences -->
@@ -1767,7 +1808,11 @@ watch(
           <div class="min-w-0">
             <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.subscription.title') }}</h2>
             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
-            <router-link to="/billing" class="inline-flex mt-2 text-xs font-semibold text-pink-700 hover:underline">
+            <router-link
+              v-if="currentUser?.subscription?.hasBillingHistory !== false"
+              to="/billing"
+              class="inline-flex mt-2 text-xs font-semibold text-pink-700 hover:underline"
+            >
               {{ t('settings.subscription.viewBillingPage') }} →
             </router-link>
           </div>
@@ -1822,7 +1867,10 @@ watch(
           </div>
           <p v-if="subscriptionActionMessage" class="text-xs text-neutral-600">{{ subscriptionActionMessage }}</p>
 
-          <div class="pt-4 mt-4 border-t border-neutral-100">
+          <div
+            v-if="currentUser?.subscription?.hasBillingHistory !== false"
+            class="pt-4 mt-4 border-t border-neutral-100"
+          >
             <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
               <p class="text-xs font-semibold text-neutral-800">{{ t('settings.subscription.billingHistory') }}</p>
               <router-link to="/billing" class="text-[11px] font-semibold text-pink-700 hover:underline">

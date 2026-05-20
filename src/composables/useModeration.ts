@@ -1,5 +1,12 @@
 import { checkProfanity } from 'glin-profanity'
 
+import {
+  STORY_VIDEO_MIN_SIZE_MB,
+  STORY_VIDEO_MAX_SIZE_MB,
+  storyVideoMaxBytesAllowed,
+  storyVideoMinBytesRequired,
+} from '../constants/mediaRequirements'
+
 /** Date minimale obligatoire côté API pour poster image / vidéo (profil réglages). */
 export function hasRequiredBirthDateForMediaPublish(value: unknown): boolean {
   if (value == null || value === '') return false
@@ -33,6 +40,10 @@ export type ModerationImageResult =
   | { level: 'ok'; scores?: NsfwScores }
   | { level: 'blur'; maxScore: number; scores?: NsfwScores }
   | { level: 'block'; maxScore: number; scores?: NsfwScores }
+  /** Fichier vidéo trop léger (< seuil Mo aligné avec le backend). */
+  | { level: 'video_too_small'; minSizeMb: number }
+  /** Fichier vidéo trop lourd (> plafond Mo aligné avec le backend). */
+  | { level: 'video_too_large'; maxSizeMb: number }
 
 let nsfwModelPromise: Promise<Awaited<ReturnType<Awaited<typeof import('nsfwjs')>['load']>>> | null = null
 
@@ -70,60 +81,83 @@ export function predsToScores(preds: { className: string; probability: number }[
   }
 }
 
-/** Score global Pinova : porn + hentai + sexy×0.6 */
+/** Agrégat explicite : sexy contribue peu (évite de traiter bikini / glamour comme « nude »). */
 export function globalNsfwScore(s: NsfwScores): number {
-  return s.porn + s.hentai + s.sexy * 0.6
+  return s.porn + s.hentai + s.sexy * 0.2
 }
 
-/* --- Seuils spec Pinova (strict quand âge inconnu : comportement mineur) --- */
-const T_SOFT = 0.55
-const T_SEXY_BLUR = 0.7
-/** Photo nue / suggestive souvent étiquetée « Porn » par le modèle sans être du porno dur → seuil blocage plus haut que hentai. */
-const T_HARD_PORN = 0.88
-const T_HARD_HENTAI = 0.75
-/** Blocage sur agrégat : évite BLOCK dès que porn≈0.76 + sexy modéré (cas nu artistique / seins nus). */
-const T_SCORE_BLOCK = 1.18
-const T_SCORE_BLUR_LO = 0.6
+/* --- Tolérance sexy façon flux « social » type X — flou sur vrai suggestif nu, bloc sur explicite --- */
+const T_PORN_SOFT = 0.5
+const T_HENT_SOFT = 0.45
+const T_HARD_PORN = 0.91
+const T_HARD_HENTAI = 0.82
+/** Blocage agrégé seulement si explicite fort (sexy peu pondéré). */
+const T_SCORE_BLOCK = 1.38
+/** Zone flou majeur : hors « fashion sexy » pur. */
+const T_SCORE_BLUR_LO = 0.72
 const T_DRAWING_ART = 0.85
 
 /**
- * ALLOW / BLUR (adultes vérifiés + connectés uniquement) / BLOCK.
- * Utilisateur non connecté ou sans date valide ≥18 : traité comme mineur → pas de blur, hors zone safe → block.
+ * « Sexy » dominant vs probabilités d’explicite : maillots, lingerie légitime,
+ * mise en scène glamour sans nu intégral (le modèle mélange souvent sexy avec porn).
+ */
+function isLikelySexyNotExplicitNude(scores: NsfwScores): boolean {
+  const { porn, hentai, sexy } = scores
+  if (sexy < 0.5) return false
+  /* Forte carte Sexy dominant sur Porn/Hentai, sans probabilités explicites extrêmes. */
+  if (sexy >= 0.62 && porn < 0.8 && hentai < 0.68 && sexy >= porn * 1.04) return true
+  if (sexy >= 0.52 && sexy >= porn * 1.12 && porn < 0.72 && hentai < 0.58) return true
+  return false
+}
+
+/**
+ * ALLOW / BLUR (majeurs connectés avec date ≥18 vérifiée) / BLOCK.
+ * Sexy légitime n’entraîne pas de flou automatique ; on floute sur corridor « nu / soft explicite ».
  */
 export function classifyNsfwScores(isVerifiedAdult: boolean, scores: NsfwScores): ModerationImageResult {
-  const gs = globalNsfwScore(scores)
   const { porn, hentai, sexy, drawing } = scores
+  const gs = globalNsfwScore(scores)
+  const glamourPass = isLikelySexyNotExplicitNude(scores)
 
-  const othersElevated = porn >= T_SOFT || hentai >= T_SOFT || sexy >= T_SEXY_BLUR
+  const elevatedWithoutGlamour =
+    (porn >= T_PORN_SOFT || hentai >= T_HENT_SOFT || (sexy >= 0.74 && !glamourPass))
 
-  // Dessin / art : ALLOW si dominant et pas d'autres scores élevés
-  if (drawing >= T_DRAWING_ART && !othersElevated) {
+  if (drawing >= T_DRAWING_ART && !elevatedWithoutGlamour) {
     return { level: 'ok', scores }
   }
 
-  // BLOCK : porno très probable, hentai explicite, ou combinaison scores forte
-  const hardBlock = porn >= T_HARD_PORN || hentai >= T_HARD_HENTAI || gs >= T_SCORE_BLOCK
+  if (glamourPass && porn < T_HARD_PORN && hentai < T_HARD_HENTAI) {
+    return { level: 'ok', scores }
+  }
+
+  const hardBlock =
+    porn >= T_HARD_PORN ||
+    hentai >= T_HARD_HENTAI ||
+    (gs >= T_SCORE_BLOCK && !glamourPass)
   if (hardBlock) {
     return { level: 'block', maxScore: Math.max(porn, hentai, gs), scores }
   }
 
-  const blurExplicit =
-    sexy >= T_SEXY_BLUR ||
-    (porn >= T_SOFT && porn < T_HARD_PORN) ||
-    (hentai >= T_SOFT && hentai < T_HARD_HENTAI)
-  const blurByScore = gs >= T_SCORE_BLUR_LO && gs < T_SCORE_BLOCK
-  const wantsBlur = blurExplicit || blurByScore
+  const blurCorridor =
+    !glamourPass &&
+    ((porn >= T_PORN_SOFT && porn < T_HARD_PORN) ||
+      (hentai >= T_HENT_SOFT && hentai < T_HARD_HENTAI) ||
+      (gs >= T_SCORE_BLUR_LO && gs < T_SCORE_BLOCK))
 
   if (!isVerifiedAdult) {
-    const totallySafe =
-      porn < T_SOFT && hentai < T_SOFT && sexy < T_SEXY_BLUR && gs < T_SCORE_BLUR_LO && !wantsBlur
-    if (!totallySafe) {
+    /* Mineurs : autorisés sur du glamour léger ; bloc sur tout corridor flou/adulte. */
+    if (glamourPass && porn < 0.78 && hentai < 0.62) {
+      return { level: 'ok', scores }
+    }
+    const safeMinor =
+      porn < T_PORN_SOFT - 0.06 && hentai < T_HENT_SOFT - 0.06 && gs < T_SCORE_BLUR_LO - 0.08 && !blurCorridor
+    if (!safeMinor) {
       return { level: 'block', maxScore: Math.max(porn, hentai, sexy, gs), scores }
     }
     return { level: 'ok', scores }
   }
 
-  if (wantsBlur) {
+  if (blurCorridor) {
     return { level: 'blur', maxScore: Math.max(sexy, porn, hentai, gs), scores }
   }
 
@@ -139,11 +173,20 @@ function predsToLevel(
 }
 
 function mergeWorst(a: ModerationImageResult, b: ModerationImageResult): ModerationImageResult {
-  const rank = { block: 3, blur: 2, ok: 1 }
+  const rank = { video_too_large: 5, video_too_small: 4, block: 3, blur: 2, ok: 1 }
   const ra = rank[a.level]
   const rb = rank[b.level]
   if (ra > rb) return a
   if (rb > ra) return b
+  if (
+    (a.level === 'video_too_small' || a.level === 'video_too_large') &&
+    (b.level === 'video_too_small' || b.level === 'video_too_large')
+  ) {
+    const order = ['video_too_large', 'video_too_small'] as const
+    const ia = order.indexOf(a.level as typeof order[number])
+    const ib = order.indexOf(b.level as typeof order[number])
+    return ia <= ib ? a : b
+  }
   if (a.level === 'block' && b.level === 'block') {
     return a.maxScore >= b.maxScore ? a : b
   }
@@ -220,6 +263,26 @@ export async function moderationScanVideoFile(
   opts?: ModerationScanMediaOptions,
 ): Promise<ModerationImageResult> {
   if (!file.type.startsWith('video/')) return { level: 'ok' }
+  const minB = storyVideoMinBytesRequired()
+  if (
+    minB > 0
+    && typeof file.size === 'number'
+    && Number.isFinite(file.size)
+    && file.size > 0
+    && file.size < minB
+  ) {
+    return { level: 'video_too_small', minSizeMb: STORY_VIDEO_MIN_SIZE_MB }
+  }
+  const maxB = storyVideoMaxBytesAllowed()
+  if (
+    maxB > 0
+    && typeof file.size === 'number'
+    && Number.isFinite(file.size)
+    && file.size > 0
+    && file.size > maxB
+  ) {
+    return { level: 'video_too_large', maxSizeMb: STORY_VIDEO_MAX_SIZE_MB }
+  }
   const isVerifiedAdult = optsToAdult(opts)
   const n = Math.min(5, Math.max(3, Math.round(frameCount)))
   const model = await loadNsfwModel()
