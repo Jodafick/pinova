@@ -27,7 +27,7 @@ type CreatorRow = SuggestUserRow & { reason?: string }
 const router = useRouter()
 const { currentUser, fetchCurrentUser } = useAuth()
 const { t, currentLang, setLang } = useI18n()
-const { setPreference } = useAppearance()
+const { setPreference, isDark } = useAppearance()
 
 const stepIndex = ref(0)
 const step = computed(() => STEPS[stepIndex.value] ?? 'welcome')
@@ -239,7 +239,7 @@ function onPrimaryAction() {
 </script>
 
 <template>
-  <div class="onboarding-root">
+  <div class="onboarding-root" :class="{ 'onboarding-root--dark': isDark }">
     <div class="onboarding-ambient" aria-hidden="true">
       <div class="onboarding-orb onboarding-orb--rose" />
       <div class="onboarding-orb onboarding-orb--violet" />
@@ -483,7 +483,7 @@ function onPrimaryAction() {
   background: linear-gradient(145deg, #fff5f7 0%, #faf5ff 42%, #f0f9ff 100%);
 }
 
-:global(.dark) .onboarding-root {
+.onboarding-root.onboarding-root--dark {
   background: linear-gradient(160deg, #0a0a0b 0%, #17121f 45%, #0f1419 100%);
 }
 
@@ -553,7 +553,7 @@ function onPrimaryAction() {
   overflow: hidden;
 }
 
-:global(.dark) .onboarding-progress-track {
+.onboarding-root--dark .onboarding-progress-track {
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -574,7 +574,7 @@ function onPrimaryAction() {
   color: rgba(82, 82, 91, 0.85);
 }
 
-:global(.dark) .onboarding-step-badge {
+.onboarding-root--dark .onboarding-step-badge {
   color: rgba(212, 212, 216, 0.75);
 }
 
@@ -613,7 +613,7 @@ function onPrimaryAction() {
   -webkit-backdrop-filter: blur(20px) saturate(1.35);
 }
 
-:global(.dark) .onboarding-panel {
+.onboarding-root--dark .onboarding-panel {
   background: rgba(23, 23, 23, 0.55);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 28px 70px -32px rgba(0, 0, 0, 0.65);
@@ -644,7 +644,7 @@ function onPrimaryAction() {
   color: #18181b;
 }
 
-:global(.dark) .onboarding-title {
+.onboarding-root--dark .onboarding-title {
   color: #fafafa;
 }
 
@@ -659,7 +659,7 @@ function onPrimaryAction() {
   color: #52525b;
 }
 
-:global(.dark) .onboarding-lead {
+.onboarding-root--dark .onboarding-lead {
   color: #a1a1aa;
 }
 
@@ -672,7 +672,7 @@ function onPrimaryAction() {
   color: #3f3f46;
 }
 
-:global(.dark) .onboarding-bullets {
+.onboarding-root--dark .onboarding-bullets {
   color: #d4d4d8;
 }
 
@@ -720,7 +720,7 @@ function onPrimaryAction() {
   backdrop-filter: blur(8px);
 }
 
-:global(.dark) .onboarding-chip {
+.onboarding-root--dark .onboarding-chip {
   border-color: rgba(255, 255, 255, 0.1);
   background: rgba(38, 38, 38, 0.5);
   color: #e4e4e7;
@@ -761,7 +761,7 @@ function onPrimaryAction() {
   color: #52525b;
 }
 
-:global(.dark) .onboarding-label {
+.onboarding-root--dark .onboarding-label {
   color: #a1a1aa;
 }
 
@@ -777,7 +777,7 @@ function onPrimaryAction() {
   backdrop-filter: blur(10px);
 }
 
-:global(.dark) .onboarding-select {
+.onboarding-root--dark .onboarding-select {
   border-color: rgba(255, 255, 255, 0.1);
   background: rgba(23, 23, 23, 0.65);
   color: #fafafa;
@@ -818,7 +818,7 @@ function onPrimaryAction() {
   backdrop-filter: blur(8px);
 }
 
-:global(.dark) .onboarding-creator-row {
+.onboarding-root--dark .onboarding-creator-row {
   border-color: rgba(255, 255, 255, 0.08);
   background: rgba(38, 38, 38, 0.4);
 }
@@ -875,7 +875,7 @@ function onPrimaryAction() {
   backdrop-filter: blur(10px);
 }
 
-:global(.dark) .onboarding-btn--ghost {
+.onboarding-root--dark .onboarding-btn--ghost {
   color: #d4d4d8;
   background: rgba(38, 38, 38, 0.45);
   border-color: rgba(255, 255, 255, 0.08);
