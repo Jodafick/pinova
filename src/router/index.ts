@@ -370,13 +370,13 @@ const router = createRouter({
       path: '/auth/mobile/google',
       name: 'mobile-google-auth',
       component: () => import('../pages/MobileGoogleAuth.vue'),
-      meta: { guest: true, presentation: 'page', statusBar: 'auto' },
+      meta: { presentation: 'page', statusBar: 'auto', mobileOAuthBridge: true },
     },
     {
       path: '/auth/mobile/google/callback',
       name: 'mobile-google-auth-callback',
       component: () => import('../pages/MobileGoogleAuth.vue'),
-      meta: { guest: true, presentation: 'page', statusBar: 'auto' },
+      meta: { presentation: 'page', statusBar: 'auto', mobileOAuthBridge: true },
     },
     {
       path: '/register',
@@ -473,6 +473,8 @@ router.beforeEach(async (to, from) => {
     await fetchCurrentUser({ silent: true }).catch(() => undefined)
   }
 
+  const isMobileOAuthBridge = to.meta.mobileOAuthBridge === true
+
   // Si la route demande d'être authentifié et que l'utilisateur n'est pas connecté
   if (to.meta.requiresAuth && !isAuthenticated.value) {
     console.warn('🔒 Route requires auth, redirecting to login...')
@@ -487,8 +489,8 @@ router.beforeEach(async (to, from) => {
     await fetchCurrentUser({ silent: true })
   }
   
-  // Si l'utilisateur est déjà connecté et essaie d'aller sur login/register
-  if (to.meta.guest && isAuthenticated.value) {
+  // Login/register invités — sauf le pont OAuth mobile (session web ≠ compte app).
+  if (to.meta.guest && isAuthenticated.value && !isMobileOAuthBridge) {
     if (userNeedsOnboarding(currentUser.value)) {
       return { name: 'onboarding' }
     }
@@ -496,11 +498,12 @@ router.beforeEach(async (to, from) => {
     return { name: 'home' }
   }
 
-  // Nouveau compte (Google, e-mail, etc.) : onboarding obligatoire sur toute navigation
+  // Nouveau compte : onboarding obligatoire — sauf pont OAuth mobile.
   if (
     isAuthenticated.value &&
     userNeedsOnboarding(currentUser.value) &&
-    to.name !== 'onboarding'
+    to.name !== 'onboarding' &&
+    !isMobileOAuthBridge
   ) {
     return { name: 'onboarding' }
   }
@@ -512,6 +515,7 @@ router.beforeEach(async (to, from) => {
 
 router.afterEach((to) => {
   devLog(`✅ Navigated to ${String(to.name)}`)
+  if (to.meta.mobileOAuthBridge === true) return
   const { isAuthenticated } = useAuth()
   maybeRedirectWebToApp(to, { isAuthenticated: isAuthenticated.value })
 })

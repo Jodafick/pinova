@@ -15,6 +15,8 @@ declare module 'vue-router' {
     disablePullToRefresh?: boolean
     /** Réservé aux invités (déjà connecté → redirige home). */
     guest?: boolean
+    /** Pont OAuth mobile : accessible même si une session web existe déjà. */
+    mobileOAuthBridge?: boolean
     /** Conserver le composant en cache (KeepAlive). */
     keepAlive?: boolean
     /** Réservé (non utilisé) : ancienne intention de deep-link automatique — l’app n’est proposée que via bannière ou `?openApp=1`. */

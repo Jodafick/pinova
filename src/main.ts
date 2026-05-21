@@ -67,7 +67,9 @@ app.use(router)
 installRouterViewTransition(router)
 /* Brancher la pile native iOS-like + interception layers basée sur meta.presentation. */
 bindNativeStack(router)
-installRouterLayerBridge(router)
+installRouterLayerBridge(router, {
+  alwaysPage: ['mobile-google-auth', 'mobile-google-auth-callback'],
+})
 initInputAbstraction(router)
 /* Transitions `<router-view>` : pile session + styles adaptatifs (cf. routerViewTransition + style.css). */
 /* UX Orchestrator — couche d'harmonisation finale (event bus + watchers nav /

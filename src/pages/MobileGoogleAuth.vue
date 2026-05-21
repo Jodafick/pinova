@@ -15,13 +15,43 @@ const OAUTH_STATE_STORAGE_KEY = 'mobile_google_oauth_state'
 const MOBILE_DEVICE_BINDING_STORAGE_KEY = 'mobile_device_binding_id'
 const MOBILE_STATE_STORAGE_KEY = 'mobile_state'
 
+const MOBILE_GOOGLE_OAUTH_PATH = '/auth/mobile/google'
+const MOBILE_GOOGLE_CALLBACK_PATH = '/auth/mobile/google/callback'
+const MOBILE_GOOGLE_CALLBACK_ROUTE = 'auth/mobile/google/callback'
+const DEEP_LINK_WAIT_MS = 3500
+
+function normalizeMobileCallbackPath(pathname: string): string {
+  return pathname.replace(/^\/+/, '').replace(/^--\//, '').replace(/\/+$/, '')
+}
+
+function nativeCallbackRoute(url: URL): string {
+  if (url.protocol === 'pinova:') {
+    const host = url.hostname ? `${url.hostname}` : ''
+    const path = url.pathname || ''
+    return normalizeMobileCallbackPath(`${host}${path}`)
+  }
+  if (url.protocol === 'exp:') {
+    return normalizeMobileCallbackPath(url.pathname || '')
+  }
+  return ''
+}
+
+function isNativeMobileCallback(url: URL): boolean {
+  if (url.protocol !== 'pinova:' && url.protocol !== 'exp:') return false
+  return nativeCallbackRoute(url) === MOBILE_GOOGLE_CALLBACK_ROUTE
+}
+
+function getGoogleOAuthRedirectUri(): string {
+  return `${window.location.origin}${MOBILE_GOOGLE_OAUTH_PATH}`
+}
+
 function mobileRedirectWithCode(mobileCode: string, mobileState: string) {
   const savedRedirectUrl = sessionStorage.getItem(REDIRECT_STORAGE_KEY)
   const separator = savedRedirectUrl?.includes('?') ? '&' : '?'
   const encodedCode = encodeURIComponent(mobileCode)
   const encodedState = encodeURIComponent(mobileState)
   const fallbackRedirect = import.meta.env.PROD
-    ? `${window.location.origin}/auth/mobile/google/callback?auth_code=${encodedCode}&mobile_state=${encodedState}`
+    ? `pinova://${MOBILE_GOOGLE_CALLBACK_ROUTE}?auth_code=${encodedCode}&mobile_state=${encodedState}`
     : `pinova://login-success?auth_code=${encodedCode}&mobile_state=${encodedState}`
 
   return savedRedirectUrl
@@ -36,17 +66,12 @@ function isAllowedMobileRedirect(rawUrl: string): boolean {
     const isVerifiedAppLink =
       url.protocol === 'https:' &&
       url.origin === window.location.origin &&
-      callbackPath === '/auth/mobile/google/callback'
+      callbackPath === MOBILE_GOOGLE_CALLBACK_PATH
 
     if (isVerifiedAppLink) return true
+    if (isNativeMobileCallback(url)) return true
 
-    // En prod, le retour OAuth mobile doit passer par Android App Links / iOS Universal Links.
-    if (import.meta.env.PROD) return false
-
-    return (
-      url.protocol === 'pinova:' ||
-      url.protocol === 'exp:'
-    )
+    return false
   } catch {
     return false
   }
@@ -57,15 +82,27 @@ function normalizeMobileDeviceBinding(rawValue: string | null): string {
   return value.length <= 128 ? value : ''
 }
 
-function randomState(): string {
-  const bytes = new Uint8Array(16)
-  window.crypto.getRandomValues(bytes)
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+function clearWebSessionForMobileBridge() {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem('pinova_token')
+  window.localStorage.removeItem('pinova_refresh_token')
+  delete api.defaults.headers.common.Authorization
 }
 
-onMounted(() => {
-  // Sauvegarde de l'URL de redirection mobile si présente dans les paramètres
-  const urlParams = new URLSearchParams(window.location.search)
+function clearMobileBridgeSessionStorage() {
+  sessionStorage.removeItem(REDIRECT_STORAGE_KEY)
+  sessionStorage.removeItem(REFERRAL_STORAGE_KEY)
+  sessionStorage.removeItem(OAUTH_STATE_STORAGE_KEY)
+  sessionStorage.removeItem(MOBILE_DEVICE_BINDING_STORAGE_KEY)
+  sessionStorage.removeItem(MOBILE_STATE_STORAGE_KEY)
+}
+
+function hasFreshMobileBridgeParams(urlParams: URLSearchParams): boolean {
+  const redirectTo = urlParams.get('redirect_to')
+  return Boolean(redirectTo && isAllowedMobileRedirect(redirectTo) && urlParams.get('mobile_state'))
+}
+
+function saveMobileBridgeParams(urlParams: URLSearchParams) {
   const redirectTo = urlParams.get('redirect_to')
   if (redirectTo && isAllowedMobileRedirect(redirectTo)) {
     sessionStorage.setItem(REDIRECT_STORAGE_KEY, redirectTo)
@@ -80,6 +117,98 @@ onMounted(() => {
   }
   const referralCode = urlParams.get('referral_code') || urlParams.get('ref')
   if (referralCode) sessionStorage.setItem(REFERRAL_STORAGE_KEY, referralCode)
+}
+
+function bridgeQueryWithoutOAuth(urlParams: URLSearchParams): string {
+  const next = new URLSearchParams()
+  for (const key of ['redirect_to', 'device_binding_id', 'mobile_state', 'referral_code', 'ref', 'bridge_ts']) {
+    const value = urlParams.get(key)
+    if (value) next.set(key, value)
+  }
+  return next.toString()
+}
+
+function restartMobileBridge(urlParams: URLSearchParams) {
+  const qs = bridgeQueryWithoutOAuth(urlParams)
+  window.location.replace(`${MOBILE_GOOGLE_OAUTH_PATH}${qs ? `?${qs}` : ''}`)
+}
+
+function randomState(): string {
+  const bytes = new Uint8Array(16)
+  window.crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+function handleGoogleClick() {
+  loading.value = true
+  error.value = ''
+  const clientId = GOOGLE_CLIENT_ID
+  const redirectUri = encodeURIComponent(getGoogleOAuthRedirectUri())
+  const scope = encodeURIComponent(GOOGLE_SIGN_IN_SCOPES)
+  const state = randomState()
+  sessionStorage.setItem(OAUTH_STATE_STORAGE_KEY, state)
+
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${encodeURIComponent(state)}&access_type=online&include_granted_scopes=true&prompt=select_account`
+
+  window.location.href = googleAuthUrl
+}
+
+async function processGoogleCallback(code: string) {
+  loading.value = true
+  error.value = ''
+  clearWebSessionForMobileBridge()
+  window.history.replaceState({}, document.title, MOBILE_GOOGLE_OAUTH_PATH)
+
+  try {
+    const redirectUri = getGoogleOAuthRedirectUri()
+    const refCode = sessionStorage.getItem(REFERRAL_STORAGE_KEY) || ''
+    const mobileDeviceBindingId = sessionStorage.getItem(MOBILE_DEVICE_BINDING_STORAGE_KEY) || ''
+    const mobileState = sessionStorage.getItem(MOBILE_STATE_STORAGE_KEY) || ''
+    const res = await api.post<{ code?: string }>('auth/mobile/google/session/', {
+      code,
+      redirect_uri: redirectUri,
+      device_binding_id: mobileDeviceBindingId,
+      mobile_state: mobileState,
+      ...(refCode ? { referral_code: refCode } : {}),
+    })
+    const mobileCode = res.data?.code
+    if (!mobileCode) throw new Error('missing mobile auth code')
+    if (!mobileState) throw new Error('missing mobile state')
+    const nextRedirect = mobileRedirectWithCode(mobileCode, mobileState)
+    clearMobileBridgeSessionStorage()
+    openMobileDeepLink(nextRedirect)
+
+    window.setTimeout(() => {
+      loading.value = false
+      error.value = t('mobile.error.notInstalled')
+    }, DEEP_LINK_WAIT_MS)
+  } catch {
+    loading.value = false
+    error.value = t('login.error.google')
+  }
+}
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const freshBridge = hasFreshMobileBridgeParams(urlParams)
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
+
+  if (pathname === MOBILE_GOOGLE_CALLBACK_PATH) {
+    if (freshBridge) {
+      restartMobileBridge(urlParams)
+      return
+    }
+    if (!urlParams.get('auth_code') && !urlParams.get('code')) {
+      error.value = t('mobile.error.notInstalled')
+      return
+    }
+  }
+
+  if (freshBridge) {
+    clearMobileBridgeSessionStorage()
+    saveMobileBridgeParams(urlParams)
+    clearWebSessionForMobileBridge()
+  }
 
   const providerError = urlParams.get('error')
   if (providerError) {
@@ -93,64 +222,27 @@ onMounted(() => {
   }
 
   const code = urlParams.get('code')
-  if (!code) return
+  if (!code) {
+    if (freshBridge) {
+      handleGoogleClick()
+    }
+    return
+  }
 
-  const returnedState = urlParams.get('state')
+  const returnedState = urlParams.get('state') || ''
   const expectedState = sessionStorage.getItem(OAUTH_STATE_STORAGE_KEY)
-  if (!returnedState || !expectedState || returnedState !== expectedState) {
+  if (!expectedState || returnedState !== expectedState) {
+    if (freshBridge) {
+      restartMobileBridge(urlParams)
+      return
+    }
     error.value = t('login.error.googleRefused')
     return
   }
 
-  loading.value = true
-  window.history.replaceState({}, document.title, window.location.pathname)
-  void (async () => {
-    try {
-      const redirectUri = window.location.origin + window.location.pathname
-      const refCode = sessionStorage.getItem(REFERRAL_STORAGE_KEY) || ''
-      const mobileDeviceBindingId = sessionStorage.getItem(MOBILE_DEVICE_BINDING_STORAGE_KEY) || ''
-      const mobileState = sessionStorage.getItem(MOBILE_STATE_STORAGE_KEY) || ''
-      const res = await api.post<{ code?: string }>('auth/mobile/google/session/', {
-        code,
-        redirect_uri: redirectUri,
-        device_binding_id: mobileDeviceBindingId,
-        mobile_state: mobileState,
-        ...(refCode ? { referral_code: refCode } : {}),
-      })
-      const mobileCode = res.data?.code
-      if (!mobileCode) throw new Error('missing mobile auth code')
-      if (!mobileState) throw new Error('missing mobile state')
-      const nextRedirect = mobileRedirectWithCode(mobileCode, mobileState)
-      sessionStorage.removeItem(OAUTH_STATE_STORAGE_KEY)
-      sessionStorage.removeItem(MOBILE_DEVICE_BINDING_STORAGE_KEY)
-      sessionStorage.removeItem(MOBILE_STATE_STORAGE_KEY)
-      openMobileDeepLink(nextRedirect)
-
-      // Message de secours si la redirection ne se lance pas
-      setTimeout(() => {
-        loading.value = false
-        error.value = t('mobile.error.notInstalled')
-      }, 4000)
-    } catch {
-      loading.value = false
-      error.value = t('login.error.google')
-    }
-  })()
+  void processGoogleCallback(code)
 })
 
-const handleGoogleClick = () => {
-  loading.value = true
-  // Google OAuth code flow : le token est échangé côté backend, jamais dans le deep link mobile.
-  const clientId = GOOGLE_CLIENT_ID
-  const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
-  const scope = encodeURIComponent(GOOGLE_SIGN_IN_SCOPES)
-  const state = randomState()
-  sessionStorage.setItem(OAUTH_STATE_STORAGE_KEY, state)
-  
-  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${encodeURIComponent(state)}&access_type=online&include_granted_scopes=true`
-  
-  window.location.href = googleAuthUrl
-}
 </script>
 
 <template>

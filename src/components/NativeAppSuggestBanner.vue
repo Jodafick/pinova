@@ -32,11 +32,11 @@ function scheduleShow() {
   if (!props.appReady) return
   /** Connecté au web : on ne propose pas « ouvrir l’app » (compte mobile souvent différent). */
   if (isAuthenticated.value) return
-  if (route.meta.guest === true) return
+  if (route.meta.guest === true || route.meta.mobileOAuthBridge === true) return
   if (!shouldOfferNativeAppOneTimeBanner()) return
   timer = window.setTimeout(() => {
     timer = null
-    if (route.meta.guest === true) return
+    if (route.meta.guest === true || route.meta.mobileOAuthBridge === true) return
     if (isAuthenticated.value) return
     if (!shouldOfferNativeAppOneTimeBanner()) return
     open.value = true

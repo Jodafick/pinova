@@ -136,7 +136,9 @@ const edgePeekLabel = computed(() => {
   return t('nav.home')
 })
 
-const isAuthPage = computed(() => route.meta.guest === true)
+const isAuthPage = computed(
+  () => route.meta.guest === true || route.meta.mobileOAuthBridge === true,
+)
 
 /** Plein écran sans header global, barre mobile ni footer (onboarding, etc.). */
 const hideAppChrome = computed(
