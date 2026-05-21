@@ -264,11 +264,15 @@ function onPrimaryAction() {
     <div class="onboarding-shell">
       <main class="onboarding-main">
         <section v-if="step === 'welcome'" class="onboarding-panel onboarding-panel--hero">
-          <div class="onboarding-hero-icon">
-            <img src="/logo.png" alt="" class="h-14 w-14 rounded-2xl shadow-lg ring-2 ring-white/60" />
+          <div class="onboarding-hero-top">
+            <div class="onboarding-hero-icon">
+              <img src="/logo.png" alt="" class="onboarding-hero-logo" />
+            </div>
+            <h1 class="onboarding-title onboarding-title--welcome font-auth-title font-auth-title--black">
+              {{ t('onboarding.welcomeTitle') }}
+            </h1>
+            <p class="onboarding-lead onboarding-lead--center">{{ t('onboarding.welcomeSubtitle') }}</p>
           </div>
-          <h1 class="onboarding-title">{{ t('onboarding.welcomeTitle') }}</h1>
-          <p class="onboarding-lead">{{ t('onboarding.welcomeSubtitle') }}</p>
           <ul class="onboarding-bullets">
             <li>
               <span class="onboarding-bullet-icon onboarding-bullet-icon--rose material-symbols-outlined">auto_awesome</span>
@@ -285,7 +289,7 @@ function onPrimaryAction() {
           </ul>
         </section>
 
-        <section v-else-if="step === 'language'" class="onboarding-panel">
+        <section v-else-if="step === 'language'" class="onboarding-panel onboarding-panel--compact">
           <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.languageTitle') }}</h2>
           <p class="onboarding-lead">{{ t('onboarding.languageHint') }}</p>
           <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -324,7 +328,7 @@ function onPrimaryAction() {
           </div>
         </section>
 
-        <section v-else-if="step === 'location'" class="onboarding-panel">
+        <section v-else-if="step === 'location'" class="onboarding-panel onboarding-panel--compact">
           <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.locationTitle') }}</h2>
           <p class="onboarding-lead">{{ t('onboarding.locationHint') }}</p>
           <label class="onboarding-label">{{ t('onboarding.countryLabel') }}</label>
@@ -345,7 +349,7 @@ function onPrimaryAction() {
           </template>
         </section>
 
-        <section v-else-if="step === 'theme'" class="onboarding-panel">
+        <section v-else-if="step === 'theme'" class="onboarding-panel onboarding-panel--compact">
           <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.themeTitle') }}</h2>
           <p class="onboarding-lead">{{ t('onboarding.themeHint') }}</p>
           <div class="mt-6 flex flex-wrap gap-3">
@@ -633,7 +637,43 @@ function onPrimaryAction() {
 .onboarding-panel--hero {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.onboarding-panel--compact {
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+
+.onboarding-hero-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.onboarding-hero-icon {
+  width: 5.25rem;
+  height: 5.25rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 2.5px solid rgba(244, 63, 94, 0.35);
+  background: rgba(244, 63, 94, 0.08);
+  box-shadow: 0 12px 32px -12px rgba(244, 63, 94, 0.35);
+  margin-bottom: 1.15rem;
+}
+
+.onboarding-root--dark .onboarding-hero-icon,
+:global(html.dark) .onboarding-hero-icon {
+  border-color: rgba(251, 113, 133, 0.45);
+  background: rgba(244, 63, 94, 0.14);
+}
+
+.onboarding-hero-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .onboarding-panel--scroll {
@@ -664,11 +704,23 @@ function onPrimaryAction() {
   font-size: clamp(1.45rem, 4vw, 1.85rem);
 }
 
+.onboarding-title--welcome {
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  letter-spacing: 0.01em;
+}
+
 .onboarding-lead {
   margin-top: 0.65rem;
   font-size: 0.95rem;
   line-height: 1.55;
   color: #52525b;
+}
+
+.onboarding-lead--center {
+  text-align: center;
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .onboarding-root--dark .onboarding-lead,
@@ -677,10 +729,10 @@ function onPrimaryAction() {
 }
 
 .onboarding-bullets {
-  margin-top: 2rem;
+  margin-top: 2.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 1.35rem;
   font-size: 0.92rem;
   color: #3f3f46;
 }
@@ -747,10 +799,24 @@ function onPrimaryAction() {
 }
 
 .onboarding-chip--active {
-  border-color: #f43f5e;
-  background: linear-gradient(135deg, rgba(244, 63, 94, 0.14), rgba(168, 85, 247, 0.1));
-  box-shadow: 0 8px 24px -8px rgba(244, 63, 94, 0.35);
+  border-color: #e11d48;
+  background: linear-gradient(135deg, #fb7185, #e11d48);
+  color: #fff;
+  box-shadow: 0 10px 28px -10px rgba(225, 29, 72, 0.55);
   transform: translateY(-1px);
+  font-weight: 700;
+}
+
+.onboarding-chip--active .material-symbols-outlined {
+  color: #fff;
+}
+
+.onboarding-root--dark .onboarding-chip--active,
+:global(html.dark) .onboarding-chip--active {
+  border-color: #fb7185;
+  background: linear-gradient(135deg, #fb7185, #be123c);
+  color: #fff;
+  box-shadow: 0 12px 32px -12px rgba(251, 113, 133, 0.45);
 }
 
 .onboarding-interest-grid {
