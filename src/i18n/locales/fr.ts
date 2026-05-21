@@ -399,6 +399,8 @@ export const fr: Record<string, string> = {
   'pin.doubleTapLikeHint': 'Double-cliquez sur l\'image pour aimer.',
   'pin.privateTags.readonlyTitle': 'Tags privés',
   'story.viewPin': 'Voir le pin',
+  'story.nav.prev': 'Story précédente',
+  'story.nav.next': 'Story suivante',
   'story.sound.unmute': 'Activer le son',
   'story.sound.mute': 'Couper le son',
   'story.description.more': 'Voir plus',

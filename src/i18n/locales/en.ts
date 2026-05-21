@@ -404,6 +404,8 @@ export const en: Record<string, string> = {
   'pin.doubleTapLikeHint': 'Double-click the image to like.',
   'pin.privateTags.readonlyTitle': 'Private tags',
   'story.viewPin': 'View pin',
+  'story.nav.prev': 'Previous story',
+  'story.nav.next': 'Next story',
   'story.sound.unmute': 'Unmute',
   'story.sound.mute': 'Mute',
   'story.description.more': 'Show more',

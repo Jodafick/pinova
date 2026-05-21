@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 export type AppearanceMode = 'light' | 'dark'
 export type AppearancePreference = 'light' | 'dark' | 'system'

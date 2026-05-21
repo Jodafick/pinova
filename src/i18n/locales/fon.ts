@@ -586,10 +586,6 @@ export const fon: Record<string, string> = {
   'settings.security.phoneSoon': 'Phone — coming soon',
   'settings.security.passwordHint': 'Password — see section below.',
 
-  'common.saving': 'È dò mɔ…',
-  'common.savedCheck': 'È bɛ̀',
-  'common.selectEmpty': '—',
-
   'profile.field.firstName': 'First name',
   'profile.field.lastName': 'Last name',
   'profile.field.jobTitle': 'Profession',

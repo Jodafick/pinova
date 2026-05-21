@@ -54,6 +54,16 @@ import {
 } from '../utils/activeStoriesCache'
 
 const PROFILE_PINS_PAGE_SIZE = 24
+const SKIP_SPLASH_FLAG = 'pinova-skip-splash'
+
+/** Navigation mobile vers /create : lien <a> natif (évite bugs de couches SPA). */
+function markSkipSplashOnCreateNav() {
+  try {
+    sessionStorage.setItem(SKIP_SPLASH_FLAG, '1')
+  } catch {
+    /* quota / mode privé */
+  }
+}
 
 const { t, currentLang } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
@@ -1932,10 +1942,18 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       <p class="text-sm text-neutral-500 mb-4">
         {{ activeTab === 'created' ? t('profile.empty.created.desc') : t('profile.empty.saved.desc') }}
       </p>
+      <a
+        v-if="activeTab === 'created'"
+        href="/create"
+        class="inline-flex px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition no-underline lg:hidden"
+        @click="markSkipSplashOnCreateNav"
+      >
+        {{ t('home.createPin') }}
+      </a>
       <router-link
         v-if="activeTab === 'created'"
         to="/create"
-        class="px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition"
+        class="hidden lg:inline-flex px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition"
       >
         {{ t('home.createPin') }}
       </router-link>

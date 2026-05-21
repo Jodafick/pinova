@@ -19,7 +19,7 @@ const props = withDefaults(
     /** Active la double verification locale NSFW (plus stricte que le backend). */
     enableClientScan?: boolean
   }>(),
-  { blurByDefault: true, enableClientScan: true },
+  { blurByDefault: true, enableClientScan: false },
 )
 
 const { t } = useI18n()

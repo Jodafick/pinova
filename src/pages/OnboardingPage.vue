@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { useI18n, type AppLang } from '../i18n'
+import { useI18n, type LangCode } from '../i18n'
 import api from '../api'
 import {
   REFERENCE_COUNTRIES,
@@ -20,7 +20,6 @@ import { fetchMentionUsersPage, type SuggestUserRow } from '../composables/useUs
 import AvatarDisc from '../components/AvatarDisc.vue'
 
 const STEPS = ['welcome', 'language', 'interests', 'location', 'theme', 'creators', 'done'] as const
-type StepId = (typeof STEPS)[number]
 
 const router = useRouter()
 const { currentUser, fetchCurrentUser } = useAuth()
@@ -31,7 +30,7 @@ const stepIndex = ref(0)
 const step = computed(() => STEPS[stepIndex.value] ?? 'welcome')
 const progress = computed(() => ((stepIndex.value + 1) / STEPS.length) * 100)
 
-const selectedLang = ref<AppLang>((currentLang.value as AppLang) || 'fr')
+const selectedLang = ref<LangCode>((currentLang.value as LangCode) || 'fr')
 const selectedInterests = ref<string[]>([])
 const countryCode = ref(currentUser.value?.countryCode || '')
 const cityId = ref('')
@@ -348,13 +347,16 @@ function onPrimaryAction() {
               @click="toggleCreator(u.username)"
             >
               <AvatarDisc
-                :display-name="u.display_name || u.username"
-                :avatar-url="u.avatar_url"
-                :avatar-color="u.avatar_color"
-                size="sm"
-              />
+                :color="u.avatarColor"
+                frame-class="w-9 h-9 text-xs"
+                text-class="text-white"
+                :has-image="!!u.avatarUrl"
+              >
+                <img v-if="u.avatarUrl" :src="u.avatarUrl" class="w-full h-full object-cover" alt="" />
+                <span v-else class="font-bold">{{ u.name?.slice(0, 1) }}</span>
+              </AvatarDisc>
               <div class="flex-1 min-w-0">
-                <p class="font-medium truncate text-neutral-900 dark:text-white">{{ u.display_name || u.username }}</p>
+                <p class="font-medium truncate text-neutral-900 dark:text-white">{{ u.name || u.username }}</p>
                 <p class="text-xs text-neutral-500">@{{ u.username }}</p>
               </div>
               <span

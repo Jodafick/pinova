@@ -287,6 +287,13 @@ function endGesture(x: number, y: number) {
       return
     }
 
+    if (absX > 58 && absX > absY * 1.12) {
+      resetSurfaceGesture()
+      if (dx < 0) goNext()
+      else goPrev()
+      return
+    }
+
     resetSurfaceGesture()
 
     if (absX > 12 || absY > 12 || elapsed > 420) return
@@ -1081,15 +1088,31 @@ onUnmounted(() => {
             décentrer l'image par rapport au viewport).
           -->
           <div class="relative flex flex-1 items-center justify-center px-3 py-16 sm:px-8">
+            <div class="absolute inset-0 z-[15] flex pointer-events-none">
+              <button
+                type="button"
+                class="h-full w-[28%] shrink-0 cursor-default opacity-0 pointer-events-auto"
+                :aria-label="t('story.nav.prev')"
+                @click.stop="goPrev"
+              />
+              <div class="min-w-0 flex-1 pointer-events-none" aria-hidden="true" />
+              <button
+                type="button"
+                class="h-full w-[28%] shrink-0 cursor-default opacity-0 pointer-events-auto"
+                :aria-label="t('story.nav.next')"
+                @click.stop="goNext"
+              />
+            </div>
             <div
               v-if="current"
-              class="relative w-full max-w-[min(100%,520px)] overflow-hidden rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-white/10"
+              class="relative z-[10] w-full max-w-[min(100%,520px)] overflow-hidden rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-white/10"
             >
             <PinSensitiveMedia
               v-if="current.storyVideoUrl"
               :sensitive="!!current.mediaSensitiveBlur"
               :viewer-can-reveal="viewerCanRevealSensitive"
               :blur-by-default="blurSensitiveByDefault"
+              :enable-client-scan="false"
               :media-url="current.storyVideoUrl"
               media-type="video"
               wrapper-class="w-full"
@@ -1116,6 +1139,7 @@ onUnmounted(() => {
               :sensitive="!!current.mediaSensitiveBlur"
               :viewer-can-reveal="viewerCanRevealSensitive"
               :blur-by-default="blurSensitiveByDefault"
+              :enable-client-scan="false"
               :media-url="current.imageUrl"
               media-type="image"
               wrapper-class="w-full"
