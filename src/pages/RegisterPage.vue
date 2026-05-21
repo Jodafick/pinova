@@ -11,6 +11,7 @@ import { extractDrfFieldErrors, firstErroredField } from '../utils/apiValidation
 import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
 import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 import { getPostAuthRouteName } from '../utils/onboarding'
+import { needsIosPwaSafariGoogleBridge, startIosPwaGoogleBridge } from '../utils/pwaGoogleAuth'
 
 const router = useRouter()
 const { register, socialLogin, currentUser } = useAuth()
@@ -129,6 +130,10 @@ const { login: googleLogin } = useTokenClient({
 async function handleGoogleClick() {
   error.value = ''
   fieldErrors.value = {}
+  if (needsIosPwaSafariGoogleBridge()) {
+    startIosPwaGoogleBridge('/register')
+    return
+  }
   const gsiReady = await waitForGoogleIdentityServices()
   if (!gsiReady) {
     error.value = t('login.error.googleNotReady')

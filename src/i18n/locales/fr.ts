@@ -917,6 +917,7 @@ export const fr: Record<string, string> = {
   'login.error.empty': 'Veuillez remplir tous les champs.',
   'login.error.generic': 'Erreur de connexion.',
   'login.error.google': 'Erreur de connexion avec Google.',
+  'login.error.googleRefused': 'Connexion Google annulée ou refusée.',
   'login.error.googleNotReady':
     'Google met encore à charger. Patientez une seconde ou actualisez la page, puis réessayez.',
   'login.error.field.noAccount': 'Aucun compte n’est associé à cette adresse e-mail.',
@@ -1012,6 +1013,22 @@ export const fr: Record<string, string> = {
   'mobile.error.notInstalled': 'Si l\'application ne s\'ouvre pas, assurez-vous qu\'elle est installée.',
   'mobile.redirecting.title': 'Redirection...',
   'mobile.redirecting.desc': 'Veuillez patienter pendant que nous vous renvoyons vers l\'application.',
+
+  'pwaGoogle.error.missingBridge': 'Lien de connexion invalide. Recommencez depuis la page de connexion.',
+  'pwaGoogle.safari.title': 'Continuer dans Safari',
+  'pwaGoogle.safari.desc':
+    'Sur l’app installée, Google doit s’ouvrir dans Safari pour accéder au compte déjà connecté sur votre iPhone.',
+  'pwaGoogle.safari.step1': 'Appuyez sur le bouton ci-dessous (ou copiez le lien).',
+  'pwaGoogle.safari.step2': 'Si besoin : maintenez le lien → « Ouvrir dans Safari ».',
+  'pwaGoogle.safari.step3': 'Après connexion, revenez à l’icône Pinova sur l’écran d’accueil.',
+  'pwaGoogle.safari.cta': 'Ouvrir dans Safari',
+  'pwaGoogle.safari.copy': 'Copier le lien Safari',
+  'pwaGoogle.safari.copied': 'Lien copié',
+  'pwaGoogle.redirecting.title': 'Redirection vers Google…',
+  'pwaGoogle.redirecting.desc': 'Patientez pendant la connexion.',
+  'pwaGoogle.success.title': 'Connexion réussie',
+  'pwaGoogle.success.desc': 'Vous pouvez fermer cet onglet Safari.',
+  'pwaGoogle.success.hint': 'Revenez à l’application Pinova (icône écran d’accueil). La connexion se terminera automatiquement.',
 
   // Not found
   'notFound.title': 'Page introuvable',

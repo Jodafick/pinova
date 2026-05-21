@@ -44,6 +44,7 @@ import { useNotificationPrompt } from './composables/useNotificationPrompt'
 import { usePwaInstallPrompt } from './composables/usePwaInstallPrompt'
 import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
 import { reloadPwaApplication } from './utils/pwaAppReload'
+import { usePwaGoogleBridgeResume } from './composables/usePwaGoogleBridgeResume'
 
 /** Réf. du bouton ⋮ board : assignée dans le template ; `void` évite TS6133 (usage non vu par vue-tsc côté script). */
 void mobileBoardMoreButtonRef
@@ -62,6 +63,7 @@ const {
   notificationPromptDecline,
 } = useNotificationPrompt()
 usePwaInstallPrompt()
+usePwaGoogleBridgeResume()
 const { mobileCreateChooserOpen, openMobileCreateChooser } = useMobileCreateChooser()
 const { t, setLang, currentLang, languages } = useI18n()
 // Apply current language on app start (sets html lang/dir attributes).

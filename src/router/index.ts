@@ -379,6 +379,12 @@ const router = createRouter({
       meta: { guest: true, presentation: 'page', statusBar: 'auto' },
     },
     {
+      path: '/auth/pwa/google',
+      name: 'pwa-google-auth',
+      component: () => import('../pages/PwaGoogleAuth.vue'),
+      meta: { guest: true, presentation: 'page', statusBar: 'auto' },
+    },
+    {
       path: '/register',
       name: 'register',
       component: () => import('../pages/RegisterPage.vue'),
