@@ -38,6 +38,12 @@ const selectedInterests = ref<string[]>([])
 const countryCode = ref(currentUser.value?.countryCode || '')
 const cityId = ref('')
 const themePref = ref<'light' | 'dark' | 'system'>('system')
+
+const onboardingIsDark = computed(() => {
+  if (themePref.value === 'dark') return true
+  if (themePref.value === 'light') return false
+  return isDark.value
+})
 const accentId = ref('rose')
 const followedCreators = ref<string[]>([])
 const creatorSearch = ref('')
@@ -239,7 +245,7 @@ function onPrimaryAction() {
 </script>
 
 <template>
-  <div class="onboarding-root" :class="{ 'onboarding-root--dark': isDark }">
+  <div class="onboarding-root" :class="{ 'onboarding-root--dark': onboardingIsDark }">
     <div class="onboarding-ambient" aria-hidden="true">
       <div class="onboarding-orb onboarding-orb--rose" />
       <div class="onboarding-orb onboarding-orb--violet" />
@@ -483,8 +489,10 @@ function onPrimaryAction() {
   background: linear-gradient(145deg, #fff5f7 0%, #faf5ff 42%, #f0f9ff 100%);
 }
 
-.onboarding-root.onboarding-root--dark {
+.onboarding-root.onboarding-root--dark,
+:global(html.dark) .onboarding-root {
   background: linear-gradient(160deg, #0a0a0b 0%, #17121f 45%, #0f1419 100%);
+  color-scheme: dark;
 }
 
 .onboarding-ambient {
@@ -553,7 +561,8 @@ function onPrimaryAction() {
   overflow: hidden;
 }
 
-.onboarding-root--dark .onboarding-progress-track {
+.onboarding-root--dark .onboarding-progress-track,
+:global(html.dark) .onboarding-progress-track {
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -574,7 +583,8 @@ function onPrimaryAction() {
   color: rgba(82, 82, 91, 0.85);
 }
 
-.onboarding-root--dark .onboarding-step-badge {
+.onboarding-root--dark .onboarding-step-badge,
+:global(html.dark) .onboarding-step-badge {
   color: rgba(212, 212, 216, 0.75);
 }
 
@@ -613,7 +623,8 @@ function onPrimaryAction() {
   -webkit-backdrop-filter: blur(20px) saturate(1.35);
 }
 
-.onboarding-root--dark .onboarding-panel {
+.onboarding-root--dark .onboarding-panel,
+:global(html.dark) .onboarding-panel {
   background: rgba(23, 23, 23, 0.55);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 28px 70px -32px rgba(0, 0, 0, 0.65);
@@ -644,7 +655,8 @@ function onPrimaryAction() {
   color: #18181b;
 }
 
-.onboarding-root--dark .onboarding-title {
+.onboarding-root--dark .onboarding-title,
+:global(html.dark) .onboarding-title {
   color: #fafafa;
 }
 
@@ -659,7 +671,8 @@ function onPrimaryAction() {
   color: #52525b;
 }
 
-.onboarding-root--dark .onboarding-lead {
+.onboarding-root--dark .onboarding-lead,
+:global(html.dark) .onboarding-lead {
   color: #a1a1aa;
 }
 
@@ -672,7 +685,8 @@ function onPrimaryAction() {
   color: #3f3f46;
 }
 
-.onboarding-root--dark .onboarding-bullets {
+.onboarding-root--dark .onboarding-bullets,
+:global(html.dark) .onboarding-bullets {
   color: #d4d4d8;
 }
 
@@ -720,7 +734,8 @@ function onPrimaryAction() {
   backdrop-filter: blur(8px);
 }
 
-.onboarding-root--dark .onboarding-chip {
+.onboarding-root--dark .onboarding-chip,
+:global(html.dark) .onboarding-chip {
   border-color: rgba(255, 255, 255, 0.1);
   background: rgba(38, 38, 38, 0.5);
   color: #e4e4e7;
@@ -761,7 +776,8 @@ function onPrimaryAction() {
   color: #52525b;
 }
 
-.onboarding-root--dark .onboarding-label {
+.onboarding-root--dark .onboarding-label,
+:global(html.dark) .onboarding-label {
   color: #a1a1aa;
 }
 
@@ -777,7 +793,8 @@ function onPrimaryAction() {
   backdrop-filter: blur(10px);
 }
 
-.onboarding-root--dark .onboarding-select {
+.onboarding-root--dark .onboarding-select,
+:global(html.dark) .onboarding-select {
   border-color: rgba(255, 255, 255, 0.1);
   background: rgba(23, 23, 23, 0.65);
   color: #fafafa;
@@ -792,6 +809,11 @@ function onPrimaryAction() {
   padding: 2rem 0;
   font-size: 0.875rem;
   color: #71717a;
+}
+
+.onboarding-root--dark .onboarding-creators-loading,
+:global(html.dark) .onboarding-creators-loading {
+  color: #a1a1aa;
 }
 
 .onboarding-creator-list {
@@ -818,7 +840,8 @@ function onPrimaryAction() {
   backdrop-filter: blur(8px);
 }
 
-.onboarding-root--dark .onboarding-creator-row {
+.onboarding-root--dark .onboarding-creator-row,
+:global(html.dark) .onboarding-creator-row {
   border-color: rgba(255, 255, 255, 0.08);
   background: rgba(38, 38, 38, 0.4);
 }
@@ -834,6 +857,11 @@ function onPrimaryAction() {
   font-size: 0.875rem;
   color: #71717a;
   padding: 1.5rem 0;
+}
+
+.onboarding-root--dark .onboarding-creators-empty,
+:global(html.dark) .onboarding-creators-empty {
+  color: #a1a1aa;
 }
 
 .onboarding-done-badge {
@@ -856,6 +884,11 @@ function onPrimaryAction() {
   padding: 1rem 0 max(1.25rem, calc(0.85rem + env(safe-area-inset-bottom, 0px)));
 }
 
+.onboarding-root--dark .onboarding-footer,
+:global(html.dark) .onboarding-footer {
+  background: rgba(10, 10, 11, 0.35);
+}
+
 .onboarding-btn {
   border-radius: 9999px;
   padding: 0.85rem 1.35rem;
@@ -875,7 +908,8 @@ function onPrimaryAction() {
   backdrop-filter: blur(10px);
 }
 
-.onboarding-root--dark .onboarding-btn--ghost {
+.onboarding-root--dark .onboarding-btn--ghost,
+:global(html.dark) .onboarding-btn--ghost {
   color: #d4d4d8;
   background: rgba(38, 38, 38, 0.45);
   border-color: rgba(255, 255, 255, 0.08);
