@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n, languages as LANGUAGE_OPTIONS, type LangCode } from '../i18n'
 import api from '../api'
 import {
   REFERENCE_COUNTRIES,
-  REFERENCE_INTERESTS,
   REFERENCE_ACCENT_COLORS,
+  REFERENCE_INTERESTS,
   countryLabel,
   cityLabel,
   interestLabel,
   accentLabel,
   citiesForCountry,
   detectBrowserTimezone,
+  type InterestRef,
 } from '../data/reference'
+import { fetchReferenceInterests } from '../lib/fetchReferenceInterests'
 import { useAppearance, applyAccentColor, syncAppearanceFromProfile } from '../composables/useAppearance'
 import { fetchMentionUsersPage, type SuggestUserRow } from '../composables/useUserSuggestSearch'
 import AvatarDisc from '../components/AvatarDisc.vue'
@@ -34,6 +36,7 @@ const step = computed(() => STEPS[stepIndex.value] ?? 'welcome')
 const progress = computed(() => ((stepIndex.value + 1) / STEPS.length) * 100)
 
 const selectedLang = ref<LangCode>((currentLang.value as LangCode) || 'fr')
+const interestOptions = ref<InterestRef[]>([...REFERENCE_INTERESTS])
 const selectedInterests = ref<string[]>([])
 const countryCode = ref(currentUser.value?.countryCode || '')
 const cityId = ref('')
@@ -54,6 +57,18 @@ const saving = ref(false)
 const errorMsg = ref('')
 
 let creatorSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+onMounted(() => {
+  void fetchReferenceInterests(selectedLang.value).then((rows) => {
+    interestOptions.value = rows
+  })
+})
+
+watch(selectedLang, (lang) => {
+  void fetchReferenceInterests(lang, true).then((rows) => {
+    interestOptions.value = rows
+  })
+})
 
 watch(countryCode, () => {
   cityId.value = ''
@@ -315,7 +330,7 @@ function onPrimaryAction() {
           </p>
           <div class="onboarding-interest-grid">
             <button
-              v-for="item in REFERENCE_INTERESTS"
+              v-for="item in interestOptions"
               :key="item.slug"
               type="button"
               class="onboarding-chip"
@@ -435,12 +450,14 @@ function onPrimaryAction() {
           />
         </section>
 
-        <section v-else class="onboarding-panel onboarding-panel--hero">
+        <section v-else class="onboarding-panel onboarding-panel--done">
           <div class="onboarding-done-badge">
             <span class="material-symbols-outlined text-white text-4xl">celebration</span>
           </div>
-          <h2 class="onboarding-title text-center">{{ t('onboarding.doneTitle') }}</h2>
-          <p class="onboarding-lead text-center max-w-md mx-auto">{{ t('onboarding.doneSubtitle') }}</p>
+          <h2 class="onboarding-title onboarding-title--welcome font-auth-title font-auth-title--black text-center">
+            {{ t('onboarding.doneTitle') }}
+          </h2>
+          <p class="onboarding-lead onboarding-lead--center">{{ t('onboarding.doneSubtitle') }}</p>
         </section>
 
         <p v-if="errorMsg" class="mt-4 text-sm text-red-600 dark:text-red-400 text-center">{{ errorMsg }}</p>
@@ -641,6 +658,15 @@ function onPrimaryAction() {
   justify-content: flex-start;
 }
 
+.onboarding-panel--done {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
 .onboarding-panel--compact {
   flex: 0 0 auto;
   align-self: stretch;
@@ -679,6 +705,7 @@ function onPrimaryAction() {
 .onboarding-panel--scroll {
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .onboarding-panel--creators {
@@ -821,10 +848,12 @@ function onPrimaryAction() {
 
 .onboarding-interest-grid {
   margin-top: 1.25rem;
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
-  max-height: min(46vh, 360px);
+  align-content: start;
   overflow-y: auto;
   padding-right: 0.15rem;
 }

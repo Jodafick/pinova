@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { useI18n } from '../../i18n'
 import api from '../../api'
@@ -17,7 +17,9 @@ import {
   pronounLabel,
   accentLabel,
   detectBrowserTimezone,
+  type InterestRef,
 } from '../../data/reference'
+import { fetchReferenceInterests } from '../../lib/fetchReferenceInterests'
 import { useAppearance, applyAccentColor, syncAppearanceFromProfile } from '../../composables/useAppearance'
 import { profileExtendedToApiPayload } from '../../utils/mapProfileExtended'
 
@@ -40,6 +42,7 @@ const gender = ref('')
 const pronouns = ref('')
 const favoriteQuote = ref('')
 const selectedInterests = ref<string[]>([])
+const interestOptions = ref<InterestRef[]>([...REFERENCE_INTERESTS])
 const presenceStatus = ref('available')
 const allowAiTranslation = ref(true)
 const accentColor = ref('rose')
@@ -80,6 +83,18 @@ watch(
   },
   { immediate: true },
 )
+
+onMounted(() => {
+  void fetchReferenceInterests(currentLang.value).then((rows) => {
+    interestOptions.value = rows
+  })
+})
+
+watch(currentLang, (lang) => {
+  void fetchReferenceInterests(lang, true).then((rows) => {
+    interestOptions.value = rows
+  })
+})
 
 async function save() {
   if (!currentUser.value) return
@@ -210,7 +225,7 @@ function toggleInterest(slug: string) {
     <h3 class="text-lg font-semibold">{{ t('settings.profileExtended.socialDiscovery') }}</h3>
     <div class="flex flex-wrap gap-2">
       <button
-        v-for="item in REFERENCE_INTERESTS"
+        v-for="item in interestOptions"
         :key="item.slug"
         type="button"
         class="rounded-full px-3 py-1.5 text-sm border"
