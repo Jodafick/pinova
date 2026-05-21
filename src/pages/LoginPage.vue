@@ -7,7 +7,6 @@ import { GOOGLE_SIGN_IN_SCOPES } from '../env'
 import { useI18n } from '../i18n'
 import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 import { getPostAuthRouteName, userNeedsOnboarding } from '../utils/onboarding'
-import { needsIosPwaSafariGoogleBridge, startIosPwaGoogleBridge } from '../utils/pwaGoogleAuth'
 
 const router = useRouter()
 const route = useRoute()
@@ -98,14 +97,6 @@ const { login: googleLogin } = useTokenClient({
 async function handleGoogleClick() {
   error.value = ''
   fieldErrors.value = {}
-  if (needsIosPwaSafariGoogleBridge()) {
-    const returnTo =
-      typeof route.query.redirect === 'string' && route.query.redirect.trim()
-        ? decodeURIComponent(route.query.redirect.trim())
-        : '/login'
-    startIosPwaGoogleBridge(returnTo.startsWith('/') ? returnTo : '/login')
-    return
-  }
   const gsiReady = await waitForGoogleIdentityServices()
   if (!gsiReady) {
     error.value = t('login.error.googleNotReady')

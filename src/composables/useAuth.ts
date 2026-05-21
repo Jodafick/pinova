@@ -624,30 +624,6 @@ export function useAuth() {
     }
   }
 
-  /** Reprise JWT après pont OAuth PWA (Safari) ou échange mobile. */
-  async function completeOAuthSession(payload: { access?: string; refresh?: string }) {
-    try {
-      if (payload.access) {
-        applyAccessToken(payload.access)
-      }
-      if (payload.refresh && typeof window !== 'undefined') {
-        window.localStorage.setItem('pinova_refresh_token', payload.refresh)
-      }
-      await fetchCurrentUser({ force: true })
-      if (!currentUser.value) {
-        clearAuthState()
-        return { success: false as const, error: 'Impossible de charger le profil.' }
-      }
-      const refCode = getStoredReferralCode()
-      if (refCode) {
-        clearStoredReferralCode()
-      }
-      return { success: true as const, user: currentUser.value }
-    } catch {
-      return { success: false as const, error: 'Connexion impossible.' }
-    }
-  }
-
   async function socialLogin(provider: 'google' | 'facebook', tokenValue: string) {
     try {
       // Pour Google One Tap (ID Token) ou Google Token Client (Access Token)
@@ -847,7 +823,6 @@ export function useAuth() {
     forgotPassword,
     resetPassword,
     socialLogin,
-    completeOAuthSession,
     toggleSavePin,
     toggleFollow,
     fetchCurrentUser,

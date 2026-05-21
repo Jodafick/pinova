@@ -17,7 +17,6 @@ import api from '../api'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { getAppScrollRoot } from '../utils/appScrollRoot'
 import { getPostAuthRouteName } from '../utils/onboarding'
-import { needsIosPwaSafariGoogleBridge, startIosPwaGoogleBridge } from '../utils/pwaGoogleAuth'
 
 type TabKey = 'forYou' | 'explorer' | 'following'
 
@@ -536,10 +535,6 @@ const { login: googleTokenLogin } = useTokenClient({
 })
 
 async function continueWithGoogleFromLanding() {
-  if (needsIosPwaSafariGoogleBridge()) {
-    startIosPwaGoogleBridge('/')
-    return
-  }
   const gsiReady = await waitForGoogleIdentityServices()
   if (!gsiReady) {
     await showAlert(t('login.error.googleNotReady'), { variant: 'warning', title: t('modal.errorTitle') })

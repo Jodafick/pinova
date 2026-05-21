@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
-import { useI18n, type LangCode } from '../i18n'
+import { useI18n, languages as LANGUAGE_OPTIONS, type LangCode } from '../i18n'
 import api from '../api'
 import {
   REFERENCE_COUNTRIES,
@@ -142,6 +142,21 @@ function prevStep() {
   if (stepIndex.value > 0) stepIndex.value -= 1
 }
 
+function pickLanguage(code: LangCode) {
+  selectedLang.value = code
+  setLang(code)
+}
+
+function pickTheme(m: 'light' | 'dark' | 'system') {
+  themePref.value = m
+  setPreference(m)
+}
+
+function pickAccent(id: string) {
+  accentId.value = id
+  applyAccentColor(id)
+}
+
 function toggleInterest(slug: string) {
   const set = new Set(selectedInterests.value)
   if (set.has(slug)) set.delete(slug)
@@ -269,14 +284,15 @@ function onPrimaryAction() {
           <p class="onboarding-lead">{{ t('onboarding.languageHint') }}</p>
           <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
-              v-for="opt in (['fr', 'en', 'fon'] as const)"
-              :key="opt"
+              v-for="opt in LANGUAGE_OPTIONS"
+              :key="opt.code"
               type="button"
-              class="onboarding-chip onboarding-chip--lg"
-              :class="{ 'onboarding-chip--active': selectedLang === opt }"
-              @click="selectedLang = opt"
+              class="onboarding-chip onboarding-chip--lg flex flex-col items-center gap-2 py-4"
+              :class="{ 'onboarding-chip--active': selectedLang === opt.code }"
+              @click="pickLanguage(opt.code)"
             >
-              <span class="font-semibold">{{ t(`onboarding.lang.${opt}`) }}</span>
+              <span class="text-3xl leading-none" aria-hidden="true">{{ opt.flag }}</span>
+              <span class="font-semibold">{{ t(`onboarding.lang.${opt.code}`) }}</span>
             </button>
           </div>
         </section>
@@ -333,7 +349,7 @@ function onPrimaryAction() {
               type="button"
               class="onboarding-chip onboarding-chip--lg capitalize"
               :class="{ 'onboarding-chip--active': themePref === m }"
-              @click="themePref = m"
+              @click="pickTheme(m)"
             >
               {{ t(`onboarding.theme.${m}`) }}
             </button>
@@ -348,7 +364,7 @@ function onPrimaryAction() {
               :class="accentId === ac.id ? 'ring-rose-500 scale-110' : 'ring-transparent'"
               :style="{ backgroundColor: ac.hex }"
               :title="accentLabel(ac, selectedLang)"
-              @click="accentId = ac.id"
+              @click="pickAccent(ac.id)"
             />
           </div>
         </section>
