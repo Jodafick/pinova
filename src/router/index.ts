@@ -465,8 +465,8 @@ router.beforeEach(async (to, from) => {
   const hasStoredToken =
     typeof window !== 'undefined' && !!window.localStorage.getItem('pinova_token')
 
-  // Une seule requête silencieuse si un JWT est stocké mais le profil pas encore hydraté (pas d’écran de chargement global).
-  if (!isAuthenticated.value && hasStoredToken && (to.meta.requiresAuth || to.meta.guest)) {
+  // JWT stocké mais profil pas encore hydraté (ex. retour sur l’accueil après Google).
+  if (!isAuthenticated.value && hasStoredToken) {
     await fetchCurrentUser({ silent: true }).catch(() => undefined)
   }
 
@@ -486,15 +486,18 @@ router.beforeEach(async (to, from) => {
   
   // Si l'utilisateur est déjà connecté et essaie d'aller sur login/register
   if (to.meta.guest && isAuthenticated.value) {
+    if (userNeedsOnboarding(currentUser.value)) {
+      return { name: 'onboarding' }
+    }
     devLog('🚪 Already logged in, redirecting to home...')
     return { name: 'home' }
   }
 
+  // Nouveau compte (Google, e-mail, etc.) : onboarding obligatoire sur toute navigation
   if (
     isAuthenticated.value &&
     userNeedsOnboarding(currentUser.value) &&
-    to.name !== 'onboarding' &&
-    to.meta.requiresAuth
+    to.name !== 'onboarding'
   ) {
     return { name: 'onboarding' }
   }

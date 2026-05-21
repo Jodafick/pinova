@@ -10,9 +10,10 @@ import { clearStoredReferralCode } from '../composables/useReferralIntent'
 import { extractDrfFieldErrors, firstErroredField } from '../utils/apiValidationErrors'
 import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
 import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
+import { getPostAuthRouteName } from '../utils/onboarding'
 
 const router = useRouter()
-const { register, socialLogin } = useAuth()
+const { register, socialLogin, currentUser } = useAuth()
 const { t } = useI18n()
 
 const displayName = ref('')
@@ -115,7 +116,7 @@ const { login: googleLogin } = useTokenClient({
     const result = await socialLogin('google', response.access_token)
     loading.value = false
     if (result.success) {
-      router.push('/')
+      router.push({ name: getPostAuthRouteName(currentUser.value) })
     } else {
       error.value = result.error || t('login.error.google')
     }

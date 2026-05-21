@@ -48,7 +48,7 @@ export function mapProfileExtendedFromApi(profile: Record<string, unknown>): Use
     allowAiTranslation:
       profile.allow_ai_translation === undefined ? true : !!profile.allow_ai_translation,
     onboardingCompletedAt:
-      profile.onboarding_completed_at != null ? String(profile.onboarding_completed_at) : null,
+      profile.onboarding_completed_at == null ? null : String(profile.onboarding_completed_at),
   }
 }
 

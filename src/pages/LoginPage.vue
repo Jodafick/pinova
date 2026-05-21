@@ -6,13 +6,18 @@ import { useTokenClient } from 'vue3-google-signin'
 import { GOOGLE_SIGN_IN_SCOPES } from '../env'
 import { useI18n } from '../i18n'
 import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
+import { getPostAuthRouteName, userNeedsOnboarding } from '../utils/onboarding'
 
 const router = useRouter()
 const route = useRoute()
-const { login, socialLogin } = useAuth()
+const { login, socialLogin, currentUser } = useAuth()
 const { t } = useI18n()
 
 function goAfterLogin() {
+  if (userNeedsOnboarding(currentUser.value)) {
+    void router.push({ name: 'onboarding' })
+    return
+  }
   const raw = route.query.redirect
   if (typeof raw === 'string' && raw.trim()) {
     try {
@@ -25,7 +30,7 @@ function goAfterLogin() {
       /* ignore */
     }
   }
-  void router.push('/')
+  void router.push({ name: getPostAuthRouteName(currentUser.value) })
 }
 
 const email = ref('')

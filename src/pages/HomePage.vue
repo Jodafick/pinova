@@ -16,6 +16,7 @@ import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
 import api from '../api'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { getAppScrollRoot } from '../utils/appScrollRoot'
+import { getPostAuthRouteName } from '../utils/onboarding'
 
 type TabKey = 'forYou' | 'explorer' | 'following'
 
@@ -519,7 +520,7 @@ const { login: googleTokenLogin } = useTokenClient({
     try {
       const result = await socialLogin('google', response.access_token)
       if (result.success) {
-        await router.replace('/')
+        await router.replace({ name: getPostAuthRouteName(currentUser.value) })
       } else if (result.error) {
         await showAlert(result.error, { variant: 'danger', title: t('modal.errorTitle') })
       }
