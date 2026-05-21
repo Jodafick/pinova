@@ -485,15 +485,17 @@ function onPrimaryAction() {
           type="button"
           class="onboarding-btn onboarding-btn--primary"
           :disabled="!canContinue || saving"
+          :aria-busy="saving"
           @click="onPrimaryAction"
         >
-          {{
-            saving
-              ? t('onboarding.saving')
-              : step === 'done'
-                ? t('onboarding.enterPinova')
-                : t('onboarding.continue')
-          }}
+          <span
+            v-if="saving"
+            class="onboarding-btn-spinner"
+            aria-hidden="true"
+          />
+          <span v-else>
+            {{ step === 'done' ? t('onboarding.enterPinova') : t('onboarding.continue') }}
+          </span>
         </button>
       </footer>
     </div>
@@ -977,11 +979,12 @@ function onPrimaryAction() {
   align-items: center;
   gap: 0.65rem;
   padding: 1rem 0 max(1.25rem, calc(0.85rem + env(safe-area-inset-bottom, 0px)));
+  background: transparent;
 }
 
 .onboarding-root--dark .onboarding-footer,
 :global(html.dark) .onboarding-footer {
-  background: rgba(10, 10, 11, 0.35);
+  background: transparent;
 }
 
 .onboarding-btn {
@@ -1011,9 +1014,29 @@ function onPrimaryAction() {
 }
 
 .onboarding-btn--primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 9.5rem;
+  min-height: 2.85rem;
   color: #fff;
   background: linear-gradient(105deg, #f43f5e 0%, #a855f7 55%, #6366f1 100%);
   box-shadow: 0 14px 36px -10px rgba(244, 63, 94, 0.55);
+}
+
+.onboarding-btn-spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 9999px;
+  animation: onboarding-btn-spin 0.65s linear infinite;
+}
+
+@keyframes onboarding-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .onboarding-btn--primary:disabled {
