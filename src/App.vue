@@ -136,6 +136,15 @@ const edgePeekLabel = computed(() => {
   return t('nav.home')
 })
 
+const isAuthPage = computed(() => route.meta.guest === true)
+
+/** Plein écran sans header global, barre mobile ni footer (onboarding, etc.). */
+const hideAppChrome = computed(
+  () => (route.meta as { hideAppChrome?: boolean }).hideAppChrome === true,
+)
+
+const suppressAppChrome = computed(() => isAuthPage.value || hideAppChrome.value)
+
 const appShellEdgeBackEnabled = () =>
   isLgDown.value &&
   /*
@@ -143,7 +152,7 @@ const appShellEdgeBackEnabled = () =>
    * vertical comme horizontal → scroll principal bloqué. Le retour natif OS suffit.
    */
   adaptiveProfile.value.motionLanguage !== 'material' &&
-  !isAuthPage.value &&
+  !suppressAppChrome.value &&
   !layerManager.hasLayers.value &&
   !isMobileFullscreenRoute.value &&
   route.meta.disableEdgeBack !== true
@@ -198,10 +207,6 @@ onMounted(async () => {
   }
 })
 
-const isAuthPage = computed(() => {
-  return route.meta.guest === true
-})
-
 const isMobileFullscreenRoute = computed(() => typeof route.query.pin === 'string' && route.query.pin.trim().length > 0)
 
 /** Routes `meta.presentation === 'fullscreen'` : pas de padding chrome du `<main>`. */
@@ -211,7 +216,7 @@ const isFullscreenPresentationRoute = computed(
 
 /** Routes immersives hors query `?pin=` : pas de padding chrome du `<main>` (safe + header fantôme). */
 const suppressMobileMainChromeInsets = computed(
-  () => isMobileFullscreenRoute.value || isFullscreenPresentationRoute.value,
+  () => isMobileFullscreenRoute.value || isFullscreenPresentationRoute.value || hideAppChrome.value,
 )
 
 /*
@@ -256,7 +261,7 @@ const pullRefreshIndicatorOpacity = computed(() =>
 const showMobileCreateFab = computed(
   () =>
     isAuthenticated.value &&
-    !isAuthPage.value &&
+    !suppressAppChrome.value &&
     !isMobileFullscreenRoute.value &&
     !isFullscreenPresentationRoute.value &&
     !suppressMobileChromeForProfileDrawer.value &&
@@ -265,7 +270,7 @@ const showMobileCreateFab = computed(
 
 /** True quand la marge haute mobile doit compenser la barre (retour / recherche). */
 const showMobileBackButton = computed(() => {
-  if (isAuthPage.value) return false
+  if (suppressAppChrome.value) return false
   if (isMobileFullscreenRoute.value) return false
   if (isHomeRoute.value) return false
   return true
@@ -379,7 +384,7 @@ watch(
 
 /** Marge haute du `<main>` : barre chrome fixe (GlobalHeader et/ou barre page mobile). */
 const needsMainChromeTopPad = computed(
-  () => !isAuthPage.value && !suppressMobileMainChromeInsets.value,
+  () => !suppressAppChrome.value && !suppressMobileMainChromeInsets.value,
 )
 
 const appMobilePageTitle = computed(() => {
@@ -491,7 +496,7 @@ const pageTransitionName = computed(() => {
       position:fixed du header — barre toujours ancrée au viewport (web + mobile).
     -->
     <GlobalHeader
-      v-if="!isAuthPage"
+      v-if="!suppressAppChrome"
       class="app-global-header"
       :class="isHomeRoute ? '' : 'max-lg:hidden'"
     />
@@ -500,7 +505,10 @@ const pageTransitionName = computed(() => {
     id="app-shell"
     ref="appShellRef"
     class="relative z-10 flex min-h-screen flex-1 flex-col bg-transparent text-neutral-900 dark:text-neutral-100 transition-colors duration-200 pinova-app-shell max-lg:min-h-0 max-lg:overflow-hidden"
-    :class="{ 'app-mobile-fullscreen-route': isMobileFullscreenRoute }"
+    :class="{
+      'app-mobile-fullscreen-route': isMobileFullscreenRoute,
+      'app-hide-chrome-route': hideAppChrome,
+    }"
   >
     <!-- Wash rose ambient (fixed, behind content). Désactivé sur routes fullscreen media. -->
     <AmbientGlow :disabled="isMobileFullscreenRoute" />
@@ -513,7 +521,7 @@ const pageTransitionName = computed(() => {
       tabindex="-1"
       class="flex min-h-0 flex-1 flex-col max-lg:overflow-y-auto max-lg:overscroll-y-contain max-lg:[-webkit-overflow-scrolling:touch]"
       :class="[
-        !isAuthPage && !suppressMobileMainChromeInsets
+        !suppressAppChrome && !suppressMobileMainChromeInsets
           ? suppressMobileChromeForProfileDrawer
             ? ''
             : /* Ancien espace réservé tab bar (~5rem) : `AppMobileTabBar` n’est pas montée — évite un vide généralisé sous le contenu. On garde la safe-area + une marge tactile minimale. */
@@ -719,7 +727,9 @@ const pageTransitionName = computed(() => {
 <style>
 @media (max-width: 1023px) {
   .app-mobile-fullscreen-route .app-global-header,
-  .app-mobile-fullscreen-route .app-global-footer {
+  .app-mobile-fullscreen-route .app-global-footer,
+  .app-hide-chrome-route .app-global-header,
+  .app-hide-chrome-route .app-global-footer {
     display: none !important;
   }
 

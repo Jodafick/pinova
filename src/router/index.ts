@@ -186,7 +186,10 @@ const router = createRouter({
       meta: {
         requiresAuth: true,
         keepAlive: false,
-        presentation: 'page',
+        presentation: 'fullscreen',
+        hideAppChrome: true,
+        hideAppMobileSubheader: true,
+        disablePullToRefresh: true,
         gestureDismiss: false,
         statusBar: 'auto',
       },
