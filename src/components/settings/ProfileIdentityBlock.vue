@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
+import SearchableSelect from '../SearchableSelect.vue'
 import {
   REFERENCE_COUNTRIES,
   REFERENCE_GENDERS,
@@ -27,6 +28,38 @@ const cityId = defineModel<string>('cityId', { required: true })
 const { t, currentLang } = useI18n()
 
 const cityOptions = computed(() => citiesForCountry(countryCode.value))
+
+const countrySelectOptions = computed(() =>
+  REFERENCE_COUNTRIES.map((c) => ({
+    value: c.code,
+    label: `${c.flag} ${countryLabel(c, currentLang.value)}`,
+    searchText: `${c.code} ${c.nameFr} ${c.nameEn} ${c.nameFon ?? ''}`,
+  })),
+)
+
+const citySelectOptions = computed(() =>
+  cityOptions.value.map((city) => ({
+    value: city.id,
+    label: cityLabel(city, currentLang.value),
+    searchText: cityLabel(city, currentLang.value),
+  })),
+)
+
+const genderSelectOptions = computed(() =>
+  REFERENCE_GENDERS.filter((g) => g.id).map((g) => ({
+    value: g.id,
+    label: genderLabel(g, currentLang.value),
+    searchText: `${g.nameFr} ${g.nameEn}`,
+  })),
+)
+
+const pronounSelectOptions = computed(() =>
+  REFERENCE_PRONOUNS.filter((p) => p.id).map((p) => ({
+    value: p.id,
+    label: pronounLabel(p, currentLang.value),
+    searchText: `${p.nameFr} ${p.nameEn}`,
+  })),
+)
 
 const fieldClass =
   'w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition'
@@ -64,36 +97,37 @@ watch(countryCode, () => {
     <div>
       <p :class="labelClass">{{ t('settings.profile.groupPersonal') }}</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <select v-model="gender" :class="fieldClass">
-          <option value="">{{ t('profile.field.gender') }}</option>
-          <option v-for="g in REFERENCE_GENDERS.filter((x) => x.id)" :key="g.id" :value="g.id">
-            {{ genderLabel(g, currentLang) }}
-          </option>
-        </select>
-        <select v-model="pronouns" :class="fieldClass">
-          <option value="">{{ t('profile.field.pronouns') }}</option>
-          <option v-for="p in REFERENCE_PRONOUNS.filter((x) => x.id)" :key="p.id" :value="p.id">
-            {{ pronounLabel(p, currentLang) }}
-          </option>
-        </select>
+        <SearchableSelect
+          v-model="gender"
+          :options="genderSelectOptions"
+          :placeholder="t('profile.field.gender')"
+          :search-placeholder="t('onboarding.profileSearch')"
+        />
+        <SearchableSelect
+          v-model="pronouns"
+          :options="pronounSelectOptions"
+          :placeholder="t('profile.field.pronouns')"
+          :search-placeholder="t('onboarding.profileSearch')"
+        />
       </div>
     </div>
 
     <div>
       <p :class="labelClass">{{ t('settings.profile.groupLocation') }}</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <select v-model="countryCode" :class="fieldClass">
-          <option value="">{{ t('onboarding.countryPlaceholder') }}</option>
-          <option v-for="c in REFERENCE_COUNTRIES" :key="c.code" :value="c.code">
-            {{ c.flag }} {{ countryLabel(c, currentLang) }}
-          </option>
-        </select>
-        <select v-if="cityOptions.length" v-model="cityId" :class="fieldClass">
-          <option value="">{{ t('onboarding.cityPlaceholder') }}</option>
-          <option v-for="ct in cityOptions" :key="ct.id" :value="ct.id">
-            {{ cityLabel(ct, currentLang) }}
-          </option>
-        </select>
+        <SearchableSelect
+          v-model="countryCode"
+          :options="countrySelectOptions"
+          :placeholder="t('onboarding.countryPlaceholder')"
+          :search-placeholder="t('onboarding.countrySearch')"
+        />
+        <SearchableSelect
+          v-if="citySelectOptions.length"
+          v-model="cityId"
+          :options="citySelectOptions"
+          :placeholder="t('onboarding.cityPlaceholder')"
+          :search-placeholder="t('onboarding.citySearch')"
+        />
       </div>
     </div>
 

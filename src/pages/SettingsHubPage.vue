@@ -100,7 +100,8 @@ const visibleGroups = computed(() =>
   text-transform: uppercase;
   color: rgb(115 115 115);
 }
-:global(html.dark) .settings-hub-group-title {
+:global(html.dark) .settings-hub-group-title,
+:global(.dark) .settings-hub-group-title {
   color: rgb(163 163 163);
 }
 .settings-hub-row {

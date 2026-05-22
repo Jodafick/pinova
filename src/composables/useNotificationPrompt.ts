@@ -1,6 +1,8 @@
 import { ref, watch, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import type { User } from '../types'
 import { useAuth } from './useAuth'
+import { userNeedsOnboarding } from '../utils/onboarding'
 import api from '../api'
 import { isWebPushBackendReady, isWebPushSupported } from '../utils/webPushClient'
 
@@ -23,8 +25,16 @@ function pathExcluded(pathname: string): boolean {
     '/reset-password',
     '/password-reset-confirm',
     '/settings',
+    '/onboarding',
   ]
   return prefixes.some((pre) => p === pre || p.startsWith(`${pre}/`))
+}
+
+function shouldDeferNotificationPrompt(isAuthenticated: boolean, pathname: string, user: User | null | undefined): boolean {
+  if (!isAuthenticated) return true
+  if (pathExcluded(pathname)) return true
+  if (userNeedsOnboarding(user)) return true
+  return false
 }
 
 function storageAllowsPrompt(): boolean {
@@ -54,7 +64,7 @@ export function notificationPromptMarkCompleted(): void {
 export function useNotificationPrompt() {
   const open = ref(false)
   const route = useRoute()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, currentUser } = useAuth()
   let timer: ReturnType<typeof setTimeout> | null = null
 
   function clearTimer() {
@@ -69,17 +79,15 @@ export function useNotificationPrompt() {
     open.value = false
 
     if (typeof window === 'undefined') return
-    if (!isAuthenticated.value) return
+    if (shouldDeferNotificationPrompt(isAuthenticated.value, route.path, currentUser.value)) return
     if (!storageAllowsPrompt()) return
     if (!isWebPushSupported()) return
     if (Notification.permission !== 'default') return
-    if (pathExcluded(route.path)) return
 
     timer = setTimeout(async () => {
       timer = null
-      if (!isAuthenticated.value) return
+      if (shouldDeferNotificationPrompt(isAuthenticated.value, route.path, currentUser.value)) return
       if (Notification.permission !== 'default') return
-      if (pathExcluded(route.path)) return
       if (!storageAllowsPrompt()) return
 
       try {
@@ -94,7 +102,7 @@ export function useNotificationPrompt() {
   }
 
   watch(
-    () => [isAuthenticated.value, route.path] as const,
+    () => [isAuthenticated.value, route.path, currentUser.value?.onboardingCompletedAt] as const,
     () => {
       schedulePrompt()
     },

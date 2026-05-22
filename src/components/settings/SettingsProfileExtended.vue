@@ -3,6 +3,7 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { useI18n } from '../../i18n'
 import api from '../../api'
+import SearchableSelect from '../SearchableSelect.vue'
 import {
   REFERENCE_INTERESTS,
   REFERENCE_ACCENT_COLORS,
@@ -36,6 +37,12 @@ const saveButtonLabel = computed(() => {
   if (saved.value) return t('common.savedCheck')
   return t('common.save')
 })
+
+const presenceOptions = computed(() => [
+  { value: 'available', label: t('profile.presence.available') },
+  { value: 'busy', label: t('profile.presence.busy') },
+  { value: 'invisible', label: t('profile.presence.invisible') },
+])
 
 watch(
   currentUser,
@@ -105,68 +112,91 @@ function toggleInterest(slug: string) {
 
 <template>
   <div v-if="section === 'social'" class="space-y-4">
-    <h3 class="text-lg font-semibold">{{ t('settings.profileExtended.socialDiscovery') }}</h3>
+    <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.profileExtended.socialDiscovery') }}</h3>
     <div class="flex flex-wrap gap-2">
       <button
         v-for="item in interestOptions"
         :key="item.slug"
         type="button"
-        class="rounded-full px-3 py-1.5 text-sm border"
-        :class="selectedInterests.includes(item.slug) ? 'bg-rose-500 text-white border-rose-500' : 'border-neutral-300 dark:border-neutral-600'"
+        class="rounded-full px-3 py-1.5 text-sm border transition-colors"
+        :class="
+          selectedInterests.includes(item.slug)
+            ? 'bg-pink-700 dark:bg-pink-600 text-white border-pink-700 dark:border-pink-600'
+            : 'border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-200 hover:border-pink-400 dark:hover:border-pink-600'
+        "
         @click="toggleInterest(item.slug)"
       >
         {{ interestLabel(item, currentLang) }}
       </button>
     </div>
-    <button type="button" class="rounded-xl bg-rose-500 text-white px-5 py-2.5" :disabled="saving" @click="save">
+    <button
+      type="button"
+      class="app-btn app-btn-primary app-btn-sm"
+      :disabled="saving"
+      @click="save"
+    >
       {{ saveButtonLabel }}
     </button>
   </div>
 
   <div v-else-if="section === 'personalization'" class="space-y-4">
-    <h3 class="text-lg font-semibold">{{ t('settings.nav.personalization') }}</h3>
+    <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.nav.personalization') }}</h3>
     <div class="flex flex-wrap gap-2">
       <button
         v-for="m in (['light', 'dark', 'system'] as const)"
         :key="m"
         type="button"
-        class="rounded-xl px-4 py-2 border"
-        :class="preference === m ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/30' : ''"
+        class="rounded-xl px-4 py-2 border text-sm transition-colors"
+        :class="
+          preference === m
+            ? 'border-pink-700 dark:border-pink-600 bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-300 font-semibold'
+            : 'border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-200 hover:border-pink-400 dark:hover:border-pink-600'
+        "
         @click="setPreference(m)"
       >
         {{ t(`onboarding.theme.${m}`) }}
       </button>
     </div>
-    <p class="text-sm font-medium">{{ t('settings.personalization.accent') }}</p>
+    <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.personalization.accent') }}</p>
     <div class="flex flex-wrap gap-3">
       <button
         v-for="ac in REFERENCE_ACCENT_COLORS"
         :key="ac.id"
         type="button"
-        class="h-10 w-10 rounded-full ring-2 ring-offset-2"
-        :class="accentColor === ac.id ? 'ring-rose-500' : 'ring-transparent'"
+        class="h-10 w-10 rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900"
+        :class="accentColor === ac.id ? 'ring-pink-700 dark:ring-pink-500' : 'ring-transparent'"
         :style="{ backgroundColor: ac.hex }"
         :title="accentLabel(ac, currentLang)"
         @click="accentColor = ac.id"
       />
     </div>
-    <label class="flex items-center gap-3">
-      <input v-model="allowAiTranslation" type="checkbox" class="rounded" />
+    <label class="flex items-center gap-3 text-sm text-neutral-700 dark:text-neutral-200 cursor-pointer">
+      <input v-model="allowAiTranslation" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600 text-pink-700 focus:ring-pink-700 dark:bg-neutral-900" />
       <span>{{ t('settings.personalization.autoTranslate') }}</span>
     </label>
-    <button type="button" class="rounded-xl bg-rose-500 text-white px-5 py-2.5" :disabled="saving" @click="save">
+    <button
+      type="button"
+      class="app-btn app-btn-primary app-btn-sm"
+      :disabled="saving"
+      @click="save"
+    >
       {{ saveButtonLabel }}
     </button>
   </div>
 
   <div v-else-if="section === 'presence'" class="space-y-4">
-    <h3 class="text-lg font-semibold">{{ t('settings.nav.presence') }}</h3>
-    <select v-model="presenceStatus" class="w-full rounded-xl border px-3 py-2 dark:bg-neutral-900">
-      <option value="available">{{ t('profile.presence.available') }}</option>
-      <option value="busy">{{ t('profile.presence.busy') }}</option>
-      <option value="invisible">{{ t('profile.presence.invisible') }}</option>
-    </select>
-    <button type="button" class="rounded-xl bg-rose-500 text-white px-5 py-2.5" :disabled="saving" @click="save">
+    <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.nav.presence') }}</h3>
+    <SearchableSelect
+      v-model="presenceStatus"
+      :options="presenceOptions"
+      :placeholder="t('profile.presence.available')"
+    />
+    <button
+      type="button"
+      class="app-btn app-btn-primary app-btn-sm"
+      :disabled="saving"
+      @click="save"
+    >
       {{ saveButtonLabel }}
     </button>
   </div>

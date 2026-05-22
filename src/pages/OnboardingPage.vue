@@ -400,6 +400,7 @@ function onPrimaryAction() {
           <label class="onboarding-label">{{ t('onboarding.countryLabel') }}</label>
           <SearchableSelect
             v-model="countryCode"
+            variant="glass"
             :options="countrySelectOptions"
             :placeholder="t('onboarding.countryPlaceholder')"
             :search-placeholder="t('onboarding.countrySearch')"
@@ -408,6 +409,7 @@ function onPrimaryAction() {
             <label class="onboarding-label mt-5">{{ t('onboarding.cityLabel') }}</label>
             <SearchableSelect
               v-model="cityId"
+              variant="glass"
               :options="citySelectOptions"
               :placeholder="t('onboarding.cityPlaceholder')"
               :search-placeholder="t('onboarding.citySearch')"
