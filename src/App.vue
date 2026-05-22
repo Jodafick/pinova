@@ -43,6 +43,7 @@ import {
 import { useNotificationPrompt } from './composables/useNotificationPrompt'
 import { usePwaInstallPrompt } from './composables/usePwaInstallPrompt'
 import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
+import { isValidSettingsSectionId, settingsDetailTitleKey } from './data/settingsHubConfig'
 import { reloadPwaApplication } from './utils/pwaAppReload'
 
 /** Réf. du bouton ⋮ board : assignée dans le template ; `void` évite TS6133 (usage non vu par vue-tsc côté script). */
@@ -403,6 +404,11 @@ const appMobilePageTitle = computed(() => {
     return typeof u === 'string' && u.trim() ? `@${u}` : t('nav.profile')
   }
   if (n === 'settings') return t('nav.settings')
+  if (n === 'settings-section') {
+    const sid = String(route.params.sectionId || '')
+    if (sid && isValidSettingsSectionId(sid)) return t(settingsDetailTitleKey(sid))
+    return t('nav.settings')
+  }
   if (n === 'billing') return t('nav.billing')
   if (n === 'premium') return t('nav.premium')
   if (n === 'faq') return t('nav.faq')

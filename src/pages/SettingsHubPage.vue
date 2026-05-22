@@ -27,14 +27,14 @@ const visibleGroups = computed(() =>
 
 <template>
   <div
-    class="pinova-settings-hub max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col min-h-[min(100dvh,100svh)] pt-6 sm:pt-10 md:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12"
+    class="pinova-settings-hub max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col min-h-[min(100dvh,100svh)] pt-2 lg:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12"
   >
     <div class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
       <div class="settings-hub-orb settings-hub-orb--rose" />
       <div class="settings-hub-orb settings-hub-orb--violet" />
     </div>
 
-    <header class="relative z-[1] mb-8">
+    <header class="relative z-[1] mb-8 hidden lg:block">
       <h1 class="text-xl min-[400px]:text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-50 mb-2">
         {{ t('settings.title') }}
       </h1>

@@ -33,6 +33,7 @@ import {
   isWebPushSupported,
   type WebPushActivateError,
 } from '../utils/webPushClient'
+import { setMobileHeaderTitle } from '../composables/mobileHeaderContext'
 
 const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-profile', icon: 'person', labelKey: 'settings.nav.profile' },
@@ -1036,6 +1037,11 @@ const detailHeaderTitle = computed(() =>
   detailSectionId.value ? t(settingsDetailTitleKey(detailSectionId.value)) : t('settings.title'),
 )
 
+/** En-têtes de carte masqués en vue détail mobile/tablette (titre déjà dans AppMobilePageHeader). */
+const detailCardHeaderHiddenBelowLg = computed(() =>
+  detailSectionId.value ? 'hidden lg:block' : '',
+)
+
 function showSettingsSection(id: string): boolean {
   if (!detailSectionId.value) return true
   return settingsPageShowsSection(detailSectionId.value, id)
@@ -1053,6 +1059,14 @@ watch(
     if (resolved !== id) {
       void router.replace({ name: 'settings-section', params: { sectionId: resolved } })
     }
+  },
+  { immediate: true },
+)
+
+watch(
+  detailHeaderTitle,
+  (title) => {
+    setMobileHeaderTitle(detailSectionId.value ? title : null)
   },
   { immediate: true },
 )
@@ -1149,6 +1163,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  setMobileHeaderTitle(null)
   detachSettingsScrollListeners()
   window.removeEventListener('resize', onResizeSettingsNav)
   if (settingsNavScrollRaf !== null) {
@@ -1165,7 +1180,7 @@ watch(
 
 <template>
   <div
-    class="pinova-settings-page max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col h-full min-h-0 pt-6 sm:pt-10 md:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[min(100dvh,100svh)]"
+    class="pinova-settings-page max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col h-full min-h-0 pt-2 lg:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[min(100dvh,100svh)]"
   >
     <div v-if="detailSectionId" class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
       <div class="settings-detail-orb settings-detail-orb--rose" />
@@ -1174,7 +1189,7 @@ watch(
 
     <header
       v-if="detailSectionId"
-      class="relative z-[2] mb-6 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl backdrop-saturate-150 shadow-[0_4px_24px_-8px_rgba(0,0,0,.12)] dark:shadow-[0_4px_24px_-8px_rgba(0,0,0,.45)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden"
+      class="relative z-[2] mb-6 hidden lg:block rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl backdrop-saturate-150 shadow-[0_4px_24px_-8px_rgba(0,0,0,.12)] dark:shadow-[0_4px_24px_-8px_rgba(0,0,0,.45)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden"
     >
       <RouterLink
         :to="{ name: 'settings' }"
@@ -1227,7 +1242,7 @@ watch(
         </div>
 
         <div class="p-4 sm:p-6 space-y-5">
-          <p v-if="detailSectionId" class="text-xs text-neutral-500 dark:text-neutral-400 -mt-1 mb-1">{{ t('settings.profile.subtitle') }}</p>
+          <p v-if="detailSectionId" class="hidden lg:block text-xs text-neutral-500 dark:text-neutral-400 -mt-1 mb-1">{{ t('settings.profile.subtitle') }}</p>
           <div class="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-900/40 sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0">
               <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100">{{ t('lang.title') }}</p>
@@ -1395,7 +1410,7 @@ watch(
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.notifications.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6 space-y-4">
-          <p v-if="detailSectionId" class="text-xs text-neutral-500 dark:text-neutral-400 mb-2">{{ t('settings.notifications.subtitle') }}</p>
+          <p v-if="detailSectionId" class="hidden lg:block text-xs text-neutral-500 dark:text-neutral-400 mb-2">{{ t('settings.notifications.subtitle') }}</p>
           <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
             <div class="min-w-0 flex-1 pr-1">
               <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.followers') }}</p>
@@ -1492,7 +1507,7 @@ watch(
           <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.privacy.title') }}</h2>
         </div>
         <div class="p-4 sm:p-6 space-y-4">
-          <p v-if="detailSectionId" class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.privacy.pageLead') }}</p>
+          <p v-if="detailSectionId" class="hidden lg:block text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.privacy.pageLead') }}</p>
           <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
             <div class="min-w-0 flex-1 pr-1">
               <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.privacy.private') }}</p>
@@ -1533,7 +1548,7 @@ watch(
         v-if="showSettingsSection('settings-appearance')" id="settings-appearance"
         class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800" :class="detailCardHeaderHiddenBelowLg">
           <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.appearance.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.appearance.subtitle') }}</p>
         </div>
@@ -1574,7 +1589,7 @@ watch(
         v-if="showSettingsSection('settings-pwa-install')" id="settings-pwa-install"
         class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800" :class="detailCardHeaderHiddenBelowLg">
           <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.pwaInstall.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.pwaInstall.subtitle') }}</p>
         </div>
@@ -1744,7 +1759,7 @@ watch(
       </section>
 
       <section v-if="showSettingsSection('settings-tips')" id="settings-tips" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4" :class="detailCardHeaderHiddenBelowLg">
           <div class="min-w-0">
             <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.tips.title') }}</h2>
             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.tips.subtitle') }}</p>
@@ -1833,7 +1848,7 @@ watch(
         id="settings-seats"
         class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle" :class="detailCardHeaderHiddenBelowLg">
           <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.seats.title') }}</h2>
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.seats.subtitle') }}</p>
         </div>
@@ -1960,7 +1975,7 @@ watch(
       </section>
 
       <section v-if="showSettingsSection('settings-subscription')" id="settings-subscription" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-start justify-between gap-3">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-start justify-between gap-3" :class="detailCardHeaderHiddenBelowLg">
           <div class="min-w-0">
             <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.subscription.title') }}</h2>
             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
@@ -2091,7 +2106,7 @@ watch(
         id="settings-pwa-reload"
         class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800" :class="detailCardHeaderHiddenBelowLg">
           <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('pwa.reload.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('pwa.reload.subtitle') }}</p>
         </div>
@@ -2108,7 +2123,7 @@ watch(
       </section>
 
       <section v-if="showSettingsSection('settings-support')" id="settings-support" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800" :class="detailCardHeaderHiddenBelowLg">
           <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.support.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.support.subtitle') }}</p>
         </div>
@@ -2176,7 +2191,7 @@ watch(
 
       <!-- Password section -->
       <section v-if="showSettingsSection('settings-password')" id="settings-password" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" :class="detailCardHeaderHiddenBelowLg">
           <div class="min-w-0 flex-1">
             <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.password.title') }}</h2>
             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
