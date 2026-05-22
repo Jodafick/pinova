@@ -236,6 +236,14 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
       trialEligible: djangoUser.subscription?.trial_eligible ?? false,
       trialConsumedAt: djangoUser.subscription?.trial_consumed_at ?? profile.subscription_trial_consumed_at ?? null,
       digestCreatorWeekly: djangoUser.subscription?.digest_creator_weekly ?? true,
+      adAdsEnabled:
+        djangoUser.subscription?.ad_ads_enabled === undefined
+          ? true
+          : !!djangoUser.subscription.ad_ads_enabled,
+      partnerAdsEnabled:
+        djangoUser.subscription?.partner_ads_enabled === undefined
+          ? true
+          : !!djangoUser.subscription.partner_ads_enabled,
       activeBillingCycle: djangoUser.subscription?.active_billing_cycle ?? null,
       hasBillingHistory:
         typeof djangoUser.subscription?.has_billing_history === 'boolean'

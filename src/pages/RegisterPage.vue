@@ -191,15 +191,16 @@ async function handleGoogleClick() {
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('register.fullName') }}</label>
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('register.displayName') }}</label>
               <div class="relative group">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">person</span>
                 <input
                   ref="displayNameInput"
                   v-model="displayName"
                   type="text"
-                  :placeholder="t('register.fullName.placeholder')"
+                  autocomplete="nickname"
+                  :placeholder="t('register.displayName.placeholder')"
                   :class="[
                     'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all',
                     fieldErrors.display_name || fieldErrors.username
@@ -211,6 +212,7 @@ async function handleGoogleClick() {
               <p v-if="fieldErrors.display_name || fieldErrors.username" class="mt-1 ml-1 text-xs text-red-600">
                 {{ fieldErrors.display_name || fieldErrors.username }}
               </p>
+              <p v-else class="mt-1 ml-1 text-xs text-neutral-500 dark:text-neutral-400">{{ t('register.displayNameHint') }}</p>
             </div>
             <div>
               <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('login.email') }}</label>

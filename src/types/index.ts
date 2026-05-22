@@ -114,6 +114,8 @@ export type User = UserProfileExtended & {
     trialEligible?: boolean
     trialConsumedAt?: string | null
     digestCreatorWeekly?: boolean
+    adAdsEnabled?: boolean
+    partnerAdsEnabled?: boolean
     /** ISO — réservé au propriétaire ; suppression de compte programmée */
     accountScheduledDeletionAt?: string | null
     /** solo | family | team — utilisateur propriétaire de la facture */

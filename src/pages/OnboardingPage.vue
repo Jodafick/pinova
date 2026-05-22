@@ -8,10 +8,14 @@ import {
   REFERENCE_COUNTRIES,
   REFERENCE_ACCENT_COLORS,
   REFERENCE_INTERESTS,
+  REFERENCE_GENDERS,
+  REFERENCE_PRONOUNS,
   countryLabel,
   cityLabel,
   interestLabel,
   accentLabel,
+  genderLabel,
+  pronounLabel,
   citiesForCountry,
   detectBrowserTimezone,
   type InterestRef,
@@ -22,7 +26,11 @@ import { fetchMentionUsersPage, type SuggestUserRow } from '../composables/useUs
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { getFullMediaUrl } from '../composables/usePins'
 
-const STEPS = ['welcome', 'language', 'interests', 'location', 'theme', 'creators', 'done'] as const
+import SearchableSelect from '../components/SearchableSelect.vue'
+import BirthDatePicker from '../components/BirthDatePicker.vue'
+import { getStoredReferralCode, clearStoredReferralCode } from '../composables/useReferralIntent'
+
+const STEPS = ['welcome', 'language', 'interests', 'location', 'profile', 'theme', 'referral', 'creators', 'done'] as const
 
 type CreatorRow = SuggestUserRow & { reason?: string }
 
@@ -40,6 +48,14 @@ const interestOptions = ref<InterestRef[]>([...REFERENCE_INTERESTS])
 const selectedInterests = ref<string[]>([])
 const countryCode = ref(currentUser.value?.countryCode || '')
 const cityId = ref('')
+const firstName = ref(currentUser.value?.firstName || '')
+const lastName = ref(currentUser.value?.lastName || '')
+const birthDate = ref(
+  currentUser.value?.birthDate ? String(currentUser.value.birthDate).slice(0, 10) : '',
+)
+const gender = ref(currentUser.value?.gender || '')
+const pronouns = ref(currentUser.value?.pronouns || '')
+const referralCode = ref(getStoredReferralCode())
 const themePref = ref<'light' | 'dark' | 'system'>('system')
 
 const onboardingIsDark = computed(() => {
@@ -202,6 +218,30 @@ const selectedCityName = computed(() => {
   return c ? cityLabel(c, selectedLang.value) : ''
 })
 
+const countrySelectOptions = computed(() =>
+  REFERENCE_COUNTRIES.map((c) => ({
+    value: c.code,
+    label: `${c.flag} ${countryLabel(c, selectedLang.value)}`,
+    searchText: `${c.code} ${c.nameFr} ${c.nameEn} ${c.nameFon ?? ''}`,
+  })),
+)
+
+const citySelectOptions = computed(() =>
+  cityOptions.value.map((city) => ({
+    value: city.id,
+    label: cityLabel(city, selectedLang.value),
+    searchText: cityLabel(city, selectedLang.value),
+  })),
+)
+
+function isValidBirthDate(raw: string): boolean {
+  const value = raw.trim().slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const d = new Date(`${value}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return false
+  return d.getTime() < Date.now()
+}
+
 const canContinue = computed(() => {
   if (step.value === 'interests') return selectedInterests.value.length >= 3
   if (step.value === 'location') return !!countryCode.value
@@ -222,6 +262,16 @@ async function finishOnboarding() {
     formData.append('preferred_currency', country?.currency || currentUser.value?.preferredCurrency || 'XOF')
     formData.append('country_code', countryCode.value)
     if (selectedCityName.value) formData.append('city', selectedCityName.value)
+    const bd = birthDate.value.trim().slice(0, 10)
+    if (isValidBirthDate(bd)) formData.append('birth_date', bd)
+    const fn = firstName.value.trim()
+    if (fn) formData.append('first_name', fn)
+    const ln = lastName.value.trim()
+    if (ln) formData.append('last_name', ln)
+    if (gender.value) formData.append('gender', gender.value)
+    if (pronouns.value) formData.append('pronouns', pronouns.value)
+    const refCode = referralCode.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16)
+    if (refCode) formData.append('referral_code', refCode)
     formData.append('interests', JSON.stringify(selectedInterests.value))
     formData.append('followed_onboarding_creators', JSON.stringify(followedCreators.value))
     formData.append('theme_mode', themePref.value)
@@ -241,6 +291,7 @@ async function finishOnboarding() {
     }
     await fetchCurrentUser({ force: true })
     syncAppearanceFromProfile(themePref.value)
+    if (refCode) clearStoredReferralCode()
     await router.replace({ name: 'home' })
   } catch {
     errorMsg.value = t('onboarding.errorSave')
@@ -347,21 +398,50 @@ function onPrimaryAction() {
           <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.locationTitle') }}</h2>
           <p class="onboarding-lead">{{ t('onboarding.locationHint') }}</p>
           <label class="onboarding-label">{{ t('onboarding.countryLabel') }}</label>
-          <select v-model="countryCode" class="onboarding-select">
-            <option value="">{{ t('onboarding.countryPlaceholder') }}</option>
-            <option v-for="c in REFERENCE_COUNTRIES" :key="c.code" :value="c.code">
-              {{ c.flag }} {{ countryLabel(c, selectedLang) }}
-            </option>
-          </select>
-          <template v-if="cityOptions.length">
+          <SearchableSelect
+            v-model="countryCode"
+            :options="countrySelectOptions"
+            :placeholder="t('onboarding.countryPlaceholder')"
+            :search-placeholder="t('onboarding.countrySearch')"
+          />
+          <template v-if="citySelectOptions.length">
             <label class="onboarding-label mt-5">{{ t('onboarding.cityLabel') }}</label>
-            <select v-model="cityId" class="onboarding-select">
-              <option value="">{{ t('onboarding.cityPlaceholder') }}</option>
-              <option v-for="city in cityOptions" :key="city.id" :value="city.id">
-                {{ cityLabel(city, selectedLang) }}
+            <SearchableSelect
+              v-model="cityId"
+              :options="citySelectOptions"
+              :placeholder="t('onboarding.cityPlaceholder')"
+              :search-placeholder="t('onboarding.citySearch')"
+            />
+          </template>
+        </section>
+
+        <section v-else-if="step === 'profile'" class="onboarding-panel onboarding-panel--compact">
+          <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.profileTitle') }}</h2>
+          <p class="onboarding-lead">{{ t('onboarding.profileHint') }}</p>
+          <div class="onboarding-profile-grid">
+            <label class="onboarding-label">{{ t('profile.field.firstName') }}</label>
+            <label class="onboarding-label">{{ t('profile.field.lastName') }}</label>
+            <input v-model="firstName" type="text" autocomplete="given-name" class="onboarding-select" />
+            <input v-model="lastName" type="text" autocomplete="family-name" class="onboarding-select" />
+          </div>
+          <label class="onboarding-label mt-5">{{ t('onboarding.birthdateLabel') }}</label>
+          <BirthDatePicker v-model="birthDate" />
+          <div class="onboarding-profile-grid mt-5">
+            <label class="onboarding-label">{{ t('profile.field.gender') }}</label>
+            <label class="onboarding-label">{{ t('profile.field.pronouns') }}</label>
+            <select v-model="gender" class="onboarding-select">
+              <option value="">{{ t('common.selectEmpty') }}</option>
+              <option v-for="g in REFERENCE_GENDERS.filter((x) => x.id)" :key="g.id" :value="g.id">
+                {{ genderLabel(g, selectedLang) }}
               </option>
             </select>
-          </template>
+            <select v-model="pronouns" class="onboarding-select">
+              <option value="">{{ t('common.selectEmpty') }}</option>
+              <option v-for="p in REFERENCE_PRONOUNS.filter((x) => x.id)" :key="p.id" :value="p.id">
+                {{ pronounLabel(p, selectedLang) }}
+              </option>
+            </select>
+          </div>
         </section>
 
         <section v-else-if="step === 'theme'" class="onboarding-panel onboarding-panel--compact">
@@ -372,11 +452,14 @@ function onPrimaryAction() {
               v-for="m in (['light', 'dark', 'system'] as const)"
               :key="m"
               type="button"
-              class="onboarding-chip onboarding-chip--lg capitalize"
+              class="onboarding-chip onboarding-chip--lg onboarding-theme-chip"
               :class="{ 'onboarding-chip--active': themePref === m }"
               @click="pickTheme(m)"
             >
-              {{ t(`onboarding.theme.${m}`) }}
+              <span class="material-symbols-outlined text-[20px]">
+                {{ m === 'light' ? 'light_mode' : m === 'dark' ? 'dark_mode' : 'contrast' }}
+              </span>
+              <span>{{ t(`onboarding.theme.${m}`) }}</span>
             </button>
           </div>
           <p class="onboarding-label mt-8">{{ t('onboarding.accentLabel') }}</p>
@@ -392,6 +475,20 @@ function onPrimaryAction() {
               @click="pickAccent(ac.id)"
             />
           </div>
+        </section>
+
+        <section v-else-if="step === 'referral'" class="onboarding-panel onboarding-panel--compact">
+          <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.referralTitle') }}</h2>
+          <p class="onboarding-lead">{{ t('onboarding.referralHint') }}</p>
+          <label class="onboarding-label">{{ t('onboarding.referralLabel') }}</label>
+          <input
+            v-model="referralCode"
+            type="text"
+            autocomplete="off"
+            class="onboarding-select uppercase tracking-wider"
+            :placeholder="t('onboarding.referralPlaceholder')"
+            maxlength="16"
+          />
         </section>
 
         <section v-else-if="step === 'creators'" class="onboarding-panel onboarding-panel--creators">
@@ -474,7 +571,7 @@ function onPrimaryAction() {
         </button>
         <div class="flex-1 min-w-2" />
         <button
-          v-if="step === 'creators'"
+          v-if="step === 'creators' || step === 'referral' || step === 'profile'"
           type="button"
           class="onboarding-btn onboarding-btn--ghost"
           @click="nextStep"
@@ -528,8 +625,8 @@ function onPrimaryAction() {
 .onboarding-orb {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(72px);
-  opacity: 0.55;
+  filter: blur(80px);
+  opacity: 0.62;
   animation: onboarding-float 14s ease-in-out infinite;
 }
 
@@ -672,6 +769,19 @@ function onPrimaryAction() {
 .onboarding-panel--compact {
   flex: 0 0 auto;
   align-self: stretch;
+}
+
+.onboarding-profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 480px) {
+  .onboarding-profile-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .onboarding-hero-top {
@@ -825,6 +935,14 @@ function onPrimaryAction() {
 .onboarding-chip--lg {
   padding: 1rem 1.1rem;
   justify-content: center;
+}
+
+.onboarding-theme-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 6.5rem;
 }
 
 .onboarding-chip--active {

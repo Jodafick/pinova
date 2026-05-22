@@ -4,6 +4,7 @@ import { useAuth } from '../composables/useAuth'
 import { userNeedsOnboarding } from '../utils/onboarding'
 import { devLog } from '../devLog'
 import { maybeRedirectWebToApp } from '../utils/appDeepLink'
+import { isValidSettingsSectionId } from '../data/settingsHubConfig'
 
 /*
  * Routes & meta layer system (iOS-first immersif).
@@ -197,6 +198,33 @@ const router = createRouter({
     {
       path: '/settings',
       name: 'settings',
+      component: () => import('../pages/SettingsHubPage.vue'),
+      meta: {
+        requiresAuth: true,
+        keepAlive: false,
+        presentation: 'page',
+        gestureDismiss: true,
+        statusBar: 'auto',
+      },
+      beforeEnter(to) {
+        const hashId = to.hash.replace(/^#/, '').trim()
+        if (hashId && isValidSettingsSectionId(hashId)) {
+          return { name: 'settings-section', params: { sectionId: hashId }, replace: true }
+        }
+        const raw = to.query.section
+        const sectionRaw = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : ''
+        if (sectionRaw) {
+          const normalized = sectionRaw.startsWith('settings-') ? sectionRaw : `settings-${sectionRaw}`
+          if (isValidSettingsSectionId(normalized)) {
+            return { name: 'settings-section', params: { sectionId: normalized }, replace: true }
+          }
+        }
+        return true
+      },
+    },
+    {
+      path: '/settings/:sectionId',
+      name: 'settings-section',
       component: () => import('../pages/SettingsPage.vue'),
       meta: {
         requiresAuth: true,

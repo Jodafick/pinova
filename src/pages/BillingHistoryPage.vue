@@ -130,7 +130,7 @@ onMounted(async () => {
   await fetchCurrentUser({ silent: true })
   if (currentUser.value?.subscription?.hasBillingHistory === false) {
     loading.value = false
-    router.replace({ path: '/settings', hash: '#settings-subscription' })
+    router.replace({ name: 'settings-section', params: { sectionId: 'settings-subscription' } })
     return
   }
   try {

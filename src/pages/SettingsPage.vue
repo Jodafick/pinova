@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
 import { useI18n } from '../i18n'
@@ -13,6 +13,11 @@ import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import SettingsProfileExtended from '../components/settings/SettingsProfileExtended.vue'
+import ProfileIdentityBlock from '../components/settings/ProfileIdentityBlock.vue'
+import BirthDatePicker from '../components/BirthDatePicker.vue'
+import { profileExtendedToApiPayload } from '../utils/mapProfileExtended'
+import { citiesForCountry, cityLabel } from '../data/reference'
+import { isValidSettingsSectionId, resolveSettingsDetailPage, settingsDetailTitleKey, settingsPageShowsSection } from '../data/settingsHubConfig'
 import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
@@ -31,7 +36,6 @@ import {
 
 const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-profile', icon: 'person', labelKey: 'settings.nav.profile' },
-  { id: 'settings-identity-extended', icon: 'badge', labelKey: 'settings.profileExtended.title' },
   { id: 'settings-social', icon: 'interests', labelKey: 'settings.nav.social' },
   { id: 'settings-personalization', icon: 'palette', labelKey: 'settings.nav.personalization' },
   { id: 'settings-presence', icon: 'online_prediction', labelKey: 'settings.nav.presence' },
@@ -107,6 +111,17 @@ const username = ref('')
 const bio = ref('')
 const email = ref('')
 const birthDate = ref('')
+const firstName = ref('')
+const lastName = ref('')
+const jobTitle = ref('')
+const school = ref('')
+const company = ref('')
+const website = ref('')
+const gender = ref('')
+const pronouns = ref('')
+const favoriteQuote = ref('')
+const profileCountryCode = ref('')
+const profileCityId = ref('')
 const oldPassword = ref('')
 const newPassword = ref('')
 const confirmNewPassword = ref('')
@@ -129,6 +144,8 @@ const initialPwError = ref('')
 const initialPwAutoOpened = ref(false)
 const tipsEnabled = ref(false)
 const tipsUrl = ref('')
+const adAdsEnabled = ref(true)
+const partnerAdsEnabled = ref(true)
 const tipsSaving = ref(false)
 const tipsSaved = ref(false)
 const preferredCurrency = ref('XOF')
@@ -343,10 +360,27 @@ onMounted(() => {
     bio.value = currentUser.value.bio
     email.value = currentUser.value.email
     birthDate.value = currentUser.value.birthDate ? String(currentUser.value.birthDate).slice(0, 10) : ''
+    firstName.value = currentUser.value.firstName || ''
+    lastName.value = currentUser.value.lastName || ''
+    jobTitle.value = currentUser.value.jobTitle || ''
+    school.value = currentUser.value.school || ''
+    company.value = currentUser.value.company || ''
+    website.value = currentUser.value.website || ''
+    gender.value = currentUser.value.gender || ''
+    pronouns.value = currentUser.value.pronouns || ''
+    favoriteQuote.value = currentUser.value.favoriteQuote || ''
+    profileCountryCode.value = currentUser.value.countryCode || ''
+    const cityName = currentUser.value.city || ''
+    const cityMatch = citiesForCountry(profileCountryCode.value).find(
+      (c) => cityLabel(c, currentLang.value) === cityName,
+    )
+    profileCityId.value = cityMatch?.id || ''
     avatarPreview.value = currentUser.value.avatarUrl || null
     currentPlan.value = currentUser.value.subscription?.plan || 'free'
     tipsEnabled.value = currentUser.value.subscription?.tipsEnabled ?? false
     tipsUrl.value = currentUser.value.subscription?.tipsUrl || ''
+    adAdsEnabled.value = currentUser.value.subscription?.adAdsEnabled ?? true
+    partnerAdsEnabled.value = currentUser.value.subscription?.partnerAdsEnabled ?? true
     preferredCurrency.value = currentUser.value.preferredCurrency || 'XOF'
     detectedCountryCode.value = currentUser.value.countryCode || ''
     notificationsFollowers.value = currentUser.value.notificationsFollowers ?? true
@@ -378,6 +412,22 @@ watch(
   () => currentUser.value?.id,
   () => {
     syncWebNotificationState().catch(() => undefined)
+  },
+)
+
+watch(
+  () => [adAdsEnabled.value, partnerAdsEnabled.value, currentUser.value?.id] as const,
+  () => {
+    if (!currentUser.value) return
+    const timer = window.setTimeout(() => {
+      void api
+        .patch('me/', {
+          ad_ads_enabled: adAdsEnabled.value,
+          partner_ads_enabled: partnerAdsEnabled.value,
+        })
+        .catch(() => undefined)
+    }, 800)
+    return () => window.clearTimeout(timer)
   },
 )
 
@@ -540,16 +590,40 @@ const triggerFileInput = () => {
 const handleSave = async () => {
   saving.value = true
   try {
-    await updateProfile({
-      displayName: displayName.value,
-      bio: bio.value,
-      email: email.value,
-      avatar: avatarFile.value || undefined,
-      preferredLanguage: currentLang.value,
-      preferredCurrency: preferredCurrency.value,
-      birthDate: birthDate.value.trim() || undefined,
+    const formData = new FormData()
+    if (displayName.value.trim()) formData.append('display_name', displayName.value.trim())
+    if (username.value.trim()) formData.append('username', username.value.trim())
+    formData.append('bio', bio.value)
+    if (email.value.trim()) formData.append('email', email.value.trim())
+    if (avatarFile.value) formData.append('avatar', avatarFile.value)
+    if (currentLang.value) formData.append('preferred_language', currentLang.value)
+    if (preferredCurrency.value) formData.append('preferred_currency', preferredCurrency.value)
+    const bd = birthDate.value.trim().slice(0, 10)
+    if (bd) formData.append('birth_date', bd)
+
+    const pickedCity = citiesForCountry(profileCountryCode.value).find((c) => c.id === profileCityId.value)
+    const cityName = pickedCity ? cityLabel(pickedCity, currentLang.value) : ''
+    Object.entries(
+      profileExtendedToApiPayload({
+        firstName: firstName.value,
+        lastName: lastName.value,
+        city: cityName,
+        jobTitle: jobTitle.value,
+        school: school.value,
+        company: company.value,
+        website: website.value,
+        gender: gender.value,
+        pronouns: pronouns.value,
+        favoriteQuote: favoriteQuote.value,
+      }),
+    ).forEach(([k, v]) => {
+      if (Array.isArray(v)) formData.append(k, JSON.stringify(v))
+      else formData.append(k, String(v))
     })
-    await fetchCurrentUser({ silent: true })
+    if (profileCountryCode.value) formData.append('country_code', profileCountryCode.value)
+
+    await api.patch('me/', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+    await fetchCurrentUser({ force: true })
     saved.value = true
     setTimeout(() => (saved.value = false), 3000)
     currentPlan.value = currentUser.value?.subscription?.plan || 'free'
@@ -956,6 +1030,32 @@ async function cancelAccountDeletion() {
 }
 
 const activeSectionId = ref('settings-profile')
+const detailSectionId = computed(() => String(route.params.sectionId || ''))
+
+const detailHeaderTitle = computed(() =>
+  detailSectionId.value ? t(settingsDetailTitleKey(detailSectionId.value)) : t('settings.title'),
+)
+
+function showSettingsSection(id: string): boolean {
+  if (!detailSectionId.value) return true
+  return settingsPageShowsSection(detailSectionId.value, id)
+}
+
+watch(
+  detailSectionId,
+  (id) => {
+    if (!id) return
+    if (!isValidSettingsSectionId(id)) {
+      void router.replace({ name: 'settings' })
+      return
+    }
+    const resolved = resolveSettingsDetailPage(id)
+    if (resolved !== id) {
+      void router.replace({ name: 'settings-section', params: { sectionId: resolved } })
+    }
+  },
+  { immediate: true },
+)
 /** Après un clic sur un chip : on ne réécrit pas la section active avant cette date (évite de « sauter » pendant le smooth scroll). */
 const settingsNavExplicitLockUntil = ref(0)
 
@@ -1042,6 +1142,7 @@ function onResizeSettingsNav() {
 }
 
 onMounted(() => {
+  if (detailSectionId.value) return
   attachSettingsScrollListeners()
   window.addEventListener('resize', onResizeSettingsNav, { passive: true })
   void nextTick(() => scheduleRefreshSettingsActiveSection())
@@ -1066,8 +1167,30 @@ watch(
   <div
     class="pinova-settings-page max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col h-full min-h-0 pt-6 sm:pt-10 md:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[min(100dvh,100svh)]"
   >
-    <h1 class="text-xl min-[400px]:text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-50 mb-2 break-words">{{ t('settings.title') }}</h1>
-    <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-5 leading-relaxed">{{ t('settings.subtitle') }}</p>
+    <div v-if="detailSectionId" class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+      <div class="settings-detail-orb settings-detail-orb--rose" />
+      <div class="settings-detail-orb settings-detail-orb--violet" />
+    </div>
+
+    <header
+      v-if="detailSectionId"
+      class="relative z-[2] mb-6 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl backdrop-saturate-150 shadow-[0_4px_24px_-8px_rgba(0,0,0,.12)] dark:shadow-[0_4px_24px_-8px_rgba(0,0,0,.45)] ring-1 ring-black/[0.03] dark:ring-white/[0.06] overflow-hidden"
+    >
+      <RouterLink
+        :to="{ name: 'settings' }"
+        class="flex items-center gap-3 px-4 py-3.5 text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition"
+      >
+        <span class="material-symbols-outlined text-[22px] text-rose-600 dark:text-rose-400">arrow_back</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            {{ t('settings.title') }}
+          </p>
+          <h1 class="text-lg font-auth-title font-auth-title--black truncate">
+            {{ detailHeaderTitle }}
+          </h1>
+        </div>
+      </RouterLink>
+    </header>
 
     <div
       v-if="needsPasswordSetup"
@@ -1084,32 +1207,6 @@ watch(
       </button>
     </div>
 
-    <nav
-      :aria-label="t('settings.navLabel')"
-      class="pinova-sticky-below-global-header sticky z-[38] mb-6 sm:mb-8 rounded-2xl border border-neutral-200/85 dark:border-neutral-700/90 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md backdrop-saturate-150 shadow-[0_2px_16px_-6px_rgba(0,0,0,.1)] dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,.5)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
-    >
-      <!-- lg+ : pastilles horizontales. &lt; lg : grille lisible (Safari / PWA, beaucoup d’entrées). -->
-      <div
-        class="grid grid-cols-2 gap-2 px-3 py-3 sm:grid-cols-3 lg:flex lg:flex-nowrap lg:items-stretch lg:gap-1.5 lg:overflow-x-auto lg:px-2 lg:py-2.5 lg:scroll-pl-1 lg:scroll-pr-6 lg:touch-pan-x no-scrollbar"
-      >
-        <button
-          v-for="item in settingsNavItems"
-          :key="item.id"
-          type="button"
-          :aria-current="activeSectionId === item.id ? 'true' : undefined"
-          class="inline-flex min-h-[44px] min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[12px] font-semibold tracking-tight transition focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600 focus-visible:ring-offset-2 sm:text-[12px] lg:min-h-0 lg:w-auto lg:shrink-0 lg:justify-center lg:rounded-full lg:px-3 lg:py-2 lg:text-center lg:text-[11px]"
-          :class="
-            activeSectionId === item.id
-              ? 'border-pink-700 dark:border-pink-600 bg-pink-700 dark:bg-pink-600 text-white shadow-md shadow-pink-700/25'
-              : 'border-neutral-200 dark:border-neutral-600 bg-neutral-50/90 dark:bg-neutral-800/90 text-neutral-700 dark:text-neutral-200 hover:bg-white dark:hover:bg-neutral-800 hover:border-pink-300 dark:hover:border-pink-700/60 dark:border-pink-600/60'
-          "
-          @click="scrollToSettingsSection(item.id)"
-        >
-          <span class="material-symbols-outlined shrink-0 text-[20px] leading-none lg:text-[18px]" aria-hidden="true">{{ item.icon }}</span>
-          <span class="min-w-0 leading-snug lg:whitespace-nowrap">{{ item.label }}</span>
-        </button>
-      </div>
-    </nav>
 
     <!-- Success message -->
     <div
@@ -1121,15 +1218,16 @@ watch(
     </div>
 
     <div class="flex-1 flex flex-col min-h-0">
-      <div class="space-y-8">
+      <div class="space-y-8 pinova-settings-detail-sections relative z-[1]">
       <!-- Profile section -->
-      <section id="settings-profile" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.profile.title') }}</h2>
+      <section v-if="showSettingsSection('settings-profile')" id="settings-profile" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div v-if="!detailSectionId" class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.profile.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.profile.subtitle') }}</p>
         </div>
 
         <div class="p-4 sm:p-6 space-y-5">
+          <p v-if="detailSectionId" class="text-xs text-neutral-500 dark:text-neutral-400 -mt-1 mb-1">{{ t('settings.profile.subtitle') }}</p>
           <div class="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-900/40 sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0">
               <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100">{{ t('lang.title') }}</p>
@@ -1170,12 +1268,14 @@ watch(
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.fullName') }}</label>
+              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.displayName') }}</label>
               <input
                 v-model="displayName"
                 type="text"
+                autocomplete="nickname"
                 class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
               />
+              <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">{{ t('settings.profile.displayNameHint') }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.username') }}</label>
@@ -1184,9 +1284,11 @@ watch(
                 <input
                   v-model="username"
                   type="text"
+                  autocomplete="username"
                   class="w-full pl-8 pr-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
                 />
               </div>
+              <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">{{ t('settings.profile.usernameHint') }}</p>
             </div>
           </div>
 
@@ -1213,14 +1315,23 @@ watch(
             </div>
             <div>
               <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.birthDate') }}</label>
-              <input
-                v-model="birthDate"
-                type="date"
-                autocomplete="bday"
-                class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
-              />
+              <BirthDatePicker v-model="birthDate" select-class="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition" />
             </div>
           </div>
+
+          <ProfileIdentityBlock
+            v-model:first-name="firstName"
+            v-model:last-name="lastName"
+            v-model:job-title="jobTitle"
+            v-model:school="school"
+            v-model:company="company"
+            v-model:website="website"
+            v-model:gender="gender"
+            v-model:pronouns="pronouns"
+            v-model:favorite-quote="favoriteQuote"
+            v-model:country-code="profileCountryCode"
+            v-model:city-id="profileCityId"
+          />
 
           <div>
             <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.currency') }}</label>
@@ -1257,32 +1368,34 @@ watch(
         </div>
       </section>
 
-      <section id="settings-identity-extended" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
-        <SettingsProfileExtended section="identity" />
-      </section>
-      <section id="settings-social" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+      <section v-if="showSettingsSection('settings-social')" id="settings-social" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+        <p class="settings-subsection-label">{{ t('settings.hub.subsectionSocial') }}</p>
         <SettingsProfileExtended section="social" />
       </section>
-      <section id="settings-personalization" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+      <section v-if="showSettingsSection('settings-personalization')" id="settings-personalization" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+        <p class="settings-subsection-label">{{ t('settings.hub.subsectionPersonalization') }}</p>
         <SettingsProfileExtended section="personalization" />
       </section>
-      <section id="settings-presence" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+      <section v-if="showSettingsSection('settings-presence')" id="settings-presence" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+        <p class="settings-subsection-label">{{ t('settings.hub.subsectionPresence') }}</p>
         <SettingsProfileExtended section="presence" />
       </section>
-      <section id="settings-security" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
-        <h2 class="text-lg font-semibold text-neutral-900 dark:text-white mb-2">{{ t('settings.nav.security') }}</h2>
+      <section v-if="showSettingsSection('settings-security')" id="settings-security" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden p-4 sm:p-6">
+        <p class="settings-subsection-label">{{ t('settings.hub.subsectionSecurity') }}</p>
+        <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-white mb-2">{{ t('settings.nav.security') }}</h2>
         <p class="text-sm text-neutral-500 dark:text-neutral-400">{{ t('settings.security.sessionsSoon') }}</p>
         <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{{ t('settings.security.phoneSoon') }}</p>
         <p class="text-xs text-neutral-400 mt-4">{{ t('settings.security.passwordHint') }}</p>
       </section>
 
       <!-- Notifications preferences -->
-      <section id="settings-notifications" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.notifications.title') }}</h2>
+      <section v-if="showSettingsSection('settings-notifications')" id="settings-notifications" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div v-if="!detailSectionId" class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.notifications.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.notifications.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6 space-y-4">
+          <p v-if="detailSectionId" class="text-xs text-neutral-500 dark:text-neutral-400 mb-2">{{ t('settings.notifications.subtitle') }}</p>
           <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
             <div class="min-w-0 flex-1 pr-1">
               <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.followers') }}</p>
@@ -1316,6 +1429,7 @@ watch(
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
+          <p class="settings-subsection-label">{{ t('settings.hub.subsectionPush') }}</p>
           <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 flex flex-col gap-3">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div class="min-w-0 flex-1">
@@ -1373,11 +1487,12 @@ watch(
       </section>
 
       <!-- Privacy -->
-      <section id="settings-privacy" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.privacy.title') }}</h2>
+      <section v-if="showSettingsSection('settings-privacy')" id="settings-privacy" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div v-if="!detailSectionId" class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.privacy.title') }}</h2>
         </div>
         <div class="p-4 sm:p-6 space-y-4">
+          <p v-if="detailSectionId" class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.privacy.pageLead') }}</p>
           <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
             <div class="min-w-0 flex-1 pr-1">
               <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.privacy.private') }}</p>
@@ -1415,11 +1530,11 @@ watch(
 
       <!-- Apparence -->
       <section
-        id="settings-appearance"
+        v-if="showSettingsSection('settings-appearance')" id="settings-appearance"
         class="scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.appearance.title') }}</h2>
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.appearance.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.appearance.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6 space-y-4">
@@ -1456,11 +1571,11 @@ watch(
 
       <!-- Application / installation (navigateur / écran d’accueil) -->
       <section
-        id="settings-pwa-install"
+        v-if="showSettingsSection('settings-pwa-install')" id="settings-pwa-install"
         class="scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.pwaInstall.title') }}</h2>
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.pwaInstall.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.pwaInstall.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6 space-y-3">
@@ -1478,9 +1593,10 @@ watch(
         </div>
       </section>
 
-      <section id="settings-blocked" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section v-if="showSettingsSection('settings-blocked')" id="settings-blocked" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.blocked.title') }}</h2>
+          <p class="settings-subsection-label mb-2">{{ t('settings.hub.subsectionBlocked') }}</p>
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.blocked.title') }}</h2>
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.blocked.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6">
@@ -1511,9 +1627,10 @@ watch(
       </section>
 
       <!-- Accessibilité & données -->
-      <section id="settings-access" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section v-if="showSettingsSection('settings-access')" id="settings-access" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.access.title') }}</h2>
+          <p class="settings-subsection-label mb-2">{{ t('settings.hub.subsectionAccess') }}</p>
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.access.title') }}</h2>
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.access.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6 space-y-4">
@@ -1626,10 +1743,10 @@ watch(
         </div>
       </section>
 
-      <section id="settings-tips" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section v-if="showSettingsSection('settings-tips')" id="settings-tips" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div class="min-w-0">
-            <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.tips.title') }}</h2>
+            <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.tips.title') }}</h2>
             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.tips.subtitle') }}</p>
           </div>
           <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600 shrink-0 self-start">
@@ -1672,13 +1789,52 @@ watch(
         </div>
       </section>
 
+      <section v-if="showSettingsSection('settings-ads')" id="settings-ads" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+          <p class="settings-subsection-label mb-2">{{ t('settings.hub.subsectionAds') }}</p>
+        </div>
+        <div class="p-4 sm:p-6 space-y-4">
+          <p class="text-xs text-neutral-500 dark:text-neutral-400">
+            {{
+              currentPlan === 'pro'
+                ? t('settings.ads.hint.pro')
+                : currentPlan === 'plus'
+                  ? t('settings.ads.hint.plus')
+                  : t('settings.ads.hint.free')
+            }}
+          </p>
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.ads.network.title') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.ads.network.desc') }}</p>
+            </div>
+            <div class="relative shrink-0">
+              <input v-model="adAdsEnabled" type="checkbox" class="sr-only peer" :disabled="currentPlan === 'free'" />
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors peer-disabled:opacity-50"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+            </div>
+          </label>
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.ads.partner.title') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.ads.partner.desc') }}</p>
+            </div>
+            <div class="relative shrink-0">
+              <input v-model="partnerAdsEnabled" type="checkbox" class="sr-only peer" :disabled="currentPlan !== 'pro'" />
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors peer-disabled:opacity-50"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+            </div>
+          </label>
+        </div>
+      </section>
+
       <section
-        v-if="currentUser"
+        v-if="currentUser && showSettingsSection('settings-seats')"
         id="settings-seats"
         class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b app-divider-subtle">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.seats.title') }}</h2>
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.seats.title') }}</h2>
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.seats.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6 space-y-4 text-sm">
@@ -1803,10 +1959,10 @@ watch(
         </div>
       </section>
 
-      <section id="settings-subscription" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section v-if="showSettingsSection('settings-subscription')" id="settings-subscription" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0">
-            <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.subscription.title') }}</h2>
+            <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.subscription.title') }}</h2>
             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.subscription.subtitle') }}</p>
             <router-link
               v-if="currentUser?.subscription?.hasBillingHistory !== false"
@@ -1931,12 +2087,12 @@ watch(
       </section>
 
       <section
-        v-if="isStandalone"
+        v-if="isStandalone && showSettingsSection('settings-pwa-reload')"
         id="settings-pwa-reload"
         class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('pwa.reload.title') }}</h2>
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('pwa.reload.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('pwa.reload.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6">
@@ -1951,9 +2107,9 @@ watch(
         </div>
       </section>
 
-      <section id="settings-support" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section v-if="showSettingsSection('settings-support')" id="settings-support" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
-          <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.support.title') }}</h2>
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.support.title') }}</h2>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.support.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6 space-y-3">
@@ -1994,11 +2150,35 @@ watch(
         </div>
       </section>
 
+      <section v-if="showSettingsSection('settings-legal')" id="settings-legal" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
+          <p class="settings-subsection-label mb-2">{{ t('settings.hub.subsectionLegalLinks') }}</p>
+        </div>
+        <div class="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <RouterLink to="/faq" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
+            <span class="material-symbols-outlined text-[20px] text-rose-600 dark:text-rose-400">help</span>
+            {{ t('nav.faq') }}
+          </RouterLink>
+          <RouterLink to="/legal/privacy" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
+            <span class="material-symbols-outlined text-[20px] text-rose-600 dark:text-rose-400">shield</span>
+            {{ t('legal.badgePrivacy') }}
+          </RouterLink>
+          <RouterLink to="/legal/terms" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
+            <span class="material-symbols-outlined text-[20px] text-rose-600 dark:text-rose-400">description</span>
+            {{ t('legal.badgeTerms') }}
+          </RouterLink>
+          <RouterLink to="/contact" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
+            <span class="material-symbols-outlined text-[20px] text-rose-600 dark:text-rose-400">mail</span>
+            {{ t('app.footer.contact') }}
+          </RouterLink>
+        </div>
+      </section>
+
       <!-- Password section -->
-      <section id="settings-password" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
+      <section v-if="showSettingsSection('settings-password')" id="settings-password" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="min-w-0 flex-1">
-            <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.password.title') }}</h2>
+            <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.password.title') }}</h2>
             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {{ needsPasswordSetup ? t('settings.password.socialSubtitle') : t('settings.password.subtitle') }}
             </p>
@@ -2073,11 +2253,11 @@ watch(
       </div>
 
       <section
-        id="settings-danger"
+        v-if="showSettingsSection('settings-danger')" id="settings-danger"
         class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl border-pink-300/55 overflow-hidden mt-auto pt-8"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-pink-300/50 dark:border-pink-700/50">
-          <h2 class="text-lg font-semibold text-pink-700 dark:text-pink-600">{{ t('settings.danger.title') }}</h2>
+          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-pink-700 dark:text-pink-600">{{ t('settings.danger.title') }}</h2>
         </div>
         <div
           v-if="scheduledAccountDeletion"
@@ -2215,3 +2395,47 @@ watch(
     @pick="onSeatInviteUserPick"
   />
 </template>
+
+<style scoped>
+.settings-detail-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.42;
+  pointer-events: none;
+}
+.settings-detail-orb--rose {
+  width: 260px;
+  height: 260px;
+  top: -48px;
+  left: -36px;
+  background: rgba(244, 63, 94, 0.34);
+}
+.settings-detail-orb--violet {
+  width: 220px;
+  height: 220px;
+  top: 140px;
+  right: -44px;
+  background: rgba(139, 92, 246, 0.26);
+}
+.pinova-settings-detail-sections :deep(section) {
+  background-color: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+:global(html.dark) .pinova-settings-detail-sections :deep(section) {
+  background-color: rgba(23, 23, 23, 0.82);
+}
+.settings-subsection-label {
+  margin-top: 0;
+  margin-bottom: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(115 115 115);
+}
+:global(html.dark) .settings-subsection-label {
+  color: rgb(163 163 163);
+}
+</style>

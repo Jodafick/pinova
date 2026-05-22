@@ -67,7 +67,7 @@ export function navigateWebNotificationDeepLink(
   }
 
   if (metadataKind === 'subscription_seat_invite') {
-    router.push({ path: '/settings', query: { section: 'seats' } })
+    router.push({ name: 'settings-section', params: { sectionId: 'settings-seats' } })
     return
   }
 

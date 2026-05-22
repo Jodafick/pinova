@@ -789,7 +789,7 @@ onMounted(async () => {
                 {{ t('creator.contestLink') }}
               </router-link>
               <router-link
-                to="/settings#settings-tips"
+                :to="{ name: 'settings-section', params: { sectionId: 'settings-tips' } }"
                 class="inline-flex items-center justify-center gap-3 rounded-full border border-neutral-200/90 bg-white/85 px-4 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm backdrop-blur-sm transition hover:bg-white dark:border-neutral-600 dark:bg-neutral-800/80 dark:text-neutral-100 dark:hover:bg-neutral-800"
               >
                 <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 ring-1 ring-black/[0.05] dark:bg-neutral-700 dark:ring-white/10">

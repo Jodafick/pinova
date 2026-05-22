@@ -10,8 +10,9 @@
  * modal pour corriger. L'âge minimum n'est PAS validé côté front (l'API
  * applique sa propre politique selon le type de média).
  */
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import PinovaModal from './ui/PinovaModal.vue'
+import BirthDatePicker from './BirthDatePicker.vue'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
 import { pushToast } from '../composables/useToast'
@@ -35,13 +36,6 @@ const { updateProfile, fetchCurrentUser, currentUser } = useAuth()
 const birthDate = ref('')
 const saving = ref(false)
 const errorMsg = ref('')
-
-/* Borne haute : aujourd'hui (pas de date future). */
-const maxBirthDate = computed(() => {
-  const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-})
 
 /* Pré-remplir avec la date existante si déjà saisie (cas modification). */
 watch(
@@ -116,13 +110,7 @@ async function save() {
       <label class="mt-4 block text-sm font-medium text-neutral-700 dark:text-neutral-200">
         {{ t('birthDateModal.label') }}
       </label>
-      <input
-        v-model="birthDate"
-        type="date"
-        :max="maxBirthDate"
-        autocomplete="bday"
-        class="mt-1.5 w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent transition"
-      />
+      <BirthDatePicker v-model="birthDate" select-class="birth-date-picker-select" />
 
       <p
         v-if="errorMsg"
@@ -158,3 +146,22 @@ async function save() {
     </div>
   </PinovaModal>
 </template>
+
+<style scoped>
+:deep(.birth-date-picker-select) {
+  width: 100%;
+  margin-top: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(229 229 229);
+  background: white;
+  color: rgb(23 23 23);
+  font-size: 0.875rem;
+}
+
+:global(html.dark) :deep(.birth-date-picker-select) {
+  border-color: rgb(64 64 64);
+  background: rgb(23 23 23);
+  color: rgb(245 245 245);
+}
+</style>
