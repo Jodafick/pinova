@@ -882,6 +882,49 @@
     -webkit-backdrop-filter: var(--glass-blur);
   }
 
+  /* Paramètres (hub + détail) : texte / surfaces via tokens thème — pas de rgba blanc figé. */
+  .pinova-settings-page,
+  .pinova-settings-hub {
+    color: var(--card-text);
+  }
+
+  .pinova-settings-page .pinova-settings-detail-sections :is(section, .app-card) {
+    background: var(--card-bg);
+    color: var(--card-text);
+    border-color: var(--card-border);
+    box-shadow: var(--card-shadow);
+  }
+
+  .pinova-settings-page .settings-subsection-label,
+  .pinova-settings-hub .settings-hub-group-title {
+    color: var(--card-text-muted);
+  }
+
+  .pinova-settings-hub .settings-hub-row-label {
+    color: var(--card-text);
+  }
+
+  .pinova-settings-hub .settings-hub-row-chevron {
+    color: var(--card-text-muted);
+  }
+
+  .pinova-settings-hub .settings-hub-card {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+    box-shadow: var(--card-shadow);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+  }
+
+  .pinova-settings-hub .settings-hub-row--border {
+    border-bottom-color: var(--card-border);
+  }
+
+  .dark .pinova-settings-hub .settings-hub-row:hover .settings-hub-row-chevron,
+  .dark .pinova-settings-hub .settings-hub-row:focus-visible .settings-hub-row-chevron {
+    color: rgb(251 113 133);
+  }
+
   .app-card-soft {
     background: var(--card-bg-soft);
     border: 1px solid var(--card-border);

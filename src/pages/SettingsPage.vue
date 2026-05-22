@@ -1185,7 +1185,7 @@ watch(
           <p class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
             {{ t('settings.title') }}
           </p>
-          <h1 class="text-lg font-auth-title font-auth-title--black truncate">
+          <h1 class="text-lg font-auth-title font-auth-title--black truncate text-neutral-900 dark:text-neutral-50">
             {{ detailHeaderTitle }}
           </h1>
         </div>
@@ -1280,7 +1280,7 @@ watch(
             <div>
               <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1.5">{{ t('settings.profile.username') }}</label>
               <div class="relative">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">@</span>
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500 text-sm">@</span>
                 <input
                   v-model="username"
                   type="text"
@@ -1385,7 +1385,7 @@ watch(
         <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-white mb-2">{{ t('settings.nav.security') }}</h2>
         <p class="text-sm text-neutral-500 dark:text-neutral-400">{{ t('settings.security.sessionsSoon') }}</p>
         <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{{ t('settings.security.phoneSoon') }}</p>
-        <p class="text-xs text-neutral-400 mt-4">{{ t('settings.security.passwordHint') }}</p>
+        <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-4">{{ t('settings.security.passwordHint') }}</p>
       </section>
 
       <!-- Notifications preferences -->
@@ -1531,7 +1531,7 @@ watch(
       <!-- Apparence -->
       <section
         v-if="showSettingsSection('settings-appearance')" id="settings-appearance"
-        class="scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
+        class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
           <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.appearance.title') }}</h2>
@@ -1572,7 +1572,7 @@ watch(
       <!-- Application / installation (navigateur / écran d’accueil) -->
       <section
         v-if="showSettingsSection('settings-pwa-install')" id="settings-pwa-install"
-        class="scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-sm overflow-hidden"
+        class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
       >
         <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800">
           <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.pwaInstall.title') }}</h2>
@@ -1668,8 +1668,8 @@ watch(
 
           <div v-if="isVerifiedAdultForSensitiveSettings" class="pt-2 border-t app-divider-subtle space-y-3">
             <div>
-              <p class="text-sm font-medium text-neutral-800">{{ t('settings.access.sensitiveMedia.title') }}</p>
-              <p class="text-xs text-neutral-600 mt-0.5">{{ t('settings.access.sensitiveMedia.subtitle') }}</p>
+              <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100">{{ t('settings.access.sensitiveMedia.title') }}</p>
+              <p class="text-xs text-neutral-600 dark:text-neutral-300 mt-0.5">{{ t('settings.access.sensitiveMedia.subtitle') }}</p>
             </div>
             <fieldset class="space-y-2">
               <legend class="sr-only">{{ t('settings.access.sensitiveMedia.title') }}</legend>
@@ -1719,8 +1719,8 @@ watch(
           <div v-if="currentPlan === 'pro'" class="pt-2 border-t app-divider-subtle">
             <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
               <div class="min-w-0 flex-1 pr-1">
-                <p class="text-sm font-medium text-neutral-800">{{ t('settings.access.digestWeekly') }}</p>
-                <p class="text-xs text-neutral-600">{{ t('settings.access.digestWeekly.desc') }}</p>
+                <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100">{{ t('settings.access.digestWeekly') }}</p>
+                <p class="text-xs text-neutral-600 dark:text-neutral-300">{{ t('settings.access.digestWeekly.desc') }}</p>
               </div>
               <div class="relative shrink-0">
                 <input v-model="digestWeekly" type="checkbox" class="sr-only peer" />
@@ -1749,7 +1749,7 @@ watch(
             <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.tips.title') }}</h2>
             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.tips.subtitle') }}</p>
           </div>
-          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600 shrink-0 self-start">
+          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 shrink-0 self-start">
             {{ currentPlan.toUpperCase() }}
           </span>
         </div>
@@ -1766,7 +1766,7 @@ watch(
             </div>
           </label>
           <div>
-            <label class="block text-xs font-medium text-neutral-600 mb-1">{{ t('settings.tips.url') }}</label>
+            <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-1">{{ t('settings.tips.url') }}</label>
             <input
               v-model="tipsUrl"
               type="url"
@@ -1838,15 +1838,15 @@ watch(
           <p class="text-xs app-text-muted mt-0.5">{{ t('settings.seats.subtitle') }}</p>
         </div>
         <div class="p-4 sm:p-6 space-y-4 text-sm">
-          <p v-if="seatHubLoading" class="text-xs text-neutral-400">{{ t('settings.seats.loading') }}</p>
+          <p v-if="seatHubLoading" class="text-xs text-neutral-400 dark:text-neutral-500">{{ t('settings.seats.loading') }}</p>
           <template v-else-if="seatHub">
             <!-- Invitations entrantes -->
             <div v-if="seatHub.incoming_invitations?.length" class="space-y-3 rounded-xl border border-amber-300/60 bg-amber-50/80 dark:bg-amber-950/25 p-3">
               <p class="text-xs font-semibold text-neutral-900 dark:text-neutral-100">{{ t('settings.seats.incoming') }}</p>
               <div v-for="row in seatHub.incoming_invitations" :key="row.id" class="space-y-2 app-card-soft rounded-lg p-2">
-                <p class="text-xs text-neutral-700">
+                <p class="text-xs text-neutral-700 dark:text-neutral-300">
                   {{ row.owner_display_name || row.owner_username }}
-                  <span class="text-neutral-400">(@{{ row.owner_username }})</span>
+                  <span class="text-neutral-400 dark:text-neutral-500">(@{{ row.owner_username }})</span>
                 </p>
                 <div class="flex flex-wrap gap-2">
                   <button
@@ -1870,7 +1870,7 @@ watch(
             </div>
 
             <template v-if="seatHub.role === 'member'">
-              <p class="text-xs text-neutral-700">
+              <p class="text-xs text-neutral-700 dark:text-neutral-300">
                 {{ t('settings.seats.memberOf', { username: seatHub.sponsor_display_name || seatHub.sponsor_username || '' }) }}
               </p>
               <button
@@ -1884,7 +1884,7 @@ watch(
             </template>
 
             <template v-else-if="seatHub.role === 'owner'">
-              <p class="text-xs text-neutral-600">
+              <p class="text-xs text-neutral-600 dark:text-neutral-300">
                 {{
                   t('settings.seats.ownerSummary', {
                     used: seatHub.used_slots,
@@ -1904,7 +1904,7 @@ watch(
                   {{ t('settings.seats.inviteSearchMember') }}
                 </button>
               </div>
-              <p v-if="seatHub.members?.length" class="text-xs font-semibold text-neutral-800 pt-2">{{ t('settings.seats.members') }}</p>
+              <p v-if="seatHub.members?.length" class="text-xs font-semibold text-neutral-800 dark:text-neutral-100 pt-2">{{ t('settings.seats.members') }}</p>
               <ul v-if="seatHub.members?.length" class="space-y-1">
                 <li
                   v-for="m in seatHub.members"
@@ -1922,7 +1922,7 @@ watch(
                   </button>
                 </li>
               </ul>
-              <p v-if="seatHub.pending_invitations?.length" class="text-xs font-semibold text-neutral-800 pt-2">{{ t('settings.seats.pendingOut') }}</p>
+              <p v-if="seatHub.pending_invitations?.length" class="text-xs font-semibold text-neutral-800 dark:text-neutral-100 pt-2">{{ t('settings.seats.pendingOut') }}</p>
               <ul v-if="seatHub.pending_invitations?.length" class="space-y-1">
                 <li
                   v-for="p in seatHub.pending_invitations"
@@ -1932,7 +1932,7 @@ watch(
                   <span class="min-w-0 truncate">@{{ p.invitee_username }}</span>
                   <button
                     type="button"
-                    class="text-neutral-600 font-semibold disabled:opacity-50 self-start sm:self-auto"
+                    class="text-neutral-600 dark:text-neutral-300 font-semibold disabled:opacity-50 self-start sm:self-auto"
                     :disabled="seatBusy"
                     @click="revokeSeatInviteOutgoing(p.id)"
                   >
@@ -1953,7 +1953,7 @@ watch(
             </template>
 
             <template v-else>
-              <p v-if="!seatHub.incoming_invitations?.length" class="text-xs text-neutral-500">{{ t('settings.seats.none') }}</p>
+              <p v-if="!seatHub.incoming_invitations?.length" class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.seats.none') }}</p>
             </template>
           </template>
         </div>
@@ -1972,7 +1972,7 @@ watch(
               {{ t('settings.subscription.viewBillingPage') }} →
             </router-link>
           </div>
-          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 text-neutral-600 shrink-0">
+          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 shrink-0">
             {{ currentPlan.toUpperCase() }}
           </span>
         </div>
@@ -1999,7 +1999,7 @@ watch(
             </button>
             <button
               v-if="currentPlan === 'pro'"
-              class="px-4 py-2 rounded-full bg-white border border-neutral-300 text-neutral-900 text-xs font-semibold hover:bg-neutral-50 disabled:opacity-50 transition"
+              class="px-4 py-2 rounded-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100 text-xs font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition"
               :disabled="subscriptionActionPending"
               @click="handleSchedulePlusAtRenewal"
             >
@@ -2007,7 +2007,7 @@ watch(
             </button>
             <button
               v-if="currentUser?.subscription?.scheduledPlan"
-              class="px-4 py-2 rounded-full bg-neutral-200 text-neutral-900 text-xs font-semibold hover:bg-neutral-300 disabled:opacity-50 transition"
+              class="px-4 py-2 rounded-full bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 text-xs font-semibold hover:bg-neutral-300 dark:hover:bg-neutral-600 disabled:opacity-50 transition"
               :disabled="subscriptionActionPending"
               @click="handleClearPlannedChange"
             >
@@ -2021,14 +2021,14 @@ watch(
               {{ t('settings.subscription.reactivate') }}
             </button>
           </div>
-          <p v-if="subscriptionActionMessage" class="text-xs text-neutral-600">{{ subscriptionActionMessage }}</p>
+          <p v-if="subscriptionActionMessage" class="text-xs text-neutral-600 dark:text-neutral-300">{{ subscriptionActionMessage }}</p>
 
           <div
             v-if="currentUser?.subscription?.hasBillingHistory !== false"
-            class="pt-4 mt-4 border-t border-neutral-100"
+            class="pt-4 mt-4 border-t border-neutral-100 dark:border-neutral-800"
           >
             <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <p class="text-xs font-semibold text-neutral-800">{{ t('settings.subscription.billingHistory') }}</p>
+              <p class="text-xs font-semibold text-neutral-800 dark:text-neutral-100">{{ t('settings.subscription.billingHistory') }}</p>
               <router-link to="/billing" class="text-[11px] font-semibold text-pink-700 hover:underline">
                 {{ t('settings.subscription.viewBillingPage') }}
               </router-link>
@@ -2037,12 +2037,12 @@ watch(
               <span class="sr-only">{{ t('settings.subscription.billingLoading') }}</span>
               <BillingInvoicesSkeleton />
             </div>
-            <div v-else-if="!billingInvoices.length" class="text-xs text-neutral-400">{{ t('settings.subscription.billingEmpty') }}</div>
+            <div v-else-if="!billingInvoices.length" class="text-xs text-neutral-400 dark:text-neutral-500">{{ t('settings.subscription.billingEmpty') }}</div>
             <ul v-else class="space-y-2 max-h-64 overflow-y-auto pr-1">
               <li
                 v-for="inv in billingInvoices"
                 :key="inv.id"
-                class="rounded-xl border border-neutral-200 px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+                class="rounded-xl border border-neutral-200 dark:border-neutral-700 px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
               >
                 <div>
                   <p class="text-xs font-semibold text-neutral-800 dark:text-neutral-100 break-words">
@@ -2075,7 +2075,7 @@ watch(
                     :href="inv.checkout_url"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-[11px] font-semibold text-neutral-700 hover:underline"
+                    class="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 hover:underline"
                   >
                     {{ t('settings.subscription.openCheckout') }}
                   </a>
@@ -2134,15 +2134,15 @@ watch(
               {{ supportSubmitting ? t('settings.support.submitting') : t('settings.support.submit') }}
             </button>
           </div>
-          <div v-if="supportTickets.length" class="space-y-2 pt-2 border-t border-neutral-100">
-            <p class="text-xs font-semibold text-neutral-700">{{ t('settings.support.history') }}</p>
+          <div v-if="supportTickets.length" class="space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <p class="text-xs font-semibold text-neutral-700 dark:text-neutral-200">{{ t('settings.support.history') }}</p>
             <div
               v-for="ticket in supportTickets.slice(0, 5)"
               :key="ticket.id"
-              class="rounded-xl border border-neutral-200 px-3 py-2"
+              class="rounded-xl border border-neutral-200 dark:border-neutral-700 px-3 py-2"
             >
-              <p class="text-xs font-semibold text-neutral-800">{{ ticket.subject }}</p>
-              <p class="text-[11px] text-neutral-500">
+              <p class="text-xs font-semibold text-neutral-800 dark:text-neutral-100">{{ ticket.subject }}</p>
+              <p class="text-[11px] text-neutral-500 dark:text-neutral-400">
                 {{ supportTicketStatusLabel(ticket.status) }} · {{ supportTicketPriorityLabel(ticket.priority) }}
               </p>
             </div>
@@ -2419,12 +2419,8 @@ watch(
   background: rgba(139, 92, 246, 0.26);
 }
 .pinova-settings-detail-sections :deep(section) {
-  background-color: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-}
-:global(html.dark) .pinova-settings-detail-sections :deep(section) {
-  background-color: rgba(23, 23, 23, 0.82);
 }
 .settings-subsection-label {
   margin-top: 0;
@@ -2433,9 +2429,5 @@ watch(
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgb(115 115 115);
-}
-:global(html.dark) .settings-subsection-label {
-  color: rgb(163 163 163);
 }
 </style>

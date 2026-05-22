@@ -47,7 +47,7 @@ const visibleGroups = computed(() =>
       <section v-for="group in visibleGroups" :key="group.titleKey" class="settings-hub-group">
         <h2 class="settings-hub-group-title">{{ t(group.titleKey) }}</h2>
         <div
-          class="settings-hub-card overflow-hidden rounded-2xl border border-neutral-200/80 dark:border-neutral-700/80 bg-white/75 dark:bg-neutral-900/75 backdrop-blur-xl backdrop-saturate-150 shadow-[0_8px_32px_-12px_rgba(0,0,0,.12)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,.45)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
+          class="settings-hub-card app-card overflow-hidden rounded-2xl backdrop-blur-xl backdrop-saturate-150 ring-1 ring-black/[0.03] dark:ring-white/[0.06]"
         >
           <RouterLink
             v-for="(item, idx) in group.items"
@@ -98,11 +98,6 @@ const visibleGroups = computed(() =>
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgb(115 115 115);
-}
-:global(html.dark) .settings-hub-group-title,
-:global(.dark) .settings-hub-group-title {
-  color: rgb(163 163 163);
 }
 .settings-hub-row {
   display: flex;
@@ -113,17 +108,14 @@ const visibleGroups = computed(() =>
   transition: background-color 0.15s ease;
 }
 .settings-hub-row--border {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-:global(html.dark) .settings-hub-row--border {
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--card-border);
 }
 .settings-hub-row:hover,
 .settings-hub-row:focus-visible {
   background: rgba(244, 63, 94, 0.06);
 }
-:global(html.dark) .settings-hub-row:hover,
-:global(html.dark) .settings-hub-row:focus-visible {
+:global(.dark) .settings-hub-row:hover,
+:global(.dark) .settings-hub-row:focus-visible {
   background: rgba(244, 63, 94, 0.12);
 }
 .settings-hub-row-icon {
@@ -137,7 +129,7 @@ const visibleGroups = computed(() =>
   color: rgb(190 24 93);
   background: rgba(244, 63, 94, 0.1);
 }
-:global(html.dark) .settings-hub-row-icon {
+:global(.dark) .settings-hub-row-icon {
   color: rgb(251 113 133);
   background: rgba(244, 63, 94, 0.16);
 }
@@ -146,14 +138,9 @@ const visibleGroups = computed(() =>
   min-width: 0;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: rgb(23 23 23);
-}
-:global(html.dark) .settings-hub-row-label {
-  color: rgb(245 245 245);
 }
 .settings-hub-row-chevron {
   font-size: 1.35rem;
-  color: rgb(163 163 163);
   transition: transform 0.15s ease, color 0.15s ease;
 }
 .group:hover .settings-hub-row-chevron {
