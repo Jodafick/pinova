@@ -144,7 +144,21 @@ const initialPwBusy = ref(false)
 const initialPwError = ref('')
 const initialPwAutoOpened = ref(false)
 const tipsEnabled = ref(false)
-const tipsUrl = ref('')
+const tipWallet = ref<{
+  balance_available: number
+  balance_reserved: number
+  currency_iso: string
+  payout_phone: string
+  payout_label: string
+  commission_percent: number
+  min_withdrawal_amount: number
+} | null>(null)
+const tipWalletLoading = ref(false)
+const payoutPhone = ref('')
+const payoutLabel = ref('')
+const withdrawAmount = ref('')
+const payoutSaving = ref(false)
+const withdrawBusy = ref(false)
 const adAdsEnabled = ref(true)
 const partnerAdsEnabled = ref(true)
 const tipsSaving = ref(false)
@@ -379,7 +393,7 @@ onMounted(() => {
     avatarPreview.value = currentUser.value.avatarUrl || null
     currentPlan.value = currentUser.value.subscription?.plan || 'free'
     tipsEnabled.value = currentUser.value.subscription?.tipsEnabled ?? false
-    tipsUrl.value = currentUser.value.subscription?.tipsUrl || ''
+    if (currentPlan.value === 'pro') void loadTipWallet()
     adAdsEnabled.value = currentUser.value.subscription?.adAdsEnabled ?? true
     partnerAdsEnabled.value = currentUser.value.subscription?.partnerAdsEnabled ?? true
     preferredCurrency.value = currentUser.value.preferredCurrency || 'XOF'
@@ -712,21 +726,76 @@ const submitInitialPassword = async () => {
   }
 }
 
+async function loadTipWallet() {
+  if (currentPlan.value !== 'pro') {
+    tipWallet.value = null
+    return
+  }
+  tipWalletLoading.value = true
+  try {
+    const res = await api.get<{ wallet: typeof tipWallet.value }>('monetization/tips/wallet/')
+    tipWallet.value = res.data.wallet
+    payoutPhone.value = res.data.wallet?.payout_phone || ''
+    payoutLabel.value = res.data.wallet?.payout_label || ''
+  } catch {
+    tipWallet.value = null
+  } finally {
+    tipWalletLoading.value = false
+  }
+}
+
 const persistTipsSettings = async () => {
   tipsSaving.value = true
   try {
     await updateProfile({
       tipsEnabled: currentPlan.value === 'pro' ? tipsEnabled.value : false,
-      tipsUrl: currentPlan.value === 'pro' ? tipsUrl.value : '',
     })
     tipsEnabled.value = currentUser.value?.subscription?.tipsEnabled ?? false
-    tipsUrl.value = currentUser.value?.subscription?.tipsUrl || ''
+    if (tipsEnabled.value && currentPlan.value === 'pro') await loadTipWallet()
     tipsSaved.value = true
     setTimeout(() => (tipsSaved.value = false), 2500)
   } catch (err) {
     console.error('Failed to save tips settings:', err)
   } finally {
     tipsSaving.value = false
+  }
+}
+
+const persistPayoutSettings = async () => {
+  payoutSaving.value = true
+  try {
+    const res = await api.patch<{ wallet: NonNullable<typeof tipWallet.value> }>('monetization/tips/wallet/', {
+      payout_phone: payoutPhone.value.trim(),
+      payout_label: payoutLabel.value.trim(),
+    })
+    tipWallet.value = res.data.wallet
+    tipsSaved.value = true
+    setTimeout(() => (tipsSaved.value = false), 2500)
+  } catch (err) {
+    console.error('Failed to save payout settings:', err)
+  } finally {
+    payoutSaving.value = false
+  }
+}
+
+const requestTipWithdrawal = async () => {
+  const amount = parseInt(withdrawAmount.value, 10)
+  if (!Number.isFinite(amount) || amount <= 0) return
+  withdrawBusy.value = true
+  try {
+    const res = await api.post<{ wallet: NonNullable<typeof tipWallet.value> }>('monetization/tips/withdraw/', {
+      amount,
+    })
+    tipWallet.value = res.data.wallet
+    withdrawAmount.value = ''
+    tipsSaved.value = true
+    setTimeout(() => (tipsSaved.value = false), 2500)
+    await loadTipWallet()
+  } catch (err: unknown) {
+    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+    console.error(msg || 'withdraw failed')
+  } finally {
+    withdrawBusy.value = false
   }
 }
 
@@ -1780,16 +1849,70 @@ watch(
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
-          <div>
-            <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-1">{{ t('settings.tips.url') }}</label>
-            <input
-              v-model="tipsUrl"
-              type="url"
-              :disabled="currentPlan !== 'pro'"
-              :placeholder="t('settings.tips.url.placeholder')"
-              class="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm disabled:bg-neutral-50 dark:disabled:bg-neutral-900/50 disabled:text-neutral-400"
-            />
-          </div>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.tips.internalNote') }}</p>
+          <template v-if="currentPlan === 'pro' && tipsEnabled">
+            <div v-if="tipWalletLoading" class="text-xs text-neutral-500">{{ t('settings.tips.walletLoading') }}</div>
+            <div v-else-if="tipWallet" class="space-y-4 rounded-xl border app-divider-subtle p-4">
+              <div>
+                <p class="text-xs text-neutral-500">{{ t('settings.tips.balance') }}</p>
+                <p class="text-xl font-bold text-neutral-900 dark:text-neutral-50">
+                  {{ tipWallet.balance_available }} {{ tipWallet.currency_iso }}
+                </p>
+                <p v-if="tipWallet.balance_reserved > 0" class="text-xs text-neutral-500 mt-1">
+                  {{ t('settings.tips.reserved', { amount: tipWallet.balance_reserved, currency: tipWallet.currency_iso }) }}
+                </p>
+                <p class="text-xs text-neutral-500 mt-1">
+                  {{ t('settings.tips.commissionInfo', { percent: tipWallet.commission_percent }) }}
+                </p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-1">{{ t('settings.tips.payoutPhone') }}</label>
+                <input
+                  v-model="payoutPhone"
+                  type="tel"
+                  :placeholder="t('settings.tips.payoutPhone.placeholder')"
+                  class="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-1">{{ t('settings.tips.payoutLabel') }}</label>
+                <input
+                  v-model="payoutLabel"
+                  type="text"
+                  maxlength="80"
+                  class="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+                />
+              </div>
+              <button
+                type="button"
+                class="px-4 py-2 rounded-full bg-neutral-800 text-white text-xs font-semibold disabled:opacity-50"
+                :disabled="payoutSaving"
+                @click="persistPayoutSettings"
+              >
+                {{ payoutSaving ? t('settings.tips.saving') : t('settings.tips.savePayout') }}
+              </button>
+              <div class="pt-2 border-t app-divider-subtle">
+                <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-1">{{ t('settings.tips.withdrawAmount') }}</label>
+                <div class="flex gap-2">
+                  <input
+                    v-model="withdrawAmount"
+                    type="number"
+                    :min="tipWallet.min_withdrawal_amount"
+                    class="flex-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+                  />
+                  <button
+                    type="button"
+                    class="px-4 py-2 rounded-full bg-amber-600 text-white text-xs font-semibold disabled:opacity-50 shrink-0"
+                    :disabled="withdrawBusy"
+                    @click="requestTipWithdrawal"
+                  >
+                    {{ t('settings.tips.withdraw') }}
+                  </button>
+                </div>
+                <p class="text-xs text-neutral-500 mt-1">{{ t('settings.tips.withdrawNote') }}</p>
+              </div>
+            </div>
+          </template>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 pt-1">
             <p class="text-xs text-neutral-500 dark:text-neutral-400 min-w-0">{{ t('settings.tips.note') }}</p>
             <button

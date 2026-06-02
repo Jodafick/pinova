@@ -94,8 +94,7 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     userId: author.id,
     userAvatarUrl: getFullMediaUrl(author.avatar),
     userAvatarColor: author.avatar_color || DEFAULT_AVATAR_COLOR_CLASS,
-    authorTipsEnabled: !!author.tips_enabled,
-    authorTipsUrl: author.tips_url || '',
+    authorTipsInternalEnabled: !!author.tips_internal_enabled,
     link: djangoPin.link || '',
     stats: { 
       saves: djangoPin.saves_count || 0, 

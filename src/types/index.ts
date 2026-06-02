@@ -11,8 +11,7 @@ export type Pin = {
   userId: number
   userAvatarUrl?: string
   userAvatarColor: string
-  authorTipsEnabled?: boolean
-  authorTipsUrl?: string
+  authorTipsInternalEnabled?: boolean
   link: string
   stats: {
     saves: number
@@ -132,7 +131,6 @@ export type User = UserProfileExtended & {
     translationQuotaMonthly: number
     translationUsedMonthly: number
     tipsEnabled?: boolean
-    tipsUrl?: string
     cancelAtPeriodEnd?: boolean
     scheduledPlan?: 'free' | 'plus' | 'pro' | '' | null
     trialEligible?: boolean

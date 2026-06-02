@@ -21,6 +21,7 @@ import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
 import StoryLikersModal from '../components/StoryLikersModal.vue'
 import ReportContentModal from '../components/ReportContentModal.vue'
+import TipDialog from '../components/TipDialog.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { useDataSaver } from '../composables/useDataSaver'
 import { shareUrlWithFallback } from '../utils/shareFallback'
@@ -112,6 +113,7 @@ const relatedPins = computed(() => {
 const savingPin = ref(false)
 const likingPin = ref(false)
 const followingAuthor = ref(false)
+const tipDialogOpen = ref(false)
 const pinHeartBurst = ref(false)
 const pinHeartBurstKey = ref(0)
 let pinHeartBurstHideTimer: ReturnType<typeof setTimeout> | null = null
@@ -1172,15 +1174,14 @@ async function deletePinFromMenu() {
                 <span v-if="followingAuthor" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
                 <span v-else>{{ pin.isFollowing ? t('pin.following') : t('pin.follow') }}</span>
               </button>
-              <a
-                v-if="pin.authorTipsEnabled && pin.authorTipsUrl && (!currentUser || currentUser.id !== pin.userId)"
-                :href="pin.authorTipsUrl"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                v-if="pin.authorTipsInternalEnabled && isAuthenticated && currentUser && currentUser.id !== pin.userId"
+                type="button"
                 class="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-bold bg-gradient-to-br from-amber-50 to-amber-100/90 text-amber-900 ring-1 ring-amber-200/70 shadow-sm hover:shadow-md hover:from-amber-100 hover:to-amber-50 transition"
+                @click="tipDialogOpen = true"
               >
                 {{ t('pin.tip') }}
-              </a>
+              </button>
             </div>
 
             <!-- Stats -->
@@ -1363,6 +1364,14 @@ async function deletePinFromMenu() {
       v-model="reportModalOpen"
       :context-label="reportModalContextLabel"
       @submit="handleSubmitReport"
+    />
+
+    <TipDialog
+      v-if="pin"
+      :open="tipDialogOpen"
+      :recipient-username="pin.username"
+      :pin-slug="pin.slug"
+      @close="tipDialogOpen = false"
     />
 
     <Teleport to="body">
