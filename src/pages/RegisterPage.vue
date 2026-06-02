@@ -166,8 +166,8 @@ async function handleGoogleClick() {
     </div>
 
     <!-- Right side - form -->
-    <div class="flex-1 flex items-center justify-center px-6 py-12 bg-neutral-50/30 dark:bg-neutral-900/30">
-      <div class="w-full max-w-lg bg-white dark:bg-neutral-900 p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800">
+    <div class="flex-1 flex items-stretch lg:items-center justify-center px-4 py-6 sm:px-6 sm:py-12 lg:bg-neutral-50/30 lg:dark:bg-neutral-900/30">
+      <div class="w-full max-w-lg lg:bg-white lg:dark:bg-neutral-900 lg:p-8 xl:p-10 lg:rounded-[40px] lg:shadow-sm lg:border lg:border-neutral-100 lg:dark:border-neutral-800">
         <!-- Mobile logo -->
         <div class="lg:hidden flex items-center justify-center gap-2 mb-10">
           <div class="w-10 h-10 rounded-full bg-pink-700 dark:bg-pink-600 flex items-center justify-center overflow-hidden shadow-sm">

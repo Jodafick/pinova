@@ -6,8 +6,12 @@ const props = withDefaults(
   defineProps<{
     modelValue: string
     selectClass?: string
+    variant?: 'default' | 'onboarding'
   }>(),
-  { selectClass: 'onboarding-select' },
+  {
+    selectClass: '',
+    variant: 'default',
+  },
 )
 
 const emit = defineEmits<{
@@ -26,7 +30,6 @@ const maxDate = computed(() => {
 })
 
 const localeTag = computed(() => (currentLang.value === 'en' ? 'en-US' : 'fr-FR'))
-const isOnboardingVariant = computed(() => props.selectClass.includes('onboarding-select'))
 
 const years = computed(() => {
   const maxY = maxDate.value.y
@@ -104,31 +107,104 @@ watch([day, month, year], () => {
 </script>
 
 <template>
-  <div class="birth-date-picker" :class="{ 'birth-date-picker--onboarding': isOnboardingVariant }">
-    <select v-model="day" :class="selectClass" autocomplete="bday-day">
-      <option value="">{{ t('birthDatePicker.col.day') }}</option>
-      <option v-for="d in days" :key="d" :value="d">{{ d }}</option>
-    </select>
-    <select v-model="month" :class="selectClass" autocomplete="bday-month">
-      <option value="">{{ t('birthDatePicker.col.month') }}</option>
-      <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
-    </select>
-    <select v-model="year" :class="selectClass" autocomplete="bday-year">
-      <option value="">{{ t('birthDatePicker.col.year') }}</option>
-      <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
-    </select>
+  <div
+    class="birth-date-picker"
+    :class="{
+      'birth-date-picker--onboarding': variant === 'onboarding',
+    }"
+  >
+    <label class="birth-date-picker__field">
+      <span class="birth-date-picker__label">{{ t('birthDatePicker.col.day') }}</span>
+      <select
+        v-model="day"
+        class="birth-date-picker__select"
+        :class="selectClass"
+        autocomplete="bday-day"
+      >
+        <option value="">{{ t('birthDatePicker.col.day') }}</option>
+        <option v-for="d in days" :key="d" :value="d">{{ d }}</option>
+      </select>
+    </label>
+    <label class="birth-date-picker__field">
+      <span class="birth-date-picker__label">{{ t('birthDatePicker.col.month') }}</span>
+      <select
+        v-model="month"
+        class="birth-date-picker__select"
+        :class="selectClass"
+        autocomplete="bday-month"
+      >
+        <option value="">{{ t('birthDatePicker.col.month') }}</option>
+        <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
+      </select>
+    </label>
+    <label class="birth-date-picker__field">
+      <span class="birth-date-picker__label">{{ t('birthDatePicker.col.year') }}</span>
+      <select
+        v-model="year"
+        class="birth-date-picker__select"
+        :class="selectClass"
+        autocomplete="bday-year"
+      >
+        <option value="">{{ t('birthDatePicker.col.year') }}</option>
+        <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+      </select>
+    </label>
   </div>
 </template>
 
 <style scoped>
 .birth-date-picker {
   display: grid;
-  grid-template-columns: 0.85fr 1.35fr 1fr;
-  gap: 0.65rem;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.birth-date-picker__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.birth-date-picker__label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(82 82 91);
+}
+
+:global(html.dark) .birth-date-picker__label {
+  color: rgb(161 161 170);
+}
+
+.birth-date-picker__select {
+  width: 100%;
+  min-height: 2.85rem;
+  padding: 0.65rem 2rem 0.65rem 0.75rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgb(24 24 27);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  box-shadow: 0 2px 10px -8px rgba(0, 0, 0, 0.2);
+}
+
+:global(html.dark) .birth-date-picker__select {
+  border-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(12, 12, 15, 0.78);
+  color: rgb(250 250 250);
 }
 
 .birth-date-picker--onboarding {
-  padding: 0.65rem;
+  margin-top: 0.15rem;
+  padding: 0.75rem;
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.55);
   background: rgba(255, 255, 255, 0.52);
@@ -137,29 +213,14 @@ watch([day, month, year], () => {
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
-.birth-date-picker--onboarding :deep(select.onboarding-select) {
-  margin-top: 0;
-  min-height: 2.9rem;
-  border-radius: 0.85rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 2px 10px -8px rgba(0, 0, 0, 0.2);
-}
-
 :global(html.dark) .birth-date-picker--onboarding {
   border-color: rgba(255, 255, 255, 0.12);
   background: rgba(28, 28, 32, 0.6);
   box-shadow: 0 16px 34px -20px rgba(0, 0, 0, 0.58);
 }
 
-:global(html.dark) .birth-date-picker--onboarding :deep(select.onboarding-select) {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(12, 12, 15, 0.78);
-}
-
-@media (max-width: 480px) {
-  .birth-date-picker {
-    grid-template-columns: 1fr;
-  }
+.birth-date-picker--onboarding .birth-date-picker__select {
+  min-height: 2.75rem;
+  font-size: 0.875rem;
 }
 </style>

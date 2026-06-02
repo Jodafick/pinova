@@ -234,6 +234,22 @@ const citySelectOptions = computed(() =>
   })),
 )
 
+const genderSelectOptions = computed(() =>
+  REFERENCE_GENDERS.filter((g) => g.id).map((g) => ({
+    value: g.id,
+    label: genderLabel(g, selectedLang.value),
+    searchText: genderLabel(g, selectedLang.value),
+  })),
+)
+
+const pronounSelectOptions = computed(() =>
+  REFERENCE_PRONOUNS.filter((p) => p.id).map((p) => ({
+    value: p.id,
+    label: pronounLabel(p, selectedLang.value),
+    searchText: pronounLabel(p, selectedLang.value),
+  })),
+)
+
 function isValidBirthDate(raw: string): boolean {
   const value = raw.trim().slice(0, 10)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
@@ -417,34 +433,42 @@ function onPrimaryAction() {
           </template>
         </section>
 
-        <section v-else-if="step === 'profile'" class="onboarding-panel onboarding-panel--compact">
+        <section v-else-if="step === 'profile'" class="onboarding-panel onboarding-panel--compact onboarding-panel--profile">
           <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.profileTitle') }}</h2>
           <p class="onboarding-lead">{{ t('onboarding.profileHint') }}</p>
-          <div class="onboarding-profile-grid">
-            <label class="onboarding-label">{{ t('profile.field.firstName') }}</label>
-            <label class="onboarding-label">{{ t('profile.field.lastName') }}</label>
-            <input v-model="firstName" type="text" autocomplete="given-name" class="onboarding-select" />
-            <input v-model="lastName" type="text" autocomplete="family-name" class="onboarding-select" />
-          </div>
-          <label class="onboarding-label mt-5">{{ t('onboarding.birthdateLabel') }}</label>
-          <div class="onboarding-birthdate-wrap">
-            <BirthDatePicker v-model="birthDate" />
-          </div>
-          <div class="onboarding-profile-grid mt-5">
-            <label class="onboarding-label">{{ t('profile.field.gender') }}</label>
-            <label class="onboarding-label">{{ t('profile.field.pronouns') }}</label>
-            <select v-model="gender" class="onboarding-select">
-              <option value="">{{ t('common.selectEmpty') }}</option>
-              <option v-for="g in REFERENCE_GENDERS.filter((x) => x.id)" :key="g.id" :value="g.id">
-                {{ genderLabel(g, selectedLang) }}
-              </option>
-            </select>
-            <select v-model="pronouns" class="onboarding-select">
-              <option value="">{{ t('common.selectEmpty') }}</option>
-              <option v-for="p in REFERENCE_PRONOUNS.filter((x) => x.id)" :key="p.id" :value="p.id">
-                {{ pronounLabel(p, selectedLang) }}
-              </option>
-            </select>
+          <div class="onboarding-field-stack">
+            <div class="onboarding-field-group onboarding-field-group--half">
+              <label class="onboarding-label">{{ t('profile.field.firstName') }}</label>
+              <input v-model="firstName" type="text" autocomplete="given-name" class="onboarding-select onboarding-select--field" />
+            </div>
+            <div class="onboarding-field-group onboarding-field-group--half">
+              <label class="onboarding-label">{{ t('profile.field.lastName') }}</label>
+              <input v-model="lastName" type="text" autocomplete="family-name" class="onboarding-select onboarding-select--field" />
+            </div>
+            <div class="onboarding-field-group onboarding-field-group--full">
+              <label class="onboarding-label">{{ t('onboarding.birthdateLabel') }}</label>
+              <BirthDatePicker v-model="birthDate" variant="onboarding" />
+            </div>
+            <div class="onboarding-field-group onboarding-field-group--half">
+              <label class="onboarding-label">{{ t('profile.field.gender') }}</label>
+              <SearchableSelect
+                v-model="gender"
+                variant="glass"
+                :options="genderSelectOptions"
+                :placeholder="t('common.selectEmpty')"
+                :search-placeholder="t('onboarding.profileSearch')"
+              />
+            </div>
+            <div class="onboarding-field-group onboarding-field-group--half">
+              <label class="onboarding-label">{{ t('profile.field.pronouns') }}</label>
+              <SearchableSelect
+                v-model="pronouns"
+                variant="glass"
+                :options="pronounSelectOptions"
+                :placeholder="t('common.selectEmpty')"
+                :search-placeholder="t('onboarding.profileSearch')"
+              />
+            </div>
           </div>
         </section>
 
@@ -564,27 +588,21 @@ function onPrimaryAction() {
         <p v-if="errorMsg" class="mt-4 text-sm text-red-600 dark:text-red-400 text-center">{{ errorMsg }}</p>
       </main>
 
-      <footer class="onboarding-footer">
+      <footer
+        class="onboarding-footer"
+        :class="{ 'onboarding-footer--solo': stepIndex === 0 || step === 'done' }"
+      >
         <button
           v-if="stepIndex > 0 && step !== 'done'"
           type="button"
-          class="onboarding-btn onboarding-btn--ghost"
+          class="onboarding-btn onboarding-btn--ghost onboarding-btn--back"
           @click="prevStep"
         >
           {{ t('onboarding.back') }}
         </button>
-        <div class="flex-1 min-w-2" />
-        <button
-          v-if="step === 'creators' || step === 'referral' || step === 'profile'"
-          type="button"
-          class="onboarding-btn onboarding-btn--ghost"
-          @click="nextStep"
-        >
-          {{ t('onboarding.skip') }}
-        </button>
         <button
           type="button"
-          class="onboarding-btn onboarding-btn--primary"
+          class="onboarding-btn onboarding-btn--primary onboarding-btn--next"
           :disabled="!canContinue || saving"
           :aria-busy="saving"
           @click="onPrimaryAction"
@@ -775,17 +793,40 @@ function onPrimaryAction() {
   align-self: stretch;
 }
 
-.onboarding-profile-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem 1rem;
-  margin-top: 1.25rem;
+.onboarding-panel--profile {
+  overflow-y: auto;
 }
 
-@media (max-width: 480px) {
-  .onboarding-profile-grid {
-    grid-template-columns: 1fr;
+.onboarding-field-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 0.85rem;
+  margin-top: 1.15rem;
+}
+
+.onboarding-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.onboarding-field-group--half {
+  flex: 1 1 calc(50% - 0.45rem);
+}
+
+.onboarding-field-group--full {
+  flex: 1 1 100%;
+}
+
+@media (max-width: 520px) {
+  .onboarding-field-group--half {
+    flex: 1 1 100%;
   }
+}
+
+.onboarding-select--field {
+  margin-top: 0;
 }
 
 .onboarding-hero-top {
@@ -995,10 +1036,6 @@ function onPrimaryAction() {
   color: #52525b;
 }
 
-.onboarding-birthdate-wrap {
-  margin-top: 0.45rem;
-}
-
 .onboarding-root--dark .onboarding-label,
 :global(html.dark) .onboarding-label {
   color: #a1a1aa;
@@ -1100,12 +1137,26 @@ function onPrimaryAction() {
 
 .onboarding-footer {
   flex-shrink: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: stretch;
   gap: 0.65rem;
   padding: 1rem 0 max(1.25rem, calc(0.85rem + env(safe-area-inset-bottom, 0px)));
   background: transparent;
+}
+
+.onboarding-footer--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.onboarding-btn--back {
+  align-self: center;
+  white-space: nowrap;
+}
+
+.onboarding-btn--next {
+  width: 100%;
+  min-width: 0;
 }
 
 .onboarding-root--dark .onboarding-footer,

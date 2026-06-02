@@ -28,8 +28,8 @@ const handleForgotPassword = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-transparent dark:bg-transparent px-6 py-12">
-    <div class="w-full max-w-md bg-white dark:bg-neutral-900 p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800">
+  <div class="min-h-screen flex items-stretch lg:items-center justify-center bg-transparent dark:bg-transparent px-4 py-6 sm:px-6 sm:py-12">
+    <div class="w-full max-w-md lg:bg-white lg:dark:bg-neutral-900 lg:p-8 xl:p-10 lg:rounded-[40px] lg:shadow-sm lg:border lg:border-neutral-100 lg:dark:border-neutral-800">
       <div class="text-center mb-8">
         <div class="w-16 h-16 rounded-full bg-pink-50 flex items-center justify-center mx-auto mb-6">
           <span class="material-symbols-outlined text-pink-700 text-3xl">lock_reset</span>

@@ -27,8 +27,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-transparent dark:bg-transparent px-6 py-12">
-    <div class="w-full max-w-md bg-white dark:bg-neutral-900 p-8 sm:p-10 rounded-[40px] shadow-sm border border-neutral-100 dark:border-neutral-800 text-center">
+  <div class="min-h-screen flex items-stretch lg:items-center justify-center bg-transparent dark:bg-transparent px-4 py-6 sm:px-6 sm:py-12">
+    <div class="w-full max-w-md lg:bg-white lg:dark:bg-neutral-900 lg:p-8 xl:p-10 lg:rounded-[40px] lg:shadow-sm lg:border lg:border-neutral-100 lg:dark:border-neutral-800 text-center">
       <div v-if="loading">
         <div class="w-16 h-16 border-4 border-neutral-100 border-t-pink-700 dark:border-t-pink-600 rounded-full animate-spin mx-auto mb-6"></div>
         <h2 class="text-2xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.loading.title') }}</h2>
