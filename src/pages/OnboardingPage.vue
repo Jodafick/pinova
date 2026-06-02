@@ -447,7 +447,7 @@ function onPrimaryAction() {
             </div>
             <div class="onboarding-field-group onboarding-field-group--full">
               <label class="onboarding-label">{{ t('onboarding.birthdateLabel') }}</label>
-              <BirthDatePicker v-model="birthDate" variant="onboarding" />
+              <BirthDatePicker v-model="birthDate" variant="onboarding" :dark="onboardingIsDark" />
             </div>
             <div class="onboarding-field-group onboarding-field-group--half">
               <label class="onboarding-label">{{ t('profile.field.gender') }}</label>

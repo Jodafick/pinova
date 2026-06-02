@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useAppearance } from '../composables/useAppearance'
 import { useI18n } from '../i18n'
 
 const props = withDefaults(
@@ -7,12 +8,18 @@ const props = withDefaults(
     modelValue: string
     selectClass?: string
     variant?: 'default' | 'onboarding'
+    /** Thème sombre explicite (ex. preview onboarding). Sinon suit useAppearance. */
+    dark?: boolean | null
   }>(),
   {
     selectClass: '',
     variant: 'default',
+    dark: null,
   },
 )
+
+const { isDark } = useAppearance()
+const isDarkMode = computed(() => props.dark ?? isDark.value)
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
@@ -111,6 +118,7 @@ watch([day, month, year], () => {
     class="birth-date-picker"
     :class="{
       'birth-date-picker--onboarding': variant === 'onboarding',
+      'birth-date-picker--dark': isDarkMode,
     }"
   >
     <label class="birth-date-picker__field">
@@ -212,31 +220,27 @@ watch([day, month, year], () => {
   background: rgba(255, 255, 255, 0.7);
 }
 
-/* Dark — html.dark ET preview onboarding (.onboarding-root--dark) */
-:global(html.dark) .birth-date-picker__label,
-:global(.onboarding-root--dark) .birth-date-picker__label {
+.birth-date-picker--dark .birth-date-picker__label {
   color: #a1a1aa;
 }
 
-:global(html.dark) .birth-date-picker__select,
-:global(.onboarding-root--dark) .birth-date-picker__select {
+.birth-date-picker--dark .birth-date-picker__select {
   border-color: rgba(255, 255, 255, 0.1);
-  background-color: rgba(23, 23, 23, 0.65);
   color: #fafafa;
   color-scheme: dark;
+  background-color: rgba(23, 23, 23, 0.65);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
-:global(html.dark) .birth-date-picker--onboarding,
-:global(.onboarding-root--dark) .birth-date-picker--onboarding {
+.birth-date-picker--dark.birth-date-picker--onboarding {
   border-color: rgba(255, 255, 255, 0.1);
   background: rgba(23, 23, 23, 0.55);
   box-shadow: 0 16px 34px -20px rgba(0, 0, 0, 0.58);
 }
 
-:global(html.dark) .birth-date-picker--onboarding .birth-date-picker__select,
-:global(.onboarding-root--dark) .birth-date-picker--onboarding .birth-date-picker__select {
+.birth-date-picker--dark.birth-date-picker--onboarding .birth-date-picker__select {
   border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(23, 23, 23, 0.65);
+  background-color: rgba(23, 23, 23, 0.65);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 </style>
