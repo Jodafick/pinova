@@ -33,7 +33,16 @@ import { registerPwaInstallOpener } from '../../utils/pwaInstallBridge'
 import { PWA_INSTALL_SNOOZE_KEY, isPwaInstallSnoozed } from '../../utils/pwaInstallStorage'
 
 const isOpen = ref(false)
-const { isStandalone, isIos, isAndroid, isSafariIos, isChromeIos, canPromptInstall, promptInstall, wasJustInstalled } = usePwaContext()
+const {
+  isStandalone,
+  isIos,
+  isSafariIos,
+  isChromeIos,
+  canOfferInstallExperience,
+  canPromptInstall,
+  promptInstall,
+  wasJustInstalled,
+} = usePwaContext()
 const { t } = useI18n()
 
 const SNOOZE_MS = 7 * 24 * 3600 * 1000
@@ -42,6 +51,7 @@ const isSnoozed = computed(() => isPwaInstallSnoozed())
 
 /** Ouvre le guide (réglages / pont). En PWA installée, affiche l’état « déjà installée ». */
 function open() {
+  if (!canOfferInstallExperience.value) return
   isOpen.value = true
 }
 
@@ -72,18 +82,14 @@ async function clickInstall() {
 }
 
 /* Scénario résolu côté UI. */
-type Scenario = 'standalone' | 'just-installed' | 'native-prompt' | 'ios-safari' | 'ios-other-browser' | 'desktop-fallback'
+type Scenario = 'standalone' | 'just-installed' | 'native-prompt' | 'ios-webkit-supported' | 'unsupported'
 
 const scenario = computed<Scenario>(() => {
   if (isStandalone.value) return 'standalone'
   if (wasJustInstalled.value) return 'just-installed'
   if (canPromptInstall.value) return 'native-prompt'
-  if (isIos.value && (isChromeIos.value || (!isSafariIos.value && !isAndroid.value))) {
-    /* Firefox / Edge iOS, etc. — ne peuvent pas installer. */
-    return 'ios-other-browser'
-  }
-  if (isSafariIos.value) return 'ios-safari'
-  return 'desktop-fallback'
+  if (isIos.value && (isSafariIos.value || isChromeIos.value)) return 'ios-webkit-supported'
+  return 'unsupported'
 })
 
 defineExpose({ open, close, isSnoozed, scenario })
@@ -91,6 +97,7 @@ defineExpose({ open, close, isSnoozed, scenario })
 
 <template>
   <PinovaModal
+    v-if="scenario !== 'unsupported'"
     v-model:open="isOpen"
     presentation="tallSheet"
     :show-header="true"
@@ -173,7 +180,7 @@ defineExpose({ open, close, isSnoozed, scenario })
     </template>
 
     <!-- ── iOS Safari : barre d’outils basse (⋯ → Partager → Sur l’écran d’accueil) ── -->
-    <template v-else-if="scenario === 'ios-safari'">
+    <template v-else-if="scenario === 'ios-webkit-supported'">
       <p class="mb-5 text-center text-[15px] leading-snug text-neutral-700 dark:text-neutral-200">
         {{ t('pwa.install.iosLead') }}
       </p>
@@ -287,41 +294,7 @@ defineExpose({ open, close, isSnoozed, scenario })
       </button>
     </template>
 
-    <!-- ── Scénario : iOS hors-Safari (Chrome iOS, FF iOS) ── -->
-    <template v-else-if="scenario === 'ios-other-browser'">
-      <p class="mb-4 text-center text-[15px] leading-snug text-neutral-700 dark:text-neutral-200">
-        {{ t('pwa.install.iosNonSafariLead') }}
-      </p>
-      <div
-        class="mb-4 flex items-start gap-2 rounded-2xl border border-pink-500/20 bg-pink-500/[0.07] px-3.5 py-3 dark:border-pink-400/30 dark:bg-pink-500/10"
-      >
-        <span class="material-symbols-outlined shrink-0 text-pink-600 dark:text-pink-400">info</span>
-        <p class="m-0 text-[14px] leading-snug text-neutral-800 dark:text-neutral-100">
-          {{ t('pwa.install.iosNonSafariNote') }}
-        </p>
-      </div>
-      <button
-        type="button"
-        class="w-full flex items-center justify-center gap-2 rounded-2xl border-0 bg-gradient-to-br from-pink-600 to-pink-500 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-pink-600/30 transition [transition-property:transform,filter] active:scale-[0.98] active:brightness-[0.96] dark:shadow-pink-900/45"
-        @click="snooze"
-      >
-        {{ t('common.ok') }}
-      </button>
-    </template>
-
-    <!-- ── Scénario : desktop fallback (pas de prompt dispo) ── -->
-    <template v-else>
-      <p class="mb-5 text-center text-[15px] leading-snug text-neutral-700 dark:text-neutral-200">
-        {{ t('pwa.install.desktopLead') }}
-      </p>
-      <button
-        type="button"
-        class="mt-2 w-full rounded-xl border-0 py-3 text-[15px] font-medium text-neutral-600 transition active:opacity-55 dark:text-neutral-300"
-        @click="close"
-      >
-        {{ t('common.close') }}
-      </button>
-    </template>
+    <template v-else />
   </PinovaModal>
 </template>
 

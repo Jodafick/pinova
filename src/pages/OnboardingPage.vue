@@ -427,7 +427,9 @@ function onPrimaryAction() {
             <input v-model="lastName" type="text" autocomplete="family-name" class="onboarding-select" />
           </div>
           <label class="onboarding-label mt-5">{{ t('onboarding.birthdateLabel') }}</label>
-          <BirthDatePicker v-model="birthDate" />
+          <div class="onboarding-birthdate-wrap">
+            <BirthDatePicker v-model="birthDate" />
+          </div>
           <div class="onboarding-profile-grid mt-5">
             <label class="onboarding-label">{{ t('profile.field.gender') }}</label>
             <label class="onboarding-label">{{ t('profile.field.pronouns') }}</label>
@@ -991,6 +993,10 @@ function onPrimaryAction() {
   font-size: 0.8rem;
   font-weight: 700;
   color: #52525b;
+}
+
+.onboarding-birthdate-wrap {
+  margin-top: 0.45rem;
 }
 
 .onboarding-root--dark .onboarding-label,

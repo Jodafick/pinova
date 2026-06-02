@@ -163,6 +163,8 @@ export interface UsePwaContextReturn {
   isMobile: Readonly<Ref<boolean>>
   isSafariIos: Readonly<Ref<boolean>>
   isChromeIos: Readonly<Ref<boolean>>
+  /** Vrai si on peut montrer un flux d'installation (prompt natif ou guide iOS pris en charge). */
+  canOfferInstallExperience: Readonly<Ref<boolean>>
   /** Vrai si on peut déclencher `prompt()` (Android / Chrome). */
   canPromptInstall: Readonly<Ref<boolean>>
   /**
@@ -187,6 +189,9 @@ export function usePwaContext(): UsePwaContextReturn {
   const isSafariIos = computed(() => isIos.value && browser.value === 'safari')
   const isChromeIos = computed(() => isIos.value && browser.value === 'chrome-ios')
   const canPromptInstall = computed(() => installPromptEvt.value != null)
+  const canOfferInstallExperience = computed(
+    () => canPromptInstall.value || isSafariIos.value || isChromeIos.value,
+  )
 
   async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unsupported'> {
     const evt = installPromptEvt.value
@@ -212,6 +217,7 @@ export function usePwaContext(): UsePwaContextReturn {
     isMobile,
     isSafariIos,
     isChromeIos,
+    canOfferInstallExperience,
     canPromptInstall,
     promptInstall,
     wasJustInstalled: wasInstalledThisSession,

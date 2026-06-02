@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import type { Pin } from '../types'
+import type { FeedItem, Pin } from '../types'
+import { isFeedPin, isPartnerAd } from '../types'
+import PartnerAdCard from './PartnerAdCard.vue'
+import BoostPinDialog from './BoostPinDialog.vue'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useRouter } from 'vue-router'
@@ -47,11 +50,12 @@ const blurSensitiveByDefault = computed(() =>
 
 type GridCell =
   | { kind: 'pin'; pin: Pin }
+  | { kind: 'partner_ad'; ad: import('../types').PartnerAd }
   | { kind: 'skeleton'; key: string }
 
 const props = withDefaults(
   defineProps<{
-    pins: Pin[]
+    pins: FeedItem[]
     /** Grille pleine (ex. premier chargement) : placeholders alignés comme les cartes. */
     loadingInitial?: boolean
     /** Suite de chargement (infinite scroll / page suivante). */
@@ -96,8 +100,9 @@ const skeletonPlaceholders = computed(() => {
 const columns = computed(() => {
   const n = columnCount.value
   const cells: GridCell[] = []
-  props.pins.forEach((pin) => {
-    cells.push({ kind: 'pin', pin })
+  props.pins.forEach((item) => {
+    if (isPartnerAd(item)) cells.push({ kind: 'partner_ad', ad: item })
+    else if (isFeedPin(item)) cells.push({ kind: 'pin', pin: item })
   })
   const sk = skeletonPlaceholders.value
   for (let i = 0; i < sk; i++) {
@@ -123,7 +128,7 @@ watch(
     if (!pins?.length) return
     if (prefetchDebounce) clearTimeout(prefetchDebounce)
     prefetchDebounce = setTimeout(() => {
-      prefetchPinsMediaForOffline(pins)
+      prefetchPinsMediaForOffline(pins.filter(isFeedPin))
       prefetchDebounce = null
     }, 450)
   },
@@ -132,6 +137,7 @@ watch(
 
 /** Menu ⋯ propriétaire (modifier / supprimer) */
 const gridOwnerMenuSlug = ref<string | null>(null)
+const boostDialogSlug = ref<string | null>(null)
 const gridOwnerMenuAnchorRef = ref<HTMLElement | null>(null)
 const gridOwnerMenuFloatingRef = ref<HTMLElement | null>(null)
 const gridOwnerMenuOpen = computed(() => gridOwnerMenuSlug.value !== null)
@@ -255,6 +261,11 @@ function goGridOwnerEdit(slug: string) {
   router.push(`/pin/${slug}/edit`)
 }
 
+function openBoostDialog(slug: string) {
+  closeGridOwnerMenu()
+  boostDialogSlug.value = slug
+}
+
 async function confirmDeleteGridOwnedPin(slug: string) {
   closeGridOwnerMenu()
   const ok = await showConfirm({
@@ -295,9 +306,13 @@ onUnmounted(() => {
       role="presentation"
       class="flex-1 flex flex-col gap-3 sm:gap-4"
     >
-      <template v-for="cell in column" :key="cell.kind === 'pin' ? cell.pin.id : cell.key">
+      <template
+        v-for="cell in column"
+        :key="cell.kind === 'pin' ? cell.pin.id : cell.kind === 'partner_ad' ? cell.ad.id : cell.key"
+      >
+      <PartnerAdCard v-if="cell.kind === 'partner_ad'" :ad="cell.ad" />
       <article
-        v-if="cell.kind === 'pin'"
+        v-else-if="cell.kind === 'pin'"
         tabindex="0"
         role="article"
         :aria-label="pinCardLabel(cell.pin)"
@@ -312,6 +327,12 @@ onUnmounted(() => {
           @click.stop="onPinMediaTap(cell.pin, $event)"
           @dblclick.stop.prevent="onPinMediaDblClick(cell.pin)"
         >
+          <span
+            v-if="cell.pin.isBoosted"
+            class="absolute top-2 left-2 z-10 rounded-full bg-amber-500/90 text-white text-[10px] font-bold px-2 py-0.5"
+          >
+            {{ t('feed.pinBoosted') }}
+          </span>
           <div
             v-if="!isMediaLoaded(cell.pin.id)"
             class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200 dark:from-neutral-800 dark:via-neutral-700 dark:to-neutral-800"
@@ -461,6 +482,15 @@ onUnmounted(() => {
         <button
           type="button"
           role="menuitem"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
+          @click="gridOwnerMenuSlug ? openBoostDialog(gridOwnerMenuSlug) : null"
+        >
+          <span class="material-symbols-outlined text-lg text-amber-600" aria-hidden="true">rocket_launch</span>
+          {{ t('pin.boost.cta') }}
+        </button>
+        <button
+          type="button"
+          role="menuitem"
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-400 hover:bg-red-50/90 dark:hover:bg-red-950/35 transition-colors"
           @click="gridOwnerMenuSlug ? confirmDeleteGridOwnedPin(gridOwnerMenuSlug) : null"
         >
@@ -469,5 +499,11 @@ onUnmounted(() => {
         </button>
       </div>
     </Teleport>
+    <BoostPinDialog
+      v-if="boostDialogSlug"
+      :pin-slug="boostDialogSlug"
+      :open="!!boostDialogSlug"
+      @close="boostDialogSlug = null"
+    />
   </section>
 </template>

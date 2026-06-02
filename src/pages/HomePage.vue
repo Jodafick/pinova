@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePins } from '../composables/usePins'
+import { feedPinsOnly, usePins } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
 import { useTokenClient } from 'vue3-google-signin'
@@ -977,7 +977,7 @@ async function continueWithGoogleFromLanding() {
       />
     </template>
 
-    <PinDetailOverlayHost :pins="activePins" />
+    <PinDetailOverlayHost :pins="feedPinsOnly(activePins)" />
     </div>
   </div>
 </template>

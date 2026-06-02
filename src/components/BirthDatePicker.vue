@@ -26,6 +26,7 @@ const maxDate = computed(() => {
 })
 
 const localeTag = computed(() => (currentLang.value === 'en' ? 'en-US' : 'fr-FR'))
+const isOnboardingVariant = computed(() => props.selectClass.includes('onboarding-select'))
 
 const years = computed(() => {
   const maxY = maxDate.value.y
@@ -103,7 +104,7 @@ watch([day, month, year], () => {
 </script>
 
 <template>
-  <div class="birth-date-picker">
+  <div class="birth-date-picker" :class="{ 'birth-date-picker--onboarding': isOnboardingVariant }">
     <select v-model="day" :class="selectClass" autocomplete="bday-day">
       <option value="">{{ t('birthDatePicker.col.day') }}</option>
       <option v-for="d in days" :key="d" :value="d">{{ d }}</option>
@@ -124,6 +125,36 @@ watch([day, month, year], () => {
   display: grid;
   grid-template-columns: 0.85fr 1.35fr 1fr;
   gap: 0.65rem;
+}
+
+.birth-date-picker--onboarding {
+  padding: 0.65rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: 0 12px 28px -16px rgba(225, 29, 72, 0.35);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+.birth-date-picker--onboarding :deep(select.onboarding-select) {
+  margin-top: 0;
+  min-height: 2.9rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 2px 10px -8px rgba(0, 0, 0, 0.2);
+}
+
+:global(html.dark) .birth-date-picker--onboarding {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(28, 28, 32, 0.6);
+  box-shadow: 0 16px 34px -20px rgba(0, 0, 0, 0.58);
+}
+
+:global(html.dark) .birth-date-picker--onboarding :deep(select.onboarding-select) {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(12, 12, 15, 0.78);
 }
 
 @media (max-width: 480px) {

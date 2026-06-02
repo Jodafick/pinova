@@ -235,6 +235,17 @@ const router = createRouter({
       },
     },
     {
+      path: '/staff/partner-ads',
+      name: 'staff-partner-ads',
+      component: () => import('../pages/PartnerAdsManagePage.vue'),
+      meta: {
+        requiresAuth: true,
+        keepAlive: false,
+        presentation: 'page',
+        statusBar: 'auto',
+      },
+    },
+    {
       path: '/billing',
       name: 'billing',
       component: () => import('../pages/BillingHistoryPage.vue'),

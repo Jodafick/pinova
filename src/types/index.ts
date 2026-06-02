@@ -55,6 +55,29 @@ export type Pin = {
   mediaSensitiveBlur?: boolean
   /** Le visiteur connecté a déjà signalé ce pin (API `viewer_has_reported`). */
   viewerHasReported?: boolean
+  isBoosted?: boolean
+}
+
+export type PartnerAd = {
+  feedType: 'partner_ad'
+  id: string
+  campaignId: number
+  title: string
+  body: string
+  sponsorName: string
+  imageUrl: string
+  ctaLabel: string
+  ctaUrl: string
+}
+
+export type FeedItem = Pin | PartnerAd
+
+export function isPartnerAd(item: FeedItem): item is PartnerAd {
+  return (item as PartnerAd).feedType === 'partner_ad'
+}
+
+export function isFeedPin(item: FeedItem): item is Pin {
+  return !isPartnerAd(item)
 }
 
 /** Première page renvoyée par `GET me/` (`me_created_pins_page` / `me_saved_pins_page`). */
@@ -82,6 +105,7 @@ import type { UserProfileExtended } from './profileExtended'
 
 export type User = UserProfileExtended & {
   id: number
+  isStaff?: boolean
   username: string
   displayName: string
   email: string

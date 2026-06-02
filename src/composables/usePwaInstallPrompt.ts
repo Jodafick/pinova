@@ -32,7 +32,7 @@ function pathExcluded(pathname: string): boolean {
  */
 export function usePwaInstallPrompt() {
   const route = useRoute()
-  const { isMobile, isStandalone } = usePwaContext()
+  const { isMobile, isStandalone, canOfferInstallExperience } = usePwaContext()
   let timer: ReturnType<typeof setTimeout> | null = null
 
   function clearTimer() {
@@ -47,6 +47,7 @@ export function usePwaInstallPrompt() {
     if (typeof window === 'undefined') return
     if (sessionStorage.getItem(SESSION_AUTO_PROMPT_KEY) === '1') return
     if (!isMobile.value || isStandalone.value) return
+    if (!canOfferInstallExperience.value) return
     if (pathExcluded(route.path)) return
     if (isPwaInstallSnoozed()) return
 
@@ -62,12 +63,12 @@ export function usePwaInstallPrompt() {
   }
 
   watch(
-    () => [route.path, isStandalone.value, isMobile.value] as const,
+    () => [route.path, isStandalone.value, isMobile.value, canOfferInstallExperience.value] as const,
     () => {
       if (typeof window === 'undefined') return
       if (sessionStorage.getItem(SESSION_AUTO_PROMPT_KEY) === '1') return
 
-      if (!isMobile.value || isStandalone.value) {
+      if (!isMobile.value || isStandalone.value || !canOfferInstallExperience.value) {
         clearTimer()
         return
       }

@@ -1840,6 +1840,14 @@ watch(
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
+          <router-link
+            v-if="currentUser?.isStaff"
+            to="/staff/partner-ads"
+            class="inline-flex items-center gap-2 text-sm font-semibold text-pink-700 dark:text-pink-400 hover:underline mt-2"
+          >
+            <span class="material-symbols-outlined text-lg" aria-hidden="true">campaign</span>
+            {{ t('settings.nav.partnerAdsStaff') }}
+          </router-link>
         </div>
       </section>
 

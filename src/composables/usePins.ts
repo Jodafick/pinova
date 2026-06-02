@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
-import type { Pin, PinLikersResponse } from '../types'
+import type { FeedItem, PartnerAd, Pin, PinLikersResponse } from '../types'
+import { isFeedPin, isPartnerAd } from '../types'
 import api from '../api'
 import { API_BASE_URL } from '../env'
 import { useI18n } from '../i18n'
@@ -41,6 +42,35 @@ export function getFullMediaUrl(url: string | null): string {
 }
 
 // Mapper pour convertir les données Django vers le format attendu par le Frontend
+export function mapPartnerAdFromApi(raw: Record<string, unknown>): PartnerAd {
+  return {
+    feedType: 'partner_ad',
+    id: String(raw.id ?? `partner-ad-${raw.campaign_id}`),
+    campaignId: Number(raw.campaign_id ?? 0),
+    title: String(raw.title ?? ''),
+    body: String(raw.body ?? ''),
+    sponsorName: String(raw.sponsor_name ?? ''),
+    imageUrl: getFullMediaUrl(String(raw.image_url ?? '')),
+    ctaLabel: String(raw.cta_label ?? 'En savoir plus'),
+    ctaUrl: String(raw.cta_url ?? '#'),
+  }
+}
+
+export function mapFeedRow(raw: Record<string, unknown>): FeedItem | null {
+  if (raw == null || typeof raw !== 'object') return null
+  const ft = String(raw.feed_type ?? 'pin')
+  if (ft === 'partner_ad') return mapPartnerAdFromApi(raw)
+  try {
+    return mapDjangoPinToFrontend(raw)
+  } catch {
+    return null
+  }
+}
+
+export function feedPinsOnly(items: FeedItem[]): Pin[] {
+  return items.filter((x): x is Pin => !isPartnerAd(x))
+}
+
 export function mapDjangoPinToFrontend(djangoPin: any): Pin {
   const author = djangoPin.author_profile || {}
   const isStory = !!djangoPin.is_story
@@ -101,6 +131,7 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     storyExpiresAt: djangoPin.story_expires_at ?? undefined,
     mediaSensitiveBlur: !!djangoPin.media_sensitive_blur,
     viewerHasReported: !!djangoPin.viewer_has_reported,
+    isBoosted: !!djangoPin.is_boosted,
   }
 }
 
@@ -116,7 +147,7 @@ export function usePins() {
   const { currentLang } = useI18n()
   // État local par instance de composant/page.
   // Évite les fuites d'état cross-page avec KeepAlive (feeds qui se remplacent mutuellement).
-  const pins = ref<Pin[]>([])
+  const pins = ref<FeedItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const currentPage = ref(1)
@@ -211,14 +242,12 @@ export function usePins() {
       if (ticket !== feedLoadGeneration) return
 
       const { rows: pinsData, next } = extractFeedPageRows(response.data)
-      const newPins: Pin[] = []
+      const newPins: FeedItem[] = []
       for (const raw of pinsData) {
         if (raw == null || typeof raw !== 'object') continue
-        try {
-          newPins.push(mapDjangoPinToFrontend(raw))
-        } catch (e) {
-          console.warn('[usePins] Ligne de flux ignorée (mapping)', e)
-        }
+        const mapped = mapFeedRow(raw as Record<string, unknown>)
+        if (mapped) newPins.push(mapped)
+        else console.warn('[usePins] Ligne de flux ignorée (mapping)')
       }
 
       if (newPins.length > 0) {
@@ -260,8 +289,8 @@ export function usePins() {
     if (!options?.force) {
       const hit = getCachedPinDetail(slug)
       if (hit) {
-        const idx = pins.value.findIndex((p) => p.slug === slug)
-        if (idx >= 0) {
+        const idx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
+        if (idx >= 0 && isFeedPin(pins.value[idx])) {
           pins.value[idx] = { ...pins.value[idx], ...hit }
         } else {
           pins.value.push(hit)
@@ -283,8 +312,8 @@ export function usePins() {
         const mapped = mapDjangoPinToFrontend(response.data)
         setCachedPinDetail(slug, mapped)
         prefetchPinsMediaForOffline([mapped])
-        const idx = pins.value.findIndex((p) => p.slug === slug)
-        if (idx >= 0) {
+        const idx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
+        if (idx >= 0 && isFeedPin(pins.value[idx])) {
           pins.value[idx] = { ...pins.value[idx], ...mapped }
         } else {
           pins.value.push(mapped)
@@ -305,8 +334,8 @@ export function usePins() {
     invalidatePinDetailClientCache(slug)
     setCachedPinDetail(slug, mapped)
     prefetchPinsMediaForOffline([mapped])
-    const idx = pins.value.findIndex((p) => p.slug === slug)
-    if (idx >= 0) {
+    const idx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
+    if (idx >= 0 && isFeedPin(pins.value[idx])) {
       pins.value[idx] = { ...pins.value[idx], ...mapped }
     }
     return mapped
@@ -398,7 +427,7 @@ export function usePins() {
   }
 
   async function toggleLike(pinSlug: string) {
-    const pin = pins.value.find((p) => p.slug === pinSlug)
+    const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === pinSlug)
     const previousLiked = pin?.liked ?? false
     const previousReactions = pin?.stats.reactions ?? 0
     if (pin) {
@@ -633,8 +662,8 @@ export function usePins() {
       invalidatePinDetailClientCache(slug)
       clearFeedFirstPageClientCache()
       invalidateProfileCreatedPinsCacheForUsername(mapped.username)
-      const idx = pins.value.findIndex((p) => p.slug === slug)
-      if (idx >= 0) {
+      const idx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
+      if (idx >= 0 && isFeedPin(pins.value[idx])) {
         pins.value[idx] = mapped
       } else {
         pins.value.push(mapped)
@@ -650,7 +679,7 @@ export function usePins() {
   }
 
   async function deletePin(slug: string) {
-    const victim = pins.value.find((p) => p.slug === slug)
+    const victim = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
     const authorU = victim?.username
     await api.delete(`pins/${slug}/`)
     pins.value = pins.value.filter((p) => p.slug !== slug)
@@ -662,7 +691,7 @@ export function usePins() {
   /** Hydrate le store `pins` depuis le cache détail si besoin (évite un flash skeleton sur `/pin/:slug`). */
   function seedPinDetailCacheIntoStore(slug: string): Pin | undefined {
     if (!slug) return undefined
-    const existing = pins.value.find((p) => p.slug === slug)
+    const existing = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
     if (existing) return existing
     const hit = getCachedPinDetail(slug)
     if (hit) {
@@ -673,11 +702,11 @@ export function usePins() {
   }
 
   function getPin(slug: string): Pin | undefined {
-    return pins.value.find((p) => p.slug === slug)
+    return pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
   }
 
   async function toggleSave(slug: string) {
-    const pin = pins.value.find((p) => p.slug === slug)
+    const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
     const previousSaved = pin?.saved ?? false
     const previousSaves = pin?.stats.saves ?? 0
     if (pin) {

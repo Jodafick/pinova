@@ -204,6 +204,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
   return {
     ...extended,
     id: djangoUser.id,
+    isStaff: !!djangoUser.is_staff,
     username: djangoUser.username,
     displayName: profile.display_name || djangoUser.username,
     email: djangoUser.email ?? '',
