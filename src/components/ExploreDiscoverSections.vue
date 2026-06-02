@@ -4,7 +4,7 @@
  * et l’onglet mobile « Explorer » sur la home (même logique, même disposition).
  */
 import { ref, computed, watch, onMounted, onActivated } from 'vue'
-import type { Pin } from '../types'
+import type { FeedItem } from '../types'
 import api from '../api'
 import PinGrid from './PinGrid.vue'
 import PinovaModal from './ui/PinovaModal.vue'
@@ -31,7 +31,7 @@ const props = withDefaults(
     selectedTopic: string | null
     /** Filtre texte (?q=) — null en home embarquée. */
     textQuery?: string | null
-    pins: Pin[]
+    pins: FeedItem[]
     loading: boolean
     isFetchingNextPage: boolean
     /** Affiche le bloc titre / sous-titre / badge recherche (page /explore). */

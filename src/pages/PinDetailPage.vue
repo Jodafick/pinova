@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
+import { feedPinsOnly, usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
+import { isFeedPin, type Pin } from '../types'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import api from '../api'
 import { displayInitials } from '../utils/displayInitials'
@@ -108,7 +109,9 @@ const targetLang = computed(() => currentUser.value?.preferredLanguage || naviga
 
 const relatedPins = computed(() => {
   if (!pin.value) return []
-  return pins.value.filter((p) => p.topic === pin.value?.topic && p.slug !== pin.value?.slug).slice(0, 8)
+  return feedPinsOnly(pins.value).filter(
+    (p) => p.topic === pin.value?.topic && p.slug !== pin.value?.slug,
+  ).slice(0, 8)
 })
 const savingPin = ref(false)
 const likingPin = ref(false)
@@ -621,7 +624,7 @@ const handleTranslateDescription = async () => {
 }
 
 const handleToggleSaveRelated = async (slug: string) => {
-  const relatedPin = pins.value.find((p) => p.slug === slug)
+  const relatedPin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
   if (relatedPin) {
     toggleSavePin(relatedPin.id)
   }

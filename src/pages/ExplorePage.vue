@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePins } from '../composables/usePins'
+import { feedPinsOnly, usePins } from '../composables/usePins'
+import { isFeedPin, type Pin } from '../types'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
@@ -93,7 +94,7 @@ watch(currentLang, async () => {
 })
 
 const handleToggleSave = async (slug: string) => {
-  const pin = pins.value.find((p) => p.slug === slug)
+  const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
   if (pin) {
     toggleSavePin(pin.id)
   }
@@ -129,6 +130,6 @@ function clearExploreSearch() {
       @open-pin="openPin"
       @clear-search="clearExploreSearch"
     />
-    <PinDetailOverlayHost :pins="displayPins" />
+    <PinDetailOverlayHost :pins="feedPinsOnly(displayPins)" />
   </div>
 </template>

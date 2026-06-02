@@ -174,7 +174,7 @@ export function usePins() {
 
   const topics = computed(() => {
     const counts = new Map<string, { count: number; label: string }>()
-    pins.value.forEach((pin) => {
+    feedPinsOnly(pins.value).forEach((pin) => {
       const canonical = pin.topic
       const label = pin.topicDisplay ?? pin.topic
       const prev = counts.get(canonical)
@@ -254,7 +254,7 @@ export function usePins() {
         currentPage.value += 1
         hasNextPage.value = !!next
         if (pageAtStart === 1) {
-          setCachedFeedFirstPage(feedKey, pins.value.slice(), !!next)
+          setCachedFeedFirstPage(feedKey, feedPinsOnly(pins.value), !!next)
         }
       } else {
         hasNextPage.value =
@@ -521,7 +521,7 @@ export function usePins() {
     try {
       /** Ne pas fixer `Content-Type` à la main sur FormData : axios ajoute le boundary requis ; sinon `parentId` / médias sont ignorés côté Django. */
       const response = await api.post(`pins/${pinSlug}/comments/`, payload)
-      const pin = pins.value.find(p => p.slug === pinSlug)
+      const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === pinSlug)
       if (pin) {
         pin.stats.reactions += 0 // On pourrait mettre à jour le count ici si on l'avait séparément
       }
@@ -681,7 +681,7 @@ export function usePins() {
     const victim = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
     const authorU = victim?.username
     await api.delete(`pins/${slug}/`)
-    pins.value = pins.value.filter((p) => p.slug !== slug)
+    pins.value = pins.value.filter((p) => !isFeedPin(p) || p.slug !== slug)
     invalidatePinDetailClientCache(slug)
     clearFeedFirstPageClientCache()
     if (authorU) invalidateProfileCreatedPinsCacheForUsername(authorU)
@@ -734,7 +734,9 @@ export function usePins() {
   }
 
   async function toggleFollow(username: string) {
-    const affectedPins = pins.value.filter((pin) => pin.username === username)
+    const affectedPins = pins.value.filter(
+      (pin): pin is Pin => isFeedPin(pin) && pin.username === username,
+    )
     const previousFollowState = affectedPins.map((pin) => pin.isFollowing)
     affectedPins.forEach((pin) => {
       pin.isFollowing = !pin.isFollowing
@@ -745,9 +747,9 @@ export function usePins() {
       const isFollowed = response.data.status === 'followed'
 
       // Update all pins from this author
-      pins.value.forEach((pin) => {
-        if (pin.username === username) {
-          pin.isFollowing = isFollowed
+      pins.value.forEach((item) => {
+        if (isFeedPin(item) && item.username === username) {
+          item.isFollowing = isFollowed
         }
       })
 

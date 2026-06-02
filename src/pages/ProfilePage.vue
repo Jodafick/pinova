@@ -4,6 +4,7 @@ import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins, mapDjangoPinToFrontend, isAlreadyReportedError } from '../composables/usePins'
 import type { User, Pin } from '../types'
+import { isFeedPin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
 import ProfileHeaderSkeleton from '../components/ProfileHeaderSkeleton.vue'
@@ -887,7 +888,7 @@ const handleToggleSave = async (slug: string) => {
     return
   }
   const pin =
-    pins.value.find((p) => p.slug === slug) ||
+    pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug) ||
     profilePins.value.find((p) => p.slug === slug) ||
     savedPinsList.value.find((p) => p.slug === slug)
   if (pin) {

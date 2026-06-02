@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePins } from '../composables/usePins'
+import { feedPinsOnly, usePins } from '../composables/usePins'
+import { isFeedPin, type Pin } from '../types'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
@@ -39,7 +40,7 @@ const loadFollowingFeed = async () => {
 }
 
 const handleToggleSave = async (slug: string) => {
-  const pin = pins.value.find((p) => p.slug === slug)
+  const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
   if (pin) toggleSavePin(pin.id)
   try {
     await toggleSave(slug)
@@ -144,6 +145,6 @@ const followSuggestedUser = async (username: string) => {
       </div>
     </div>
 
-    <PinDetailOverlayHost :pins="displayPins" />
+    <PinDetailOverlayHost :pins="feedPinsOnly(displayPins)" />
   </div>
 </template>

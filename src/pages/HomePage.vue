@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { feedPinsOnly, usePins } from '../composables/usePins'
+import { isFeedPin, type Pin } from '../types'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
 import { useTokenClient } from 'vue3-google-signin'
@@ -487,7 +488,7 @@ watch(currentLang, () => {
 })
 
 const handleToggleSaveFor = async (ctx: typeof forYouCtx, slug: string) => {
-  const pin = ctx.pins.value.find((p) => p.slug === slug)
+  const pin = ctx.pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
   if (pin) {
     toggleSavePin(pin.id)
   }
