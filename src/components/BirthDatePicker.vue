@@ -172,11 +172,7 @@ watch([day, month, year], () => {
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgb(82 82 91);
-}
-
-:global(html.dark) .birth-date-picker__label {
-  color: rgb(161 161 170);
+  color: #52525b;
 }
 
 .birth-date-picker__select {
@@ -188,39 +184,59 @@ watch([day, month, year], () => {
   background: rgba(255, 255, 255, 0.82);
   font-size: 0.9rem;
   font-weight: 600;
-  color: rgb(24 24 27);
+  color: #18181b;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.65rem center;
   box-shadow: 0 2px 10px -8px rgba(0, 0, 0, 0.2);
-}
-
-:global(html.dark) .birth-date-picker__select {
-  border-color: rgba(255, 255, 255, 0.12);
-  background-color: rgba(12, 12, 15, 0.78);
-  color: rgb(250 250 250);
+  color-scheme: light;
 }
 
 .birth-date-picker--onboarding {
   margin-top: 0.15rem;
   padding: 0.75rem;
   border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  background: rgba(255, 255, 255, 0.52);
-  box-shadow: 0 12px 28px -16px rgba(225, 29, 72, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 12px 28px -16px rgba(225, 29, 72, 0.22);
   backdrop-filter: blur(12px) saturate(1.2);
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
-}
-
-:global(html.dark) .birth-date-picker--onboarding {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(28, 28, 32, 0.6);
-  box-shadow: 0 16px 34px -20px rgba(0, 0, 0, 0.58);
 }
 
 .birth-date-picker--onboarding .birth-date-picker__select {
   min-height: 2.75rem;
   font-size: 0.875rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* Dark — html.dark ET preview onboarding (.onboarding-root--dark) */
+:global(html.dark) .birth-date-picker__label,
+:global(.onboarding-root--dark) .birth-date-picker__label {
+  color: #a1a1aa;
+}
+
+:global(html.dark) .birth-date-picker__select,
+:global(.onboarding-root--dark) .birth-date-picker__select {
+  border-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(23, 23, 23, 0.65);
+  color: #fafafa;
+  color-scheme: dark;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+:global(html.dark) .birth-date-picker--onboarding,
+:global(.onboarding-root--dark) .birth-date-picker--onboarding {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(23, 23, 23, 0.55);
+  box-shadow: 0 16px 34px -20px rgba(0, 0, 0, 0.58);
+}
+
+:global(html.dark) .birth-date-picker--onboarding .birth-date-picker__select,
+:global(.onboarding-root--dark) .birth-date-picker--onboarding .birth-date-picker__select {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(23, 23, 23, 0.65);
 }
 </style>

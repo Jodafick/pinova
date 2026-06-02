@@ -624,7 +624,8 @@ function onPrimaryAction() {
 <style scoped>
 .onboarding-root {
   position: relative;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -744,15 +745,19 @@ function onPrimaryAction() {
 }
 
 .onboarding-main {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   padding: 1rem 0 0.5rem;
 }
 
 .onboarding-panel {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   padding: 1rem 1.15rem 1.25rem;
   border-radius: 1.35rem;
@@ -773,6 +778,7 @@ function onPrimaryAction() {
 }
 
 .onboarding-panel--hero {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -780,7 +786,7 @@ function onPrimaryAction() {
 }
 
 .onboarding-panel--done {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -793,8 +799,13 @@ function onPrimaryAction() {
   align-self: stretch;
 }
 
+.onboarding-panel--scroll,
+.onboarding-panel--creators {
+  flex: 0 0 auto;
+}
+
 .onboarding-panel--profile {
-  overflow-y: auto;
+  flex: 0 0 auto;
 }
 
 .onboarding-field-stack {
@@ -1136,32 +1147,35 @@ function onPrimaryAction() {
 }
 
 .onboarding-footer {
-  flex-shrink: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: stretch;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 0.65rem;
-  padding: 1rem 0 max(1.25rem, calc(0.85rem + env(safe-area-inset-bottom, 0px)));
-  background: transparent;
+  padding: 0.85rem 0 max(1rem, calc(0.85rem + env(safe-area-inset-bottom, 0px)));
+  background: linear-gradient(180deg, rgba(255, 245, 247, 0) 0%, rgba(255, 245, 247, 0.92) 28%, rgba(255, 245, 247, 0.98) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .onboarding-footer--solo {
-  grid-template-columns: minmax(0, 1fr);
+  justify-content: stretch;
 }
 
 .onboarding-btn--back {
-  align-self: center;
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 
 .onboarding-btn--next {
-  width: 100%;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .onboarding-root--dark .onboarding-footer,
 :global(html.dark) .onboarding-footer {
-  background: transparent;
+  background: linear-gradient(180deg, rgba(10, 10, 11, 0) 0%, rgba(10, 10, 11, 0.88) 28%, rgba(10, 10, 11, 0.96) 100%);
 }
 
 .onboarding-btn {
