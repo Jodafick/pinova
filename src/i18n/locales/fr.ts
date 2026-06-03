@@ -1075,6 +1075,8 @@ export const fr: Record<string, string> = {
   'staff.partnerAds.listTitle': 'Campagnes',
   'staff.partnerAds.deactivate': 'Désactiver',
   'settings.nav.partnerAdsStaff': 'Gérer les pubs partenaire',
+  'settings.ads.staffHint': 'Compte staff : créez et gérez les campagnes affichées dans les fils (Accueil, Découverte).',
+  'pin.boost.hint': 'Sur vos pins : menu ⋯ → Booster. Badge « Boosté » une fois actif.',
   'pin.boost.title': 'Booster ce pin',
   'pin.boost.desc': 'Augmente sa visibilité dans Découverte et les recommandations.',
   'pin.boost.cta': 'Booster',

@@ -398,7 +398,7 @@ onUnmounted(() => {
           <button
             v-if="viewerOwnsPin(cell.pin)"
             type="button"
-            class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/35 text-white shadow-lg backdrop-blur-md border border-white/15 transition-opacity duration-200 hover:bg-black/55 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+            class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/35 text-white shadow-lg backdrop-blur-md border border-white/15 transition-opacity duration-200 hover:bg-black/55 opacity-100"
             :class="cell.pin.scheduledPublishAt ? 'top-10 left-3' : 'top-3 left-3'"
             :aria-expanded="gridOwnerMenuSlug === cell.pin.slug"
             aria-haspopup="menu"

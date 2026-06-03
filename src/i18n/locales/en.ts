@@ -1042,6 +1042,8 @@ export const en: Record<string, string> = {
   'staff.partnerAds.listTitle': 'Campaigns',
   'staff.partnerAds.deactivate': 'Deactivate',
   'settings.nav.partnerAdsStaff': 'Manage partner ads',
+  'settings.ads.staffHint': 'Staff account: create and manage campaigns shown in feeds (Home, Discover).',
+  'pin.boost.hint': 'On your pins: ⋯ menu → Boost. « Boosted » badge when active.',
   'pin.boost.title': 'Boost this pin',
   'pin.boost.desc': 'Increases visibility in Discover and recommendations.',
   'pin.boost.cta': 'Boost',

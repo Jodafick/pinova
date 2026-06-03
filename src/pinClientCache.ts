@@ -2,7 +2,8 @@
  * Cache pour flux (1re page) et détails pin — mémoire + localStorage (lecture hors ligne / après refresh).
  * Vidé au logout avec les autres caches client.
  */
-import type { Pin } from './types'
+import type { FeedItem, Pin } from './types'
+import { isFeedPin, isPartnerAd } from './types'
 import { clearEntityClientCaches } from './entityClientCache'
 
 /** Aligné sur la rétention Vue Query / persister : revisite sans refetch réseau dans la session. */
@@ -20,7 +21,7 @@ const MAX_FEED_P1_DISK_KEYS = 18
 const pinDetailBySlug = new Map<string, { t: number; pin: Pin }>()
 const feedFirstPage = new Map<
   string,
-  { t: number; pins: Pin[]; hasNextPage: boolean }
+  { t: number; items: FeedItem[]; hasNextPage: boolean }
 >()
 
 /** Première page « pins créés » par profil (clé username|lang) — évite un refetch à chaque entrée sur la page profil. */
@@ -81,7 +82,7 @@ function removePinDetailDiskSlug(slug: string): void {
   writeJsonBlob(PIN_DETAIL_DISK_KEY, store)
 }
 
-type FeedP1DiskBlob = { entries: Record<string, { t: number; pins: Pin[]; hasNextPage: boolean }> }
+type FeedP1DiskBlob = { entries: Record<string, { t: number; items: FeedItem[]; hasNextPage: boolean }> }
 
 function readFeedP1Disk(): FeedP1DiskBlob {
   const parsed = readJsonBlob<FeedP1DiskBlob>(FEED_P1_DISK_KEY)
@@ -99,20 +100,40 @@ function pruneFeedP1Disk(store: FeedP1DiskBlob): void {
   }
 }
 
+function cloneFeedItem(item: FeedItem): FeedItem {
+  return isPartnerAd(item) ? { ...item } : { ...item }
+}
+
 function persistFeedP1Disk(
   cacheKey: string,
   t: number,
-  pins: Pin[],
+  items: FeedItem[],
   hasNextPage: boolean,
 ): void {
   const store = readFeedP1Disk()
   store.entries[cacheKey] = {
     t,
-    pins: pins.map((p) => ({ ...p })),
+    items: items.map(cloneFeedItem),
     hasNextPage,
   }
   pruneFeedP1Disk(store)
   writeJsonBlob(FEED_P1_DISK_KEY, store)
+}
+
+/** Ancien format disque (pins uniquement, sans pubs). */
+function feedItemsFromDiskEntry(entry: {
+  items?: FeedItem[]
+  pins?: Pin[]
+}): FeedItem[] {
+  if (Array.isArray(entry.items) && entry.items.length) {
+    return entry.items.map((x) =>
+      isPartnerAd(x as FeedItem) || isFeedPin(x as FeedItem) ? cloneFeedItem(x as FeedItem) : (x as FeedItem),
+    )
+  }
+  if (Array.isArray(entry.pins)) {
+    return entry.pins.map((p) => ({ ...p }))
+  }
+  return []
 }
 
 function profileCreatedDiskLsKey(cacheKey: string): string {
@@ -207,33 +228,29 @@ export function feedFirstPageCacheKey(
   return `${endpoint}|${lang}|${stableFeedCacheExtraKey(extraParams)}`
 }
 
-export function getCachedFeedFirstPage(key: string): { pins: Pin[]; hasNextPage: boolean } | null {
+export function getCachedFeedFirstPage(key: string): { items: FeedItem[]; hasNextPage: boolean } | null {
   const hit = feedFirstPage.get(key)
   if (hit && Date.now() - hit.t <= FEED_FIRST_PAGE_TTL_MS) {
-    return { pins: hit.pins.map((p) => ({ ...p })), hasNextPage: hit.hasNextPage }
+    return { items: hit.items.map(cloneFeedItem), hasNextPage: hit.hasNextPage }
   }
   if (hit) feedFirstPage.delete(key)
 
-  const fd = readFeedP1Disk().entries[key]
+  const fd = readFeedP1Disk().entries[key] as
+    | { t: number; items?: FeedItem[]; pins?: Pin[]; hasNextPage: boolean }
+    | undefined
   if (fd && Date.now() - fd.t <= FEED_FIRST_PAGE_TTL_MS) {
-    feedFirstPage.set(key, {
-      t: fd.t,
-      pins: fd.pins.map((p) => ({ ...p })),
-      hasNextPage: fd.hasNextPage,
-    })
-    return { pins: fd.pins.map((p) => ({ ...p })), hasNextPage: fd.hasNextPage }
+    const items = feedItemsFromDiskEntry(fd)
+    feedFirstPage.set(key, { t: fd.t, items, hasNextPage: fd.hasNextPage })
+    return { items: items.map(cloneFeedItem), hasNextPage: fd.hasNextPage }
   }
   return null
 }
 
-export function setCachedFeedFirstPage(key: string, pins: Pin[], hasNextPage: boolean): void {
+export function setCachedFeedFirstPage(key: string, items: FeedItem[], hasNextPage: boolean): void {
   const t = Date.now()
-  feedFirstPage.set(key, {
-    t,
-    pins: pins.map((p) => ({ ...p })),
-    hasNextPage,
-  })
-  persistFeedP1Disk(key, t, pins, hasNextPage)
+  const cloned = items.map(cloneFeedItem)
+  feedFirstPage.set(key, { t, items: cloned, hasNextPage })
+  persistFeedP1Disk(key, t, cloned, hasNextPage)
 }
 
 export function clearFeedFirstPageClientCache(): void {

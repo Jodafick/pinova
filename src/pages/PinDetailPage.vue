@@ -23,6 +23,7 @@ import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
 import StoryLikersModal from '../components/StoryLikersModal.vue'
 import ReportContentModal from '../components/ReportContentModal.vue'
 import TipDialog from '../components/TipDialog.vue'
+import BoostPinDialog from '../components/BoostPinDialog.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { useDataSaver } from '../composables/useDataSaver'
 import { shareUrlWithFallback } from '../utils/shareFallback'
@@ -117,6 +118,7 @@ const savingPin = ref(false)
 const likingPin = ref(false)
 const followingAuthor = ref(false)
 const tipDialogOpen = ref(false)
+const boostDialogOpen = ref(false)
 const pinHeartBurst = ref(false)
 const pinHeartBurstKey = ref(0)
 let pinHeartBurstHideTimer: ReturnType<typeof setTimeout> | null = null
@@ -1398,6 +1400,15 @@ async function deletePinFromMenu() {
         <button
           type="button"
           role="menuitem"
+          class="app-menu-item w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 flex items-center gap-2 transition-colors"
+          @click="boostDialogOpen = true; pinOwnerMenuOpen = false"
+        >
+          <span class="material-symbols-outlined text-lg text-amber-600" aria-hidden="true">rocket_launch</span>
+          {{ t('pin.boost.cta') }}
+        </button>
+        <button
+          type="button"
+          role="menuitem"
           class="app-menu-item w-full px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-300 flex items-center gap-2 transition-colors"
           @click="deletePinFromMenu"
         >
@@ -1406,5 +1417,12 @@ async function deletePinFromMenu() {
         </button>
       </div>
     </Teleport>
+
+    <BoostPinDialog
+      v-if="pin"
+      :open="boostDialogOpen"
+      :pin-slug="pin.slug"
+      @close="boostDialogOpen = false"
+    />
   </div>
 </template>

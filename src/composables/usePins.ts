@@ -214,7 +214,7 @@ export function usePins() {
     ) {
       const cached = getCachedFeedFirstPage(feedKey)
       if (cached) {
-        pins.value = cached.pins.slice()
+        pins.value = cached.items.slice()
         currentPage.value = 2
         hasNextPage.value = cached.hasNextPage
         loading.value = false
@@ -254,7 +254,7 @@ export function usePins() {
         currentPage.value += 1
         hasNextPage.value = !!next
         if (pageAtStart === 1) {
-          setCachedFeedFirstPage(feedKey, feedPinsOnly(pins.value), !!next)
+          setCachedFeedFirstPage(feedKey, pins.value.slice(), !!next)
         }
       } else {
         hasNextPage.value =

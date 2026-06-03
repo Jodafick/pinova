@@ -1932,6 +1932,9 @@ watch(
           <p class="settings-subsection-label mb-2">{{ t('settings.hub.subsectionAds') }}</p>
         </div>
         <div class="p-4 sm:p-6 space-y-4">
+          <p class="text-xs text-neutral-500 dark:text-neutral-400 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 px-3 py-2">
+            {{ t('pin.boost.hint') }}
+          </p>
           <p class="text-xs text-neutral-500 dark:text-neutral-400">
             {{
               currentPlan === 'pro'
@@ -1963,6 +1966,9 @@ watch(
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
+          <p v-if="currentUser?.isStaff" class="text-xs text-neutral-500 dark:text-neutral-400 mt-3">
+            {{ t('settings.ads.staffHint') }}
+          </p>
           <router-link
             v-if="currentUser?.isStaff"
             to="/staff/partner-ads"
