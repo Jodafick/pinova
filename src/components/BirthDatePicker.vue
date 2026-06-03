@@ -189,16 +189,16 @@ watch([day, month, year], () => {
   padding: 0.65rem 2rem 0.65rem 0.75rem;
   border-radius: 0.85rem;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.82);
   font-size: 0.9rem;
   font-weight: 600;
   color: #18181b;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.65rem center;
+  -webkit-appearance: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 0.65rem center,
+    #ffffff;
   box-shadow: 0 2px 10px -8px rgba(0, 0, 0, 0.2);
-  color-scheme: light;
 }
 
 .birth-date-picker--onboarding {
@@ -206,7 +206,7 @@ watch([day, month, year], () => {
   padding: 0.75rem;
   border-radius: 1rem;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
   box-shadow: 0 12px 28px -16px rgba(225, 29, 72, 0.22);
   backdrop-filter: blur(12px) saturate(1.2);
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
@@ -216,8 +216,6 @@ watch([day, month, year], () => {
   min-height: 2.75rem;
   font-size: 0.875rem;
   border-radius: 0.9rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.7);
 }
 
 .birth-date-picker--dark .birth-date-picker__label {
@@ -227,20 +225,15 @@ watch([day, month, year], () => {
 .birth-date-picker--dark .birth-date-picker__select {
   border-color: rgba(255, 255, 255, 0.1);
   color: #fafafa;
-  color-scheme: dark;
-  background-color: rgba(23, 23, 23, 0.65);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 0.65rem center,
+    #262626;
 }
 
 .birth-date-picker--dark.birth-date-picker--onboarding {
   border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(23, 23, 23, 0.55);
+  background: rgba(38, 38, 38, 0.72);
   box-shadow: 0 16px 34px -20px rgba(0, 0, 0, 0.58);
-}
-
-.birth-date-picker--dark.birth-date-picker--onboarding .birth-date-picker__select {
-  border-color: rgba(255, 255, 255, 0.1);
-  background-color: rgba(23, 23, 23, 0.65);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 </style>

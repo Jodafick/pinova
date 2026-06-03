@@ -1057,17 +1057,16 @@ function onPrimaryAction() {
   width: 100%;
   border-radius: 0.9rem;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.7);
+  background: #ffffff;
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
   color: #18181b;
-  backdrop-filter: blur(10px);
 }
 
 .onboarding-root--dark .onboarding-select,
 :global(html.dark) .onboarding-select {
   border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(23, 23, 23, 0.65);
+  background: #262626;
   color: #fafafa;
 }
 

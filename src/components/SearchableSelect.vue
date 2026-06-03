@@ -47,7 +47,7 @@ const filtered = computed(() => {
 
 const triggerClass = computed(() =>
   props.variant === 'glass'
-    ? 'mt-[0.45rem] rounded-[0.9rem] border border-black/10 dark:border-white/10 bg-white/70 dark:bg-neutral-900/70 text-neutral-900 dark:text-neutral-50 backdrop-blur-[10px]'
+    ? 'mt-[0.45rem] rounded-[0.9rem] border border-black/10 dark:border-white/10 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50'
     : 'rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-pink-700 dark:focus:ring-pink-600 focus:border-transparent',
 )
 
