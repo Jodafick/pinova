@@ -6,20 +6,14 @@ import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { usePromoteHub } from '../composables/usePromoteHub'
-import PinPickerField from '../components/PinPickerField.vue'
-import CampaignTargetingPanel from '../components/CampaignTargetingPanel.vue'
-import SponsoredContentCard from '../components/SponsoredContentCard.vue'
-import {
-  appendCampaignToFormData,
-  emptyTargeting,
-  type CampaignTargeting,
-} from '../composables/useCampaignTargeting'
-import type { PinPromo } from '../types'
+import BoostWizardPanel from '../components/BoostWizardPanel.vue'
+import CampaignComposer from '../components/CampaignComposer.vue'
+import { appendCampaignToFormData, emptyTargeting, type CampaignTargeting } from '../composables/useCampaignTargeting'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
-const { isAuthenticated, currentUser } = useAuth()
+const { isAuthenticated } = useAuth()
 const { showAlert } = useAppModal()
 const {
   packs,
@@ -27,6 +21,7 @@ const {
   campaigns,
   myPins,
   selectedSlug,
+  selectedPin,
   pinsLoading,
   pinsLoadingMore,
   pinsHasMore,
@@ -45,40 +40,17 @@ const ctaLabel = ref('')
 const mediaFile = ref<File | null>(null)
 const mediaType = ref<'image' | 'video'>('image')
 const mediaPreviewUrl = ref('')
+const mediaFileName = ref('')
 const targeting = ref<CampaignTargeting>(emptyTargeting())
 const packageSlug = ref('')
 
 const pinFromQuery = computed(() => String(route.query.pin || '').trim())
 
-const campaignPreview = computed((): PinPromo | null => {
-  if (!headline.value.trim()) return null
-  return {
-    feedType: 'pin_promo',
-    id: 'preview',
-    campaignId: 0,
-    title: headline.value.trim(),
-    body: body.value.trim(),
-    sponsorName: currentUser.value?.username ? `@${currentUser.value.username}` : '',
-    username: currentUser.value?.username ?? '',
-    imageUrl: mediaPreviewUrl.value,
-    mediaUrl: mediaPreviewUrl.value,
-    mediaType: mediaType.value,
-    ctaLabel: ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'),
-    ctaUrl: ctaUrl.value.trim(),
-  }
-})
-
-function onMediaChange(ev: Event) {
-  const input = ev.target as HTMLInputElement
-  const file = input.files?.[0] ?? null
-  mediaFile.value = file
-  if (!file) {
-    mediaPreviewUrl.value = ''
-    return
-  }
-  const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name)
-  mediaType.value = isVideo ? 'video' : 'image'
-  mediaPreviewUrl.value = URL.createObjectURL(file)
+function onCampaignMedia(payload: { file: File | null; previewUrl: string; mediaType: 'image' | 'video'; fileName: string }) {
+  mediaFile.value = payload.file
+  mediaPreviewUrl.value = payload.previewUrl
+  mediaType.value = payload.mediaType
+  mediaFileName.value = payload.fileName
 }
 
 onMounted(async () => {
@@ -92,7 +64,7 @@ onMounted(async () => {
   if (tab.value === 'boost' || pinFromQuery.value) {
     await loadMyPins(pinFromQuery.value)
   }
-  if (packs.value[0]) packageSlug.value = packs.value[0].slug
+  if (packs.value[0]) packageSlug.value = packs.value[Math.min(1, packs.value.length - 1)]?.slug ?? packs.value[0].slug
 })
 
 async function startBoost(packSlug: string) {
@@ -188,74 +160,49 @@ async function togglePause(id: number, status: string) {
         </button>
       </div>
 
-      <section v-if="tab === 'boost'" class="space-y-4">
-        <section class="app-card rounded-2xl p-4 shadow-lg">
-          <p class="text-xs font-semibold text-neutral-500 mb-3">{{ t('promote.sheet.pickPin') }}</p>
-          <PinPickerField
-            :pins="myPins"
-            :selected-slug="selectedSlug"
-            :loading="pinsLoading"
-            :loading-more="pinsLoadingMore"
-            :has-more="pinsHasMore"
-            @select="selectedSlug = $event"
-            @load-more="loadMyPins(undefined, false)"
-          />
-        </section>
-
-        <button
-          v-for="(p, idx) in packs"
-          :key="p.slug"
-          type="button"
-          class="w-full app-card flex items-center justify-between px-5 py-4 text-left transition hover:shadow-md disabled:opacity-50"
-          :class="idx === 1 ? 'ring-2 ring-pink-400/50' : ''"
-          :disabled="busy || !selectedSlug"
-          @click="startBoost(p.slug)"
-        >
-          <div>
-            <p class="font-bold">{{ p.label }}</p>
-            <p class="text-xs text-neutral-500">{{ formatDuration(p.duration_hours, t) }}</p>
-          </div>
-          <p class="text-lg font-black text-pink-700">{{ formatMoney(p.amount, p.currency_iso) }}</p>
-        </button>
-        <div v-if="history.length" class="app-card p-4 space-y-2">
-          <p class="text-sm font-semibold">{{ t('promote.boost.historyTitle') }}</p>
-          <div v-for="row in history.slice(0, 5)" :key="row.id" class="flex justify-between text-sm border-t app-divider-subtle pt-2">
-            <span class="truncate">{{ row.pin_title || row.pin_slug }}</span>
-            <span class="text-xs text-neutral-500 shrink-0 ml-2">{{ row.status }}</span>
-          </div>
-        </div>
+      <section v-if="tab === 'boost'" class="app-card rounded-2xl p-4 sm:p-6 shadow-lg">
+        <BoostWizardPanel
+          :packs="packs"
+          :my-pins="myPins"
+          :selected-slug="selectedSlug"
+          :selected-pin="selectedPin"
+          :pins-loading="pinsLoading"
+          :pins-loading-more="pinsLoadingMore"
+          :pins-has-more="pinsHasMore"
+          :history="history"
+          :busy="busy"
+          :format-duration="formatDuration"
+          :format-money="formatMoney"
+          @update:selected-slug="selectedSlug = $event"
+          @load-more-pins="loadMyPins(undefined, false)"
+          @confirm-boost="startBoost"
+          @boost-again="selectedSlug = $event"
+        />
       </section>
 
-      <section v-else-if="tab === 'campaigns'" class="grid lg:grid-cols-2 gap-6">
-        <div class="app-card p-5 space-y-3">
-          <h2 class="font-bold">{{ t('promote.campaigns.formTitle') }}</h2>
-          <p class="text-xs text-neutral-500">{{ t('promote.sheet.campaignHint') }}</p>
-          <input v-model="headline" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.headlineRequired')" />
-          <textarea v-model="body" rows="3" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.body')" />
-          <input v-model="ctaUrl" type="url" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.ctaUrl')" />
-          <input v-model="ctaLabel" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.ctaLabel')" />
-          <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime" class="w-full text-sm" @change="onMediaChange" />
-          <p class="text-[11px] text-neutral-500">{{ t('promote.campaigns.mediaHint') }}</p>
-          <CampaignTargetingPanel v-model="targeting" />
-          <select v-model="packageSlug" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm">
-            <option v-for="p in packs" :key="p.slug" :value="p.slug">
-              {{ p.label }} — {{ formatMoney(p.amount, p.currency_iso) }}
-            </option>
-          </select>
-          <button
-            type="button"
-            class="w-full rounded-xl bg-pink-700 text-white font-bold py-3 disabled:opacity-50"
-            :disabled="busy"
-            @click="startCampaign"
-          >
-            {{ t('promote.campaigns.publish') }}
-          </button>
-        </div>
-        <div class="space-y-2">
-          <p class="text-sm font-semibold">{{ t('promote.campaigns.preview') }}</p>
-          <SponsoredContentCard v-if="campaignPreview" :item="campaignPreview" variant="feed" />
-          <p v-else class="text-sm text-neutral-500">{{ t('promote.campaigns.previewEmpty') }}</p>
-        </div>
+      <section v-else-if="tab === 'campaigns'" class="app-card rounded-2xl p-4 sm:p-6 shadow-lg max-w-xl mx-auto lg:max-w-2xl">
+        <CampaignComposer
+          :packs="packs"
+          :headline="headline"
+          :body="body"
+          :cta-url="ctaUrl"
+          :cta-label="ctaLabel"
+          :package-slug="packageSlug"
+          :targeting="targeting"
+          :media-preview-url="mediaPreviewUrl"
+          :media-type="mediaType"
+          :media-file-name="mediaFileName"
+          :busy="busy"
+          :format-money="formatMoney"
+          @update:headline="headline = $event"
+          @update:body="body = $event"
+          @update:cta-url="ctaUrl = $event"
+          @update:cta-label="ctaLabel = $event"
+          @update:package-slug="packageSlug = $event"
+          @update:targeting="targeting = $event"
+          @media="onCampaignMedia"
+          @submit="startCampaign"
+        />
       </section>
 
       <section v-else class="grid sm:grid-cols-2 gap-3">

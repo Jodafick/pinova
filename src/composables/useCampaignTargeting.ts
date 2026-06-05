@@ -29,6 +29,21 @@ export type TargetingOptions = {
   hobby_suggestions: string[]
 }
 
+export function countTargetingFilters(t: CampaignTargeting): number {
+  let n = 0
+  if (t.countries.length) n++
+  if (t.languages.length) n++
+  if (t.currencies.length) n++
+  if (t.plans.length) n++
+  if (t.genders.length) n++
+  if (t.cities.length) n++
+  if (t.interests.length) n++
+  if (t.hobbies.length) n++
+  if (t.topics.length) n++
+  if (t.age_min != null || t.age_max != null) n++
+  return n
+}
+
 export function emptyTargeting(): CampaignTargeting {
   return {
     countries: [],

@@ -1,21 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
 import { useI18n } from '../i18n'
-import { useAuth } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
 import { usePromoteHub } from '../composables/usePromoteHub'
-import PinPickerField from './PinPickerField.vue'
-import CampaignTargetingPanel from './CampaignTargetingPanel.vue'
-import OfflineImg from './OfflineImg.vue'
-import SponsoredContentCard from './SponsoredContentCard.vue'
-import {
-  appendCampaignToFormData,
-  emptyTargeting,
-  type CampaignTargeting,
-} from '../composables/useCampaignTargeting'
-import type { PinPromo } from '../types'
+import BoostWizardPanel from './BoostWizardPanel.vue'
+import CampaignComposer from './CampaignComposer.vue'
+import { appendCampaignToFormData, emptyTargeting, type CampaignTargeting } from '../composables/useCampaignTargeting'
 
 const props = withDefaults(
   defineProps<{ open: boolean; pinSlug?: string; initialMode?: 'boost' | 'campaign' }>(),
@@ -25,13 +17,13 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 
 const { t } = useI18n()
 const router = useRouter()
-const { currentUser } = useAuth()
 const { showAlert } = useAppModal()
 const {
   packs,
   myPins,
   selectedSlug,
   selectedPin,
+  history,
   pinsLoading,
   pinsLoadingMore,
   pinsHasMore,
@@ -46,60 +38,31 @@ const headline = ref('')
 const body = ref('')
 const ctaUrl = ref('')
 const ctaLabel = ref('')
-const topicSlug = ref('')
 const mediaFile = ref<File | null>(null)
 const mediaType = ref<'image' | 'video'>('image')
 const mediaPreviewUrl = ref('')
+const mediaFileName = ref('')
 const targeting = ref<CampaignTargeting>(emptyTargeting())
 const packageSlug = ref('')
 const busy = ref(false)
-
-const benefits = computed(() => [
-  t('promote.boost.benefit1'),
-  t('promote.boost.benefit2'),
-])
-
-const campaignPreview = computed((): PinPromo | null => {
-  if (!headline.value.trim()) return null
-  return {
-    feedType: 'pin_promo',
-    id: 'preview',
-    campaignId: 0,
-    title: headline.value.trim(),
-    body: body.value.trim(),
-    sponsorName: currentUser.value?.username ? `@${currentUser.value.username}` : '',
-    username: currentUser.value?.username ?? '',
-    imageUrl: mediaPreviewUrl.value,
-    mediaUrl: mediaPreviewUrl.value,
-    mediaType: mediaType.value,
-    ctaLabel: ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'),
-    ctaUrl: ctaUrl.value.trim(),
-  }
-})
 
 function resetCampaignForm() {
   headline.value = ''
   body.value = ''
   ctaUrl.value = ''
   ctaLabel.value = ''
-  topicSlug.value = ''
   mediaFile.value = null
   mediaType.value = 'image'
   mediaPreviewUrl.value = ''
+  mediaFileName.value = ''
   targeting.value = emptyTargeting()
 }
 
-function onMediaChange(ev: Event) {
-  const input = ev.target as HTMLInputElement
-  const file = input.files?.[0] ?? null
-  mediaFile.value = file
-  if (!file) {
-    mediaPreviewUrl.value = ''
-    return
-  }
-  const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name)
-  mediaType.value = isVideo ? 'video' : 'image'
-  mediaPreviewUrl.value = URL.createObjectURL(file)
+function onCampaignMedia(payload: { file: File | null; previewUrl: string; mediaType: 'image' | 'video'; fileName: string }) {
+  mediaFile.value = payload.file
+  mediaPreviewUrl.value = payload.previewUrl
+  mediaType.value = payload.mediaType
+  mediaFileName.value = payload.fileName
 }
 
 watch(
@@ -119,7 +82,7 @@ watch(
   },
 )
 
-async function startBoost(slug: string) {
+async function startBoost(packSlug: string) {
   const pin = selectedSlug.value
   if (!pin) {
     await showAlert(t('promote.boost.pickPinFirst'), { variant: 'warning' })
@@ -127,7 +90,7 @@ async function startBoost(slug: string) {
   }
   busy.value = true
   try {
-    const res = await api.post(`monetization/pins/${encodeURIComponent(pin)}/boost/`, { package: slug })
+    const res = await api.post(`monetization/pins/${encodeURIComponent(pin)}/boost/`, { package: packSlug })
     const data = res.data as { checkout_url?: string; status?: string }
     if (data.checkout_url) {
       window.location.href = data.checkout_url
@@ -160,7 +123,6 @@ async function startCampaign() {
       ctaUrl: ctaUrl.value.trim(),
       ctaLabel: ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'),
       packageSlug: packageSlug.value,
-      topicSlug: topicSlug.value.trim(),
       targeting: targeting.value,
       mediaFile: mediaFile.value,
       mediaType: mediaType.value,
@@ -237,116 +199,48 @@ async function startCampaign() {
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          <template v-if="mode === 'boost'">
-            <div>
-              <p class="text-xs font-semibold text-neutral-500 mb-2">{{ t('promote.sheet.pickPin') }}</p>
-              <PinPickerField
-                :pins="myPins"
-                :selected-slug="selectedSlug"
-                :loading="pinsLoading"
-                :loading-more="pinsLoadingMore"
-                :has-more="pinsHasMore"
-                @select="selectedSlug = $event"
-                @load-more="loadMyPins(undefined, false)"
-              />
-            </div>
-
-            <div v-if="selectedPin" class="flex items-center gap-3 rounded-2xl border app-divider-subtle p-3 bg-neutral-50/80 dark:bg-neutral-900/50">
-              <div class="h-14 w-11 rounded-lg overflow-hidden bg-neutral-200 shrink-0">
-                <OfflineImg
-                  v-if="selectedPin.imageUrl"
-                  :src="selectedPin.imageUrl"
-                  :alt="selectedPin.title"
-                  class="w-full h-full object-cover"
-                />
-              </div>
-              <div class="min-w-0">
-                <p class="text-sm font-semibold truncate">{{ selectedPin.title }}</p>
-                <p class="text-xs text-neutral-500">@{{ selectedPin.username }}</p>
-                <span
-                  v-if="selectedPin.isBoosted"
-                  class="inline-flex mt-1 items-center gap-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5"
-                >
-                  <span class="material-symbols-outlined text-[12px]">rocket_launch</span>
-                  {{ t('feed.pinBoosted') }}
-                </span>
-              </div>
-            </div>
-
-            <ul class="space-y-2">
-              <li v-for="(b, i) in benefits" :key="i" class="flex gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                <span class="material-symbols-outlined text-pink-600 text-base shrink-0">check_circle</span>
-                {{ b }}
-              </li>
-            </ul>
-            <div class="space-y-2">
-              <button
-                v-for="(p, idx) in packs"
-                :key="p.slug"
-                type="button"
-                class="w-full flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left transition disabled:opacity-50"
-                :class="idx === 1 ? 'border-pink-500 bg-pink-50/60 dark:bg-pink-950/30' : 'border-neutral-200 dark:border-neutral-700 hover:border-pink-300'"
-                :disabled="busy || !selectedSlug"
-                @click="startBoost(p.slug)"
-              >
-                <div>
-                  <p class="font-semibold text-sm">{{ p.label }}</p>
-                  <p class="text-xs text-neutral-500">{{ formatDuration(p.duration_hours, t) }}</p>
-                </div>
-                <div class="text-right">
-                  <p class="font-bold text-pink-700 dark:text-pink-300">{{ formatMoney(p.amount, p.currency_iso) }}</p>
-                  <p v-if="idx === 1" class="text-[9px] uppercase text-pink-600 font-bold">{{ t('promote.sheet.popular') }}</p>
-                </div>
-              </button>
-            </div>
-          </template>
-
-          <template v-else>
-            <p class="text-xs text-neutral-500">{{ t('promote.sheet.campaignHint') }}</p>
-            <label class="block text-xs font-medium space-y-1">
-              {{ t('promote.campaigns.headlineRequired') }}
-              <input v-model="headline" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" />
-            </label>
-            <label class="block text-xs font-medium space-y-1">
-              {{ t('promote.campaigns.body') }}
-              <textarea v-model="body" rows="2" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" />
-            </label>
-            <label class="block text-xs font-medium space-y-1">
-              {{ t('promote.campaigns.ctaUrl') }}
-              <input v-model="ctaUrl" type="url" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" placeholder="https://" />
-            </label>
-            <label class="block text-xs font-medium space-y-1">
-              {{ t('promote.campaigns.ctaLabel') }}
-              <input v-model="ctaLabel" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('feed.partnerAd.ctaDefault')" />
-            </label>
-            <label class="block text-xs font-medium space-y-1">
-              {{ t('promote.campaigns.media') }}
-              <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime" class="w-full text-sm" @change="onMediaChange" />
-              <span class="text-[10px] text-neutral-500">{{ t('promote.campaigns.mediaHint') }}</span>
-            </label>
-            <CampaignTargetingPanel v-model="targeting" />
-            <label class="block text-xs font-medium space-y-1">
-              {{ t('promote.campaigns.package') }}
-              <select v-model="packageSlug" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm">
-                <option v-for="p in packs" :key="p.slug" :value="p.slug">
-                  {{ p.label }} — {{ formatMoney(p.amount, p.currency_iso) }}
-                </option>
-              </select>
-            </label>
-            <div v-if="campaignPreview" class="space-y-2">
-              <p class="text-xs font-semibold text-neutral-500">{{ t('promote.campaigns.preview') }}</p>
-              <SponsoredContentCard :item="campaignPreview" variant="feed" />
-            </div>
-            <button
-              type="button"
-              class="w-full rounded-2xl bg-pink-700 hover:bg-pink-800 text-white font-semibold py-3.5 disabled:opacity-50"
-              :disabled="busy"
-              @click="startCampaign"
-            >
-              {{ busy ? t('common.loading') : t('promote.campaigns.publish') }}
-            </button>
-          </template>
+        <div class="flex-1 overflow-y-auto px-5 py-4">
+          <BoostWizardPanel
+            v-if="mode === 'boost'"
+            :packs="packs"
+            :my-pins="myPins"
+            :selected-slug="selectedSlug"
+            :selected-pin="selectedPin"
+            :pins-loading="pinsLoading"
+            :pins-loading-more="pinsLoadingMore"
+            :pins-has-more="pinsHasMore"
+            :history="history"
+            :busy="busy"
+            :format-duration="formatDuration"
+            :format-money="formatMoney"
+            @update:selected-slug="selectedSlug = $event"
+            @load-more-pins="loadMyPins(undefined, false)"
+            @confirm-boost="startBoost"
+            @boost-again="selectedSlug = $event"
+          />
+          <CampaignComposer
+            v-else
+            :packs="packs"
+            :headline="headline"
+            :body="body"
+            :cta-url="ctaUrl"
+            :cta-label="ctaLabel"
+            :package-slug="packageSlug"
+            :targeting="targeting"
+            :media-preview-url="mediaPreviewUrl"
+            :media-type="mediaType"
+            :media-file-name="mediaFileName"
+            :busy="busy"
+            :format-money="formatMoney"
+            @update:headline="headline = $event"
+            @update:body="body = $event"
+            @update:cta-url="ctaUrl = $event"
+            @update:cta-label="ctaLabel = $event"
+            @update:package-slug="packageSlug = $event"
+            @update:targeting="targeting = $event"
+            @media="onCampaignMedia"
+            @submit="startCampaign"
+          />
         </div>
 
         <div class="shrink-0 px-5 py-3 border-t border-neutral-100 dark:border-neutral-800 flex justify-between items-center">
