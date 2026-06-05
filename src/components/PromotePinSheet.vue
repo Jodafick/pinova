@@ -3,9 +3,13 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
 import { useI18n } from '../i18n'
+import { useAuth } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
 import { usePromoteHub } from '../composables/usePromoteHub'
+import PinPickerField from './PinPickerField.vue'
 import OfflineImg from './OfflineImg.vue'
+import SponsoredContentCard from './SponsoredContentCard.vue'
+import type { PinPromo } from '../types'
 
 const props = withDefaults(
   defineProps<{ open: boolean; pinSlug?: string; initialMode?: 'boost' | 'campaign' }>(),
@@ -15,6 +19,7 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 
 const { t } = useI18n()
 const router = useRouter()
+const { currentUser } = useAuth()
 const { showAlert } = useAppModal()
 const {
   packs,
@@ -22,6 +27,8 @@ const {
   selectedSlug,
   selectedPin,
   pinsLoading,
+  pinsLoadingMore,
+  pinsHasMore,
   loadCatalog,
   loadMyPins,
   formatDuration,
@@ -31,6 +38,11 @@ const {
 const mode = ref<'boost' | 'campaign'>('boost')
 const headline = ref('')
 const body = ref('')
+const ctaUrl = ref('')
+const ctaLabel = ref('')
+const topicSlug = ref('')
+const imageFile = ref<File | null>(null)
+const imagePreviewUrl = ref('')
 const packageSlug = ref('')
 const busy = ref(false)
 
@@ -39,16 +51,53 @@ const benefits = computed(() => [
   t('promote.boost.benefit2'),
 ])
 
+const campaignPreview = computed((): PinPromo | null => {
+  if (!headline.value.trim()) return null
+  return {
+    feedType: 'pin_promo',
+    id: 'preview',
+    campaignId: 0,
+    title: headline.value.trim(),
+    body: body.value.trim(),
+    sponsorName: currentUser.value?.username ? `@${currentUser.value.username}` : '',
+    username: currentUser.value?.username ?? '',
+    imageUrl: imagePreviewUrl.value,
+    ctaLabel: ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'),
+    ctaUrl: ctaUrl.value.trim(),
+  }
+})
+
+function resetCampaignForm() {
+  headline.value = ''
+  body.value = ''
+  ctaUrl.value = ''
+  ctaLabel.value = ''
+  topicSlug.value = ''
+  imageFile.value = null
+  imagePreviewUrl.value = ''
+}
+
+function onImageChange(ev: Event) {
+  const input = ev.target as HTMLInputElement
+  const file = input.files?.[0] ?? null
+  imageFile.value = file
+  imagePreviewUrl.value = file ? URL.createObjectURL(file) : ''
+}
+
 watch(
   () => props.open,
   async (v) => {
     if (!v) return
     mode.value = props.initialMode
-    headline.value = ''
-    body.value = ''
-    await Promise.all([loadCatalog(), loadMyPins(props.pinSlug)])
-    if (props.pinSlug) selectedSlug.value = props.pinSlug
-    if (packs.value[0]) packageSlug.value = packs.value[Math.min(1, packs.value.length - 1)]?.slug ?? packs.value[0].slug
+    resetCampaignForm()
+    await loadCatalog()
+    if (props.initialMode === 'boost' || props.pinSlug) {
+      await loadMyPins(props.pinSlug)
+      if (props.pinSlug) selectedSlug.value = props.pinSlug
+    }
+    if (packs.value[0]) {
+      packageSlug.value = packs.value[Math.min(1, packs.value.length - 1)]?.slug ?? packs.value[0].slug
+    }
   },
 )
 
@@ -80,18 +129,21 @@ async function startBoost(slug: string) {
 }
 
 async function startCampaign() {
-  if (!selectedSlug.value || !packageSlug.value) {
+  if (!headline.value.trim() || !ctaUrl.value.trim() || !packageSlug.value) {
     await showAlert(t('promote.campaigns.validation'), { variant: 'warning' })
     return
   }
   busy.value = true
   try {
-    const res = await api.post('monetization/pin-promo-campaigns/', {
-      pin_slug: selectedSlug.value,
-      package: packageSlug.value,
-      headline: headline.value.trim(),
-      body: body.value.trim(),
-    })
+    const fd = new FormData()
+    fd.append('headline', headline.value.trim())
+    fd.append('body', body.value.trim())
+    fd.append('cta_url', ctaUrl.value.trim())
+    fd.append('cta_label', ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'))
+    fd.append('topic_slug', topicSlug.value.trim())
+    fd.append('package', packageSlug.value)
+    if (imageFile.value) fd.append('image', imageFile.value)
+    const res = await api.post('monetization/pin-promo-campaigns/', fd)
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
       window.location.href = data.checkout_url
@@ -129,7 +181,9 @@ async function startCampaign() {
               <p class="text-[10px] font-bold uppercase tracking-widest text-pink-600 dark:text-pink-400">
                 {{ t('promote.sheet.kicker') }}
               </p>
-              <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-50">{{ t('promote.sheet.title') }}</h2>
+              <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-50">
+                {{ mode === 'boost' ? t('promote.sheet.titleBoost') : t('promote.sheet.titleCampaign') }}
+              </h2>
             </div>
             <button
               type="button"
@@ -162,50 +216,42 @@ async function startCampaign() {
         </div>
 
         <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          <div>
-            <p class="text-xs font-semibold text-neutral-500 mb-2">{{ t('promote.sheet.pickPin') }}</p>
-            <div v-if="pinsLoading" class="text-sm text-neutral-400 py-4 text-center">{{ t('common.loading') }}</div>
-            <div v-else-if="!myPins.length" class="text-sm text-neutral-500 py-2">{{ t('promote.sheet.noPins') }}</div>
-            <div v-else class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
-              <button
-                v-for="p in myPins"
-                :key="p.slug"
-                type="button"
-                class="snap-start shrink-0 w-[4.5rem] rounded-xl overflow-hidden border-2 transition"
-                :class="selectedSlug === p.slug ? 'border-pink-600 ring-2 ring-pink-200' : 'border-transparent opacity-80 hover:opacity-100'"
-                @click="selectedSlug = p.slug"
-              >
-                <div class="aspect-[3/4] bg-neutral-100 dark:bg-neutral-800">
-                  <OfflineImg v-if="p.imageUrl" :src="p.imageUrl" :alt="p.title" class="w-full h-full object-cover" />
-                </div>
-                <p class="text-[9px] font-medium truncate px-1 py-1 text-neutral-700 dark:text-neutral-300">{{ p.title || p.slug }}</p>
-              </button>
-            </div>
-          </div>
-
-          <div v-if="selectedPin" class="flex items-center gap-3 rounded-2xl border app-divider-subtle p-3 bg-neutral-50/80 dark:bg-neutral-900/50">
-            <div class="h-14 w-11 rounded-lg overflow-hidden bg-neutral-200 shrink-0">
-              <OfflineImg
-                v-if="selectedPin.imageUrl"
-                :src="selectedPin.imageUrl"
-                :alt="selectedPin.title"
-                class="w-full h-full object-cover"
+          <template v-if="mode === 'boost'">
+            <div>
+              <p class="text-xs font-semibold text-neutral-500 mb-2">{{ t('promote.sheet.pickPin') }}</p>
+              <PinPickerField
+                :pins="myPins"
+                :selected-slug="selectedSlug"
+                :loading="pinsLoading"
+                :loading-more="pinsLoadingMore"
+                :has-more="pinsHasMore"
+                @select="selectedSlug = $event"
+                @load-more="loadMyPins(undefined, false)"
               />
             </div>
-            <div class="min-w-0">
-              <p class="text-sm font-semibold truncate">{{ selectedPin.title }}</p>
-              <p class="text-xs text-neutral-500">@{{ selectedPin.username }}</p>
-              <span
-                v-if="selectedPin.isBoosted"
-                class="inline-flex mt-1 items-center gap-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5"
-              >
-                <span class="material-symbols-outlined text-[12px]">rocket_launch</span>
-                {{ t('feed.pinBoosted') }}
-              </span>
-            </div>
-          </div>
 
-          <template v-if="mode === 'boost'">
+            <div v-if="selectedPin" class="flex items-center gap-3 rounded-2xl border app-divider-subtle p-3 bg-neutral-50/80 dark:bg-neutral-900/50">
+              <div class="h-14 w-11 rounded-lg overflow-hidden bg-neutral-200 shrink-0">
+                <OfflineImg
+                  v-if="selectedPin.imageUrl"
+                  :src="selectedPin.imageUrl"
+                  :alt="selectedPin.title"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold truncate">{{ selectedPin.title }}</p>
+                <p class="text-xs text-neutral-500">@{{ selectedPin.username }}</p>
+                <span
+                  v-if="selectedPin.isBoosted"
+                  class="inline-flex mt-1 items-center gap-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5"
+                >
+                  <span class="material-symbols-outlined text-[12px]">rocket_launch</span>
+                  {{ t('feed.pinBoosted') }}
+                </span>
+              </div>
+            </div>
+
             <ul class="space-y-2">
               <li v-for="(b, i) in benefits" :key="i" class="flex gap-2 text-xs text-neutral-600 dark:text-neutral-400">
                 <span class="material-symbols-outlined text-pink-600 text-base shrink-0">check_circle</span>
@@ -237,12 +283,28 @@ async function startCampaign() {
           <template v-else>
             <p class="text-xs text-neutral-500">{{ t('promote.sheet.campaignHint') }}</p>
             <label class="block text-xs font-medium space-y-1">
-              {{ t('promote.campaigns.headline') }}
-              <input v-model="headline" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="selectedPin?.title" />
+              {{ t('promote.campaigns.headlineRequired') }}
+              <input v-model="headline" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" />
             </label>
             <label class="block text-xs font-medium space-y-1">
               {{ t('promote.campaigns.body') }}
               <textarea v-model="body" rows="2" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" />
+            </label>
+            <label class="block text-xs font-medium space-y-1">
+              {{ t('promote.campaigns.ctaUrl') }}
+              <input v-model="ctaUrl" type="url" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" placeholder="https://" />
+            </label>
+            <label class="block text-xs font-medium space-y-1">
+              {{ t('promote.campaigns.ctaLabel') }}
+              <input v-model="ctaLabel" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('feed.partnerAd.ctaDefault')" />
+            </label>
+            <label class="block text-xs font-medium space-y-1">
+              {{ t('promote.campaigns.image') }}
+              <input type="file" accept="image/*" class="w-full text-sm" @change="onImageChange" />
+            </label>
+            <label class="block text-xs font-medium space-y-1">
+              {{ t('promote.campaigns.topic') }}
+              <input v-model="topicSlug" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" />
             </label>
             <label class="block text-xs font-medium space-y-1">
               {{ t('promote.campaigns.package') }}
@@ -252,10 +314,14 @@ async function startCampaign() {
                 </option>
               </select>
             </label>
+            <div v-if="campaignPreview" class="space-y-2">
+              <p class="text-xs font-semibold text-neutral-500">{{ t('promote.campaigns.preview') }}</p>
+              <SponsoredContentCard :item="campaignPreview" variant="feed" />
+            </div>
             <button
               type="button"
               class="w-full rounded-2xl bg-pink-700 hover:bg-pink-800 text-white font-semibold py-3.5 disabled:opacity-50"
-              :disabled="busy || !selectedSlug"
+              :disabled="busy"
               @click="startCampaign"
             >
               {{ busy ? t('common.loading') : t('promote.campaigns.publish') }}

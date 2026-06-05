@@ -69,6 +69,7 @@ export function mapPinPromoFromApi(raw: Record<string, unknown>): PinPromo {
     username: String(raw.username ?? ''),
     imageUrl: getFullMediaUrl(String(raw.image_url ?? '')),
     ctaLabel: String(raw.cta_label ?? 'Voir le pin'),
+    ctaUrl: String(raw.cta_url ?? ''),
     topic: String(raw.topic ?? ''),
   }
 }

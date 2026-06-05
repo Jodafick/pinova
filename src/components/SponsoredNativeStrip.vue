@@ -28,13 +28,20 @@ async function onTap() {
     window.open(props.item.ctaUrl, '_blank', 'noopener,noreferrer')
     return
   }
-  if (isPinPromo(props.item) && props.item.pinSlug) {
+  if (isPinPromo(props.item)) {
     try {
       await api.post(`monetization/pin-promo-campaigns/${props.item.campaignId}/click/`)
     } catch {
       /* ignore */
     }
-    void router.push({ path: '/', query: { pin: props.item.pinSlug } })
+    const cta = props.item.ctaUrl?.trim()
+    if (cta) {
+      window.open(cta, '_blank', 'noopener,noreferrer')
+      return
+    }
+    if (props.item.pinSlug) {
+      void router.push({ path: '/', query: { pin: props.item.pinSlug } })
+    }
   }
 }
 </script>

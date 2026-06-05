@@ -6,14 +6,14 @@ import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { usePromoteHub } from '../composables/usePromoteHub'
-import OfflineImg from '../components/OfflineImg.vue'
+import PinPickerField from '../components/PinPickerField.vue'
 import SponsoredContentCard from '../components/SponsoredContentCard.vue'
 import type { PinPromo } from '../types'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
-const { isAuthenticated } = useAuth()
+const { isAuthenticated, currentUser } = useAuth()
 const { showAlert } = useAppModal()
 const {
   packs,
@@ -21,8 +21,9 @@ const {
   campaigns,
   myPins,
   selectedSlug,
-  selectedPin,
   pinsLoading,
+  pinsLoadingMore,
+  pinsHasMore,
   loadCatalog,
   loadMyPins,
   formatDuration,
@@ -33,27 +34,37 @@ const tab = ref<'boost' | 'campaigns' | 'stats'>('boost')
 const busy = ref(false)
 const headline = ref('')
 const body = ref('')
+const ctaUrl = ref('')
+const ctaLabel = ref('')
+const topicSlug = ref('')
+const imageFile = ref<File | null>(null)
+const imagePreviewUrl = ref('')
 const packageSlug = ref('')
 
 const pinFromQuery = computed(() => String(route.query.pin || '').trim())
 
-const preview = computed((): PinPromo | null => {
-  const pin = selectedPin.value
-  if (!pin) return null
+const campaignPreview = computed((): PinPromo | null => {
+  if (!headline.value.trim()) return null
   return {
     feedType: 'pin_promo',
     id: 'preview',
     campaignId: 0,
-    pinSlug: pin.slug,
-    pinId: pin.id,
-    title: headline.value.trim() || pin.title,
-    body: body.value.trim() || pin.description?.slice(0, 120) || '',
-    sponsorName: `@${pin.username}`,
-    username: pin.username,
-    imageUrl: pin.imageUrl,
-    ctaLabel: t('feed.pinPromo.ctaDefault'),
+    title: headline.value.trim(),
+    body: body.value.trim(),
+    sponsorName: currentUser.value?.username ? `@${currentUser.value.username}` : '',
+    username: currentUser.value?.username ?? '',
+    imageUrl: imagePreviewUrl.value,
+    ctaLabel: ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'),
+    ctaUrl: ctaUrl.value.trim(),
   }
 })
+
+function onImageChange(ev: Event) {
+  const input = ev.target as HTMLInputElement
+  const file = input.files?.[0] ?? null
+  imageFile.value = file
+  imagePreviewUrl.value = file ? URL.createObjectURL(file) : ''
+}
 
 onMounted(async () => {
   if (!isAuthenticated.value) {
@@ -62,7 +73,10 @@ onMounted(async () => {
   }
   const qTab = String(route.query.tab || '')
   if (qTab === 'campaigns' || qTab === 'stats') tab.value = qTab
-  await Promise.all([loadCatalog(), loadMyPins(pinFromQuery.value)])
+  await loadCatalog()
+  if (tab.value === 'boost' || pinFromQuery.value) {
+    await loadMyPins(pinFromQuery.value)
+  }
   if (packs.value[0]) packageSlug.value = packs.value[0].slug
 })
 
@@ -90,18 +104,21 @@ async function startBoost(packSlug: string) {
 }
 
 async function startCampaign() {
-  if (!selectedSlug.value || !packageSlug.value) {
+  if (!headline.value.trim() || !ctaUrl.value.trim() || !packageSlug.value) {
     await showAlert(t('promote.campaigns.validation'), { variant: 'warning' })
     return
   }
   busy.value = true
   try {
-    const res = await api.post('monetization/pin-promo-campaigns/', {
-      pin_slug: selectedSlug.value,
-      package: packageSlug.value,
-      headline: headline.value.trim(),
-      body: body.value.trim(),
-    })
+    const fd = new FormData()
+    fd.append('headline', headline.value.trim())
+    fd.append('body', body.value.trim())
+    fd.append('cta_url', ctaUrl.value.trim())
+    fd.append('cta_label', ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'))
+    fd.append('topic_slug', topicSlug.value.trim())
+    fd.append('package', packageSlug.value)
+    if (imageFile.value) fd.append('image', imageFile.value)
+    const res = await api.post('monetization/pin-promo-campaigns/', fd)
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
       window.location.href = data.checkout_url
@@ -140,25 +157,6 @@ async function togglePause(id: number, status: string) {
     </div>
 
     <div class="max-w-4xl mx-auto px-4 -mt-6 relative z-[2] space-y-6">
-      <section class="app-card rounded-2xl p-4 shadow-lg">
-        <p class="text-xs font-semibold text-neutral-500 mb-3">{{ t('promote.sheet.pickPin') }}</p>
-        <div v-if="pinsLoading" class="py-6 text-center text-sm text-neutral-400">{{ t('common.loading') }}</div>
-        <div v-else class="flex gap-2 overflow-x-auto pb-1 snap-x">
-          <button
-            v-for="p in myPins"
-            :key="p.slug"
-            type="button"
-            class="snap-start shrink-0 w-20 rounded-xl overflow-hidden border-2 transition"
-            :class="selectedSlug === p.slug ? 'border-pink-600 ring-2 ring-pink-200' : 'border-transparent opacity-75 hover:opacity-100'"
-            @click="selectedSlug = p.slug"
-          >
-            <div class="aspect-[3/4] bg-neutral-100">
-              <OfflineImg v-if="p.imageUrl" :src="p.imageUrl" :alt="p.title" class="w-full h-full object-cover" />
-            </div>
-          </button>
-        </div>
-      </section>
-
       <div class="flex gap-2 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900">
         <button
           v-for="id in (['boost', 'campaigns', 'stats'] as const)"
@@ -172,7 +170,20 @@ async function togglePause(id: number, status: string) {
         </button>
       </div>
 
-      <section v-if="tab === 'boost'" class="space-y-3">
+      <section v-if="tab === 'boost'" class="space-y-4">
+        <section class="app-card rounded-2xl p-4 shadow-lg">
+          <p class="text-xs font-semibold text-neutral-500 mb-3">{{ t('promote.sheet.pickPin') }}</p>
+          <PinPickerField
+            :pins="myPins"
+            :selected-slug="selectedSlug"
+            :loading="pinsLoading"
+            :loading-more="pinsLoadingMore"
+            :has-more="pinsHasMore"
+            @select="selectedSlug = $event"
+            @load-more="loadMyPins(undefined, false)"
+          />
+        </section>
+
         <button
           v-for="(p, idx) in packs"
           :key="p.slug"
@@ -200,8 +211,13 @@ async function togglePause(id: number, status: string) {
       <section v-else-if="tab === 'campaigns'" class="grid lg:grid-cols-2 gap-6">
         <div class="app-card p-5 space-y-3">
           <h2 class="font-bold">{{ t('promote.campaigns.formTitle') }}</h2>
-          <input v-model="headline" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.headline')" />
+          <p class="text-xs text-neutral-500">{{ t('promote.sheet.campaignHint') }}</p>
+          <input v-model="headline" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.headlineRequired')" />
           <textarea v-model="body" rows="3" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.body')" />
+          <input v-model="ctaUrl" type="url" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.ctaUrl')" />
+          <input v-model="ctaLabel" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.ctaLabel')" />
+          <input type="file" accept="image/*" class="w-full text-sm" @change="onImageChange" />
+          <input v-model="topicSlug" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.topic')" />
           <select v-model="packageSlug" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm">
             <option v-for="p in packs" :key="p.slug" :value="p.slug">
               {{ p.label }} — {{ formatMoney(p.amount, p.currency_iso) }}
@@ -210,7 +226,7 @@ async function togglePause(id: number, status: string) {
           <button
             type="button"
             class="w-full rounded-xl bg-pink-700 text-white font-bold py-3 disabled:opacity-50"
-            :disabled="busy || !selectedSlug"
+            :disabled="busy"
             @click="startCampaign"
           >
             {{ t('promote.campaigns.publish') }}
@@ -218,22 +234,22 @@ async function togglePause(id: number, status: string) {
         </div>
         <div class="space-y-2">
           <p class="text-sm font-semibold">{{ t('promote.campaigns.preview') }}</p>
-          <SponsoredContentCard v-if="preview" :item="preview" variant="feed" />
-          <p v-else class="text-sm text-neutral-500">{{ t('promote.sheet.noPins') }}</p>
+          <SponsoredContentCard v-if="campaignPreview" :item="campaignPreview" variant="feed" />
+          <p v-else class="text-sm text-neutral-500">{{ t('promote.campaigns.previewEmpty') }}</p>
         </div>
       </section>
 
       <section v-else class="grid sm:grid-cols-2 gap-3">
         <div v-for="c in campaigns" :key="c.id" class="app-card p-4 space-y-3">
           <div class="flex justify-between gap-2">
-            <div>
-              <p class="font-semibold text-sm">{{ c.headline || c.pin_title }}</p>
-              <p class="text-xs text-neutral-500">{{ c.pin_slug }} · {{ c.status }}</p>
+            <div class="min-w-0">
+              <p class="font-semibold text-sm truncate">{{ c.headline || c.pin_title }}</p>
+              <p class="text-xs text-neutral-500 truncate">{{ c.cta_url || c.pin_slug }} · {{ c.status }}</p>
             </div>
             <button
               v-if="c.status === 'active' || c.status === 'paused'"
               type="button"
-              class="text-xs font-bold text-pink-700"
+              class="text-xs font-bold text-pink-700 shrink-0"
               @click="togglePause(c.id, c.status)"
             >
               {{ c.status === 'active' ? t('promote.campaigns.pause') : t('promote.campaigns.resume') }}

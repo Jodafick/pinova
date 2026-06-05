@@ -73,14 +73,15 @@ export type PinPromo = {
   feedType: 'pin_promo'
   id: string
   campaignId: number
-  pinSlug: string
-  pinId: number
+  pinSlug?: string
+  pinId?: number
   title: string
   body: string
   sponsorName: string
   username: string
   imageUrl: string
   ctaLabel: string
+  ctaUrl?: string
   topic?: string
 }
 
