@@ -21,6 +21,7 @@ import {
 } from '../composables/mediaAntiLeak'
 import OfflineImg from './OfflineImg.vue'
 import OfflineVideo from './OfflineVideo.vue'
+import PromotePinSheet from './PromotePinSheet.vue'
 import { prefetchPinsMediaForOffline } from '../media/offlineCache'
 
 const { isPinSavePending, toggleLike, deletePin } = usePins()
@@ -259,14 +260,15 @@ function goGridOwnerEdit(slug: string) {
   router.push(`/pin/${slug}/edit`)
 }
 
-function openBoostPage(slug: string) {
-  closeGridOwnerMenu()
-  void router.push({ name: 'boost-promote', query: { pin: slug } })
-}
+const promoteSheetOpen = ref(false)
+const promoteSheetSlug = ref('')
+const promoteSheetMode = ref<'boost' | 'campaign'>('boost')
 
-function openPromoCampaigns() {
+function openPromoteSheet(slug: string, mode: 'boost' | 'campaign' = 'boost') {
   closeGridOwnerMenu()
-  void router.push({ name: 'pin-promo-campaigns' })
+  promoteSheetSlug.value = slug
+  promoteSheetMode.value = mode
+  promoteSheetOpen.value = true
 }
 
 async function confirmDeleteGridOwnedPin(slug: string) {
@@ -487,7 +489,7 @@ onUnmounted(() => {
           type="button"
           role="menuitem"
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
-          @click="gridOwnerMenuSlug ? openBoostPage(gridOwnerMenuSlug) : null"
+          @click="gridOwnerMenuSlug ? openPromoteSheet(gridOwnerMenuSlug, 'boost') : null"
         >
           <span class="material-symbols-outlined text-lg text-amber-600" aria-hidden="true">rocket_launch</span>
           {{ t('pin.boost.cta') }}
@@ -496,7 +498,7 @@ onUnmounted(() => {
           type="button"
           role="menuitem"
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
-          @click="openPromoCampaigns()"
+          @click="gridOwnerMenuSlug ? openPromoteSheet(gridOwnerMenuSlug, 'campaign') : null"
         >
           <span class="material-symbols-outlined text-lg text-pink-600" aria-hidden="true">campaign</span>
           {{ t('promote.campaigns.menu') }}
@@ -512,5 +514,12 @@ onUnmounted(() => {
         </button>
       </div>
     </Teleport>
+
+    <PromotePinSheet
+      :open="promoteSheetOpen"
+      :pin-slug="promoteSheetSlug"
+      :initial-mode="promoteSheetMode"
+      @close="promoteSheetOpen = false"
+    />
   </section>
 </template>

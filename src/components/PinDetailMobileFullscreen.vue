@@ -776,10 +776,14 @@ onUnmounted(() => {
                   {{ t('pin.detail.externalLink') }}
                 </a>
               </div>
-              <div v-if="slide.active" class="mt-3 max-w-[min(100%,20rem)] pointer-events-auto">
-                <ContextualSponsoredSlot placement="pin_detail" :topic="slide.pin.topic" variant="detail" />
-              </div>
             </main>
+
+            <div
+              v-if="slide.active && !isPinOwner && chromeVisible"
+              class="absolute inset-x-4 bottom-[6.5rem] z-20 max-w-md pointer-events-auto"
+            >
+              <ContextualSponsoredSlot placement="pin_detail" :topic="slide.pin.topic" variant="detail" tone="dark" />
+            </div>
           </template>
         </div>
       </div>

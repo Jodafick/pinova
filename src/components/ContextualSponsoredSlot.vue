@@ -1,21 +1,26 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import api from '../api'
 import { mapSponsoredFromApi } from '../composables/usePins'
 import type { SponsoredAd } from '../types'
-import SponsoredContentCard from './SponsoredContentCard.vue'
+import SponsoredNativeStrip from './SponsoredNativeStrip.vue'
 
 const props = withDefaults(
   defineProps<{
     placement: 'pin_detail' | 'story'
     topic?: string
     variant?: 'detail' | 'story'
+    tone?: 'light' | 'dark'
   }>(),
-  { topic: '', variant: 'detail' },
+  { topic: '', variant: 'detail', tone: 'light' },
 )
 
 const ad = ref<SponsoredAd | null>(null)
 const dismissed = ref(false)
+
+const stripVariant = computed<'detail' | 'story'>(() =>
+  props.tone === 'dark' || props.variant === 'story' ? 'story' : 'detail',
+)
 
 async function load() {
   dismissed.value = false
@@ -35,22 +40,15 @@ watch(() => [props.placement, props.topic], () => void load())
 </script>
 
 <template>
-  <div v-if="ad && !dismissed" class="contextual-sponsored-slot">
-    <div v-if="variant === 'story'" class="absolute inset-x-3 bottom-24 z-30 pointer-events-auto">
-      <div class="relative">
-        <button
-          type="button"
-          class="absolute -top-2 -right-2 z-10 h-7 w-7 rounded-full bg-black/60 text-white text-xs"
-          aria-label="Fermer"
-          @click="dismissed = true"
-        >
-          ×
-        </button>
-        <SponsoredContentCard :item="ad" variant="story" />
-      </div>
+  <div v-if="ad && !dismissed" class="contextual-sponsored-slot pointer-events-auto">
+    <div
+      v-if="variant === 'story'"
+      class="absolute inset-x-4 bottom-[5.5rem] z-30 max-w-md mx-auto"
+    >
+      <SponsoredNativeStrip :item="ad" :variant="stripVariant" @dismiss="dismissed = true" />
     </div>
-    <div v-else class="px-4 py-3">
-      <SponsoredContentCard :item="ad" variant="detail" />
+    <div v-else>
+      <SponsoredNativeStrip :item="ad" :variant="stripVariant" @dismiss="dismissed = true" />
     </div>
   </div>
 </template>

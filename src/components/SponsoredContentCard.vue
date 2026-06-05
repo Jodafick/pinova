@@ -22,7 +22,13 @@ const badge = computed(() =>
   isPinPromo(props.item) ? t('feed.pinPromo.badge') : t('feed.partnerAd.badge'),
 )
 
-async function onCta() {
+const ctaLabel = computed(() =>
+  isPinPromo(props.item)
+    ? props.item.ctaLabel || t('feed.pinPromo.ctaShort')
+    : props.item.ctaLabel || t('feed.partnerAd.ctaShort'),
+)
+
+async function onTap() {
   if (isPartnerAd(props.item)) {
     try {
       await api.post(`monetization/partner-campaigns/${props.item.campaignId}/click/`)
@@ -45,19 +51,52 @@ async function onCta() {
 
 <template>
   <article
-    class="sponsored-card overflow-hidden transition-shadow"
-    :class="[
-      variant === 'feed'
-        ? 'lux-pin-card rounded-3xl border border-pink-200/50 dark:border-pink-500/35 bg-gradient-to-b from-pink-50/90 to-white dark:from-pink-950/50 dark:to-neutral-900 shadow-md hover:shadow-lg'
-        : variant === 'story'
-          ? 'rounded-2xl border border-white/20 bg-black/55 backdrop-blur-md shadow-2xl'
-          : 'rounded-2xl border border-pink-200/40 dark:border-pink-500/30 bg-white/95 dark:bg-neutral-900/95 shadow-sm',
-    ]"
+    v-if="variant === 'feed'"
+    class="sponsored-card lux-pin-card rounded-3xl overflow-hidden border border-pink-200/40 dark:border-pink-500/25 bg-white dark:bg-neutral-900 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+    role="button"
+    tabindex="0"
+    @click="onTap"
+    @keydown.enter="onTap"
   >
-    <div
-      class="flex items-center justify-between gap-2"
-      :class="variant === 'story' ? 'px-3 pt-2 pb-1' : 'px-3 pt-2 pb-1'"
-    >
+    <div class="flex items-stretch gap-0 min-h-[5.5rem]">
+      <div
+        v-if="item.imageUrl"
+        class="w-[4.5rem] shrink-0 bg-neutral-100 dark:bg-neutral-800"
+      >
+        <OfflineImg :src="item.imageUrl" :alt="item.title" class="w-full h-full object-cover min-h-[5.5rem]" />
+      </div>
+      <div class="flex-1 min-w-0 px-3 py-2.5 flex flex-col justify-center gap-1">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[9px] font-bold uppercase tracking-wide text-pink-600 dark:text-pink-400">{{ badge }}</span>
+          <span v-if="item.sponsorName" class="text-[9px] truncate text-neutral-400 max-w-[45%]">{{ item.sponsorName }}</span>
+        </div>
+        <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-2 leading-snug">
+          {{ item.title }}
+        </h3>
+        <p v-if="item.body" class="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1">
+          {{ item.body }}
+        </p>
+        <span class="inline-flex self-start text-[10px] font-bold text-pink-700 dark:text-pink-300 mt-0.5">
+          {{ ctaLabel }} →
+        </span>
+      </div>
+    </div>
+  </article>
+
+  <article
+    v-else
+    class="sponsored-card overflow-hidden transition-shadow"
+    :class="
+      variant === 'story'
+        ? 'rounded-2xl border border-white/20 bg-black/55 backdrop-blur-md shadow-2xl'
+        : 'rounded-2xl border border-pink-200/40 dark:border-pink-500/30 bg-white/95 dark:bg-neutral-900/95 shadow-sm'
+    "
+    role="button"
+    tabindex="0"
+    @click="onTap"
+    @keydown.enter="onTap"
+  >
+    <div class="flex items-center justify-between gap-2 px-3 pt-2 pb-1">
       <span
         class="text-[10px] font-bold uppercase tracking-wide"
         :class="variant === 'story' ? 'text-pink-300' : 'text-pink-700 dark:text-pink-400'"
@@ -79,12 +118,10 @@ async function onCta() {
     >
       <OfflineImg :src="item.imageUrl" :alt="item.title" class="w-full h-full object-cover" />
     </div>
-    <div class="space-y-2" :class="variant === 'story' ? 'p-3' : 'p-3'">
+    <div class="space-y-2 p-3">
       <h3
-        class="font-semibold line-clamp-2"
-        :class="[
-          variant === 'story' ? 'text-sm text-white' : 'text-sm text-neutral-900 dark:text-neutral-100',
-        ]"
+        class="font-semibold line-clamp-2 text-sm"
+        :class="variant === 'story' ? 'text-white' : 'text-neutral-900 dark:text-neutral-100'"
       >
         {{ item.title }}
       </h3>
@@ -94,18 +131,12 @@ async function onCta() {
       >
         {{ item.body }}
       </p>
-      <button
-        type="button"
-        class="w-full rounded-xl text-xs font-semibold py-2.5 transition-colors"
-        :class="
-          variant === 'story'
-            ? 'bg-white text-pink-700 hover:bg-pink-50'
-            : 'bg-pink-700 hover:bg-pink-800 text-white'
-        "
-        @click.stop="onCta"
+      <span
+        class="inline-flex rounded-xl text-xs font-semibold py-2 px-3"
+        :class="variant === 'story' ? 'bg-white text-pink-700' : 'bg-pink-700 text-white'"
       >
-        {{ isPinPromo(item) ? item.ctaLabel : item.ctaLabel || t('feed.partnerAd.ctaDefault') }}
-      </button>
+        {{ ctaLabel }}
+      </span>
     </div>
   </article>
 </template>

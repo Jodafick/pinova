@@ -15,6 +15,7 @@ import {
 } from '../composables/mediaAntiLeak'
 import OfflineImg from './OfflineImg.vue'
 import OfflineVideo from './OfflineVideo.vue'
+import ContextualSponsoredSlot from './ContextualSponsoredSlot.vue'
 
 type CommentSubmitPayload = {
   text: string
@@ -347,6 +348,13 @@ function onVideoMetadata(e: Event) {
                 {{ board.name }}
               </router-link>
             </div>
+
+            <ContextualSponsoredSlot
+              v-if="!isPinOwner"
+              placement="pin_detail"
+              :topic="pin.topic"
+              variant="detail"
+            />
 
             <div class="pin-detail-comments-pane flex-1">
               <div class="mb-4 flex flex-col gap-3">
