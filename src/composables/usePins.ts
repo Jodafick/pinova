@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
-import type { FeedItem, PartnerAd, Pin, PinLikersResponse } from '../types'
-import { isFeedPin, isPartnerAd } from '../types'
+import type { FeedItem, PartnerAd, Pin, PinLikersResponse, PinPromo, SponsoredAd } from '../types'
+import { isFeedPin } from '../types'
 import api from '../api'
 import { API_BASE_URL } from '../env'
 import { useI18n } from '../i18n'
@@ -56,10 +56,35 @@ export function mapPartnerAdFromApi(raw: Record<string, unknown>): PartnerAd {
   }
 }
 
+export function mapPinPromoFromApi(raw: Record<string, unknown>): PinPromo {
+  return {
+    feedType: 'pin_promo',
+    id: String(raw.id ?? `pin-promo-${raw.campaign_id}`),
+    campaignId: Number(raw.campaign_id ?? 0),
+    pinSlug: String(raw.pin_slug ?? ''),
+    pinId: Number(raw.pin_id ?? 0),
+    title: String(raw.title ?? ''),
+    body: String(raw.body ?? ''),
+    sponsorName: String(raw.sponsor_name ?? ''),
+    username: String(raw.username ?? ''),
+    imageUrl: getFullMediaUrl(String(raw.image_url ?? '')),
+    ctaLabel: String(raw.cta_label ?? 'Voir le pin'),
+    topic: String(raw.topic ?? ''),
+  }
+}
+
+export function mapSponsoredFromApi(raw: Record<string, unknown>): SponsoredAd | null {
+  const ft = String(raw.feed_type ?? '')
+  if (ft === 'partner_ad') return mapPartnerAdFromApi(raw)
+  if (ft === 'pin_promo') return mapPinPromoFromApi(raw)
+  return null
+}
+
 export function mapFeedRow(raw: Record<string, unknown>): FeedItem | null {
   if (raw == null || typeof raw !== 'object') return null
   const ft = String(raw.feed_type ?? 'pin')
   if (ft === 'partner_ad') return mapPartnerAdFromApi(raw)
+  if (ft === 'pin_promo') return mapPinPromoFromApi(raw)
   try {
     return mapDjangoPinToFrontend(raw)
   } catch {
@@ -68,7 +93,7 @@ export function mapFeedRow(raw: Record<string, unknown>): FeedItem | null {
 }
 
 export function feedPinsOnly(items: FeedItem[]): Pin[] {
-  return items.filter((x): x is Pin => !isPartnerAd(x))
+  return items.filter((x): x is Pin => isFeedPin(x))
 }
 
 export function mapDjangoPinToFrontend(djangoPin: any): Pin {

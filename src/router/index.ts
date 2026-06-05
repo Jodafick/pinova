@@ -246,6 +246,35 @@ const router = createRouter({
       },
     },
     {
+      path: '/promote',
+      name: 'boost-promote',
+      component: () => import('../pages/BoostPromotePage.vue'),
+      meta: {
+        requiresAuth: true,
+        keepAlive: false,
+        presentation: 'page',
+        statusBar: 'auto',
+      },
+    },
+    {
+      path: '/promote/pin/:pinSlug',
+      redirect: (to) => ({
+        name: 'boost-promote',
+        query: { pin: String(to.params.pinSlug || '') },
+      }),
+    },
+    {
+      path: '/promote/campaigns',
+      name: 'pin-promo-campaigns',
+      component: () => import('../pages/PinPromoDashboardPage.vue'),
+      meta: {
+        requiresAuth: true,
+        keepAlive: false,
+        presentation: 'page',
+        statusBar: 'auto',
+      },
+    },
+    {
       path: '/billing',
       name: 'billing',
       component: () => import('../pages/BillingHistoryPage.vue'),

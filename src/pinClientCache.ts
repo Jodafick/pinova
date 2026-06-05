@@ -3,7 +3,7 @@
  * Vidé au logout avec les autres caches client.
  */
 import type { FeedItem, Pin } from './types'
-import { isFeedPin, isPartnerAd } from './types'
+import { isFeedPin, isSponsoredAd } from './types'
 import { clearEntityClientCaches } from './entityClientCache'
 
 /** Aligné sur la rétention Vue Query / persister : revisite sans refetch réseau dans la session. */
@@ -101,7 +101,7 @@ function pruneFeedP1Disk(store: FeedP1DiskBlob): void {
 }
 
 function cloneFeedItem(item: FeedItem): FeedItem {
-  return isPartnerAd(item) ? { ...item } : { ...item }
+  return isSponsoredAd(item) ? { ...item } : { ...item }
 }
 
 function persistFeedP1Disk(
@@ -127,7 +127,7 @@ function feedItemsFromDiskEntry(entry: {
 }): FeedItem[] {
   if (Array.isArray(entry.items) && entry.items.length) {
     return entry.items.map((x) =>
-      isPartnerAd(x as FeedItem) || isFeedPin(x as FeedItem) ? cloneFeedItem(x as FeedItem) : (x as FeedItem),
+      isSponsoredAd(x as FeedItem) || isFeedPin(x as FeedItem) ? cloneFeedItem(x as FeedItem) : (x as FeedItem),
     )
   }
   if (Array.isArray(entry.pins)) {

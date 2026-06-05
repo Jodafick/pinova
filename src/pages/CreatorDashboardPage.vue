@@ -798,6 +798,24 @@ onMounted(async () => {
                 {{ t('creator.settingsTips') }}
               </router-link>
               <router-link
+                :to="{ name: 'pin-promo-campaigns' }"
+                class="inline-flex items-center justify-center gap-3 rounded-full border border-pink-200/90 bg-gradient-to-r from-pink-50 to-rose-50/80 px-4 py-2.5 text-sm font-semibold text-pink-950 shadow-sm backdrop-blur-sm transition hover:border-pink-300 dark:border-pink-500/30 dark:from-pink-950/40 dark:to-rose-950/30 dark:text-pink-100"
+              >
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/80 ring-1 ring-pink-200/80 dark:bg-neutral-900/60 dark:ring-pink-500/40">
+                  <i class="fa-solid fa-chart-line block text-[15px] leading-none text-pink-700 dark:text-pink-300" aria-hidden="true"></i>
+                </span>
+                {{ t('promote.campaigns.title') }}
+              </router-link>
+              <router-link
+                :to="{ name: 'boost-promote' }"
+                class="inline-flex items-center justify-center gap-3 rounded-full border border-amber-200/90 bg-gradient-to-r from-amber-50 to-yellow-50/80 px-4 py-2.5 text-sm font-semibold text-amber-950 shadow-sm backdrop-blur-sm transition hover:border-amber-300 dark:border-amber-500/30 dark:from-amber-950/40 dark:to-yellow-950/30 dark:text-amber-100"
+              >
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/80 ring-1 ring-amber-200/80 dark:bg-neutral-900/60 dark:ring-amber-500/40">
+                  <i class="fa-solid fa-rocket block text-[15px] leading-none text-amber-700 dark:text-amber-300" aria-hidden="true"></i>
+                </span>
+                {{ t('promote.boost.title') }}
+              </router-link>
+              <router-link
                 v-if="currentUser?.isStaff"
                 to="/staff/partner-ads"
                 class="inline-flex items-center justify-center gap-3 rounded-full border border-amber-200/90 bg-gradient-to-r from-amber-50 to-orange-50/80 px-4 py-2.5 text-sm font-semibold text-amber-950 shadow-sm backdrop-blur-sm transition hover:border-amber-300 dark:border-amber-500/30 dark:from-amber-950/40 dark:to-orange-950/30 dark:text-amber-100"

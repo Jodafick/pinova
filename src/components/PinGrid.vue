@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import type { FeedItem, Pin } from '../types'
-import { isFeedPin, isPartnerAd } from '../types'
-import PartnerAdCard from './PartnerAdCard.vue'
-import BoostPinDialog from './BoostPinDialog.vue'
+import type { FeedItem, Pin, SponsoredAd } from '../types'
+import { isFeedPin, isSponsoredAd } from '../types'
+import SponsoredContentCard from './SponsoredContentCard.vue'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useRouter } from 'vue-router'
@@ -50,7 +49,7 @@ const blurSensitiveByDefault = computed(() =>
 
 type GridCell =
   | { kind: 'pin'; pin: Pin }
-  | { kind: 'partner_ad'; ad: import('../types').PartnerAd }
+  | { kind: 'sponsored'; ad: SponsoredAd }
   | { kind: 'skeleton'; key: string }
 
 const props = withDefaults(
@@ -101,7 +100,7 @@ const columns = computed(() => {
   const n = columnCount.value
   const cells: GridCell[] = []
   props.pins.forEach((item) => {
-    if (isPartnerAd(item)) cells.push({ kind: 'partner_ad', ad: item })
+    if (isSponsoredAd(item)) cells.push({ kind: 'sponsored', ad: item })
     else if (isFeedPin(item)) cells.push({ kind: 'pin', pin: item })
   })
   const sk = skeletonPlaceholders.value
@@ -137,7 +136,6 @@ watch(
 
 /** Menu ⋯ propriétaire (modifier / supprimer) */
 const gridOwnerMenuSlug = ref<string | null>(null)
-const boostDialogSlug = ref<string | null>(null)
 const gridOwnerMenuAnchorRef = ref<HTMLElement | null>(null)
 const gridOwnerMenuFloatingRef = ref<HTMLElement | null>(null)
 const gridOwnerMenuOpen = computed(() => gridOwnerMenuSlug.value !== null)
@@ -261,9 +259,14 @@ function goGridOwnerEdit(slug: string) {
   router.push(`/pin/${slug}/edit`)
 }
 
-function openBoostDialog(slug: string) {
+function openBoostPage(slug: string) {
   closeGridOwnerMenu()
-  boostDialogSlug.value = slug
+  void router.push({ name: 'boost-promote', query: { pin: slug } })
+}
+
+function openPromoCampaigns() {
+  closeGridOwnerMenu()
+  void router.push({ name: 'pin-promo-campaigns' })
 }
 
 async function confirmDeleteGridOwnedPin(slug: string) {
@@ -308,15 +311,16 @@ onUnmounted(() => {
     >
       <template
         v-for="cell in column"
-        :key="cell.kind === 'pin' ? cell.pin.id : cell.kind === 'partner_ad' ? cell.ad.id : cell.key"
+        :key="cell.kind === 'pin' ? cell.pin.id : cell.kind === 'sponsored' ? cell.ad.id : cell.key"
       >
-      <PartnerAdCard v-if="cell.kind === 'partner_ad'" :ad="cell.ad" />
+      <SponsoredContentCard v-if="cell.kind === 'sponsored'" :item="cell.ad" variant="feed" />
       <article
         v-else-if="cell.kind === 'pin'"
         tabindex="0"
         role="article"
         :aria-label="pinCardLabel(cell.pin)"
         class="group lux-pin-card focus-visible:outline-none"
+        :class="cell.pin.isBoosted ? 'ring-2 ring-amber-400/70 dark:ring-amber-500/50 rounded-3xl shadow-[0_0_24px_rgba(245,158,11,0.25)]' : ''"
         @click="onArticleClick(cell.pin, $event)"
         @keydown="onCardKeydown(cell.pin, $event)"
       >
@@ -483,10 +487,19 @@ onUnmounted(() => {
           type="button"
           role="menuitem"
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
-          @click="gridOwnerMenuSlug ? openBoostDialog(gridOwnerMenuSlug) : null"
+          @click="gridOwnerMenuSlug ? openBoostPage(gridOwnerMenuSlug) : null"
         >
           <span class="material-symbols-outlined text-lg text-amber-600" aria-hidden="true">rocket_launch</span>
           {{ t('pin.boost.cta') }}
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
+          @click="openPromoCampaigns()"
+        >
+          <span class="material-symbols-outlined text-lg text-pink-600" aria-hidden="true">campaign</span>
+          {{ t('promote.campaigns.menu') }}
         </button>
         <button
           type="button"
@@ -499,11 +512,5 @@ onUnmounted(() => {
         </button>
       </div>
     </Teleport>
-    <BoostPinDialog
-      v-if="boostDialogSlug"
-      :pin-slug="boostDialogSlug"
-      :open="!!boostDialogSlug"
-      @close="boostDialogSlug = null"
-    />
   </section>
 </template>

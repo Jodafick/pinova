@@ -69,14 +69,39 @@ export type PartnerAd = {
   ctaUrl: string
 }
 
-export type FeedItem = Pin | PartnerAd
+export type PinPromo = {
+  feedType: 'pin_promo'
+  id: string
+  campaignId: number
+  pinSlug: string
+  pinId: number
+  title: string
+  body: string
+  sponsorName: string
+  username: string
+  imageUrl: string
+  ctaLabel: string
+  topic?: string
+}
+
+export type SponsoredAd = PartnerAd | PinPromo
+
+export type FeedItem = Pin | SponsoredAd
 
 export function isPartnerAd(item: FeedItem): item is PartnerAd {
   return (item as PartnerAd).feedType === 'partner_ad'
 }
 
+export function isPinPromo(item: FeedItem): item is PinPromo {
+  return (item as PinPromo).feedType === 'pin_promo'
+}
+
+export function isSponsoredAd(item: FeedItem): item is SponsoredAd {
+  return isPartnerAd(item) || isPinPromo(item)
+}
+
 export function isFeedPin(item: FeedItem): item is Pin {
-  return !isPartnerAd(item)
+  return !isSponsoredAd(item)
 }
 
 /** Première page renvoyée par `GET me/` (`me_created_pins_page` / `me_saved_pins_page`). */

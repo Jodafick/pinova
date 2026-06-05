@@ -17,6 +17,7 @@ import {
 } from '../composables/mediaAntiLeak'
 import OfflineImg from './OfflineImg.vue'
 import OfflineVideo from './OfflineVideo.vue'
+import ContextualSponsoredSlot from './ContextualSponsoredSlot.vue'
 
 type CommentSubmitPayload = {
   text: string
@@ -734,6 +735,13 @@ onUnmounted(() => {
               >
                 {{ slide.pin.title }}
               </h1>
+              <span
+                v-if="slide.pin.isBoosted"
+                class="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-white"
+              >
+                <span class="material-symbols-outlined text-[12px]">rocket_launch</span>
+                {{ t('feed.pinBoosted') }}
+              </span>
 
               <p
                 v-if="slide.active ? displayDescription : slide.pin.description"
@@ -767,6 +775,9 @@ onUnmounted(() => {
                 >
                   {{ t('pin.detail.externalLink') }}
                 </a>
+              </div>
+              <div v-if="slide.active" class="mt-3 max-w-[min(100%,20rem)] pointer-events-auto">
+                <ContextualSponsoredSlot placement="pin_detail" :topic="slide.pin.topic" variant="detail" />
               </div>
             </main>
           </template>

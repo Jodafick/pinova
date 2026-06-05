@@ -18,6 +18,7 @@ import {
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
 import { avatarBgStyle, avatarBgTailwindClass } from '../utils/avatarBackground'
+import ContextualSponsoredSlot from './ContextualSponsoredSlot.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -1221,6 +1222,11 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <ContextualSponsoredSlot
+          placement="story"
+          :topic="current?.topic ?? ''"
+          variant="story"
+        />
         <div class="pointer-events-none absolute bottom-6 inset-x-0 z-40 flex justify-center px-4">
           <button
             v-if="current?.slug && !current?.storyEphemeral"

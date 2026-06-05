@@ -1935,6 +1935,20 @@ watch(
           <p class="text-xs text-neutral-500 dark:text-neutral-400 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 px-3 py-2">
             {{ t('pin.boost.hint') }}
           </p>
+          <div class="flex flex-wrap gap-2">
+            <router-link
+              :to="{ name: 'boost-promote' }"
+              class="inline-flex items-center gap-2 rounded-full bg-pink-700 px-4 py-2 text-xs font-semibold text-white hover:bg-pink-800"
+            >
+              {{ t('promote.boost.title') }}
+            </router-link>
+            <router-link
+              :to="{ name: 'pin-promo-campaigns' }"
+              class="inline-flex items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-xs font-semibold text-pink-800 dark:border-pink-500/40 dark:text-pink-200"
+            >
+              {{ t('promote.campaigns.title') }}
+            </router-link>
+          </div>
           <p class="text-xs text-neutral-500 dark:text-neutral-400">
             {{
               currentPlan === 'pro'
