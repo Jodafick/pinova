@@ -7,8 +7,14 @@ import { useAuth } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
 import { usePromoteHub } from '../composables/usePromoteHub'
 import PinPickerField from './PinPickerField.vue'
+import CampaignTargetingPanel from './CampaignTargetingPanel.vue'
 import OfflineImg from './OfflineImg.vue'
 import SponsoredContentCard from './SponsoredContentCard.vue'
+import {
+  appendCampaignToFormData,
+  emptyTargeting,
+  type CampaignTargeting,
+} from '../composables/useCampaignTargeting'
 import type { PinPromo } from '../types'
 
 const props = withDefaults(
@@ -41,8 +47,10 @@ const body = ref('')
 const ctaUrl = ref('')
 const ctaLabel = ref('')
 const topicSlug = ref('')
-const imageFile = ref<File | null>(null)
-const imagePreviewUrl = ref('')
+const mediaFile = ref<File | null>(null)
+const mediaType = ref<'image' | 'video'>('image')
+const mediaPreviewUrl = ref('')
+const targeting = ref<CampaignTargeting>(emptyTargeting())
 const packageSlug = ref('')
 const busy = ref(false)
 
@@ -61,7 +69,9 @@ const campaignPreview = computed((): PinPromo | null => {
     body: body.value.trim(),
     sponsorName: currentUser.value?.username ? `@${currentUser.value.username}` : '',
     username: currentUser.value?.username ?? '',
-    imageUrl: imagePreviewUrl.value,
+    imageUrl: mediaPreviewUrl.value,
+    mediaUrl: mediaPreviewUrl.value,
+    mediaType: mediaType.value,
     ctaLabel: ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'),
     ctaUrl: ctaUrl.value.trim(),
   }
@@ -73,15 +83,23 @@ function resetCampaignForm() {
   ctaUrl.value = ''
   ctaLabel.value = ''
   topicSlug.value = ''
-  imageFile.value = null
-  imagePreviewUrl.value = ''
+  mediaFile.value = null
+  mediaType.value = 'image'
+  mediaPreviewUrl.value = ''
+  targeting.value = emptyTargeting()
 }
 
-function onImageChange(ev: Event) {
+function onMediaChange(ev: Event) {
   const input = ev.target as HTMLInputElement
   const file = input.files?.[0] ?? null
-  imageFile.value = file
-  imagePreviewUrl.value = file ? URL.createObjectURL(file) : ''
+  mediaFile.value = file
+  if (!file) {
+    mediaPreviewUrl.value = ''
+    return
+  }
+  const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name)
+  mediaType.value = isVideo ? 'video' : 'image'
+  mediaPreviewUrl.value = URL.createObjectURL(file)
 }
 
 watch(
@@ -136,13 +154,17 @@ async function startCampaign() {
   busy.value = true
   try {
     const fd = new FormData()
-    fd.append('headline', headline.value.trim())
-    fd.append('body', body.value.trim())
-    fd.append('cta_url', ctaUrl.value.trim())
-    fd.append('cta_label', ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'))
-    fd.append('topic_slug', topicSlug.value.trim())
-    fd.append('package', packageSlug.value)
-    if (imageFile.value) fd.append('image', imageFile.value)
+    appendCampaignToFormData(fd, {
+      headline: headline.value.trim(),
+      body: body.value.trim(),
+      ctaUrl: ctaUrl.value.trim(),
+      ctaLabel: ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'),
+      packageSlug: packageSlug.value,
+      topicSlug: topicSlug.value.trim(),
+      targeting: targeting.value,
+      mediaFile: mediaFile.value,
+      mediaType: mediaType.value,
+    })
     const res = await api.post('monetization/pin-promo-campaigns/', fd)
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
@@ -299,13 +321,11 @@ async function startCampaign() {
               <input v-model="ctaLabel" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('feed.partnerAd.ctaDefault')" />
             </label>
             <label class="block text-xs font-medium space-y-1">
-              {{ t('promote.campaigns.image') }}
-              <input type="file" accept="image/*" class="w-full text-sm" @change="onImageChange" />
+              {{ t('promote.campaigns.media') }}
+              <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime" class="w-full text-sm" @change="onMediaChange" />
+              <span class="text-[10px] text-neutral-500">{{ t('promote.campaigns.mediaHint') }}</span>
             </label>
-            <label class="block text-xs font-medium space-y-1">
-              {{ t('promote.campaigns.topic') }}
-              <input v-model="topicSlug" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" />
-            </label>
+            <CampaignTargetingPanel v-model="targeting" />
             <label class="block text-xs font-medium space-y-1">
               {{ t('promote.campaigns.package') }}
               <select v-model="packageSlug" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm">

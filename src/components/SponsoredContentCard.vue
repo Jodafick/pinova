@@ -6,6 +6,7 @@ import { isPartnerAd, isPinPromo } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api'
 import OfflineImg from './OfflineImg.vue'
+import OfflineVideo from './OfflineVideo.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -67,10 +68,23 @@ async function onTap() {
   >
     <div class="flex items-stretch gap-0 min-h-[5.5rem]">
       <div
-        v-if="item.imageUrl"
+        v-if="item.imageUrl || (isPinPromo(item) && item.mediaUrl)"
         class="w-[4.5rem] shrink-0 bg-neutral-100 dark:bg-neutral-800"
       >
-        <OfflineImg :src="item.imageUrl" :alt="item.title" class="w-full h-full object-cover min-h-[5.5rem]" />
+        <OfflineVideo
+          v-if="isPinPromo(item) && item.mediaType === 'video' && item.mediaUrl"
+          :src="item.mediaUrl"
+          class="w-full h-full object-cover min-h-[5.5rem]"
+          muted
+          playsinline
+          preload="metadata"
+        />
+        <OfflineImg
+          v-else
+          :src="isPinPromo(item) && item.mediaUrl ? item.mediaUrl : item.imageUrl"
+          :alt="item.title"
+          class="w-full h-full object-cover min-h-[5.5rem]"
+        />
       </div>
       <div class="flex-1 min-w-0 px-3 py-2.5 flex flex-col justify-center gap-1">
         <div class="flex items-center justify-between gap-2">

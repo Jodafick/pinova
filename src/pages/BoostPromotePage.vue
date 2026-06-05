@@ -7,7 +7,13 @@ import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { usePromoteHub } from '../composables/usePromoteHub'
 import PinPickerField from '../components/PinPickerField.vue'
+import CampaignTargetingPanel from '../components/CampaignTargetingPanel.vue'
 import SponsoredContentCard from '../components/SponsoredContentCard.vue'
+import {
+  appendCampaignToFormData,
+  emptyTargeting,
+  type CampaignTargeting,
+} from '../composables/useCampaignTargeting'
 import type { PinPromo } from '../types'
 
 const route = useRoute()
@@ -36,9 +42,10 @@ const headline = ref('')
 const body = ref('')
 const ctaUrl = ref('')
 const ctaLabel = ref('')
-const topicSlug = ref('')
-const imageFile = ref<File | null>(null)
-const imagePreviewUrl = ref('')
+const mediaFile = ref<File | null>(null)
+const mediaType = ref<'image' | 'video'>('image')
+const mediaPreviewUrl = ref('')
+const targeting = ref<CampaignTargeting>(emptyTargeting())
 const packageSlug = ref('')
 
 const pinFromQuery = computed(() => String(route.query.pin || '').trim())
@@ -53,17 +60,25 @@ const campaignPreview = computed((): PinPromo | null => {
     body: body.value.trim(),
     sponsorName: currentUser.value?.username ? `@${currentUser.value.username}` : '',
     username: currentUser.value?.username ?? '',
-    imageUrl: imagePreviewUrl.value,
+    imageUrl: mediaPreviewUrl.value,
+    mediaUrl: mediaPreviewUrl.value,
+    mediaType: mediaType.value,
     ctaLabel: ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'),
     ctaUrl: ctaUrl.value.trim(),
   }
 })
 
-function onImageChange(ev: Event) {
+function onMediaChange(ev: Event) {
   const input = ev.target as HTMLInputElement
   const file = input.files?.[0] ?? null
-  imageFile.value = file
-  imagePreviewUrl.value = file ? URL.createObjectURL(file) : ''
+  mediaFile.value = file
+  if (!file) {
+    mediaPreviewUrl.value = ''
+    return
+  }
+  const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name)
+  mediaType.value = isVideo ? 'video' : 'image'
+  mediaPreviewUrl.value = URL.createObjectURL(file)
 }
 
 onMounted(async () => {
@@ -111,13 +126,16 @@ async function startCampaign() {
   busy.value = true
   try {
     const fd = new FormData()
-    fd.append('headline', headline.value.trim())
-    fd.append('body', body.value.trim())
-    fd.append('cta_url', ctaUrl.value.trim())
-    fd.append('cta_label', ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'))
-    fd.append('topic_slug', topicSlug.value.trim())
-    fd.append('package', packageSlug.value)
-    if (imageFile.value) fd.append('image', imageFile.value)
+    appendCampaignToFormData(fd, {
+      headline: headline.value.trim(),
+      body: body.value.trim(),
+      ctaUrl: ctaUrl.value.trim(),
+      ctaLabel: ctaLabel.value.trim() || t('feed.partnerAd.ctaDefault'),
+      packageSlug: packageSlug.value,
+      targeting: targeting.value,
+      mediaFile: mediaFile.value,
+      mediaType: mediaType.value,
+    })
     const res = await api.post('monetization/pin-promo-campaigns/', fd)
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
@@ -216,8 +234,9 @@ async function togglePause(id: number, status: string) {
           <textarea v-model="body" rows="3" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.body')" />
           <input v-model="ctaUrl" type="url" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.ctaUrl')" />
           <input v-model="ctaLabel" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.ctaLabel')" />
-          <input type="file" accept="image/*" class="w-full text-sm" @change="onImageChange" />
-          <input v-model="topicSlug" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm" :placeholder="t('promote.campaigns.topic')" />
+          <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime" class="w-full text-sm" @change="onMediaChange" />
+          <p class="text-[11px] text-neutral-500">{{ t('promote.campaigns.mediaHint') }}</p>
+          <CampaignTargetingPanel v-model="targeting" />
           <select v-model="packageSlug" class="w-full rounded-xl border app-divider-subtle px-3 py-2.5 text-sm">
             <option v-for="p in packs" :key="p.slug" :value="p.slug">
               {{ p.label }} — {{ formatMoney(p.amount, p.currency_iso) }}

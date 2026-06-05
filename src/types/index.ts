@@ -80,6 +80,8 @@ export type PinPromo = {
   sponsorName: string
   username: string
   imageUrl: string
+  mediaUrl?: string
+  mediaType?: 'image' | 'video'
   ctaLabel: string
   ctaUrl?: string
   topic?: string
