@@ -5,6 +5,7 @@ import { isFeedPin, isSponsoredAd } from '../types'
 import SponsoredContentCard from './SponsoredContentCard.vue'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
+import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
@@ -188,9 +189,11 @@ function emitOpenPin(pin: Pin, originRect: ReturnType<typeof elementToPinOverlay
   emit('open-pin', pin.slug)
 }
 
+const { promptGuest } = useGuestAuthGate()
+
 async function doubleTapLike(pin: Pin) {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('like')
     return
   }
   if (pin.isStory && usernamesMatch(currentUser.value?.username, pin.username)) return

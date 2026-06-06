@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import { useI18n } from '../i18n'
 import type { BoostPack, BoostHistoryRow } from '../composables/usePromoteHub'
+import { defaultBoostPackSlug } from '../composables/usePromoteHub'
+import { useBoostReachEstimate } from '../composables/useBoostReachEstimate'
 import type { Pin } from '../types'
 import PinPickerField from './PinPickerField.vue'
 import BoostHistoryCards from './BoostHistoryCards.vue'
@@ -31,6 +33,11 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const step = ref(0)
 const selectedPack = ref('')
+
+const { estimate, loading: estimateLoading } = useBoostReachEstimate(
+  () => props.selectedSlug || undefined,
+  () => selectedPack.value || props.packs[1]?.slug || props.packs[0]?.slug,
+)
 
 const steps = computed(() => [
   t('promote.boost.step.pin'),
@@ -77,8 +84,16 @@ function launch() {
 function onBoostAgain(slug: string) {
   emit('update:selectedSlug', slug)
   step.value = 2
-  selectedPack.value = props.packs[Math.min(1, props.packs.length - 1)]?.slug ?? props.packs[0]?.slug ?? ''
+  selectedPack.value = defaultBoostPackSlug(props.packs)
   emit('boost-again', slug)
+}
+
+function socialProofText(pack: BoostPack) {
+  if (!pack.is_highlighted || !pack.social_proof_label) return ''
+  if (pack.social_proof_label === 'creator_choice' && pack.recent_purchases_7d) {
+    return t('promote.sheet.socialProof.creators', { n: pack.recent_purchases_7d })
+  }
+  return t(`promote.sheet.socialProof.${pack.social_proof_label}`)
 }
 </script>
 
@@ -135,6 +150,21 @@ function onBoostAgain(slug: string) {
           <p class="font-bold truncate">{{ selectedPin.title }}</p>
         </div>
       </div>
+      <div
+        v-if="estimate"
+        class="flex items-start gap-2.5 rounded-2xl border border-pink-200/80 bg-pink-50/90 px-3.5 py-3 dark:border-pink-900/50 dark:bg-pink-950/30"
+      >
+        <span class="material-symbols-outlined text-pink-700">insights</span>
+        <div>
+          <p class="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
+            {{ t('promote.boost.reachEstimate', { min: estimate.estimated_min, max: estimate.estimated_max }) }}
+          </p>
+          <p class="text-xs text-neutral-500 mt-1">
+            {{ t('promote.boost.reachBaseline', { n: estimate.baseline_views_7d }) }}
+          </p>
+        </div>
+      </div>
+      <p v-else-if="estimateLoading" class="text-xs text-neutral-500 text-center">{{ t('promote.boost.reachLoading') }}</p>
       <div class="grid grid-cols-3 gap-2">
         <div v-for="s in impactStats" :key="s.icon" class="rounded-xl bg-pink-50 dark:bg-pink-950/30 p-3 text-center">
           <span class="material-symbols-outlined text-pink-600 text-xl">{{ s.icon }}</span>
@@ -153,7 +183,7 @@ function onBoostAgain(slug: string) {
       <p class="text-sm text-neutral-600 dark:text-neutral-400">{{ t('promote.boost.stepLaunchLead') }}</p>
       <div class="space-y-2">
         <button
-          v-for="(p, idx) in packs"
+          v-for="p in packs"
           :key="p.slug"
           type="button"
           class="w-full rounded-2xl border-2 px-4 py-4 text-left transition"
@@ -164,9 +194,12 @@ function onBoostAgain(slug: string) {
         >
           <div class="flex items-center justify-between gap-3">
             <div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
                 <p class="font-bold">{{ p.label }}</p>
-                <span v-if="idx === 1" class="text-[9px] uppercase font-bold text-pink-600 bg-pink-100 dark:bg-pink-900/50 px-1.5 py-0.5 rounded">{{ t('promote.sheet.popular') }}</span>
+                <span
+                  v-if="socialProofText(p)"
+                  class="text-[9px] uppercase font-bold text-pink-600 bg-pink-100 dark:bg-pink-900/50 px-1.5 py-0.5 rounded"
+                >{{ socialProofText(p) }}</span>
               </div>
               <p class="text-xs text-neutral-500 mt-0.5">{{ formatDuration(p.duration_hours, t) }}</p>
             </div>

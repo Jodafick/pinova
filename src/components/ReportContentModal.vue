@@ -21,7 +21,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const category = ref<ReportCategoryCode>('spam')
+const category = ref<ReportCategoryCode>('harmful')
 const details = ref('')
 const error = ref('')
 
@@ -31,6 +31,7 @@ const categories = computed(() =>
   REPORT_CATEGORY_CODES.map((code) => ({
     code,
     label: t(`report.category.${code}` as const),
+    hint: t(`report.categoryHint.${code}` as const),
   })),
 )
 
@@ -38,7 +39,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open) {
-      category.value = 'spam'
+      category.value = 'harmful'
       details.value = ''
       error.value = ''
     }
@@ -74,7 +75,7 @@ function submit() {
     <div class="px-4 py-3 space-y-4">
       <div>
         <p class="text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-2">{{ t('report.categoryLabel') }}</p>
-        <div class="grid grid-cols-1 gap-1.5 max-h-[220px] overflow-y-auto pr-1">
+        <div class="grid grid-cols-1 gap-2">
           <label
             v-for="c in categories"
             :key="c.code"
@@ -86,7 +87,10 @@ function submit() {
             "
           >
             <input v-model="category" type="radio" :value="c.code" class="sr-only" />
-            <span class="text-neutral-800 dark:text-neutral-100 leading-snug">{{ c.label }}</span>
+            <span class="min-w-0">
+              <span class="block text-neutral-800 dark:text-neutral-100 leading-snug font-semibold">{{ c.label }}</span>
+              <span class="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ c.hint }}</span>
+            </span>
           </label>
         </div>
       </div>

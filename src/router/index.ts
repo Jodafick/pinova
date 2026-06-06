@@ -352,7 +352,7 @@ const router = createRouter({
       name: 'contest-live',
       component: () => import('../pages/ContestLivePage.vue'),
       meta: {
-        requiresAuth: true,
+        requiresAuth: false,
         keepAlive: true,
         preferAppRedirect: true,
         presentation: 'page',
@@ -378,7 +378,7 @@ const router = createRouter({
       name: 'referral-contest-live',
       component: () => import('../pages/ReferralContestLivePage.vue'),
       meta: {
-        requiresAuth: true,
+        requiresAuth: false,
         keepAlive: true,
         preferAppRedirect: true,
         presentation: 'page',
@@ -468,6 +468,18 @@ const router = createRouter({
       name: 'password-reset-confirm',
       component: () => import('../pages/ResetPasswordPage.vue'),
       meta: { guest: true, presentation: 'page', statusBar: 'auto', gestureDismiss: true },
+    },
+    {
+      path: '/checkout/go',
+      name: 'checkout-go',
+      component: () => import('../pages/CheckoutGoPage.vue'),
+      meta: { requiresAuth: true, presentation: 'page', statusBar: 'auto', hideAppChrome: true },
+    },
+    {
+      path: '/checkout/return',
+      name: 'checkout-return',
+      component: () => import('../pages/CheckoutReturnPage.vue'),
+      meta: { requiresAuth: false, presentation: 'page', statusBar: 'auto' },
     },
     {
       path: '/verify-otp',

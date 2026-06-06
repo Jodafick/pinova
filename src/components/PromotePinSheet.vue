@@ -4,10 +4,11 @@ import { useRouter } from 'vue-router'
 import api from '../api'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
-import { usePromoteHub } from '../composables/usePromoteHub'
+import { defaultBoostPackSlug, usePromoteHub } from '../composables/usePromoteHub'
 import BoostWizardPanel from './BoostWizardPanel.vue'
 import CampaignComposer from './CampaignComposer.vue'
 import { appendCampaignToFormData, emptyTargeting, type CampaignTargeting } from '../composables/useCampaignTargeting'
+import { openCheckoutFlow } from '../utils/checkoutFlow'
 
 const props = withDefaults(
   defineProps<{ open: boolean; pinSlug?: string; initialMode?: 'boost' | 'campaign' }>(),
@@ -77,7 +78,7 @@ watch(
       if (props.pinSlug) selectedSlug.value = props.pinSlug
     }
     if (packs.value[0]) {
-      packageSlug.value = packs.value[Math.min(1, packs.value.length - 1)]?.slug ?? packs.value[0].slug
+      packageSlug.value = defaultBoostPackSlug(packs.value)
     }
   },
 )
@@ -93,7 +94,7 @@ async function startBoost(packSlug: string) {
     const res = await api.post(`monetization/pins/${encodeURIComponent(pin)}/boost/`, { package: packSlug })
     const data = res.data as { checkout_url?: string; status?: string }
     if (data.checkout_url) {
-      window.location.href = data.checkout_url
+      openCheckoutFlow(router, 'boost', data.checkout_url)
       return
     }
     if (data.status === 'active') {
@@ -130,7 +131,7 @@ async function startCampaign() {
     const res = await api.post('monetization/pin-promo-campaigns/', fd)
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
-      window.location.href = data.checkout_url
+      openCheckoutFlow(router, 'campaign', data.checkout_url)
       return
     }
     if (data.status === 'active' || data.sandbox) {

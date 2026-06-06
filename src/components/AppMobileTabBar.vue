@@ -105,6 +105,16 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
       </router-link>
 
       <router-link
+        to="/contest/live"
+        class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-colors"
+        :class="route.name === 'contest-live' ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
+        @click="tabSwitchIfLeaving(route.name === 'contest-live')"
+      >
+        <span class="material-symbols-outlined text-[26px] leading-none">emoji_events</span>
+        <span class="truncate">{{ t('nav.contest') }}</span>
+      </router-link>
+
+      <router-link
         to="/login"
         class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-colors"
         :class="route.name === 'login' ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"

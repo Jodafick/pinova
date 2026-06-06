@@ -115,6 +115,20 @@ function onStoryLinkClick(ev: MouseEvent) {
           l'app — Vue Router prendra le relais après le hard navigate.
         -->
         <a
+          href="/create?mode=quick"
+          class="flex min-h-[4.25rem] items-center gap-3 rounded-2xl border border-amber-100 bg-amber-50/90 px-4 py-3 text-left text-amber-950 transition active:scale-[0.99] dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-100 no-underline"
+          @click="onPinLinkClick"
+        >
+          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-amber-600 text-white shadow-lg shadow-amber-900/20 dark:bg-amber-500">
+            <span class="material-symbols-outlined text-2xl">bolt</span>
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-black">{{ t('create.mobile.quickTitle') }}</span>
+            <span class="block text-xs text-amber-900/70 dark:text-amber-100/70">{{ t('create.mobile.quickSubtitle') }}</span>
+          </span>
+        </a>
+
+        <a
           href="/create"
           class="flex min-h-[4.25rem] items-center gap-3 rounded-2xl border border-pink-100 bg-pink-50/80 px-4 py-3 text-left text-pink-950 transition active:scale-[0.99] dark:border-pink-900/50 dark:bg-pink-950/35 dark:text-pink-100 no-underline"
           @click="onPinLinkClick"

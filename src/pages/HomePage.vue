@@ -18,6 +18,9 @@ import api from '../api'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { getAppScrollRoot } from '../utils/appScrollRoot'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
+import GuestContestTeaser from '../components/GuestContestTeaser.vue'
+import DiscoveryStreakBanner from '../components/DiscoveryStreakBanner.vue'
+import { useDiscoveryStreak } from '../composables/useDiscoveryStreak'
 
 type TabKey = 'forYou' | 'explorer' | 'following'
 
@@ -255,6 +258,8 @@ const suggestions = ref<Array<{ username: string; display_name: string; avatar_c
 
 /** Sujet discover (onglet mobile « Explorer ») — aligné sur /explore. */
 const exploreSelectedTopic = ref<string | null>(null)
+const exploreStreakActive = computed(() => isPageActive.value && activeTab.value === 'explorer')
+const { streak: discoveryStreak } = useDiscoveryStreak(exploreStreakActive)
 
 watch(exploreSelectedTopic, async (topic) => {
   if (!isPageActive.value) return
@@ -563,28 +568,16 @@ async function continueWithGoogleFromLanding() {
       <p class="mt-3 text-sm sm:text-base text-neutral-600 dark:text-neutral-300 max-w-xl mx-auto leading-relaxed">
         {{ t('home.landing.subtitle') }}
       </p>
-      <div class="mt-6 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-2.5 sm:gap-3 max-w-md mx-auto">
-        <router-link
-          to="/register"
-          class="inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-bold shadow-md hover:bg-pink-800 dark:hover:opacity-90 transition min-h-[44px]"
-        >
-          {{ t('home.landing.cta.register') }}
-        </router-link>
-        <router-link
-          to="/login"
-          class="inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full border border-neutral-200 dark:border-neutral-600 bg-white/90 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800 transition min-h-[44px]"
-        >
-          {{ t('home.landing.cta.login') }}
-        </router-link>
+      <div class="mt-6 flex flex-col items-stretch justify-center gap-2.5 max-w-sm mx-auto">
         <button
           type="button"
-          class="inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full border border-neutral-200 dark:border-neutral-600 bg-white/90 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800 transition min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
+          class="inline-flex justify-center items-center gap-2 px-5 py-3.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-bold shadow-md hover:bg-pink-800 dark:hover:opacity-90 transition min-h-[48px] disabled:opacity-60"
           :disabled="googleLandingBusy"
           @click="continueWithGoogleFromLanding"
         >
           <span
             v-if="googleLandingBusy"
-            class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0"
+            class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin shrink-0"
             aria-hidden="true"
           />
           <img
@@ -593,22 +586,26 @@ async function continueWithGoogleFromLanding() {
             class="w-5 h-5 shrink-0"
             alt=""
           />
-          {{ t('login.googleCta') }}
+          {{ t('home.landing.cta.primary') }}
         </button>
         <router-link
+          to="/register"
+          class="inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full border border-neutral-200 dark:border-neutral-600 bg-white/90 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800 transition min-h-[44px]"
+        >
+          {{ t('home.landing.cta.register') }}
+        </router-link>
+        <router-link
           to="/explore"
-          class="inline-flex justify-center items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold text-pink-700 dark:text-pink-600 hover:underline min-h-[44px]"
+          class="inline-flex justify-center items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-pink-700 dark:text-pink-600 hover:underline min-h-[40px]"
         >
           {{ t('home.landing.cta.explore') }}
           <span class="material-symbols-outlined text-lg" aria-hidden="true">arrow_forward</span>
         </router-link>
-        <!-- Tarifs (&lt; lg) : sur grand écran le lien figure déjà dans le header -->
         <router-link
-          to="/premium"
-          class="lg:hidden w-full sm:w-auto inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full border border-pink-200/90 dark:border-pink-700/70 bg-white/95 dark:bg-neutral-900 text-pink-700 dark:text-pink-400 text-sm font-semibold hover:bg-pink-50 dark:hover:bg-pink-950/40 transition min-h-[44px]"
+          to="/login"
+          class="text-xs font-semibold text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 py-1"
         >
-          <span class="material-symbols-outlined text-xl leading-none shrink-0" aria-hidden="true">payments</span>
-          {{ t('home.landing.cta.pricing') }}
+          {{ t('home.landing.cta.loginExisting') }}
         </router-link>
       </div>
       <ul class="mt-8 grid sm:grid-cols-3 gap-3 sm:gap-4 text-left text-sm text-neutral-600 dark:text-neutral-300 max-w-3xl mx-auto">
@@ -672,6 +669,10 @@ async function continueWithGoogleFromLanding() {
           @select="selectTopic"
         />
       </div>
+    </div>
+
+    <div v-if="!isAuthenticated" class="mb-4">
+      <GuestContestTeaser />
     </div>
 
     <p
@@ -807,6 +808,7 @@ async function continueWithGoogleFromLanding() {
 
           <!-- Explorer : même bloc que /explore (catégories + tableaux + fil). -->
           <div class="home-tab-panel w-1/3 min-w-0 shrink-0 px-0 pt-3">
+            <DiscoveryStreakBanner :streak="discoveryStreak" />
             <ExploreDiscoverSections
               v-model:selected-topic="exploreSelectedTopic"
               :text-query="null"

@@ -35,6 +35,7 @@ import {
   pinMediaAntiLeakImgBindings,
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
+import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 
 const { t } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
@@ -67,6 +68,7 @@ const {
   deletePin,
 } = usePins()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
+const { promptGuest } = useGuestAuthGate()
 
 const viewerCanRevealSensitive = computed(() =>
   viewerCanRevealSensitiveMedia(isAuthenticated.value, currentUser.value?.birthDate),
@@ -224,7 +226,7 @@ watch(
 
 const handleLike = async () => {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('like')
     return
   }
   const p = pin.value
@@ -266,7 +268,7 @@ const handleMediaDoubleLike = () => {
   const p = pin.value
   if (!p) return
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('like')
     return
   }
   if (p.liked) return
@@ -275,7 +277,7 @@ const handleMediaDoubleLike = () => {
 
 const handleSave = () => {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('save')
     return
   }
   const currentPin = pin.value
@@ -294,7 +296,7 @@ const handleSave = () => {
 
 const handleFollow = async () => {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('follow')
     return
   }
   if (pin.value && pin.value.username) {
@@ -441,7 +443,7 @@ const handleRichSubmit = async (
   payload: { text: string; gif?: string | null; mediaFile?: File | null; replyTo?: string | null; parentId?: number },
 ) => {
   if (!pin.value || !isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('comment')
     return
   }
   if (pin.value.canComment === false) {
@@ -506,7 +508,7 @@ const handleRichSubmit = async (
 
 const handleLikeComment = (id: number) => {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('like')
     return
   }
   const updateCommentById = (comments: UiComment[]): boolean => {
@@ -542,7 +544,7 @@ const handleLikeComment = (id: number) => {
 
 const handleTranslateComment = async (id: number) => {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
 
@@ -607,7 +609,7 @@ const pinVisibility = computed<'public' | 'followers' | 'private'>(() => {
 const handleTranslateDescription = async () => {
   if (!pin.value) return
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   if (descriptionTranslated.value) {
@@ -702,7 +704,7 @@ const reportModalContextLabel = computed(() => {
 
 const handleReportPin = async () => {
   if (!pin.value || !isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   if (isPinOwner.value) {
@@ -720,7 +722,7 @@ const handleReportPin = async () => {
 
 const handleReportComment = async (commentId: number) => {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   reportTarget.value = 'comment'
@@ -757,7 +759,7 @@ async function handleSubmitReport(payload: { category: string; details: string }
 
 const handleDeleteComment = async (commentId: number) => {
   if (!pin.value || !isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   const ok = await showConfirm({
@@ -805,7 +807,7 @@ const handleShare = async () => {
 
 const handleDownload = async () => {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   if (!pin.value) return

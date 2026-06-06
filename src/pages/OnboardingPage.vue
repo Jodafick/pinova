@@ -30,7 +30,7 @@ import SearchableSelect from '../components/SearchableSelect.vue'
 import BirthDatePicker from '../components/BirthDatePicker.vue'
 import { getStoredReferralCode, clearStoredReferralCode } from '../composables/useReferralIntent'
 
-const STEPS = ['welcome', 'language', 'interests', 'location', 'profile', 'theme', 'referral', 'creators', 'done'] as const
+const STEPS = ['welcome', 'language', 'interests', 'location', 'creators'] as const
 
 type CreatorRow = SuggestUserRow & { reason?: string }
 
@@ -260,17 +260,24 @@ function isValidBirthDate(raw: string): boolean {
 
 const canContinue = computed(() => {
   if (step.value === 'interests') return selectedInterests.value.length >= 3
-  if (step.value === 'location') return !!countryCode.value
+  if (step.value === 'location') return !!countryCode.value && isValidBirthDate(birthDate.value)
   return true
 })
 
-async function finishOnboarding() {
+const canSkipLater = computed(() => stepIndex.value >= 2)
+
+async function finishOnboarding(opts?: { deferred?: boolean }) {
   saving.value = true
   errorMsg.value = ''
   try {
     setLang(selectedLang.value)
-    setPreference(themePref.value)
-    applyAccentColor(accentId.value)
+    if (!opts?.deferred) {
+      setPreference(themePref.value)
+      applyAccentColor(accentId.value)
+    } else {
+      setPreference('system')
+      applyAccentColor('rose')
+    }
 
     const country = REFERENCE_COUNTRIES.find((c) => c.code === countryCode.value)
     const formData = new FormData()
@@ -286,7 +293,9 @@ async function finishOnboarding() {
     if (ln) formData.append('last_name', ln)
     if (gender.value) formData.append('gender', gender.value)
     if (pronouns.value) formData.append('pronouns', pronouns.value)
-    const refCode = referralCode.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16)
+    const refCode = (
+      referralCode.value.trim() || getStoredReferralCode() || ''
+    ).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16)
     if (refCode) formData.append('referral_code', refCode)
     formData.append('interests', JSON.stringify(selectedInterests.value))
     formData.append('followed_onboarding_creators', JSON.stringify(followedCreators.value))
@@ -317,12 +326,16 @@ async function finishOnboarding() {
 }
 
 function onPrimaryAction() {
-  if (step.value === 'done') {
+  if (step.value === 'creators') {
     void finishOnboarding()
     return
   }
   if (!canContinue.value) return
   nextStep()
+}
+
+function onSkipLater() {
+  void finishOnboarding({ deferred: true })
 }
 </script>
 
@@ -431,6 +444,9 @@ function onPrimaryAction() {
               :search-placeholder="t('onboarding.citySearch')"
             />
           </template>
+          <label class="onboarding-label mt-5">{{ t('onboarding.birthdateLabel') }}</label>
+          <p class="text-xs text-neutral-500 mb-2">{{ t('onboarding.birthdateHint') }}</p>
+          <BirthDatePicker v-model="birthDate" variant="onboarding" :dark="onboardingIsDark" />
         </section>
 
         <section v-else-if="step === 'profile'" class="onboarding-panel onboarding-panel--compact onboarding-panel--profile">
@@ -590,10 +606,10 @@ function onPrimaryAction() {
 
       <footer
         class="onboarding-footer"
-        :class="{ 'onboarding-footer--solo': stepIndex === 0 || step === 'done' }"
+        :class="{ 'onboarding-footer--solo': stepIndex === 0 }"
       >
         <button
-          v-if="stepIndex > 0 && step !== 'done'"
+          v-if="stepIndex > 0"
           type="button"
           class="onboarding-btn onboarding-btn--ghost onboarding-btn--back"
           @click="prevStep"
@@ -601,9 +617,18 @@ function onPrimaryAction() {
           {{ t('onboarding.back') }}
         </button>
         <button
+          v-if="canSkipLater"
+          type="button"
+          class="onboarding-btn onboarding-btn--ghost"
+          :disabled="saving"
+          @click="onSkipLater"
+        >
+          {{ t('onboarding.skipLater') }}
+        </button>
+        <button
           type="button"
           class="onboarding-btn onboarding-btn--primary onboarding-btn--next"
-          :disabled="!canContinue || saving"
+          :disabled="(!canContinue && step !== 'creators') || saving"
           :aria-busy="saving"
           @click="onPrimaryAction"
         >
@@ -613,7 +638,7 @@ function onPrimaryAction() {
             aria-hidden="true"
           />
           <span v-else>
-            {{ step === 'done' ? t('onboarding.enterPinova') : t('onboarding.continue') }}
+            {{ step === 'creators' ? t('onboarding.enterPinova') : t('onboarding.continue') }}
           </span>
         </button>
       </footer>

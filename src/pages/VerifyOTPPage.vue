@@ -5,11 +5,14 @@ import api from '../api'
 import { useI18n } from '../i18n'
 import { EMAIL_DELIVERY_UNAVAILABLE_CODE, readApiErrorCode } from '../constants/authErrors'
 import { useAppModal } from '../composables/useAppModal'
+import { useAuth } from '../composables/useAuth'
+import { redirectAfterAuth } from '../utils/postAuthRedirect'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const { showAlert } = useAppModal()
+const { applyAuthSession } = useAuth()
 
 const email = ref(route.query.email as string || '')
 const otp = ref('')
@@ -36,10 +39,12 @@ const handleVerify = async () => {
 
     if (response.status === 200) {
       success.value = true
+      const data = response.data as { access?: string; refresh?: string }
+      const user = await applyAuthSession({ access: data.access, refresh: data.refresh })
       successRedirectTimer = setTimeout(() => {
         successRedirectTimer = null
-        router.push('/login')
-      }, 3000)
+        redirectAfterAuth(router, { user })
+      }, 1200)
     }
   } catch (err: any) {
     console.error('OTP Verification error:', err)

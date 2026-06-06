@@ -6,6 +6,7 @@ import { useAuth } from '../composables/useAuth'
 import api from '../api'
 import { devLog } from '../devLog'
 import { safeHttpUrl } from '../utils/safeHttpUrl'
+import TrustCenterSection from '../components/TrustCenterSection.vue'
 
 const { t, currentLang } = useI18n()
 const router = useRouter()
@@ -838,37 +839,8 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Trust banner -->
-    <div class="pinova-glass-strong rounded-3xl p-6 sm:p-10 mb-10 max-lg:mb-12 lg:mb-16 ring-1 ring-white/40 dark:ring-white/[0.08]">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="rounded-2xl p-4 sm:p-5 flex items-start gap-3 backdrop-blur-md bg-white/55 dark:bg-white/[0.06] ring-1 ring-black/[0.06] dark:ring-white/12 shadow-sm">
-          <div class="w-11 h-11 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/22 ring-1 ring-emerald-300/55 dark:ring-emerald-500/45 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-emerald-700 dark:text-emerald-300">block</span>
-          </div>
-          <div>
-            <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trust.planLimits') }}</p>
-            <p class="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{{ t('premium.trust.planLimits.desc') }}</p>
-          </div>
-        </div>
-        <div class="rounded-2xl p-4 sm:p-5 flex items-start gap-3 backdrop-blur-md bg-white/55 dark:bg-white/[0.06] ring-1 ring-black/[0.06] dark:ring-white/12 shadow-sm">
-          <div class="w-11 h-11 rounded-xl bg-blue-500/15 dark:bg-blue-500/22 ring-1 ring-blue-300/55 dark:ring-blue-500/45 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-blue-700 dark:text-blue-300">shield</span>
-          </div>
-          <div>
-            <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trust.noTracking') }}</p>
-            <p class="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{{ t('premium.trust.noTracking.desc') }}</p>
-          </div>
-        </div>
-        <div class="rounded-2xl p-4 sm:p-5 flex items-start gap-3 backdrop-blur-md bg-white/55 dark:bg-white/[0.06] ring-1 ring-black/[0.06] dark:ring-white/12 shadow-sm">
-          <div class="w-11 h-11 rounded-xl bg-pink-700/15 dark:bg-pink-600/15 dark:bg-pink-600/22 ring-1 ring-pink-300/55 dark:ring-pink-600/45 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-pink-700 dark:text-pink-600">favorite</span>
-          </div>
-          <div>
-            <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trust.creators') }}</p>
-            <p class="text-xs text-neutral-600 dark:text-neutral-300 mt-1">{{ t('premium.trust.creators.desc') }}</p>
-          </div>
-        </div>
-      </div>
+    <div class="mb-10 max-lg:mb-12 lg:mb-16">
+      <TrustCenterSection />
     </div>
 
     <!-- FAQ -->

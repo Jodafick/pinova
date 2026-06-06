@@ -169,6 +169,7 @@ let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 
 const editSlug = computed(() => (route.name === 'edit-pin' ? String(route.params.slug || '').trim() : ''))
 const isEditMode = computed(() => editSlug.value.length > 0)
+const isQuickMode = computed(() => !isEditMode.value && String(route.query.mode || '') === 'quick')
 const loadingEdit = ref(false)
 const createStep = ref<1 | 2>(1)
 type MobilePinStep = 'pick' | 'edit' | 'meta'
@@ -601,6 +602,9 @@ const clearStep2Media = () => {
 
 const submitPin = async () => {
   fieldErrors.value = {}
+  if (!title.value.trim() && isQuickMode.value) {
+    title.value = t('create.quick.defaultTitle', { date: new Date().toLocaleDateString(currentLang.value) })
+  }
   if (!title.value) return
   const hasRemoteMedia =
     !!existingImageUrl.value || !!(existingStoryVideoUrl.value || '').trim()
@@ -1265,7 +1269,8 @@ usePinovaHeaderSwipeDismiss({
       <div>
         <h1 class="text-[1.9375rem] sm:text-[2.1875rem] font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ isEditMode ? t('pin.edit.title') : t('create.title') }}</h1>
         <p class="text-sm text-neutral-500 dark:text-neutral-300 mt-1">{{ isEditMode ? t('pin.edit.subtitle') : t('create.subtitle') }}</p>
-        <p v-if="createStep === 1" class="text-xs text-pink-700 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
+        <p v-if="isQuickMode" class="text-xs text-pink-700 mt-2 font-medium">{{ t('create.quick.banner') }}</p>
+        <p v-else-if="createStep === 1" class="text-xs text-pink-700 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
       </div>
       <div class="flex items-center gap-3">
         <button

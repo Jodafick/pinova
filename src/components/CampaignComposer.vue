@@ -11,6 +11,7 @@ import {
 import MediaDropZone from './MediaDropZone.vue'
 import CampaignTargetingModal from './CampaignTargetingModal.vue'
 import SponsoredContentCard from './SponsoredContentCard.vue'
+import { CAMPAIGN_PRESETS } from '../data/campaignPresets'
 
 const props = defineProps<{
   packs: BoostPack[]
@@ -75,6 +76,12 @@ const progress = computed(() => {
 function onMedia(payload: { file: File | null; previewUrl: string; mediaType: 'image' | 'video' }) {
   emit('media', { ...payload, fileName: payload.file?.name ?? '' })
 }
+
+function applyPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
+  emit('update:headline', t(preset.headlineKey))
+  emit('update:body', t(preset.bodyKey))
+  emit('update:ctaLabel', t(preset.ctaLabelKey))
+}
 </script>
 
 <template>
@@ -87,6 +94,20 @@ function onMedia(payload: { file: File | null; previewUrl: string; mediaType: 'i
         {{ t('promote.campaigns.progress', { n: progress }) }}
       </p>
     </div>
+
+    <div class="flex flex-wrap gap-2">
+      <span class="text-[10px] font-bold uppercase tracking-wide text-neutral-500 w-full">{{ t('promote.campaigns.presets') }}</span>
+      <button
+        v-for="preset in CAMPAIGN_PRESETS"
+        :key="preset.id"
+        type="button"
+        class="rounded-full border app-divider-subtle px-3 py-1.5 text-xs font-semibold text-pink-700 hover:bg-pink-50 dark:hover:bg-pink-950/30"
+        @click="applyPreset(preset)"
+      >
+        {{ t(`promote.campaigns.preset.${preset.id}.label`) }}
+      </button>
+    </div>
+    <p class="text-[10px] text-neutral-400">{{ t('promote.campaigns.draftHint') }}</p>
 
     <MediaDropZone
       :preview-url="mediaPreviewUrl"

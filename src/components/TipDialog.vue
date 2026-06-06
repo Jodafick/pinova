@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../api'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
+import { openCheckoutFlow } from '../utils/checkoutFlow'
 
 const props = defineProps<{
   open: boolean
@@ -11,6 +13,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
 
+const router = useRouter()
 const { t } = useI18n()
 const { showAlert } = useAppModal()
 
@@ -85,7 +88,7 @@ async function submitTip() {
     })
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
-      window.location.href = data.checkout_url
+      openCheckoutFlow(router, 'tip', data.checkout_url)
       return
     }
     if (data.status === 'approved') {

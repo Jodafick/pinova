@@ -20,6 +20,9 @@ import ImmersiveMediaViewer from './components/ui/ImmersiveMediaViewer.vue'
 import { useImmersiveViewer } from './composables/useImmersiveViewer'
 import AppToast from './components/AppToast.vue'
 import NotificationEnablePrompt from './components/NotificationEnablePrompt.vue'
+import GuestAuthSheet from './components/GuestAuthSheet.vue'
+import AppMobileTabBar from './components/AppMobileTabBar.vue'
+import { useGuestAuthGate } from './composables/useGuestAuthGate'
 import { initPwaTheme } from './composables/usePwaTheme'
 import { initPwaContext } from './composables/usePwaContext'
 import { useEdgeSwipeBack } from './composables/useEdgeSwipeBack'
@@ -57,6 +60,7 @@ const mainContentRef = ref<HTMLElement | null>(null)
 /** Route « derrière » pour l’aperçu du geste edge-back (libellé discret). */
 const edgePeekSourcePath = ref('')
 const { fetchCurrentUser, isAuthenticated, currentUser } = useAuth()
+const { guestGateOpen, guestGateIntent, closeGuestGate } = useGuestAuthGate()
 const {
   notificationPromptOpen,
   notificationPromptSnooze,
@@ -260,10 +264,24 @@ const pullRefreshIndicatorOpacity = computed(() =>
   Math.min(1, Math.max(0, pullToRefreshPx.value / 42)),
 )
 
-/** FAB création mobile : uniquement home et profil (évite d'encombrer explore, réglages, etc.). */
+/** Tab bar basse mobile (home / explore / profil ou login/register invité). */
+const showMobileTabBar = computed(
+  () =>
+    isLgDown.value &&
+    !suppressAppChrome.value &&
+    !isMobileFullscreenRoute.value &&
+    !isFullscreenPresentationRoute.value &&
+    !suppressMobileChromeForProfileDrawer.value &&
+    !layerManager.hasLayers.value &&
+    !immersiveViewer.open.value &&
+    ['home', 'explore', 'explore-boards', 'profile', 'login', 'register'].includes(String(route.name || '')),
+)
+
+/** FAB création mobile : masqué quand la tab bar est visible (bouton création intégré). */
 const showMobileCreateFab = computed(
   () =>
     isAuthenticated.value &&
+    !showMobileTabBar.value &&
     !suppressAppChrome.value &&
     !isMobileFullscreenRoute.value &&
     !isFullscreenPresentationRoute.value &&
@@ -645,6 +663,14 @@ const pageTransitionName = computed(() => {
     @snooze="notificationPromptSnooze"
     @decline="notificationPromptDecline"
   />
+
+  <GuestAuthSheet
+    :open="guestGateOpen"
+    :intent="guestGateIntent"
+    @close="closeGuestGate"
+  />
+
+  <AppMobileTabBar v-if="showMobileTabBar" />
 
   <!-- FAB création (mobile / tablette) — hors #app-shell. -->
   <Teleport to="body">

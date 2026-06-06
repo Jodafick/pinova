@@ -74,6 +74,7 @@ onMounted(async () => {
         class="text-xs text-neutral-500 dark:text-neutral-400 -mt-2"
       >
         {{ t('referral.history.pending_points_footnote') }}
+        <router-link to="/premium#trust-center" class="text-pink-700 font-semibold ml-1">{{ t('trust.center.learnMore') }}</router-link>
       </p>
 
       <ul class="space-y-2">

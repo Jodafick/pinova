@@ -11,6 +11,16 @@ export type BoostPack = {
   duration_hours: number
   amount: number
   currency_iso: string
+  social_proof_variant?: string
+  is_highlighted?: boolean
+  social_proof_label?: string
+  recent_purchases_7d?: number
+}
+
+export function defaultBoostPackSlug(packs: BoostPack[]): string {
+  const highlighted = packs.find((p) => p.is_highlighted)
+  if (highlighted) return highlighted.slug
+  return packs[Math.min(1, packs.length - 1)]?.slug ?? packs[0]?.slug ?? ''
 }
 
 export type BoostHistoryRow = {

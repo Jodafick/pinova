@@ -817,10 +817,20 @@ export function useAuth() {
     return response.data
   }
 
+  async function applyAuthSession(payload: { access?: string; refresh?: string }) {
+    if (payload.access) applyAccessToken(payload.access)
+    if (payload.refresh && typeof window !== 'undefined') {
+      window.localStorage.setItem('pinova_refresh_token', payload.refresh)
+    }
+    await fetchCurrentUser({ force: true })
+    return currentUser.value
+  }
+
   return {
     currentUser,
     isAuthenticated,
     isInitializing,
+    applyAuthSession,
     login,
     register,
     logout,

@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../api'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
+import { openCheckoutFlow } from '../utils/checkoutFlow'
 
 const props = defineProps<{ pinSlug: string; open: boolean }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
 
+const router = useRouter()
 const { t } = useI18n()
 const { showAlert } = useAppModal()
 
@@ -27,7 +30,7 @@ async function startBoost(slug: string) {
     })
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
-      window.location.href = data.checkout_url
+      openCheckoutFlow(router, 'boost', data.checkout_url)
       return
     }
     if (data.status === 'active') {
