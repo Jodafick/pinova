@@ -56,8 +56,11 @@ async function onTap() {
     "
     role="button"
     tabindex="0"
-    @click="onTap"
-    @keydown.enter="onTap"
+    @click.stop="onTap"
+    @keydown.enter.stop="onTap"
+    @touchstart.stop
+    @touchend.stop
+    @pointerdown.stop
   >
     <div
       v-if="item.imageUrl"

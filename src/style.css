@@ -33,13 +33,22 @@
   }
 
   /**
-   * Le route-view en position absolute pendant les transitions doit avoir un ancêtre
-   * avec hauteur non nulle (WebKit). Le `min-h-0` Tailwind seul suffisait à tout effondrer.
+   * Remplit la colonne flex du `<main>` sans empiler un second 100svh (vide scrollable en bas PWA).
+   * Les routes plein écran gèrent leur propre hauteur via flex-1 sur la page racine.
    */
   .pinova-page-transition-host {
-    min-height: 100%;
-    min-height: 100svh;
-    min-height: -webkit-fill-available;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .pinova-page-transition-host > * {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 }
 

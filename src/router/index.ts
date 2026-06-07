@@ -258,6 +258,7 @@ const router = createRouter({
         keepAlive: false,
         presentation: 'page',
         statusBar: 'auto',
+        suppressMainBottomInset: true,
       },
     },
     {
@@ -295,6 +296,7 @@ const router = createRouter({
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
+        suppressMainBottomInset: true,
       },
     },
     {
@@ -344,6 +346,7 @@ const router = createRouter({
         gestureDismiss: true,
         statusBar: 'auto',
         loadFontAwesome: true,
+        suppressMainBottomInset: true,
       },
     },
     {
@@ -401,6 +404,7 @@ const router = createRouter({
         gestureDismiss: true,
         statusBar: 'auto',
         loadFontAwesome: true,
+        suppressMainBottomInset: true,
       },
     },
     {
@@ -478,13 +482,13 @@ const router = createRouter({
       path: '/checkout/go',
       name: 'checkout-go',
       component: () => import('../pages/CheckoutGoPage.vue'),
-      meta: { requiresAuth: true, presentation: 'page', statusBar: 'auto', hideAppChrome: true },
+      meta: { requiresAuth: true, presentation: 'page', statusBar: 'auto', hideAppChrome: true, suppressMainBottomInset: true },
     },
     {
       path: '/checkout/return',
       name: 'checkout-return',
       component: () => import('../pages/CheckoutReturnPage.vue'),
-      meta: { requiresAuth: false, presentation: 'page', statusBar: 'auto' },
+      meta: { requiresAuth: false, presentation: 'page', statusBar: 'auto', suppressMainBottomInset: true },
     },
     {
       path: '/verify-otp',

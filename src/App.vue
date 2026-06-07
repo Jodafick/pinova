@@ -226,23 +226,28 @@ const isFullscreenPresentationRoute = computed(
   () => (route.meta as { presentation?: string }).presentation === 'fullscreen',
 )
 
-/** Routes immersives hors query `?pin=` : pas de padding chrome du `<main>` (safe + header fantôme). */
-const suppressMobileMainChromeInsets = computed(() => {
-  if (isMobileFullscreenRoute.value || isFullscreenPresentationRoute.value || hideAppChrome.value) {
-    return true
-  }
+/** Routes plein écran (création, onboarding) : pas de padding chrome du `<main>`. */
+const suppressMobileMainChromeInsets = computed(
+  () =>
+    isMobileFullscreenRoute.value ||
+    isFullscreenPresentationRoute.value ||
+    hideAppChrome.value,
+)
+
+/** Concours, premium, etc. : pas de padding bas tab bar (la barre n’est pas affichée). */
+const suppressMobileMainBottomInset = computed(() => {
   const meta = route.meta as { suppressMainBottomInset?: boolean }
   return meta.suppressMainBottomInset === true
 })
 
-/** PWA mobile : remplir la coque sans min-height 100svh empilés (vide scrollable en bas). */
+/** PWA mobile : coque viewport sans scroll document (création / onboarding uniquement). */
 const isImmersiveMobileRoute = computed(
   () => isLgDown.value && suppressMobileMainChromeInsets.value,
 )
 
 /** Padding bas #main-content : réserve la tab bar fixe quand elle est visible. */
 const mainMobileBottomPadClass = computed(() => {
-  if (suppressAppChrome.value || suppressMobileMainChromeInsets.value) return ''
+  if (suppressAppChrome.value || suppressMobileMainBottomInset.value) return ''
   if (suppressMobileChromeForProfileDrawer.value) return ''
   if (showMobileTabBar.value) {
     return 'max-lg:pb-[calc(var(--pinova-mobile-tab-bar-h,5rem)+env(safe-area-inset-bottom,0px))] lg:pb-0'
@@ -427,9 +432,13 @@ watch(
   },
 )
 
-/** Marge haute du `<main>` : barre chrome fixe (GlobalHeader et/ou barre page mobile). */
+/** Marge haute du `<main>` : barre chrome fixe (GlobalHeader desktop et barre page mobile). */
 const needsMainChromeTopPad = computed(
-  () => !suppressAppChrome.value && !suppressMobileMainChromeInsets.value,
+  () =>
+    !suppressAppChrome.value &&
+    !isMobileFullscreenRoute.value &&
+    !hideAppChrome.value &&
+    !isFullscreenPresentationRoute.value,
 )
 
 const appMobilePageTitle = computed(() => {
@@ -797,8 +806,9 @@ const pageTransitionName = computed(() => {
     background: #000;
   }
 
-  /* Onboarding, création, concours dock : pas de min-height 100svh empilé → vide PWA en bas. */
-  .app-immersive-route .pinova-page-transition-host {
+  /* Onboarding / création : pas de min-height 100svh empilé → vide PWA en bas. */
+  .app-immersive-route .pinova-page-transition-host,
+  .app-immersive-route .pinova-page-transition-host > * {
     min-height: 0;
     flex: 1 1 auto;
     height: auto;

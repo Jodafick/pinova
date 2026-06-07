@@ -537,14 +537,14 @@ onMounted(async () => {
 
 <template>
   <main
-    class="creator-dashboard-page relative w-full min-w-0 min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-8rem)] overflow-x-hidden
+    class="creator-dashboard-page relative w-full min-w-0 min-h-0 flex-1 overflow-x-hidden
            bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"
   >
     <div
       class="pointer-events-none absolute inset-x-0 top-0 h-[min(52rem,85vh)] bg-[radial-gradient(ellipse_95%_72%_at_50%_-8%,rgba(192,38,211,0.14),transparent_58%),radial-gradient(ellipse_70%_55%_at_100%_0%,rgba(99,102,241,0.12),transparent_50%),radial-gradient(ellipse_55%_50%_at_0%_20%,rgba(244,114,182,0.1),transparent_48%)] dark:bg-[radial-gradient(ellipse_95%_72%_at_50%_-8%,rgba(192,38,211,0.16),transparent_58%),radial-gradient(ellipse_70%_55%_at_100%_0%,rgba(99,102,241,0.14),transparent_52%),radial-gradient(ellipse_55%_50%_at_0%_20%,rgba(244,114,182,0.08),transparent_50%)]"
       aria-hidden="true"
     />
-    <div class="relative w-full min-w-0 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-11 lg:py-14">
+    <div class="relative w-full min-w-0 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-11 lg:py-14 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-11 lg:pb-14">
 
       <!-- Loading skeleton -->
       <div v-if="loading" aria-busy="true">
@@ -556,12 +556,12 @@ onMounted(async () => {
 
         <!-- ── Navigation ───────────────────────────────────────── -->
         <nav
-          class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-10 sm:mb-12"
+          class="mb-8 flex flex-col gap-2.5 sm:mb-12 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3"
           aria-label="breadcrumb"
         >
           <router-link
             to="/"
-            class="group inline-flex items-center justify-center gap-3 rounded-full border border-neutral-200/90 bg-white/75 px-3 py-2 pr-4 text-sm font-semibold text-neutral-700 shadow-sm backdrop-blur-xl transition hover:border-neutral-300 hover:bg-white hover:shadow-md dark:border-white/[0.08] dark:bg-neutral-900/55 dark:text-neutral-200 dark:hover:bg-neutral-900/85 dark:hover:border-white/[0.12]"
+            class="group inline-flex w-full items-center justify-center gap-3 rounded-full border border-neutral-200/90 bg-white/90 px-3 py-2.5 pr-4 text-sm font-semibold text-neutral-700 shadow-sm backdrop-blur-xl transition hover:border-neutral-300 hover:bg-white hover:shadow-md dark:border-white/[0.08] dark:bg-neutral-900/75 dark:text-neutral-200 dark:hover:bg-neutral-900/90 dark:hover:border-white/[0.12] sm:w-auto sm:justify-start sm:bg-white/75 sm:py-2"
           >
             <span
               class="flex size-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 ring-1 ring-black/[0.04] transition group-hover:bg-neutral-200/90 dark:bg-neutral-800 dark:ring-white/[0.06] dark:group-hover:bg-neutral-700"
@@ -573,7 +573,7 @@ onMounted(async () => {
 
           <router-link
             to="/create"
-            class="inline-flex items-center justify-center gap-3 rounded-full border border-pink-500/25 bg-gradient-to-r from-pink-600 to-fuchsia-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-pink-600/28 transition [transition-property:transform,box-shadow,filter] hover:brightness-[1.05] hover:shadow-pink-600/40 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 dark:shadow-pink-900/40"
+            class="inline-flex w-full items-center justify-center gap-3 rounded-full border border-pink-500/25 bg-gradient-to-r from-pink-600 to-fuchsia-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-pink-600/28 transition [transition-property:transform,box-shadow,filter] hover:brightness-[1.05] hover:shadow-pink-600/40 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 dark:shadow-pink-900/40 sm:w-auto"
           >
             <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30">
               <i class="fa-solid fa-plus block text-[14px] leading-none" aria-hidden="true"></i>
@@ -597,25 +597,25 @@ onMounted(async () => {
           />
 
           <div
-            class="relative flex flex-col items-center gap-8 px-6 py-10 text-center sm:px-10 sm:py-11 md:px-12 md:py-12 lg:flex-row lg:items-end lg:justify-between lg:gap-12 lg:text-left"
+            class="relative flex flex-col items-center gap-6 px-5 py-9 text-center sm:gap-8 sm:px-10 sm:py-11 md:px-12 md:py-12 lg:flex-row lg:items-end lg:justify-between lg:gap-12 lg:text-left"
           >
-            <div class="flex w-full max-w-3xl flex-col items-center gap-6 lg:max-w-none lg:flex-row lg:items-end lg:gap-8">
+            <div class="flex w-full max-w-3xl flex-col items-center gap-5 sm:gap-6 lg:max-w-none lg:flex-row lg:items-end lg:gap-8">
               <div
-                class="flex size-[4.25rem] shrink-0 items-center justify-center rounded-[1.35rem] bg-white/16 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ring-2 ring-white/25 backdrop-blur-md sm:size-[4.75rem] md:size-[5rem]"
+                class="flex size-16 shrink-0 items-center justify-center rounded-[1.25rem] bg-white/16 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ring-2 ring-white/25 backdrop-blur-md sm:size-[4.75rem] sm:rounded-[1.35rem] md:size-[5rem]"
                 aria-hidden="true"
               >
-                <i class="fa-solid fa-chart-line block text-[1.85rem] leading-none text-white sm:text-[2rem]" aria-hidden="true"></i>
+                <i class="fa-solid fa-chart-line block text-[1.65rem] leading-none text-white sm:text-[2rem]" aria-hidden="true"></i>
               </div>
-              <header class="min-w-0 flex-1 space-y-3">
-                <p class="text-[11px] font-bold uppercase tracking-[0.28em] text-white/75">
+              <header class="min-w-0 flex-1 space-y-2 sm:space-y-3">
+                <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-white/75 sm:text-[11px] sm:tracking-[0.28em]">
                   {{ t('creator.badge') }}
                 </p>
                 <h1
-                  class="font-auth-title font-auth-title--black text-3xl tracking-tight text-white sm:text-[2.15rem] md:text-4xl md:leading-[1.12]"
+                  class="font-auth-title font-auth-title--black text-[1.65rem] leading-tight tracking-tight text-white sm:text-[2.15rem] md:text-4xl md:leading-[1.12]"
                 >
                   {{ t('creator.title') }}
                 </h1>
-                <p class="mx-auto max-w-xl text-[15px] leading-relaxed text-white/82 lg:mx-0 lg:max-w-2xl">
+                <p class="mx-auto max-w-xl text-sm leading-relaxed text-white/82 sm:text-[15px] lg:mx-0 lg:max-w-2xl">
                   {{ t('creator.subtitle') }}
                 </p>
               </header>
@@ -674,14 +674,14 @@ onMounted(async () => {
             </span>
           </div>
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-5">
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-5">
             <template v-for="item in kpis" :key="item.key">
 
               <!-- Pins → link to profile -->
               <router-link
                 v-if="item.key === 'pins' && currentUser?.username"
                 :to="{ path: `/profile/${encodeURIComponent(currentUser.username)}` }"
-                class="creator-kpi-card group relative flex min-h-[11rem] flex-col items-center gap-5 rounded-[1.35rem] border bg-gradient-to-b px-5 pb-6 pt-7 text-center no-underline text-inherit shadow-[0_14px_42px_-28px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.03] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_-24px_rgba(15,23,42,0.42)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 dark:shadow-black/40 dark:ring-white/[0.05] dark:hover:shadow-black/55"
+                class="creator-kpi-card group relative flex min-h-[8.75rem] flex-col items-center gap-3 rounded-[1.2rem] border bg-gradient-to-b px-3 pb-4 pt-5 text-center no-underline text-inherit shadow-[0_14px_42px_-28px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.03] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_-24px_rgba(15,23,42,0.42)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 dark:shadow-black/40 dark:ring-white/[0.05] dark:hover:shadow-black/55 sm:min-h-[11rem] sm:gap-5 sm:rounded-[1.35rem] sm:px-5 sm:pb-6 sm:pt-7"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
               >
                 <div
@@ -706,7 +706,7 @@ onMounted(async () => {
               <button
                 v-else-if="item.key === 'pins'"
                 type="button"
-                class="creator-kpi-card relative flex min-h-[11rem] cursor-not-allowed flex-col items-center gap-5 rounded-[1.35rem] border bg-gradient-to-b px-5 pb-6 pt-7 text-center text-inherit opacity-55 ring-1 ring-black/[0.03] dark:ring-white/[0.05]"
+                class="creator-kpi-card relative flex min-h-[8.75rem] cursor-not-allowed flex-col items-center gap-3 rounded-[1.2rem] border bg-gradient-to-b px-3 pb-4 pt-5 text-center text-inherit opacity-55 ring-1 ring-black/[0.03] dark:ring-white/[0.05] sm:min-h-[11rem] sm:gap-5 sm:rounded-[1.35rem] sm:px-5 sm:pb-6 sm:pt-7"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
                 disabled
               >
@@ -732,7 +732,7 @@ onMounted(async () => {
               <button
                 v-else
                 type="button"
-                class="creator-kpi-card group relative flex min-h-[11rem] cursor-pointer flex-col items-center gap-5 rounded-[1.35rem] border bg-gradient-to-b px-5 pb-6 pt-7 text-center text-inherit shadow-[0_14px_42px_-28px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.03] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_-24px_rgba(15,23,42,0.42)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 dark:shadow-black/40 dark:ring-white/[0.05] dark:hover:shadow-black/55"
+                class="creator-kpi-card group relative flex min-h-[8.75rem] cursor-pointer flex-col items-center gap-3 rounded-[1.2rem] border bg-gradient-to-b px-3 pb-4 pt-5 text-center text-inherit shadow-[0_14px_42px_-28px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.03] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_-24px_rgba(15,23,42,0.42)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 dark:shadow-black/40 dark:ring-white/[0.05] dark:hover:shadow-black/55 sm:min-h-[11rem] sm:gap-5 sm:rounded-[1.35rem] sm:px-5 sm:pb-6 sm:pt-7"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
                 @click="openAudiencePanel(item.key)"
               >
@@ -764,7 +764,7 @@ onMounted(async () => {
         <!-- ── Cockpit : récents + modération ───────────────────── -->
         <section
           id="cockpit"
-          class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/75 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-white/[0.07] dark:bg-neutral-900/55 dark:shadow-black/50"
+          class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/92 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.35)] backdrop-blur-2xl backdrop-saturate-150 dark:border-white/[0.07] dark:bg-neutral-950/88 dark:shadow-black/50 sm:bg-white/75 sm:dark:bg-neutral-900/55"
           aria-labelledby="creator-hub-heading"
         >
           <div
@@ -968,7 +968,7 @@ onMounted(async () => {
         <!-- ── Weekly pins ─────────────────────────────────────── -->
         <section
           id="fenetre"
-          class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/78 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.38)] backdrop-blur-xl ring-1 ring-black/[0.02] dark:border-white/[0.07] dark:bg-neutral-900/55 dark:shadow-black/55 dark:ring-white/[0.04]"
+          class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/92 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.38)] backdrop-blur-2xl backdrop-saturate-150 ring-1 ring-black/[0.02] dark:border-white/[0.07] dark:bg-neutral-950/88 dark:shadow-black/55 dark:ring-white/[0.04] sm:bg-white/78 sm:dark:bg-neutral-900/55"
         >
           <!-- Header -->
           <div
@@ -1188,7 +1188,7 @@ onMounted(async () => {
           v-if="topAllTime.length"
           id="top-classement"
           aria-labelledby="creator-top-heading"
-          class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/78 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-white/[0.07] dark:bg-neutral-900/55 dark:shadow-black/50"
+          class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/92 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.35)] backdrop-blur-2xl backdrop-saturate-150 dark:border-white/[0.07] dark:bg-neutral-950/88 dark:shadow-black/50 sm:bg-white/78 sm:dark:bg-neutral-900/55"
         >
           <!-- Header -->
           <div

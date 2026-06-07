@@ -59,7 +59,13 @@ watch(() => [props.placement, props.topic], () => void load())
 </script>
 
 <template>
-  <div v-if="ad && !dismissed" class="contextual-sponsored-slot pointer-events-auto">
+  <div
+    v-if="ad && !dismissed"
+    class="contextual-sponsored-slot pointer-events-auto"
+    @touchstart.stop
+    @touchend.stop
+    @pointerdown.stop
+  >
     <div
       v-if="variant === 'story'"
       class="absolute inset-x-4 bottom-[5.5rem] z-30 max-w-md mx-auto"

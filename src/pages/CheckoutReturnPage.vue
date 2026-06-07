@@ -316,9 +316,13 @@ onMounted(() => {
 
 
 function continueApp() {
-
-  void router.replace(checkoutSuccessPath(flow.value))
-
+  const path = checkoutSuccessPath(flow.value)
+  clearStashedCheckout()
+  if (typeof window !== 'undefined') {
+    window.location.assign(path)
+    return
+  }
+  void router.replace(path)
 }
 
 
@@ -341,7 +345,7 @@ function retryActivation() {
 
 <template>
 
-  <div class="min-h-[70vh] flex items-center justify-center px-4 pb-16">
+  <div class="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
 
     <PaymentActivationExperience
 

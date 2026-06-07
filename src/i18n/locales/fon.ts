@@ -75,6 +75,7 @@ export const fon: Record<string, string> = {
   'nav.explore': 'Ba kpɔ́n',
   'nav.create': 'Bló',
   'nav.following': 'Mɛ́ siwo n nyá',
+  'nav.promote': 'Ɖo xó',
   'nav.profile': 'Profil',
   'nav.board': 'Tablo',
   'nav.mobileTabBar': 'Ðòɖó kpodo',

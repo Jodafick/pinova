@@ -284,36 +284,52 @@ onUnmounted(() => {
             {{ t('mobile.profile.drawerSectionOffers') }}
           </p>
 
-          <div class="mb-1 flex gap-2.5">
+          <div class="mb-1 grid grid-cols-3 gap-2">
             <router-link
               to="/premium"
-              class="flex min-h-24 flex-1 flex-col items-center justify-center rounded-2xl border border-pink-200/90 bg-white/95 px-2.5 py-3 shadow-lg shadow-black/[0.08] backdrop-blur-sm transition-opacity active:opacity-88 dark:border-pink-800/55 dark:bg-neutral-950/96 dark:shadow-xl dark:shadow-black/50"
+              class="flex min-h-24 flex-col items-center justify-center rounded-2xl border border-pink-200/90 bg-white/95 px-2 py-3 shadow-lg shadow-black/[0.08] backdrop-blur-sm transition-opacity active:opacity-88 dark:border-pink-800/55 dark:bg-neutral-950/96 dark:shadow-xl dark:shadow-black/50"
               @click="close"
             >
               <span
-                class="mb-2 grid h-12 w-12 place-items-center rounded-full bg-violet-500/[0.13] dark:bg-violet-500/20"
+                class="mb-2 grid h-11 w-11 place-items-center rounded-full bg-violet-500/[0.13] dark:bg-violet-500/20"
               >
-                <span class="material-symbols-outlined text-[26px] text-violet-600 dark:text-violet-400"
+                <span class="material-symbols-outlined text-[24px] text-violet-600 dark:text-violet-400"
                   >workspace_premium</span
                 >
               </span>
-              <span class="text-center text-[13px] font-extrabold text-neutral-900 dark:text-neutral-100">{{
+              <span class="text-center text-[12px] font-extrabold text-neutral-900 dark:text-neutral-100">{{
                 t('mobile.profile.drawerPremium')
               }}</span>
             </router-link>
             <router-link
-              to="/creator"
-              class="flex min-h-24 flex-1 flex-col items-center justify-center rounded-2xl border border-neutral-200/90 bg-white/95 px-2.5 py-3 shadow-md shadow-black/[0.06] backdrop-blur-sm transition-opacity active:opacity-88 dark:border-neutral-600/60 dark:bg-neutral-950/96 dark:shadow-lg dark:shadow-black/45"
+              to="/promote"
+              class="flex min-h-24 flex-col items-center justify-center rounded-2xl border border-amber-200/90 bg-white/95 px-2 py-3 shadow-md shadow-black/[0.06] backdrop-blur-sm transition-opacity active:opacity-88 dark:border-amber-800/55 dark:bg-neutral-950/96 dark:shadow-lg dark:shadow-black/45"
               @click="close"
             >
               <span
-                class="mb-2 grid h-12 w-12 place-items-center rounded-full bg-pink-500/15 dark:bg-pink-600/25"
+                class="mb-2 grid h-11 w-11 place-items-center rounded-full bg-amber-500/15 dark:bg-amber-600/25"
               >
-                <span class="material-symbols-outlined text-[26px] text-pink-700 dark:text-pink-400"
+                <span class="material-symbols-outlined text-[24px] text-amber-700 dark:text-amber-400"
+                  >rocket_launch</span
+                >
+              </span>
+              <span class="text-center text-[12px] font-extrabold text-amber-800 dark:text-amber-300">{{
+                t('nav.promote')
+              }}</span>
+            </router-link>
+            <router-link
+              to="/creator"
+              class="flex min-h-24 flex-col items-center justify-center rounded-2xl border border-neutral-200/90 bg-white/95 px-2 py-3 shadow-md shadow-black/[0.06] backdrop-blur-sm transition-opacity active:opacity-88 dark:border-neutral-600/60 dark:bg-neutral-950/96 dark:shadow-lg dark:shadow-black/45"
+              @click="close"
+            >
+              <span
+                class="mb-2 grid h-11 w-11 place-items-center rounded-full bg-pink-500/15 dark:bg-pink-600/25"
+              >
+                <span class="material-symbols-outlined text-[24px] text-pink-700 dark:text-pink-400"
                   >show_chart</span
                 >
               </span>
-              <span class="text-center text-[13px] font-extrabold text-pink-700 dark:text-pink-400">{{
+              <span class="text-center text-[12px] font-extrabold text-pink-700 dark:text-pink-400">{{
                 t('mobile.profile.drawerCreator')
               }}</span>
             </router-link>

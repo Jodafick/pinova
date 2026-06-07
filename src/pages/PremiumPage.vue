@@ -512,7 +512,12 @@ const confirmPendingPayment = async (transactionIdOverride?: string) => {
     return
   }
   const status = await confirmPaymentTransaction(transactionId, false)
-  if (status === 'approved') return
+  if (status === 'approved' && typeof window !== 'undefined') {
+    const next = window.location.pathname.startsWith('/premium')
+      ? window.location.pathname
+      : '/premium'
+    window.location.assign(next)
+  }
 }
 
 const confirmPendingPaymentFromButton = () => {
@@ -569,7 +574,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="premium-page relative isolate flex min-h-full w-full flex-1 flex-col overflow-x-hidden text-neutral-900 dark:text-neutral-100">
+  <div class="premium-page relative isolate flex min-h-0 w-full flex-1 flex-col overflow-x-hidden text-neutral-900 dark:text-neutral-100">
     <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
       <div
         class="absolute -top-44 left-[min(16vw,220px)] h-[min(400px,75vw)] w-[min(400px,92vw)] rounded-full bg-gradient-to-br from-pink-300/75 via-fuchsia-200/50 to-transparent blur-[104px] dark:from-pink-600/32 dark:via-fuchsia-600/22 dark:to-transparent dark:blur-[118px]"
@@ -583,7 +588,7 @@ onUnmounted(() => {
     </div>
 
     <div
-      class="relative z-[1] flex w-full min-w-0 max-w-6xl flex-1 flex-col mx-auto px-4 sm:px-6 max-lg:pt-1 max-lg:pb-6 lg:py-10 xl:py-16"
+      class="relative z-[1] flex w-full min-w-0 max-w-6xl flex-1 flex-col mx-auto px-4 sm:px-6 max-lg:pt-1 max-lg:pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] lg:py-10 xl:py-16"
     >
     <!-- Hero -->
     <div class="max-lg:mb-8 lg:mb-12 xl:mb-14">

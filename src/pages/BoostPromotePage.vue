@@ -147,7 +147,7 @@ async function togglePause(id: number, status: string) {
 </script>
 
 <template>
-  <div class="min-h-[70vh] pb-16">
+  <div class="min-h-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] sm:pb-16">
     <div class="relative overflow-hidden rounded-b-[2rem] bg-gradient-to-br from-pink-600 via-pink-700 to-amber-600 text-white px-4 sm:px-8 pt-8 pb-10">
       <div class="max-w-4xl mx-auto relative z-[1]">
         <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">{{ t('promote.hub.kicker') }}</p>

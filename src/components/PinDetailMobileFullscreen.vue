@@ -246,6 +246,15 @@ function clearLongPressTimer() {
   }
 }
 
+function shouldIgnoreSurfaceGesture(target: EventTarget | null) {
+  if (!(target instanceof Element)) return false
+  return Boolean(
+    target.closest(
+      '.contextual-sponsored-slot, .sponsored-native-strip, .pin-mobile-rail, .pin-mobile-caption, button, a, input, textarea, select, [role="button"]',
+    ),
+  )
+}
+
 function beginGesture(x: number, y: number) {
   if (isExitClosing.value) return
   if (commentsOpen.value || actionsOpen.value) return
@@ -384,6 +393,7 @@ function endGesture(x: number, y: number) {
 
 function onSurfacePointerDown(e: PointerEvent) {
   if (e.pointerType === 'touch') return
+  if (shouldIgnoreSurfaceGesture(e.target)) return
   ;(e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId)
   beginGesture(e.clientX, e.clientY)
 }
@@ -409,6 +419,7 @@ function onSurfacePointerCancel() {
 function onSurfaceTouchStart(e: TouchEvent) {
   const touch = e.changedTouches[0]
   if (!touch) return
+  if (shouldIgnoreSurfaceGesture(e.target)) return
   beginGesture(touch.clientX, touch.clientY)
 }
 
@@ -776,14 +787,14 @@ onUnmounted(() => {
                   {{ t('pin.detail.externalLink') }}
                 </a>
               </div>
-            </main>
 
-            <div
-              v-if="slide.active && !isPinOwner && chromeVisible"
-              class="absolute inset-x-4 bottom-[6.5rem] z-20 max-w-md pointer-events-auto"
-            >
-              <ContextualSponsoredSlot placement="pin_detail" :topic="slide.pin.topic" variant="detail" tone="dark" />
-            </div>
+              <div
+                v-if="slide.active && !isPinOwner"
+                class="mt-3 max-w-[calc(100%-3rem)] pointer-events-auto"
+              >
+                <ContextualSponsoredSlot placement="pin_detail" :topic="slide.pin.topic" variant="detail" tone="dark" />
+              </div>
+            </main>
           </template>
         </div>
       </div>

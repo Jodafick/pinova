@@ -193,14 +193,15 @@ const navMain = computed<NavItem[]>(() => {
   return base
 })
 
-/** Concours, parrainage, suivis — réservé compte connecté. */
+/** Suivis — réservé compte connecté. */
 const navCommunity = computed<NavItem[]>(() => {
   if (!isAuthenticated.value) return []
-  return [
-    { name: 'contest-live', label: t('nav.contest'), to: '/contest/live' },
-    { name: 'referral-contest-live', label: t('nav.referral'), to: '/referrals/contest' },
-    { name: 'following', label: t('nav.following'), to: '/following' },
-  ]
+  return [{ name: 'following', label: t('nav.following'), to: '/following' }]
+})
+
+const navPromote = computed<NavItem[]>(() => {
+  if (!isAuthenticated.value) return []
+  return [{ name: 'boost-promote', label: t('nav.promote'), to: '/promote' }]
 })
 
 const navCreateExtras = computed<NavItem[]>(() => {
@@ -212,7 +213,40 @@ const navCreateExtras = computed<NavItem[]>(() => {
   return out
 })
 
-const navFull = computed(() => [...navMain.value, ...navCommunity.value, ...navCreateExtras.value])
+/** Concours & parrainage — menu profil desktop (hors barre principale). */
+const navProfileContest = computed<NavItem[]>(() => {
+  if (!isAuthenticated.value) return []
+  return [
+    { name: 'contest-live', label: t('nav.contest'), to: '/contest/live' },
+    { name: 'referral-contest-live', label: t('nav.referral'), to: '/referrals/contest' },
+  ]
+})
+
+const navFull = computed(() => [
+  ...navMain.value,
+  ...navCommunity.value,
+  ...navPromote.value,
+  ...navCreateExtras.value,
+])
+
+const navMoreItems = computed(() => [...navCommunity.value, ...navPromote.value, ...navCreateExtras.value])
+
+function isNavItemActive(item: NavItem): boolean {
+  if (item.name === 'boost-promote') {
+    return currentRoute.value === 'boost-promote' || route.path.startsWith('/promote')
+  }
+  return currentRoute.value === item.name
+}
+
+function isProfileMenuItemActive(item: NavItem): boolean {
+  if (item.name === 'contest-live') {
+    return route.path.startsWith('/contest')
+  }
+  if (item.name === 'referral-contest-live') {
+    return route.path.startsWith('/referrals')
+  }
+  return currentRoute.value === item.name
+}
 
 const navMoreRef = ref<HTMLDetailsElement | null>(null)
 
@@ -496,7 +530,7 @@ watch(
         :to="item.to"
         class="px-3.5 py-2 rounded-full text-sm font-semibold transition-colors relative whitespace-nowrap"
         :class="
-          currentRoute === item.name
+          isNavItemActive(item)
             ? 'bg-neutral-900 text-white dark:bg-pink-600 dark:text-white'
             : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
         "
@@ -529,7 +563,7 @@ watch(
       </router-link>
 
       <details
-        v-if="navCommunity.length || navCreateExtras.length"
+        v-if="navMoreItems.length"
         ref="navMoreRef"
         class="relative group bg-transparent rounded-full"
         style="background-color: transparent !important;"
@@ -1025,6 +1059,28 @@ watch(
                 >
                   {{ currentPlanLabel }}
                 </span>
+              </router-link>
+            </div>
+
+            <div
+              v-if="navProfileContest.length"
+              class="border-t border-neutral-200/70 dark:border-neutral-700/80 py-1"
+            >
+              <p class="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-neutral-400">
+                {{ t('header.user.sectionContests') }}
+              </p>
+              <router-link
+                v-for="item in navProfileContest"
+                :key="'profile-' + item.name"
+                :to="item.to"
+                class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
+                :class="isProfileMenuItemActive(item) ? 'bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : ''"
+                @click="closeDropdowns"
+              >
+                <span class="material-symbols-outlined text-lg">{{
+                  item.name === 'contest-live' ? 'emoji_events' : 'card_giftcard'
+                }}</span>
+                {{ item.label }}
               </router-link>
             </div>
 
