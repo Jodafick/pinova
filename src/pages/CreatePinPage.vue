@@ -181,7 +181,7 @@ function skipCompleteDetails() {
     leaveCreateFlow()
     return
   }
-  void router.push({ path: '/', query: { pin: slug } })
+  window.location.assign(`/?pin=${encodeURIComponent(slug)}`)
 }
 const loadingEdit = ref(false)
 const createStep = ref<1 | 2>(1)
@@ -720,9 +720,9 @@ const submitPin = async () => {
     }
     if (layer.value) closeLayer()
     if (isStory.value && destSlug) {
-      router.push({ path: '/', query: { story: destSlug } })
+      window.location.assign(`/?story=${encodeURIComponent(destSlug)}`)
     } else {
-      router.push(destSlug ? `/pin/${destSlug}` : '/')
+      window.location.assign(destSlug ? `/pin/${encodeURIComponent(destSlug)}` : '/')
     }
   } catch (err: unknown) {
     console.error('Erreur lors de la publication:', err)

@@ -1114,9 +1114,9 @@ function onSkipLater() {
   align-items: center;
   gap: 0.65rem;
   padding: 0.85rem 0 max(1rem, calc(0.85rem + env(safe-area-inset-bottom, 0px)));
-  background: linear-gradient(180deg, rgba(255, 245, 247, 0) 0%, rgba(255, 245, 247, 0.92) 28%, rgba(255, 245, 247, 0.98) 100%);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .onboarding-footer--solo {
@@ -1135,7 +1135,7 @@ function onSkipLater() {
 
 .onboarding-root--dark .onboarding-footer,
 :global(html.dark) .onboarding-footer {
-  background: linear-gradient(180deg, rgba(10, 10, 11, 0) 0%, rgba(10, 10, 11, 0.88) 28%, rgba(10, 10, 11, 0.96) 100%);
+  background: transparent;
 }
 
 .onboarding-btn {
@@ -1152,16 +1152,15 @@ function onSkipLater() {
 
 .onboarding-btn--ghost {
   color: #52525b;
-  background: rgba(255, 255, 255, 0.45);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  backdrop-filter: blur(10px);
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .onboarding-root--dark .onboarding-btn--ghost,
 :global(html.dark) .onboarding-btn--ghost {
   color: #d4d4d8;
-  background: rgba(38, 38, 38, 0.45);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .onboarding-btn--primary {

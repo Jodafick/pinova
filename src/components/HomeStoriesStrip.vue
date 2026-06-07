@@ -15,7 +15,13 @@ import {
   upsertStoryRingSession,
 } from '../utils/storyRingProgress'
 import type { StorySessionEndPayload } from '../utils/storyRingProgress'
-import { getCachedHomeStoriesGroups, setCachedHomeStoriesGroups } from '../utils/activeStoriesCache'
+import {
+  getCachedHomeStoriesGroups,
+  invalidateHomeStoriesCache,
+  setCachedHomeStoriesGroups,
+  subscribeHomeStoriesRefresh,
+} from '../utils/activeStoriesCache'
+import { subscribeNotificationLive, type NotificationLivePayload } from '../lib/notificationRefresh'
 
 const props = withDefaults(
   defineProps<{
@@ -46,7 +52,6 @@ type StoryRingGroupUi = {
 
 const groups = ref<StoryRingGroupUi[]>([])
 const loading = ref(true)
-const refreshingStories = ref(false)
 const viewerOpen = ref(false)
 const viewerPins = ref<Pin[]>([])
 const viewerInitialIndex = ref(0)
@@ -117,15 +122,13 @@ async function load(opts?: { soft?: boolean; force?: boolean }) {
         pins: [...g.pins],
       }))
       loading.value = false
-      refreshingStories.value = false
       await nextTick()
       syncScrollMetrics()
       return
     }
   }
 
-  if (soft) refreshingStories.value = true
-  else loading.value = true
+  if (!soft) loading.value = true
   try {
     const res = await api.get('pins/active-stories/')
     const rawGroups = res.data.groups
@@ -180,10 +183,20 @@ async function load(opts?: { soft?: boolean; force?: boolean }) {
     groups.value = []
   } finally {
     loading.value = false
-    refreshingStories.value = false
     await nextTick()
     syncScrollMetrics()
   }
+}
+
+function shouldRefreshFromNotification(payload: NotificationLivePayload): boolean {
+  const kind = String(payload.metadata?.kind || '').toLowerCase()
+  if (kind === 'story_new_from_following') return true
+  if (payload.metadata?.is_story === true) return true
+  return false
+}
+
+function refreshStoriesFromLiveChannel() {
+  void load({ soft: true, force: true })
 }
 
 /** Vignette anneau : dernier pin de la story (chronologie) préféré ; image puis vidéo. */
@@ -288,6 +301,8 @@ function syncScrollMetrics() {
 }
 
 let ro: ResizeObserver | null = null
+let unsubStoriesRefresh: (() => void) | null = null
+let unsubNotificationLive: (() => void) | null = null
 
 watch(scrollEl, (el) => {
   ro?.disconnect()
@@ -300,6 +315,10 @@ onMounted(() => {
   if (scrollEl.value && ro) ro.observe(scrollEl.value)
   void load()
   window.addEventListener('resize', syncScrollMetrics)
+  unsubStoriesRefresh = subscribeHomeStoriesRefresh(refreshStoriesFromLiveChannel)
+  unsubNotificationLive = subscribeNotificationLive((payload) => {
+    if (shouldRefreshFromNotification(payload)) invalidateHomeStoriesCache()
+  })
 })
 
 watch(groups, () => nextTick(syncScrollMetrics))
@@ -321,6 +340,10 @@ onUnmounted(() => {
   window.removeEventListener('resize', syncScrollMetrics)
   ro?.disconnect()
   ro = null
+  unsubStoriesRefresh?.()
+  unsubStoriesRefresh = null
+  unsubNotificationLive?.()
+  unsubNotificationLive = null
 })
 </script>
 
@@ -336,23 +359,6 @@ onUnmounted(() => {
       >
         {{ t('home.stories.title') }}
       </h2>
-      <button
-        type="button"
-        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition disabled:opacity-50"
-        :class="
-          feedChrome
-            ? 'border border-neutral-200 bg-white/80 text-pink-700 hover:bg-neutral-50 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/15'
-            : 'border border-neutral-200 bg-white text-pink-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-pink-600 dark:hover:bg-neutral-800'
-        "
-        :disabled="refreshingStories"
-        :aria-label="t('home.stories.reload')"
-        @click="load({ soft: true, force: true })"
-      >
-        <span
-          class="material-symbols-outlined text-[22px]"
-          :class="refreshingStories ? 'animate-spin' : ''"
-        >refresh</span>
-      </button>
     </div>
 
     <div class="relative flex items-center gap-1 sm:gap-2">

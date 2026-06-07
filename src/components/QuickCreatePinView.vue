@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
@@ -9,6 +8,7 @@ import { pushToast } from '../composables/useToast'
 import BirthDateRequiredModal from './BirthDateRequiredModal.vue'
 import StoryImageCropEditor from './StoryImageCropEditor.vue'
 import { appendQuickPinFormData, resolveQuickPinTitle } from '../composables/pinCreateShared'
+import { useTopicSuggestions } from '../composables/useTopicSuggestions'
 import {
   moderationScanImageFile,
   moderationScanText,
@@ -21,13 +21,13 @@ import { useLayer } from '../navigation/useLayer'
 
 const emit = defineEmits<{ cancel: [] }>()
 
-const router = useRouter()
 const { t, currentLang } = useI18n()
 const { showAlert } = useAppModal()
 const { addPin } = usePins()
 const { currentUser, isAuthenticated, fetchCurrentUser } = useAuth()
 const { isLgDown } = useIsLgDown()
 const { layer, close: closeLayer, popAll } = useLayer()
+const { selectedTopic, chipOptions, selectTopic, isSelected } = useTopicSuggestions()
 
 type QuickStep = 'pick' | 'edit' | 'publish'
 
@@ -167,16 +167,16 @@ function onCropCancel() {
   step.value = 'pick'
 }
 
+const canPublishHint = computed(() => {
+  if (needsBirthDateForMedia.value) return t('create.banner.birthDate')
+  if (mediaModerationPending.value) return t('moderation.scanningMediaShort')
+  if (!hasMedia.value) return t('create.quick.mediaHint')
+  return ''
+})
+
 async function navigateAfterPublish(slug: string) {
-  if (layer.value) {
-    popAll()
-    await nextTick()
-  }
-  try {
-    await router.push(`/pin/${encodeURIComponent(slug)}/edit?complete=1`)
-  } catch {
-    window.location.assign(`/pin/${encodeURIComponent(slug)}/edit?complete=1`)
-  }
+  if (layer.value) popAll()
+  window.location.assign(`/?pin=${encodeURIComponent(slug)}`)
 }
 
 async function publish() {
@@ -199,6 +199,7 @@ async function publish() {
       title: resolvedTitle,
       authorId: currentUser.value.id,
       imageFile: imageFile.value,
+      topic: selectedTopic.value,
       mediaSensitiveBlur:
         pendingSensitiveBlur.value && isVerifiedAdultFromBirthDate(currentUser.value.birthDate),
     })
@@ -333,7 +334,7 @@ onMounted(() => {
       <div class="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] lg:mx-auto lg:max-w-xl lg:w-full">
         <div
           v-if="imagePreviewUrl"
-          class="mx-auto mb-4 flex max-h-[min(32svh,280px)] w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/55 lg:max-h-[360px]"
+          class="relative mx-auto mb-4 flex max-h-[min(32svh,280px)] w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/55 lg:max-h-[360px]"
         >
           <img :src="imagePreviewUrl" alt="" class="max-h-[min(32svh,280px)] w-full object-contain lg:max-h-[360px]">
           <div
@@ -357,6 +358,27 @@ onMounted(() => {
             class="w-full border-0 border-b-2 border-white/14 bg-transparent pb-3 text-2xl font-black tracking-tight text-white outline-none placeholder:text-white/35 focus:border-pink-500/60"
           >
 
+          <div class="space-y-2">
+            <p class="text-xs font-semibold text-white/70">{{ t('create.quick.categoryLabel') }}</p>
+            <p class="text-[11px] leading-snug text-white/45">{{ t('create.quick.categoryHint') }}</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="chip in chipOptions"
+                :key="chip.originalName || chip.name"
+                type="button"
+                class="rounded-full border px-3 py-1.5 text-xs font-semibold transition active:scale-[0.98]"
+                :class="
+                  isSelected(chip)
+                    ? 'border-pink-400 bg-pink-500/20 text-white'
+                    : 'border-white/15 bg-white/5 text-white/75 hover:border-white/25'
+                "
+                @click="selectTopic(chip)"
+              >
+                {{ chip.name }}
+              </button>
+            </div>
+          </div>
+
           <button
             type="button"
             class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-700 to-fuchsia-600 py-4 text-base font-black text-white shadow-lg transition active:scale-[0.98] disabled:opacity-50"
@@ -376,6 +398,10 @@ onMounted(() => {
                   : t('create.quick.publishNow')
             }}
           </button>
+
+          <p v-if="canPublishHint && !canPublish" class="text-center text-xs text-amber-200/90">
+            {{ canPublishHint }}
+          </p>
 
           <p class="text-center text-xs text-white/40">{{ t('create.quick.detailsLater') }}</p>
         </div>

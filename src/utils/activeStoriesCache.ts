@@ -21,6 +21,12 @@ export type HomeStoriesGroupsCache = Array<{
 }>
 
 const profileStoriesCache = new Map<string, { pins: Pin[]; at: number }>()
+const homeStripRefreshListeners = new Set<() => void>()
+
+export function subscribeHomeStoriesRefresh(listener: () => void): () => void {
+  homeStripRefreshListeners.add(listener)
+  return () => homeStripRefreshListeners.delete(listener)
+}
 
 function normUser(u: string) {
   return u.trim().toLowerCase()
@@ -40,6 +46,13 @@ export function setCachedHomeStoriesGroups(groups: HomeStoriesGroupsCache) {
 
 export function invalidateHomeStoriesCache() {
   homeStripCache = null
+  for (const fn of [...homeStripRefreshListeners]) {
+    try {
+      fn()
+    } catch {
+      /* noop */
+    }
+  }
 }
 
 export function getCachedProfileActiveStories(
