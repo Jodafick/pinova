@@ -1,8 +1,11 @@
+import path from 'node:path'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
+
+const sharedAlias = path.resolve(__dirname, 'src/shared/index.ts')
 
 const sentryRelease = process.env.VITE_SENTRY_RELEASE || process.env.SENTRY_RELEASE || ''
 const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN || ''
@@ -22,6 +25,11 @@ export default defineConfig(({ mode }) => {
         },
       }
     : undefined,
+  resolve: {
+    alias: {
+      '@pinova/shared': sharedAlias,
+    },
+  },
   plugins: [
     vue(),
     tailwindcss(),
