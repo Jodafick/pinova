@@ -196,9 +196,23 @@ api.interceptors.request.use((config) => {
   const existingAuth = config.headers?.Authorization
   if (existingAuth) return config
 
-  const token = typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null
+  let token = typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    const exp = decodeJwtExp(token)
+    const now = Math.floor(Date.now() / 1000)
+    const expired = exp !== null && exp <= now
+    if (expired) {
+      const refresh = readStoredRefreshToken()
+      if (!refresh && !canAttemptCookieRefresh()) {
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('pinova_token')
+        }
+        token = null
+      }
+    }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
   }
   const deviceId = typeof window !== 'undefined' ? ensureDeviceBindingId() : ''
   if (deviceId) {
@@ -231,6 +245,7 @@ api.interceptors.response.use(
       `${String(originalRequest.baseURL ?? '')}${String(originalRequest.url ?? '')}`
     const isRefreshRequest = requestUrl.includes('auth/token/refresh/')
     const isRetried = !!originalRequest._retry
+    const isAnonRetried = !!originalRequest._retryAnon
     const skipRefreshRetry =
       requestUrl.includes('auth/login/') ||
       requestUrl.includes('auth/registration/') ||
@@ -239,10 +254,23 @@ api.interceptors.response.use(
       status === 401 &&
       !isRefreshRequest &&
       !isRetried &&
+      !isAnonRetried &&
       !skipRefreshRetry
     ) {
       const refreshToken = readStoredRefreshToken()
       if (!refreshToken && !canAttemptCookieRefresh()) {
+        if (!originalRequest._retryAnon) {
+          originalRequest._retryAnon = true
+          clearStoredTokens()
+          originalRequest.headers = originalRequest.headers || {}
+          delete originalRequest.headers.Authorization
+          delete (originalRequest.headers as Record<string, unknown>)['authorization']
+          try {
+            return await api.request(originalRequest)
+          } catch (anonErr) {
+            return Promise.reject(anonErr)
+          }
+        }
         clearStoredTokens()
         return Promise.reject(error)
       }
