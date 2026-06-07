@@ -1,6 +1,6 @@
 {
   "installCommand": "cd .. && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm build",
+  "buildCommand": "cd .. && pnpm --filter pinova build:vercel",
   "outputDirectory": "dist",
   "rewrites": [
     {

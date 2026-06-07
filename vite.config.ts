@@ -150,7 +150,7 @@ export default defineConfig(({ mode }) => {
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,vue}'],
-        globIgnores: ['**/assets/group*-shard*.js'],
+        globIgnores: ['**/assets/group*-shard*.js', '**/assets/vendor-tfjs*.js'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
