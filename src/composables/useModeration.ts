@@ -1,6 +1,6 @@
 /**
  * Façade modération — réexporte la politique pure et délègue les scans lourds
- * (nsfwjs, glin-profanity) via imports dynamiques pour ne pas alourdir le bundle initial.
+ * (nsfwjs, blocklist texte partagée) via imports dynamiques pour ne pas alourdir le bundle initial.
  */
 export {
   hasRequiredBirthDateForMediaPublish,

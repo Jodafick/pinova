@@ -225,7 +225,7 @@ export default defineConfig(({ mode }) => {
         manualChunks(id) {
           if (!id.includes('node_modules')) return
           if (id.includes('@fortawesome')) return 'vendor-icons'
-          if (id.includes('@tensorflow') || id.includes('nsfwjs') || id.includes('glin-profanity')) {
+          if (id.includes('@tensorflow') || id.includes('nsfwjs')) {
             return 'vendor-tfjs'
           }
           if (
