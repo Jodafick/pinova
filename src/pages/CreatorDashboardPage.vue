@@ -884,6 +884,12 @@ onMounted(async () => {
                     >
                       {{ t('creator.editPin') }} →
                     </router-link>
+                    <router-link
+                      :to="{ name: 'boost-promote', query: { pin: rp.slug } }"
+                      class="text-[11px] font-semibold text-amber-700 dark:text-amber-400"
+                    >
+                      {{ t('pin.boost.cta') }} →
+                    </router-link>
                   </div>
                 </li>
               </ul>

@@ -27,6 +27,7 @@ import PinDetailMobileFullscreen from './PinDetailMobileFullscreen.vue'
 import PinDetailDesktopModal from './PinDetailDesktopModal.vue'
 import ReportContentModal from './ReportContentModal.vue'
 import StoryLikersModal from './StoryLikersModal.vue'
+import PromotePinSheet from './PromotePinSheet.vue'
 
 type CommentSubmitPayload = {
   text: string
@@ -171,6 +172,12 @@ const submittingComment = ref(false)
 const reportModalOpen = ref(false)
 const reportTarget = ref<'pin' | 'comment'>('pin')
 const reportCommentId = ref<number | null>(null)
+const promoteSheetOpen = ref(false)
+
+function openPromoteBoost() {
+  if (!isPinOwner.value || !activePin.value?.slug) return
+  promoteSheetOpen.value = true
+}
 const storyLikersOpen = ref(false)
 const openingOriginRect = ref<PinOverlayOriginRect | null>(null)
 
@@ -734,6 +741,7 @@ async function handleDeleteComment(commentId: number) {
     @share="handleShare"
     @download="handleDownload"
     @report="openReportPin"
+    @boost="openPromoteBoost"
     @follow="handleFollow"
     @translate-description="handleTranslateDescription"
     @open-likers="storyLikersOpen = true"
@@ -780,6 +788,7 @@ async function handleDeleteComment(commentId: number) {
     @share="handleShare"
     @download="handleDownload"
     @report="openReportPin"
+    @boost="openPromoteBoost"
     @follow="handleFollow"
     @translate-description="handleTranslateDescription"
     @open-likers="storyLikersOpen = true"
@@ -802,5 +811,13 @@ async function handleDeleteComment(commentId: number) {
     v-model="reportModalOpen"
     :context-label="activePin?.title || ''"
     @submit="handleSubmitReport"
+  />
+
+  <PromotePinSheet
+    v-if="activePin"
+    :open="promoteSheetOpen"
+    :pin-slug="activePin.slug"
+    initial-mode="boost"
+    @close="promoteSheetOpen = false"
   />
 </template>

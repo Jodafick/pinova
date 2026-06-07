@@ -64,6 +64,7 @@ const emit = defineEmits<{
   (e: 'share'): void
   (e: 'download'): void
   (e: 'report'): void
+  (e: 'boost'): void
   (e: 'follow'): void
   (e: 'translate-description'): void
   (e: 'open-likers'): void
@@ -893,7 +894,19 @@ onUnmounted(() => {
         </button>
 
         <button
-          v-if="canShowDownload"
+          v-if="isPinOwner && pin.slug"
+          type="button"
+          class="pin-mobile-action-row"
+          :aria-label="t('pin.boost.cta')"
+          @click="actionsOpen = false; emit('boost')"
+        >
+          <span class="pin-mobile-action-icon pin-mobile-action-icon--boost">
+            <span class="pin-mobile-filled material-symbols-outlined text-[20px]">rocket_launch</span>
+          </span>
+          <span class="min-w-0 flex-1 text-left font-bold">{{ t('pin.boost.cta') }}</span>
+        </button>
+
+        <button
           type="button"
           class="pin-mobile-action-row"
           :aria-label="t('pin.a11y.download')"
@@ -1232,6 +1245,11 @@ onUnmounted(() => {
   background: rgb(219 39 119 / 0.14);
   color: var(--pn-pink-strong);
   flex: 0 0 auto;
+}
+
+.pin-mobile-action-icon--boost {
+  background: rgb(245 158 11 / 0.18);
+  color: #d97706;
 }
 
 :global(.dark) .pin-mobile-sheet {

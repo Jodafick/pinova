@@ -65,6 +65,7 @@ function markToastSeen(id: number): void {
 function shouldShowInAppToast(payload: NotificationLivePayload): boolean {
   if (payload.is_read) return false
   if (payload.in_app_toast === false) return false
+  if (payload.in_app_toast === true) return true
   const kind = String(payload.metadata?.kind || '').toLowerCase()
   if (kind === 'contest_display_rank_change') return false
   return true

@@ -509,15 +509,6 @@ onUnmounted(() => {
         <button
           type="button"
           role="menuitem"
-          class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
-          @click="gridOwnerMenuSlug ? openPromoteSheet(gridOwnerMenuSlug, 'campaign') : null"
-        >
-          <span class="material-symbols-outlined text-lg text-pink-600" aria-hidden="true">campaign</span>
-          {{ t('promote.campaigns.menu') }}
-        </button>
-        <button
-          type="button"
-          role="menuitem"
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-400 hover:bg-red-50/90 dark:hover:bg-red-950/35 transition-colors"
           @click="gridOwnerMenuSlug ? confirmDeleteGridOwnedPin(gridOwnerMenuSlug) : null"
         >

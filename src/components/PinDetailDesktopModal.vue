@@ -59,6 +59,7 @@ const emit = defineEmits<{
   (e: 'share'): void
   (e: 'download'): void
   (e: 'report'): void
+  (e: 'boost'): void
   (e: 'follow'): void
   (e: 'translate-description'): void
   (e: 'open-likers'): void
@@ -166,6 +167,15 @@ function onVideoMetadata(e: Event) {
           <div class="pin-detail-info-pane flex max-h-[86vh] w-[440px] min-w-[380px] flex-col overflow-y-auto p-8">
             <div class="pin-detail-actions mb-6 flex items-center justify-between gap-4">
               <div class="flex flex-wrap items-center gap-2">
+                <button
+                  v-if="isPinOwner && pin.slug"
+                  type="button"
+                  class="lux-icon-ring-btn"
+                  :aria-label="t('pin.boost.cta')"
+                  @click="emit('boost')"
+                >
+                  <span class="pin-desktop-filled material-symbols-outlined text-amber-600" aria-hidden="true">rocket_launch</span>
+                </button>
                 <button
                   v-if="!isOwnStory"
                   type="button"
