@@ -728,6 +728,8 @@ export const fr: Record<string, string> = {
   'explore.seeAllBoards': 'Voir plus',
   'explore.allCategories': 'Toutes les catégories',
   'explore.boardsLoadError': 'Impossible de charger les tableaux.',
+  'explore.categoriesEmpty': 'Aucune catégorie disponible pour le moment.',
+  'explore.boardsEmpty': 'Aucun tableau public à afficher pour le moment.',
   'explore.showMoreCategories': 'Voir plus',
   'following.title': 'Pins des comptes suivis',
   'following.subtitle': 'Retrouvez uniquement les pins des créateurs que vous suivez.',

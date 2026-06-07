@@ -10,7 +10,7 @@ import PinGrid from './PinGrid.vue'
 import PinovaModal from './ui/PinovaModal.vue'
 import { useI18n } from '../i18n'
 import { useDataSaver } from '../composables/useDataSaver'
-import { fetchHeaderSearch, type HeaderSearchBoard } from '../composables/useHeaderSearch'
+import { fetchExploreBoardsPage, fetchHeaderSearch, type HeaderSearchBoard } from '../composables/useHeaderSearch'
 
 const { t, currentLang } = useI18n()
 const { isLowDataMode } = useDataSaver()
@@ -98,14 +98,25 @@ const loadCategories = async (query = '') => {
 const loadBoards = async (query = '') => {
   boardsLoading.value = true
   try {
-    const result = await fetchHeaderSearch(query, 8)
-    boards.value = result.boards
+    const trimmed = query.trim()
+    if (trimmed) {
+      const result = await fetchHeaderSearch(trimmed, 8)
+      boards.value = result.boards
+    } else {
+      const result = await fetchExploreBoardsPage({ page: 1, pageSize: 8 })
+      boards.value = result.results
+    }
   } catch (err) {
     console.error('Erreur lors du chargement des tableaux:', err)
     boards.value = []
   } finally {
     boardsLoading.value = false
   }
+}
+
+async function reloadDiscoverMeta() {
+  await loadCategories('')
+  await loadBoards(props.textQuery ?? '')
 }
 
 const boardsSeeAllRoute = computed(() => ({
@@ -135,20 +146,25 @@ watch(
   },
 )
 
+watch(
+  () => props.bindingsActive,
+  (active, wasActive) => {
+    if (!active || wasActive) return
+    void reloadDiscoverMeta()
+  },
+)
+
 watch(currentLang, async () => {
   if (!props.bindingsActive) return
-  await loadCategories('')
-  await loadBoards(props.textQuery ?? '')
+  await reloadDiscoverMeta()
 })
 
 onMounted(async () => {
-  await loadCategories('')
-  await loadBoards(props.textQuery ?? '')
+  await reloadDiscoverMeta()
 })
 
 onActivated(() => {
-  void loadCategories('')
-  void loadBoards(props.textQuery ?? '')
+  void reloadDiscoverMeta()
 })
 
 function onToggleSave(slug: string) {
@@ -203,6 +219,12 @@ function onOpenPin(slug: string) {
           :key="i"
           class="shrink-0 w-[10.25rem] sm:w-40 h-[7rem] rounded-2xl bg-[#f3f4f6] dark:bg-[#141418] animate-pulse ring-1 ring-black/5 dark:ring-white/10"
         />
+      </div>
+      <div
+        v-else-if="!categories.length"
+        class="rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-700 px-4 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400"
+      >
+        {{ t('explore.categoriesEmpty') }}
       </div>
       <div
         v-else
@@ -320,6 +342,12 @@ function onOpenPin(slug: string) {
           </div>
         </router-link>
       </div>
+      <p
+        v-else
+        class="rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-700 px-4 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400"
+      >
+        {{ t('explore.boardsEmpty') }}
+      </p>
     </section>
 
     <PinovaModal

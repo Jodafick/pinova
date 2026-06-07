@@ -738,6 +738,8 @@ export const en: Record<string, string> = {
   'explore.seeAllBoards': 'See more',
   'explore.allCategories': 'All categories',
   'explore.boardsLoadError': 'Could not load boards.',
+  'explore.categoriesEmpty': 'No categories available yet.',
+  'explore.boardsEmpty': 'No public boards to show yet.',
   'explore.showMoreCategories': 'See more',
   'following.title': 'Pins from followed creators',
   'following.subtitle': 'See only pins from accounts you follow.',

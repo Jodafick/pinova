@@ -264,7 +264,7 @@ const { streak: discoveryStreak } = useDiscoveryStreak(exploreStreakActive)
 
 watch(exploreSelectedTopic, async (topic) => {
   if (!isPageActive.value) return
-  if (isAuthenticated.value && activeTab.value !== 'explorer') return
+  if (activeTab.value !== 'explorer') return
   await exploreCtx.fetchDiscoverPins(true, topic, null)
 })
 
@@ -309,12 +309,6 @@ async function setTab(tab: TabKey) {
 
 function tryFetchNextActive() {
   if (!isPageActive.value) return
-  if (!isAuthenticated.value) {
-    const ctx = exploreCtx
-    if (!ctx.hasNextPage.value || ctx.isFetchingNextPage.value || ctx.loading.value) return
-    void exploreCtx.fetchDiscoverPins(false, exploreSelectedTopic.value, null)
-    return
-  }
   if (isLgUp.value) {
     const ctx = forYouCtx
     if (!ctx.hasNextPage.value || ctx.isFetchingNextPage.value || ctx.loading.value) return
@@ -425,10 +419,8 @@ onMounted(async () => {
   startPageActivity()
   if (!isAuthenticated.value) {
     trackLandingViewedOnce(route.path || '/')
-    await exploreCtx.fetchDiscoverPins(true, exploreSelectedTopic.value, null)
-  } else {
-    await ensureLoaded('forYou')
   }
+  await ensureLoaded('forYou')
   void nextTick(() => connectHomeLoadMoreObserver())
 })
 
@@ -936,20 +928,29 @@ async function continueWithGoogleFromLanding() {
         </div>
       </section>
 
-      <!-- Catégories, tableaux et fil discover (même bloc que /explore) -->
-      <ExploreDiscoverSections
-        v-model:selected-topic="exploreSelectedTopic"
-        :text-query="null"
-        :pins="explorePinsView"
-        :loading="exploreCtx.loading.value"
-        :is-fetching-next-page="exploreCtx.isFetchingNextPage.value"
-        :bindings-active="isPageActive"
-        :show-intro="false"
-        @toggle-save="(slug: string) => handleToggleSaveFor(exploreCtx, slug)"
-        @open-pin="openPin"
-      />
+      <!-- Fil visible immédiatement -->
+      <TopicScroller :topics="activeTopics" :active-topic="activeTopic" @select="selectTopic" />
+      <template
+        v-if="activePins.length > 0 || (activeLoading && activePins.length === 0) || (activeFetchingMore && activePins.length > 0)"
+      >
+        <PinGrid
+          class="mt-3 sm:mt-4 w-full"
+          :pins="activePins"
+          :loading-initial="activeLoading && activePins.length === 0"
+          :loading-more="activeFetchingMore && activePins.length > 0"
+          @toggle-save="(slug: string) => handleToggleSaveFor(forYouCtx, slug)"
+          @open-pin="openPin"
+        />
+      </template>
+      <div v-else-if="activePins.length === 0" class="flex flex-col items-center justify-center py-16 sm:py-20 text-center">
+        <span class="material-symbols-outlined text-5xl sm:text-6xl text-neutral-300 dark:text-neutral-600 mb-3 sm:mb-4">search_off</span>
+        <h2 class="text-lg sm:text-xl font-auth-title font-auth-title--black text-neutral-700 dark:text-neutral-200 mb-2">{{ t('home.empty.title') }}</h2>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">
+          {{ t('home.empty.desc') }}
+        </p>
+      </div>
       <div
-        v-if="exploreCtx.hasNextPage.value && (exploreCtx.pins.value.length > 0 || exploreCtx.loading.value || exploreCtx.isFetchingNextPage.value)"
+        v-if="activeHasNext && (activePins.length > 0 || activeLoading || activeFetchingMore)"
         ref="sentinelGuest"
         class="h-8 w-full shrink-0"
         aria-hidden="true"
