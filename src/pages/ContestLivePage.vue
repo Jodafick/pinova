@@ -57,9 +57,10 @@ function showYouHighlightForRow(row: { creator_id: number }) {
   return viewer.value?.ranked === true && isYourCreatorRow(row.creator_id)
 }
 
-const stickyPadClass = computed(
-  () => (showMyRankDock.value && !contestState.loading ? 'pb-32 sm:pb-28' : ''),
-)
+const stickyPadClass = computed(() => {
+  if (!showMyRankDock.value || contestState.loading) return 'pb-[calc(1rem+env(safe-area-inset-bottom,0px))]'
+  return 'pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]'
+})
 
 /** Bandeau « hors top » : au-delà de ce rang, afficher « Non classé » au lieu du numéro. */
 const MY_RANK_DOCK_NUMERIC_MAX = 100
@@ -344,7 +345,7 @@ const myRankDockRankIsNumeric = computed(() => {
 
     <div
       v-if="!contestState.loading && showMyRankDock && viewerPin && viewer?.rank != null"
-      class="fixed bottom-0 left-0 right-0 z-[60] px-4 pb-[max(env(safe-area-inset-bottom,0px),16px)] pt-3 pointer-events-none"
+      class="fixed bottom-0 left-0 right-0 z-[60] px-4 pb-[env(safe-area-inset-bottom,0px)] pt-3 pointer-events-none"
       aria-label="Ma position hors top affiché"
     >
       <div class="w-full min-w-0 max-w-6xl mx-auto pointer-events-auto">

@@ -45,7 +45,7 @@ function rankMoved(prev: number | undefined | null, rank: number) {
 </script>
 
 <template>
-  <div class="w-full min-w-0 max-w-6xl mx-auto overflow-x-hidden px-3 sm:px-6 py-5 sm:py-8">
+  <div class="w-full min-w-0 max-w-6xl mx-auto overflow-x-hidden px-3 sm:px-6 py-5 sm:py-8 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
     <div
       class="rounded-3xl border border-pink-200/55 dark:border-pink-900/40 bg-gradient-to-br from-pink-50/95 via-white to-violet-50/85 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950 p-5 sm:p-8 mb-5 sm:mb-6 shadow-[0_22px_64px_-26px_rgba(219,39,119,0.38)] dark:shadow-[0_22px_64px_-26px_rgba(0,0,0,0.55)] ring-1 ring-pink-500/[0.07] dark:ring-white/[0.06]"
     >

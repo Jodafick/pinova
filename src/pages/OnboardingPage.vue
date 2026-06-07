@@ -585,8 +585,8 @@ function onSkipLater() {
 <style scoped>
 .onboarding-root {
   position: relative;
-  height: 100dvh;
-  max-height: 100dvh;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;

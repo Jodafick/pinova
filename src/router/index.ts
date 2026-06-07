@@ -358,6 +358,7 @@ const router = createRouter({
         gestureDismiss: true,
         statusBar: 'auto',
         loadFontAwesome: true,
+        suppressMainBottomInset: true,
       },
     },
     {
@@ -371,6 +372,7 @@ const router = createRouter({
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
+        suppressMainBottomInset: true,
       },
     },
     {
@@ -385,6 +387,7 @@ const router = createRouter({
         gestureDismiss: true,
         statusBar: 'auto',
         loadFontAwesome: true,
+        suppressMainBottomInset: true,
       },
     },
     {

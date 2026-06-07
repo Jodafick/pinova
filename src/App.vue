@@ -227,8 +227,17 @@ const isFullscreenPresentationRoute = computed(
 )
 
 /** Routes immersives hors query `?pin=` : pas de padding chrome du `<main>` (safe + header fantôme). */
-const suppressMobileMainChromeInsets = computed(
-  () => isMobileFullscreenRoute.value || isFullscreenPresentationRoute.value || hideAppChrome.value,
+const suppressMobileMainChromeInsets = computed(() => {
+  if (isMobileFullscreenRoute.value || isFullscreenPresentationRoute.value || hideAppChrome.value) {
+    return true
+  }
+  const meta = route.meta as { suppressMainBottomInset?: boolean }
+  return meta.suppressMainBottomInset === true
+})
+
+/** PWA mobile : remplir la coque sans min-height 100svh empilés (vide scrollable en bas). */
+const isImmersiveMobileRoute = computed(
+  () => isLgDown.value && suppressMobileMainChromeInsets.value,
 )
 
 /*
@@ -539,6 +548,7 @@ const pageTransitionName = computed(() => {
     :class="{
       'app-mobile-fullscreen-route': isMobileFullscreenRoute,
       'app-hide-chrome-route': hideAppChrome,
+      'app-immersive-route': isImmersiveMobileRoute,
     }"
   >
     <!-- Wash rose ambient (fixed, behind content). Désactivé sur routes fullscreen media. -->
@@ -550,8 +560,11 @@ const pageTransitionName = computed(() => {
       id="main-content"
       ref="mainContentRef"
       tabindex="-1"
-      class="flex min-h-0 flex-1 flex-col max-lg:overflow-y-auto max-lg:overscroll-y-contain max-lg:[-webkit-overflow-scrolling:touch]"
+      class="flex min-h-0 flex-1 flex-col max-lg:overscroll-y-contain max-lg:[-webkit-overflow-scrolling:touch]"
       :class="[
+        isImmersiveMobileRoute
+          ? 'max-lg:overflow-hidden'
+          : 'max-lg:overflow-y-auto',
         !suppressAppChrome && !suppressMobileMainChromeInsets
           ? suppressMobileChromeForProfileDrawer
             ? ''
@@ -775,6 +788,13 @@ const pageTransitionName = computed(() => {
 
   .app-mobile-fullscreen-route {
     background: #000;
+  }
+
+  /* Onboarding, création, concours dock : pas de min-height 100svh empilé → vide PWA en bas. */
+  .app-immersive-route .pinova-page-transition-host {
+    min-height: 0;
+    flex: 1 1 auto;
+    height: auto;
   }
 }
 

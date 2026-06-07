@@ -882,7 +882,7 @@ usePinovaHeaderSwipeDismiss({
   <div
     v-else-if="isLgDown"
     ref="pinMobileShellRef"
-    class="pinova-create-flow-mobile flex min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#060408] text-white pinova-min-vh-fill"
+    class="pinova-create-flow-mobile flex min-h-0 w-full flex-1 flex-col overflow-hidden overflow-x-hidden bg-[#060408] text-white"
   >
     <input ref="fileInput" type="file" class="hidden" data-testid="create-pin-file" :accept="fileAcceptAttr" @change="onFileChange">
     <!-- Même entrée que desktop : absent ici, `openCameraCapture()` ne ciblait aucun élément. -->
@@ -897,7 +897,7 @@ usePinovaHeaderSwipeDismiss({
 
     <div
       v-if="!isEditMode && mobileCreateStep === 'pick'"
-      class="relative min-h-[100svh] px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
+      class="relative flex min-h-0 flex-1 flex-col px-5 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
     >
       <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
       <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />

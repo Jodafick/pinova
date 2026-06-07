@@ -69,7 +69,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
       <div>
         <h1 class="text-2xl sm:text-3xl font-black mb-1">{{ t('contest.history.title') }}</h1>

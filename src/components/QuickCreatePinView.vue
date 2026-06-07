@@ -231,7 +231,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="quick-create-root flex min-h-0 w-full flex-1 flex-col bg-[#060408] text-white">
+  <div class="quick-create-root flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-[#060408] text-white">
     <input ref="fileInput" type="file" class="hidden" accept="image/*,.gif,.webp,.png,.jpg,.jpeg,.avif,.heic,.heif" @change="onFileChange">
     <input ref="nativeCameraInput" type="file" class="hidden" accept="image/*" capture="environment" @change="onFileChange">
 
@@ -243,7 +243,7 @@ onMounted(() => {
     <!-- Étape choix média -->
     <div
       v-else-if="step === 'pick'"
-      class="relative min-h-[100svh] px-5 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] lg:mx-auto lg:max-w-lg lg:min-h-[70vh]"
+      class="relative flex min-h-0 flex-1 flex-col px-5 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] lg:mx-auto lg:max-w-lg"
     >
       <header class="relative z-10 flex items-center justify-between">
         <button
