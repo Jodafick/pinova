@@ -32,9 +32,6 @@ importers:
       axios:
         specifier: ^1.14.0
         version: 1.16.0
-      glin-profanity:
-        specifier: ^3.3.0
-        version: 3.3.0(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))
       nsfwjs:
         specifier: ^4.3.0
         version: 4.3.0(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(buffer@6.0.3)
@@ -1896,38 +1893,6 @@ packages:
   get-symbol-description@1.1.0:
     resolution: {integrity: sha512-w9UMqWwJxHNOvoNzSJ2oPF5wvYcvP7jUvYzhp67yEhTi17ZDBBC1z9pTdGuzjD+EFIqLSYRweZjqfiPzQ06Ebg==}
     engines: {node: '>= 0.4'}
-
-  glin-profanity@3.3.0:
-    resolution: {integrity: sha512-YhLhVjWaVjlWClm1DIJJdW1eGp8z6i65WscLV9fbrNpt9H1usoQwDtwmqVjGVtZvr3XP1yl7vQlIU7UfQW27HA==}
-    peerDependencies:
-      '@langchain/core': '>=0.1.0'
-      '@tensorflow-models/toxicity': '>=1.2.0'
-      '@tensorflow/tfjs': '>=4.0.0'
-      '@xenova/transformers': '>=2.0.0'
-      ai: '>=3.0.0'
-      openai: '>=4.0.0'
-      react: '>=16.8.0'
-      tesseract.js: '>=5.0.0'
-      zod: '>=3.0.0'
-    peerDependenciesMeta:
-      '@langchain/core':
-        optional: true
-      '@tensorflow-models/toxicity':
-        optional: true
-      '@tensorflow/tfjs':
-        optional: true
-      '@xenova/transformers':
-        optional: true
-      ai:
-        optional: true
-      openai:
-        optional: true
-      react:
-        optional: true
-      tesseract.js:
-        optional: true
-      zod:
-        optional: true
 
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
@@ -5087,10 +5052,6 @@ snapshots:
       call-bound: 1.0.4
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
-
-  glin-profanity@3.3.0(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5)):
-    optionalDependencies:
-      '@tensorflow/tfjs': 4.22.0(seedrandom@3.0.5)
 
   glob-parent@5.1.2:
     dependencies:
