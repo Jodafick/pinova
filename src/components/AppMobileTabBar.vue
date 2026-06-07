@@ -46,7 +46,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="isHomeActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(isHomeActive())"
       >
-        <span class="material-symbols-outlined text-[26px] leading-none">home</span>
+        <span class="material-symbols-outlined text-[28px] leading-none">home</span>
         <span class="truncate">{{ t('nav.home') }}</span>
       </router-link>
 
@@ -54,11 +54,11 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         <button
           v-if="!profileNavMobileDrawerOpen"
           type="button"
-          class="-mt-3 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pink-700 dark:bg-pink-600 text-white shadow-lg shadow-pink-700/30 transition hover:bg-pink-800 dark:hover:opacity-90 active:scale-95"
+          class="-mt-3 flex h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-full bg-pink-700 dark:bg-pink-600 text-white shadow-lg shadow-pink-700/30 transition hover:bg-pink-800 dark:hover:opacity-90 active:scale-95"
           :aria-label="t('nav.create')"
           @click="openMobileCreateChooser"
         >
-          <span class="material-symbols-outlined text-[28px]">add</span>
+          <span class="material-symbols-outlined text-[30px]">add</span>
         </button>
       </div>
 
@@ -80,7 +80,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="isHomeActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(isHomeActive())"
       >
-        <span class="material-symbols-outlined text-[26px] leading-none">home</span>
+        <span class="material-symbols-outlined text-[28px] leading-none">home</span>
         <span class="truncate">{{ t('nav.home') }}</span>
       </router-link>
 
@@ -90,7 +90,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="isExploreActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(isExploreActive())"
       >
-        <span class="material-symbols-outlined text-[26px] leading-none">travel_explore</span>
+        <span class="material-symbols-outlined text-[28px] leading-none">travel_explore</span>
         <span class="truncate">{{ t('nav.explore') }}</span>
       </router-link>
 
@@ -100,7 +100,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="route.name === 'contest-live' ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(route.name === 'contest-live')"
       >
-        <span class="material-symbols-outlined text-[26px] leading-none">emoji_events</span>
+        <span class="material-symbols-outlined text-[28px] leading-none">emoji_events</span>
         <span class="truncate">{{ t('nav.contest') }}</span>
       </router-link>
 
@@ -110,7 +110,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="route.name === 'login' ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(route.name === 'login')"
       >
-        <span class="material-symbols-outlined text-[26px] leading-none">login</span>
+        <span class="material-symbols-outlined text-[28px] leading-none">login</span>
         <span class="truncate">{{ t('nav.login') }}</span>
       </router-link>
 
@@ -120,7 +120,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="route.name === 'register' ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(route.name === 'register')"
       >
-        <span class="material-symbols-outlined text-[26px] leading-none">person_add</span>
+        <span class="material-symbols-outlined text-[28px] leading-none">person_add</span>
         <span class="truncate">{{ t('nav.register') }}</span>
       </router-link>
     </template>

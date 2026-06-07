@@ -419,7 +419,7 @@ const loadProfile = async () => {
     if (!currentUser.value) {
       profileUser.value = null
       loading.value = false
-      void router.replace({ name: 'login', query: { redirect: '/profile' } })
+      void router.replace({ name: 'home' })
       return
     }
     profileUser.value = currentUser.value

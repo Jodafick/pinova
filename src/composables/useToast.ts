@@ -28,6 +28,7 @@ export interface Toast {
   /** Sous-titre / description discrète. */
   description?: string
   kind: ToastKind
+  surface: 'default' | 'notification'
   /** Durée en ms avant auto-dismiss. Default 3200 (5500 pour error). */
   duration: number
   /** Label CTA optionnel (s'affiche en bouton à droite). */
@@ -47,6 +48,8 @@ export interface PushToastInput {
   onAction?: () => void
   /** Évite de pousser deux fois le même message si déjà visible (dedup). */
   dedupKey?: string
+  /** `notification` : bannière in-app (position / style dédiés). */
+  surface?: 'default' | 'notification'
 }
 
 const toasts: Ref<Toast[]> = ref([])
@@ -92,6 +95,7 @@ export function pushToast(input: PushToastInput): number {
     message: input.message,
     description: input.description,
     kind,
+    surface: input.surface ?? 'default',
     duration: input.duration ?? DEFAULT_DURATIONS[kind],
     actionLabel: input.actionLabel,
     onAction: input.onAction,

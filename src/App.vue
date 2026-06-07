@@ -483,12 +483,23 @@ const appMobilePageTitle = computed(() => {
 })
 
 function goBack() {
-  // Si on a un historique applicatif, on revient en arrière ; sinon on retourne à la home.
+  /** Invité sur profil public : évite un retour vers login/register dans l’historique. */
+  const isGuestPublicProfile =
+    !isAuthenticated.value &&
+    (route.name === 'profile' || route.name === 'board') &&
+    typeof route.params.username === 'string' &&
+    route.params.username.trim().length > 0
+
+  if (isGuestPublicProfile) {
+    void router.push('/')
+    return
+  }
+
   const historyLen = typeof window !== 'undefined' ? window.history.length : 0
   if (historyLen > 1) {
     router.back()
   } else {
-    router.push('/')
+    void router.push('/')
   }
 }
 

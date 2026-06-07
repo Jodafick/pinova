@@ -99,7 +99,7 @@ function goRegister() {
             block
             @click="googleLogin"
           >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="" />
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 shrink-0" alt="" />
             {{ t('login.googleCta') }}
           </PinovaButton>
           <PinovaButton variant="ghost" block @click="goLogin">

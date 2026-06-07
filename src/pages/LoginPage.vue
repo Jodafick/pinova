@@ -95,7 +95,7 @@ async function handleGoogleClick() {
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-transparent dark:bg-transparent">
+  <div class="pinova-route-natural-height pinova-auth-page-shell min-h-0 flex flex-1 flex-col bg-transparent dark:bg-transparent lg:min-h-screen">
     <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-br from-pink-700/90 dark:from-pink-600/90 via-pink-700/80 dark:via-pink-600/80 to-pink-700/90 dark:to-pink-600/90 z-10"></div>
       <img
@@ -189,7 +189,7 @@ async function handleGoogleClick() {
         </div>
 
         <PinovaButton variant="secondary" block @click="handleGoogleClick">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="" />
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 shrink-0" alt="" />
           {{ t('login.googleCta') }}
         </PinovaButton>
 

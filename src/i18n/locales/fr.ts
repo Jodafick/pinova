@@ -708,6 +708,8 @@ export const fr: Record<string, string> = {
   'notifications.prompt.decline': 'Non merci, ne plus proposer',
   'notifications.prompt.enabledToast': 'Notifications navigateur activées.',
   'notifications.live.view': 'Voir',
+  'notifications.live.batchTitle': '{count} nouvelles notifications',
+  'notifications.live.batchDesc': 'Ouvrez le centre pour tout voir',
   'search.tryOther': 'Essayez d’autres mots-clés ou parcourez Explorer.',
   'search.promptHint': 'Tapez votre recherche puis appuyez sur Entrée ou Rechercher.',
 

@@ -98,7 +98,7 @@ const attrs = computed(() => {
     @click="(e: MouseEvent) => !disabled && !loading && $emit('click', e)"
   >
     <span v-if="loading" class="pds-btn__spinner" aria-hidden="true" />
-    <span :class="{ 'pds-btn__content--hidden': loading }">
+    <span class="pds-btn__content" :class="{ 'pds-btn__content--hidden': loading }">
       <slot />
     </span>
   </component>
@@ -107,6 +107,16 @@ const attrs = computed(() => {
 <style scoped>
 .pds-btn--block {
   width: 100%;
+}
+
+.pds-btn__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .pds-btn__content--hidden {

@@ -185,9 +185,11 @@ const profileDirectTo = computed(() =>
 type NavItem = { name: string; label: string; to: string }
 
 const navMain = computed<NavItem[]>(() => {
-  const base: NavItem[] = [{ name: 'home', label: t('nav.home'), to: '/' }]
+  const base: NavItem[] = [
+    { name: 'home', label: t('nav.home'), to: '/' },
+    { name: 'explore', label: t('nav.explore'), to: '/explore' },
+  ]
   if (!isAuthenticated.value) {
-    base.push({ name: 'explore', label: t('nav.explore'), to: '/explore' })
     base.push({ name: 'premium', label: t('nav.pricing'), to: '/premium' })
   }
   return base
@@ -239,6 +241,9 @@ function isNavItemActive(item: NavItem): boolean {
 }
 
 function isProfileMenuItemActive(item: NavItem): boolean {
+  if (item.name === 'boost-promote') {
+    return currentRoute.value === 'boost-promote' || route.path.startsWith('/promote')
+  }
   if (item.name === 'contest-live') {
     return route.path.startsWith('/contest')
   }
@@ -1059,6 +1064,17 @@ watch(
                 >
                   {{ currentPlanLabel }}
                 </span>
+              </router-link>
+              <router-link
+                v-for="item in navPromote"
+                :key="'profile-' + item.name"
+                :to="item.to"
+                class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
+                :class="isProfileMenuItemActive(item) ? 'bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : ''"
+                @click="closeDropdowns"
+              >
+                <span class="material-symbols-outlined text-lg">campaign</span>
+                {{ item.label }}
               </router-link>
             </div>
 

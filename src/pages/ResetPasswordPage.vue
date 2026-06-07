@@ -49,7 +49,7 @@ const handleResetPassword = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-stretch lg:items-center justify-center bg-transparent dark:bg-transparent px-4 py-6 sm:px-6 sm:py-12">
+  <div class="pinova-route-natural-height pinova-auth-page-shell min-h-0 flex flex-1 flex-col items-stretch justify-center bg-transparent dark:bg-transparent px-4 py-6 sm:px-6 sm:py-12 lg:min-h-screen lg:items-center">
     <div class="w-full max-w-md lg:bg-white lg:dark:bg-neutral-900 lg:p-8 xl:p-10 lg:rounded-[40px] lg:shadow-sm lg:border lg:border-neutral-100 lg:dark:border-neutral-800">
       <div class="text-center mb-8">
         <h2 class="text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('reset.title') }}</h2>

@@ -17,6 +17,9 @@ const WS_BASE = `${API_BASE_URL.replace(/^http/i, 'ws').replace(/\/$/, '')}/api/
 const WS_AUTH_SUBPROTOCOL_PREFIX = 'pinova.bearer.'
 const HEARTBEAT_INTERVAL_MS = 30_000
 const MAX_RECONNECT_DELAY_MS = 60_000
+const IN_APP_TOAST_BATCH_MS = 900
+const SESSION_CURSOR_KEY = 'pinova_notif_live_cursor'
+const SESSION_TOAST_SEEN_KEY = 'pinova_notif_toast_seen'
 
 function readAccessToken(): string {
   if (typeof window === 'undefined') return ''
@@ -28,8 +31,40 @@ function wsReconnectDelayMs(attempt: number): number {
   return base + Math.floor(Math.random() * 1_000)
 }
 
+function readSessionCursor(): number {
+  if (typeof sessionStorage === 'undefined') return 0
+  const n = parseInt(sessionStorage.getItem(SESSION_CURSOR_KEY) || '0', 10)
+  return Number.isFinite(n) && n >= 0 ? n : 0
+}
+
+function writeSessionCursor(id: number): void {
+  if (typeof sessionStorage === 'undefined') return
+  sessionStorage.setItem(SESSION_CURSOR_KEY, String(Math.max(0, id)))
+}
+
+function readToastSeenSet(): Set<number> {
+  if (typeof sessionStorage === 'undefined') return new Set()
+  try {
+    const raw = sessionStorage.getItem(SESSION_TOAST_SEEN_KEY)
+    const arr = raw ? (JSON.parse(raw) as unknown) : []
+    if (!Array.isArray(arr)) return new Set()
+    return new Set(arr.filter((x) => typeof x === 'number' && x > 0))
+  } catch {
+    return new Set()
+  }
+}
+
+function markToastSeen(id: number): void {
+  if (typeof sessionStorage === 'undefined') return
+  const set = readToastSeenSet()
+  set.add(id)
+  const trimmed = [...set].slice(-200)
+  sessionStorage.setItem(SESSION_TOAST_SEEN_KEY, JSON.stringify(trimmed))
+}
+
 function shouldShowInAppToast(payload: NotificationLivePayload): boolean {
   if (payload.is_read) return false
+  if (payload.in_app_toast === false) return false
   const kind = String(payload.metadata?.kind || '').toLowerCase()
   if (kind === 'contest_display_rank_change') return false
   return true
@@ -54,51 +89,100 @@ export function useNotificationLive() {
   let reconnectAttempts = 0
   let lastEventId = 0
   let active = false
+  /** Après le premier sync, seuls les nouveaux événements déclenchent un toast. */
+  let liveToastsEnabled = false
+  let pendingToastBatch: NotificationLivePayload[] = []
+  let toastBatchTimer: ReturnType<typeof setTimeout> | null = null
 
-  const ingest = (payload: NotificationLivePayload) => {
-    if (!payload?.id || payload.id <= lastEventId) return
-    lastEventId = Math.max(lastEventId, payload.id)
-    emitNotificationLive(payload)
-    if (!payload.is_read) {
-      bumpUnreadCountOptimistic(1)
+  const flushToastBatch = () => {
+    toastBatchTimer = null
+    const batch = pendingToastBatch.splice(0)
+    if (!batch.length) return
+
+    const openOne = (payload: NotificationLivePayload) => {
+      if (readToastSeenSet().has(payload.id)) return
+      markToastSeen(payload.id)
+      const title = (payload.title || '').trim()
+      const message = (payload.message || '').trim()
+      pushToast({
+        message: title || t('header.notifications'),
+        description: message || undefined,
+        kind: 'info',
+        surface: 'notification',
+        dedupKey: `notif-${payload.id}`,
+        actionLabel: t('notifications.live.view'),
+        onAction: () => {
+          navigateWebNotificationDeepLink(
+            router,
+            {
+              metadata: payload.metadata ?? null,
+              pin_slug: payload.pin_slug ?? null,
+              pin_id: payload.pin_id ?? null,
+              comment_id: payload.comment_id ?? null,
+              action_url: payload.action_url ?? null,
+              notification_type: payload.notification_type ?? null,
+            },
+            'header',
+          )
+        },
+      })
     }
-    if (!shouldShowInAppToast(payload)) return
-    const title = (payload.title || '').trim()
-    const message = (payload.message || '').trim()
+
+    if (batch.length === 1) {
+      openOne(batch[0]!)
+      return
+    }
+
+    const latest = batch[batch.length - 1]!
+    for (const row of batch) markToastSeen(row.id)
     pushToast({
-      message: title || t('header.notifications'),
-      description: message || undefined,
+      message: t('notifications.live.batchTitle', { count: batch.length }),
+      description: t('notifications.live.batchDesc'),
       kind: 'info',
-      dedupKey: `notif-${payload.id}`,
+      surface: 'notification',
+      dedupKey: `notif-batch-${latest.id}`,
+      duration: 4200,
       actionLabel: t('notifications.live.view'),
       onAction: () => {
-        navigateWebNotificationDeepLink(
-          router,
-          {
-            metadata: payload.metadata ?? null,
-            pin_slug: payload.pin_slug ?? null,
-            pin_id: payload.pin_id ?? null,
-            comment_id: payload.comment_id ?? null,
-            action_url: payload.action_url ?? null,
-            notification_type: payload.notification_type ?? null,
-          },
-          'header',
-        )
+        void router.push({ name: 'notifications' })
       },
     })
   }
 
-  const fetchEventDeltas = async () => {
+  const queueInAppToast = (payload: NotificationLivePayload) => {
+    if (!liveToastsEnabled) return
+    if (!shouldShowInAppToast(payload)) return
+    if (readToastSeenSet().has(payload.id)) return
+    pendingToastBatch.push(payload)
+    if (toastBatchTimer) clearTimeout(toastBatchTimer)
+    toastBatchTimer = setTimeout(flushToastBatch, IN_APP_TOAST_BATCH_MS)
+  }
+
+  const ingest = (payload: NotificationLivePayload, opts?: { allowToast?: boolean }) => {
+    if (!payload?.id || payload.id <= lastEventId) return
+    lastEventId = Math.max(lastEventId, payload.id)
+    writeSessionCursor(lastEventId)
+    emitNotificationLive(payload)
+    if (!payload.is_read) {
+      bumpUnreadCountOptimistic(1)
+    }
+    if (opts?.allowToast !== false) {
+      queueInAppToast(payload)
+    }
+  }
+
+  const fetchEventDeltas = async (opts?: { allowToast?: boolean }) => {
     if (!isAuthenticated.value) return
     const { data } = await api.get<{ results: NotificationLivePayload[]; last_id?: number }>(
       'notifications/events/',
       { params: { since_id: lastEventId, limit: 120 } },
     )
     for (const row of data.results || []) {
-      ingest(row)
+      ingest(row, opts)
     }
     if (typeof data.last_id === 'number' && data.last_id > lastEventId) {
       lastEventId = data.last_id
+      writeSessionCursor(lastEventId)
     }
   }
 
@@ -183,6 +267,12 @@ export function useNotificationLive() {
 
   const teardown = () => {
     active = false
+    liveToastsEnabled = false
+    pendingToastBatch = []
+    if (toastBatchTimer) {
+      clearTimeout(toastBatchTimer)
+      toastBatchTimer = null
+    }
     stopHeartbeat()
     ws?.close()
     ws = null
@@ -197,12 +287,14 @@ export function useNotificationLive() {
   const bootstrap = async () => {
     if (!isAuthenticated.value) return
     active = true
-    lastEventId = 0
+    liveToastsEnabled = false
+    lastEventId = readSessionCursor()
     try {
-      await fetchEventDeltas()
+      await fetchEventDeltas({ allowToast: false })
     } catch {
       usingPollingFallback.value = true
     }
+    liveToastsEnabled = true
     connectWebSocket()
     startPolling()
   }

@@ -21,6 +21,8 @@ export type NotificationLivePayload = {
   sender_username?: string
   sender_avatar_color?: string
   sender_avatar_url?: string | null
+  /** Serveur : afficher un toast in-app pour cet événement (défaut true sauf digest / rang). */
+  in_app_toast?: boolean
 }
 
 const unreadHeaderListeners = new Set<(n: number) => void>()

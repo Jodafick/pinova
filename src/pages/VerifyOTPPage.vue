@@ -158,7 +158,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-stretch lg:items-center justify-center bg-transparent dark:bg-transparent px-4 py-6 sm:px-6 sm:py-12">
+  <div class="pinova-route-natural-height pinova-auth-page-shell min-h-0 flex flex-1 flex-col items-stretch justify-center bg-transparent dark:bg-transparent px-4 py-6 sm:px-6 sm:py-12 lg:min-h-screen lg:items-center">
     <div class="w-full max-w-md lg:bg-white lg:dark:bg-neutral-900 lg:p-8 xl:p-10 lg:rounded-[40px] lg:shadow-sm lg:border lg:border-neutral-100 lg:dark:border-neutral-800">
       <div class="text-center mb-10">
         <div class="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -242,7 +242,7 @@ onBeforeUnmount(() => {
         >
           <p class="font-medium">{{ t('auth.emailDeliveryBlocked.googleHint') }}</p>
           <PinovaButton variant="secondary" block to="/login" class="mt-3">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="" />
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 shrink-0" alt="" />
             {{ t('login.googleCta') }}
           </PinovaButton>
         </div>

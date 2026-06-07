@@ -719,6 +719,8 @@ export const en: Record<string, string> = {
   'notifications.prompt.decline': 'No thanks, don’t ask again',
   'notifications.prompt.enabledToast': 'Browser notifications enabled.',
   'notifications.live.view': 'View',
+  'notifications.live.batchTitle': '{count} new notifications',
+  'notifications.live.batchDesc': 'Open the inbox to see them all',
   'search.tryOther': 'Try different keywords or browse Explore.',
   'search.promptHint': 'Type your query then press Enter or Search.',
 

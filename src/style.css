@@ -50,6 +50,37 @@
     display: flex;
     flex-direction: column;
   }
+
+  /* Auth / contenu naturel : évite le vide scrollable en bas (PWA). */
+  .pinova-page-transition-host > .pinova-route-natural-height {
+    flex: 0 1 auto;
+    min-height: min-content;
+    height: auto;
+  }
+}
+
+/* Pages auth invitées : marge haute mobile/PWA + bas safe-area. */
+.pinova-auth-page-shell {
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: calc(1.25rem + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (display-mode: standalone) {
+  .pinova-auth-page-shell {
+    padding-top: calc(
+      2.5rem + env(safe-area-inset-top, 0px) + var(--pinova-pwa-extra-top-inset, 0px)
+    );
+    padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 1024px) {
+  .pinova-auth-page-shell {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
 }
 
 @media (min-width: 1024px) {

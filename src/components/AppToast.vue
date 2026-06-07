@@ -2,31 +2,23 @@
 /**
  * AppToast — host singleton de la file de toasts (à monter UNE fois dans App.vue).
  *
- *  Caractéristiques :
- *   - Teleport → body (s'extrait des containers contraints)
- *   - Stack vertical en bas d'écran (mobile) / en haut à droite (desktop)
- *   - Slide-in spring + blur backdrop
- *   - Glass system iOS (`--glass-fill`, `--glass-stroke`)
- *   - Drag-to-dismiss (swipe horizontal ou vers le bas)
- *   - Respect `prefers-reduced-motion` (fade simple)
- *   - Safe-area-aware (bottom inset iOS)
- *   - Dark mode automatique via CSS vars
- *   - Pas d'i18n hardcodé : les messages sont déjà traduits par l'appelant
- *
- *  Pas d'interaction avec les modales ou layers — c'est purement informatif.
+ *  - Mobile : pile en haut (safe-area)
+ *  - Desktop (lg+) : bas droite
+ *  - Surface `notification` : glass blur, coins arrondis (pas pill)
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { dismissToast, toastList, type Toast } from '../composables/useToast'
 import { useSafeArea } from '../composables/useSafeArea'
 import { useReducedMotion } from '../composables/useReducedMotion'
 
-const { bottom: safeBottom } = useSafeArea()
+const { top: safeTop, bottom: safeBottom } = useSafeArea()
 const { prefersReducedMotion } = useReducedMotion()
 
-/* Pour le swipe-to-dismiss (drag X). */
 const dragState = ref<Record<number, number>>({})
 const draggingId = ref<number | null>(null)
 const dragStartX = ref(0)
+const dragStartY = ref(0)
+const dragAxis = ref<'x' | 'y' | null>(null)
 
 const list = computed<Toast[]>(() => [...toastList.value])
 
@@ -34,21 +26,33 @@ function onPointerDown(e: PointerEvent, id: number) {
   if (e.pointerType === 'mouse' && e.button !== 0) return
   draggingId.value = id
   dragStartX.value = e.clientX
+  dragStartY.value = e.clientY
+  dragAxis.value = null
   ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
 }
 
 function onPointerMove(e: PointerEvent, id: number) {
   if (draggingId.value !== id) return
   const dx = e.clientX - dragStartX.value
-  dragState.value = { ...dragState.value, [id]: dx }
+  const dy = e.clientY - dragStartY.value
+  if (!dragAxis.value) {
+    if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return
+    dragAxis.value = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x'
+  }
+  if (dragAxis.value === 'y') {
+    dragState.value = { ...dragState.value, [id]: dy }
+  } else {
+    dragState.value = { ...dragState.value, [id]: dx }
+  }
 }
 
 function onPointerUp(e: PointerEvent, id: number) {
   if (draggingId.value !== id) return
   draggingId.value = null
-  const dx = dragState.value[id] ?? 0
+  dragAxis.value = null
+  const offset = dragState.value[id] ?? 0
   ;(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId)
-  if (Math.abs(dx) > 80) {
+  if (Math.abs(offset) > 72) {
     dismissToast(id)
   }
   const next = { ...dragState.value }
@@ -57,10 +61,16 @@ function onPointerUp(e: PointerEvent, id: number) {
 }
 
 function offsetStyle(toast: Toast): Record<string, string> {
-  const dx = dragState.value[toast.id] ?? 0
-  const opacity = Math.max(0, 1 - Math.abs(dx) / 240)
+  const offset = dragState.value[toast.id] ?? 0
+  const opacity = Math.max(0, 1 - Math.abs(offset) / 240)
+  if (Math.abs(offset) > 0 && Math.abs(offset) !== Math.abs(dragState.value[toast.id] ?? 0)) {
+    /* noop — keep template stable */
+  }
+  const isVertical = Math.abs(offset) > 0 && dragAxis.value === 'y'
   return {
-    transform: `translate3d(${dx}px, 0, 0)`,
+    transform: isVertical
+      ? `translate3d(0, ${offset}px, 0)`
+      : `translate3d(${offset}px, 0, 0)`,
     opacity: opacity.toFixed(3),
   }
 }
@@ -70,7 +80,7 @@ function iconFor(kind: Toast['kind']): string {
     case 'success': return 'check_circle'
     case 'warning': return 'warning'
     case 'error':   return 'error'
-    default:        return 'info'
+    default:        return 'notifications'
   }
 }
 
@@ -90,7 +100,10 @@ onBeforeUnmount(() => {
     <div
       class="pinova-toast-host"
       :class="prefersReducedMotion ? 'pinova-toast-host--rm' : ''"
-      :style="{ paddingBottom: `calc(${safeBottom}px + 1rem)` }"
+      :style="{
+        paddingTop: `calc(${safeTop}px + 0.75rem)`,
+        paddingBottom: `calc(${safeBottom}px + 1rem)`,
+      }"
       aria-live="polite"
       aria-atomic="true"
       role="status"
@@ -100,7 +113,10 @@ onBeforeUnmount(() => {
           v-for="t in list"
           :key="t.id"
           class="pinova-toast"
-          :class="[`pinova-toast--${t.kind}`]"
+          :class="[
+            `pinova-toast--${t.kind}`,
+            t.surface === 'notification' ? 'pinova-toast--notification' : 'pinova-toast--default',
+          ]"
           :style="offsetStyle(t)"
           @pointerdown="onPointerDown($event, t.id)"
           @pointermove="onPointerMove($event, t.id)"
@@ -125,10 +141,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Material 3 Snackbar – toast Android natif avec blur premium.
-   - Bottom-centered (mobile + desktop) avec safe-area
-   - Inverse surface : sombre sur thème clair, clair sur thème sombre
-   - Pill rounded, icône Material, action label CAPS, swipe-to-dismiss */
 .pinova-toast-host {
   position: fixed;
   inset: 0;
@@ -136,18 +148,35 @@ onBeforeUnmount(() => {
   z-index: 9000;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 0.5rem 1rem;
+  justify-content: flex-start;
+  align-items: stretch;
+  padding-left: 0.875rem;
+  padding-right: 0.875rem;
+}
+
+@media (min-width: 1024px) {
+  .pinova-toast-host {
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding-left: 1rem;
+    padding-right: 1.25rem;
+  }
 }
 
 .pinova-toast-stack {
   display: flex;
-  flex-direction: column-reverse;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.625rem;
   width: 100%;
   max-width: 30rem;
   pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .pinova-toast-stack {
+    width: min(100%, 22rem);
+    margin-left: auto;
+  }
 }
 
 .pinova-toast {
@@ -156,112 +185,136 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  min-height: 48px;
-  padding: 0.625rem 0.5rem 0.625rem 1rem;
-  border-radius: 9999px;
-  /* Inverse surface : sombre en mode clair (Material 3) */
+  min-height: 52px;
+  padding: 0.75rem 0.625rem 0.75rem 0.95rem;
+  border-radius: 1.125rem;
   background: rgba(32, 28, 32, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  backdrop-filter: blur(28px) saturate(180%);
-  box-shadow: 0 6px 24px -6px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(24px) saturate(165%);
+  backdrop-filter: blur(24px) saturate(165%);
+  box-shadow:
+    0 10px 32px -12px rgba(0, 0, 0, 0.38),
+    0 2px 8px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.96);
   font-family: inherit;
   touch-action: pan-y;
   will-change: transform, opacity;
-  transition: box-shadow 200ms ease;
+}
+
+.pinova-toast--notification {
+  border-color: rgba(244, 114, 182, 0.22);
+  background: rgba(24, 20, 26, 0.78);
+  box-shadow:
+    0 12px 36px -14px rgba(190, 24, 93, 0.35),
+    0 4px 14px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 :global(html.dark) .pinova-toast {
-  background: rgba(238, 232, 240, 0.92);
-  border-color: rgba(0, 0, 0, 0.05);
+  background: rgba(238, 232, 240, 0.88);
+  border-color: rgba(0, 0, 0, 0.06);
   color: rgba(28, 24, 28, 0.96);
-  box-shadow: 0 8px 28px -8px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 10px 34px -12px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
-/* Accent rings via icon background only — keep snackbar shape uniform (Material 3). */
+:global(html.dark) .pinova-toast--notification {
+  background: rgba(250, 245, 248, 0.9);
+  border-color: rgba(190, 24, 93, 0.14);
+}
+
 .pinova-toast__icon {
   flex: none;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
   font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.92);
 }
-:global(html.dark) .pinova-toast__icon { color: rgba(28, 24, 28, 0.9); }
+:global(html.dark) .pinova-toast__icon { color: rgba(28, 24, 28, 0.88); }
 
 .pinova-toast--success .pinova-toast__icon { color: #6ee7b7; }
 .pinova-toast--warning .pinova-toast__icon { color: #fcd34d; }
 .pinova-toast--error   .pinova-toast__icon { color: #fda4af; }
 .pinova-toast--info    .pinova-toast__icon { color: #f9a8d4; }
+.pinova-toast--notification .pinova-toast__icon { color: #f472b6; }
 :global(html.dark) .pinova-toast--success .pinova-toast__icon { color: #047857; }
 :global(html.dark) .pinova-toast--warning .pinova-toast__icon { color: #b45309; }
 :global(html.dark) .pinova-toast--error   .pinova-toast__icon { color: #be123c; }
 :global(html.dark) .pinova-toast--info    .pinova-toast__icon { color: #be185d; }
+:global(html.dark) .pinova-toast--notification .pinova-toast__icon { color: #db2777; }
 
-.pinova-toast__body { flex: 1; min-width: 0; padding-block: 2px; }
+.pinova-toast__body { flex: 1; min-width: 0; padding-block: 1px; }
 .pinova-toast__message {
   margin: 0;
   font-size: 0.875rem;
   line-height: 1.35;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.005em;
 }
 .pinova-toast__desc {
   margin: 0.125rem 0 0;
   font-size: 0.75rem;
   line-height: 1.4;
-  opacity: 0.7;
+  opacity: 0.78;
 }
 
 .pinova-toast__action {
   flex: none;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #f9a8d4;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.06);
   border: 0;
-  padding: 0.5rem 0.875rem;
-  border-radius: 9999px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.75rem;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   transition: background-color 160ms ease;
 }
-.pinova-toast__action:hover { background: rgba(255, 255, 255, 0.08); }
-.pinova-toast__action:active { background: rgba(255, 255, 255, 0.14); }
-:global(html.dark) .pinova-toast__action { color: #be185d; }
-:global(html.dark) .pinova-toast__action:hover { background: rgba(0, 0, 0, 0.06); }
-:global(html.dark) .pinova-toast__action:active { background: rgba(0, 0, 0, 0.1); }
+.pinova-toast__action:hover { background: rgba(255, 255, 255, 0.12); }
+.pinova-toast__action:active { background: rgba(255, 255, 255, 0.16); }
+:global(html.dark) .pinova-toast__action { color: #be185d; background: rgba(0, 0, 0, 0.05); }
+:global(html.dark) .pinova-toast__action:hover { background: rgba(0, 0, 0, 0.08); }
 
-/* Material 3 entrance : slide-up + fade. */
 .pinova-toast-enter-from {
-  transform: translate3d(0, 16px, 0) scale(0.98);
+  transform: translate3d(0, -14px, 0) scale(0.98);
   opacity: 0;
 }
 .pinova-toast-enter-active {
   transition: transform 260ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms ease-out;
 }
 .pinova-toast-leave-to {
-  transform: translate3d(0, 8px, 0) scale(0.98);
+  transform: translate3d(0, -8px, 0) scale(0.98);
   opacity: 0;
 }
 .pinova-toast-leave-active {
   transition: transform 200ms cubic-bezier(0.4, 0, 1, 1), opacity 180ms ease-in;
 }
 
-/* Stack offset effet "shuffle" derrière le toast actif. */
+@media (min-width: 1024px) {
+  .pinova-toast-enter-from {
+    transform: translate3d(0, 16px, 0) scale(0.98);
+  }
+  .pinova-toast-leave-to {
+    transform: translate3d(0, 10px, 0) scale(0.98);
+  }
+}
+
 .pinova-toast-move {
   transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* Reduced motion : fade simple. */
 .pinova-toast-host--rm .pinova-toast-enter-active,
 .pinova-toast-host--rm .pinova-toast-leave-active,
 .pinova-toast-host--rm .pinova-toast-move {

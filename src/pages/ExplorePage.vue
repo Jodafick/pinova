@@ -118,7 +118,7 @@ function clearExploreSearch() {
 </script>
 
 <template>
-  <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8">
+  <div class="pinova-route-natural-height w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8">
     <ExploreDiscoverSections
       v-model:selected-topic="selectedCategory"
       :text-query="exploreTextQuery"

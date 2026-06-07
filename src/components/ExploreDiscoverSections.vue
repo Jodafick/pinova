@@ -147,6 +147,7 @@ onMounted(async () => {
 })
 
 onActivated(() => {
+  void loadCategories('')
   void loadBoards(props.textQuery ?? '')
 })
 
