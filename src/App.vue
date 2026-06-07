@@ -240,6 +240,16 @@ const isImmersiveMobileRoute = computed(
   () => isLgDown.value && suppressMobileMainChromeInsets.value,
 )
 
+/** Padding bas #main-content : réserve la tab bar fixe quand elle est visible. */
+const mainMobileBottomPadClass = computed(() => {
+  if (suppressAppChrome.value || suppressMobileMainChromeInsets.value) return ''
+  if (suppressMobileChromeForProfileDrawer.value) return ''
+  if (showMobileTabBar.value) {
+    return 'max-lg:pb-[calc(var(--pinova-mobile-tab-bar-h,5rem)+env(safe-area-inset-bottom,0px))] lg:pb-0'
+  }
+  return 'max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] lg:pb-0'
+})
+
 /*
  * UX mobile « app native » : le header global ne s'affiche que sur la home (/),
  * les autres écrans présentent une barre fixe (retour + titre + profil).
@@ -566,10 +576,7 @@ const pageTransitionName = computed(() => {
           ? 'max-lg:overflow-hidden'
           : 'max-lg:overflow-y-auto',
         !suppressAppChrome && !suppressMobileMainChromeInsets
-          ? suppressMobileChromeForProfileDrawer
-            ? ''
-            : /* Ancien espace réservé tab bar (~5rem) : `AppMobileTabBar` n’est pas montée — évite un vide généralisé sous le contenu. On garde la safe-area + une marge tactile minimale. */
-              'max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] lg:pb-0'
+          ? mainMobileBottomPadClass
           : '',
         needsMainChromeTopPad && !suppressMobileChromeForProfileDrawer
           ? 'pt-[var(--pinova-global-header-h,calc(3.5rem+env(safe-area-inset-top,0px)+var(--pinova-pwa-extra-top-inset,0px)))]'

@@ -100,6 +100,8 @@
   --card-shadow-hover: 0 20px 42px -20px rgb(15 23 42 / 0.28);
   --card-text: rgb(39 39 42);
   --card-text-muted: rgb(82 82 91);
+  /** Hauteur utile tab bar mobile (icônes + libellés + bouton création) — safe-area en plus via App.vue. */
+  --pinova-mobile-tab-bar-h: 5rem;
   --skeleton-base: rgb(229 231 235);
   --skeleton-base-soft: rgb(243 244 246);
   --skeleton-shimmer: linear-gradient(
