@@ -1,6 +1,6 @@
 {
-  "installCommand": "cd .. && pnpm install --frozen-lockfile",
-  "buildCommand": "cd .. && pnpm --filter pinova build:vercel",
+  "installCommand": "cd .. && corepack enable && pnpm install --frozen-lockfile",
+  "buildCommand": "cd .. && pnpm build:vercel",
   "outputDirectory": "dist",
   "rewrites": [
     {
