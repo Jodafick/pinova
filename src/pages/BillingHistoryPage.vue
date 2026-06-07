@@ -6,6 +6,7 @@ import BillingReceiptPdfModal from '../components/BillingReceiptPdfModal.vue'
 import { useAuth } from '../composables/useAuth'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
 import { useI18n } from '../i18n'
+import PinovaButton from '../components/ui/PinovaButton.vue'
 
 const router = useRouter()
 const { fetchSubscriptionInvoices, fetchSubscriptionInvoiceReceipt, fetchCurrentUser, currentUser } =
@@ -57,15 +58,15 @@ const invoiceAmountLabel = (row: { amount_display: number; currency_iso: string 
 function statusBadgeClasses(status: string) {
   const s = String(status || '').toLowerCase()
   if (s === 'approved' || s === 'completed' || s === 'paid') {
-    return 'app-btn app-btn-sm app-btn-secondary border-emerald-300 dark:border-emerald-700/70 text-emerald-700 dark:text-emerald-300'
+    return 'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium border-emerald-300 dark:border-emerald-700/70 text-emerald-700 dark:text-emerald-300'
   }
   if (s === 'pending' || s === 'processing') {
-    return 'app-btn app-btn-sm app-btn-secondary border-amber-300 dark:border-amber-700/70 text-amber-700 dark:text-amber-300'
+    return 'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium border-amber-300 dark:border-amber-700/70 text-amber-700 dark:text-amber-300'
   }
   if (s === 'failed' || s === 'cancelled' || s === 'canceled') {
-    return 'app-btn app-btn-sm app-btn-secondary border-rose-300 dark:border-rose-700/70 text-rose-700 dark:text-rose-300'
+    return 'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium border-rose-300 dark:border-rose-700/70 text-rose-700 dark:text-rose-300'
   }
-  return 'app-btn app-btn-sm app-btn-secondary'
+  return 'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300'
 }
 
 function formatPlanName(plan: string) {
@@ -148,16 +149,16 @@ onMounted(async () => {
     class="min-h-[70vh] w-full min-w-0 bg-gradient-to-b from-neutral-50 via-white to-[#fdf8fb] dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 selection:bg-pink-100 selection:text-pink-900"
   >
     <div class="w-full min-w-0 max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-14 pb-16">
-      <button
-        type="button"
-        class="app-btn app-btn-secondary group mb-8 hidden text-sm lg:inline-flex"
+      <PinovaButton
+        variant="secondary"
+        class="group mb-8 hidden text-sm lg:inline-flex"
         @click="router.push('/settings')"
       >
         <span class="material-symbols-outlined text-[1.125rem]">
           arrow_back
         </span>
         {{ t('billing.backSettings') }}
-      </button>
+      </PinovaButton>
 
       <header
         class="relative overflow-hidden rounded-3xl border border-pink-100/80 dark:border-pink-900/40 bg-gradient-to-br from-white via-white to-pink-50/40 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-900 px-6 sm:px-10 py-8 sm:py-10 shadow-[0_1px_0_0_rgba(0,0,0,0.04),0_12px_40px_-18px_rgba(225,29,119,0.18)] mb-8"
@@ -273,9 +274,10 @@ onMounted(async () => {
                   </p>
                   <div class="flex flex-wrap gap-2 sm:justify-end">
                     <template v-if="inv.status === 'approved'">
-                      <button
-                        type="button"
-                        class="app-btn app-btn-primary app-btn-sm text-xs disabled:pointer-events-none"
+                      <PinovaButton
+                        variant="primary"
+                        size="sm"
+                        class="text-xs"
                         :disabled="receiptLoadingId === inv.id"
                         @click="viewReceipt(inv)"
                       >
@@ -287,18 +289,20 @@ onMounted(async () => {
                               ? t('settings.subscription.openReceipt')
                               : t('billing.fetchReceipt')
                         }}
-                      </button>
+                      </PinovaButton>
                     </template>
-                    <a
+                    <PinovaButton
                       v-else-if="inv.checkout_url && inv.status === 'pending'"
+                      variant="secondary"
+                      size="sm"
+                      class="text-xs"
                       :href="inv.checkout_url"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="app-btn app-btn-secondary app-btn-sm text-xs"
                     >
                       <span class="material-symbols-outlined text-[1rem]">open_in_new</span>
                       {{ t('settings.subscription.openCheckout') }}
-                    </a>
+                    </PinovaButton>
                   </div>
                 </div>
               </div>

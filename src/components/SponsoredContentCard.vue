@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import type { SponsoredAd } from '../types'
 import { isPartnerAd, isPinPromo } from '../types'
 import { useI18n } from '../i18n'
-import api from '../api'
+import api from '../api/index'
 import OfflineImg from './OfflineImg.vue'
 import OfflineVideo from './OfflineVideo.vue'
 

@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import PinovaModal from '../components/ui/PinovaModal.vue'
+import PinovaButton from '../components/ui/PinovaButton.vue'
 import { useRoute, useRouter } from 'vue-router'
 import PinGrid from '../components/PinGrid.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
 import BoardHeaderSkeleton from '../components/BoardHeaderSkeleton.vue'
 import UserListSkeleton from '../components/UserListSkeleton.vue'
-import api from '../api'
+import api from '../api/index'
 import { mapDjangoPinToFrontend, usePins } from '../composables/usePins'
 import {
   boardDetailCacheKey,
   getCachedBoardDetail,
   setCachedBoardDetail,
   type BoardDetailSnapshot,
-} from '../entityClientCache'
+} from '../lib/cache/entityClientCache'
 import { useAuth } from '../composables/useAuth'
+import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import type { Pin } from '../types'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
@@ -36,6 +38,7 @@ const route = useRoute()
 const router = useRouter()
 const { toggleSave } = usePins()
 const { currentUser, updateBoard, deleteBoard, addBoardCollaborator, fetchCurrentUser } = useAuth()
+const { promptGuest } = useGuestAuthGate()
 
 const currentPlan = computed<'free' | 'plus' | 'pro'>(() => {
   const p = currentUser.value?.subscription?.plan
@@ -213,7 +216,7 @@ function openPin(slug: string) {
 
 async function onToggleSave(slug: string) {
   if (!currentUser.value) {
-    router.push('/login')
+    promptGuest('save', { resourceId: slug })
     return
   }
   try {
@@ -612,14 +615,14 @@ onUnmounted(() => {
 
 <template>
   <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-    <button
-      type="button"
-      class="app-btn app-btn-secondary group mb-8 hidden text-sm lg:inline-flex"
+    <PinovaButton
+      variant="secondary"
+      class="group mb-8 hidden text-sm lg:inline-flex"
       @click="router.back()"
     >
       <span class="material-symbols-outlined text-lg">arrow_back</span>
       {{ t('common.back') }}
-    </button>
+    </PinovaButton>
 
     <div v-if="loading" class="app-skeleton-wave w-full min-w-0">
       <template v-if="routeOwnerUsername && !boardName">
@@ -821,17 +824,17 @@ onUnmounted(() => {
 
       <template #footer>
         <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganize">
+          <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganize">
             {{ t('profile.boards.organizeClose') }}
-          </button>
-          <button
-            type="button"
-            class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px] sm:min-w-[9rem] disabled:opacity-50 disabled:cursor-not-allowed"
+          </PinovaButton>
+          <PinovaButton
+            variant="primary"
+            class="w-full sm:w-auto min-h-[44px] sm:min-w-[9rem]"
             :disabled="organizeSaving || organizeLoading || organizePins.length === 0"
             @click="saveBoardOrder"
           >
             {{ organizeSaving ? t('common.loading') : t('profile.boards.organizeSave') }}
-          </button>
+          </PinovaButton>
         </div>
       </template>
     </PinovaModal>
@@ -871,17 +874,17 @@ onUnmounted(() => {
 
       <template #footer>
         <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeBoardEditor">
+          <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeBoardEditor">
             {{ t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px] sm:min-w-[9rem]"
+          </PinovaButton>
+          <PinovaButton
+            variant="primary"
+            class="w-full sm:w-auto min-h-[44px] sm:min-w-[9rem]"
             :disabled="boardEditSaving"
             @click="submitBoardMeta"
           >
             {{ boardEditSaving ? t('board.savingBoard') : t('board.saveChanges') }}
-          </button>
+          </PinovaButton>
         </div>
       </template>
     </PinovaModal>

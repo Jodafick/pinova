@@ -11,6 +11,12 @@ const PINOVA_CODE_TO_I18N: Record<string, string> = {
   'moderation.pin.title_inappropriate': 'create.fieldError.titleInappropriate',
   'moderation.pin.description_inappropriate': 'create.fieldError.descriptionInappropriate',
   'moderation.pin.public_tags_inappropriate': 'create.fieldError.publicTagsInappropriate',
+  'upload.image.invalid_type': 'create.upload.error.invalidType',
+  'upload.image.polyglot': 'create.upload.error.polyglot',
+  'upload.image.too_large': 'create.upload.error.tooLarge',
+  'upload.video.invalid_type': 'create.upload.error.videoInvalidType',
+  'upload.video.polyglot': 'create.upload.error.videoPolyglot',
+  'upload.processing_failed': 'create.upload.error.processingFailed',
 }
 
 export function translatePinovaErrorToken(raw: string, t: (key: string) => string): string {

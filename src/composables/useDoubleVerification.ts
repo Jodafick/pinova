@@ -1,10 +1,5 @@
 import { ref } from 'vue'
-import {
-  moderationScanImageFile,
-  moderationScanVideoFile,
-  type ModerationImageResult,
-  type ModerationScanMediaOptions,
-} from './useModeration'
+import type { ModerationImageResult, ModerationScanMediaOptions } from './moderationPolicy'
 
 /**
  * Cache pour éviter de scanner plusieurs fois le même média.
@@ -36,6 +31,7 @@ export function useDoubleVerification() {
         const blob = await response.blob()
         const file = new File([blob], 'media', { type: blob.type })
 
+        const { moderationScanImageFile, moderationScanVideoFile } = await import('./nsfwScanner')
         let result: ModerationImageResult
         if (type === 'video') {
           result = await moderationScanVideoFile(file, 5, opts)

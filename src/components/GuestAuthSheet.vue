@@ -2,13 +2,14 @@
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { useTokenClient } from 'vue3-google-signin'
-import { GOOGLE_SIGN_IN_SCOPES } from '../env'
+import { GOOGLE_SIGN_IN_SCOPES } from '../config/env'
 import { useAuth } from '../composables/useAuth'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
+import PinovaButton from './ui/PinovaButton.vue'
 
 const props = defineProps<{
   open: boolean
-  intent?: 'like' | 'save' | 'follow' | 'comment' | 'contest' | 'generic'
+  intent?: 'like' | 'save' | 'follow' | 'comment' | 'translate' | 'contest' | 'generic'
 }>()
 
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -17,8 +18,17 @@ const { t } = useI18n()
 const router = useRouter()
 const { socialLogin } = useAuth()
 
+const intent = () => props.intent || 'generic'
+
+const titleKey = () => {
+  const i = intent()
+  const k = `guestGate.title.${i}`
+  const translated = t(k)
+  return translated !== k ? translated : t('guestGate.title.generic')
+}
+
 const intentKey = () => {
-  const i = props.intent || 'generic'
+  const i = intent()
   const k = `guestGate.intent.${i}`
   const translated = t(k)
   return translated !== k ? translated : t('guestGate.intent.generic')
@@ -43,7 +53,8 @@ function goLogin() {
 
 function goRegister() {
   emit('close')
-  router.push({ name: 'register' })
+  const redirect = encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')
+  router.push({ name: 'register', query: { redirect } })
 }
 </script>
 
@@ -55,6 +66,7 @@ function goRegister() {
       @click.self="emit('close')"
     >
       <div
+        data-testid="guest-auth-sheet"
         class="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-950 shadow-2xl overflow-hidden"
         role="dialog"
         aria-modal="true"
@@ -63,8 +75,9 @@ function goRegister() {
           <div class="flex justify-between items-start gap-3">
             <div>
               <p class="text-[10px] font-bold uppercase tracking-widest text-pink-600">{{ t('guestGate.kicker') }}</p>
-              <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-50">{{ t('guestGate.title') }}</h2>
+              <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-50">{{ titleKey() }}</h2>
               <p class="text-sm text-neutral-500 mt-1">{{ intentKey() }}</p>
+              <p class="text-xs font-semibold text-pink-600/90 dark:text-pink-400 mt-2">{{ t('guestGate.socialProof') }}</p>
             </div>
             <button type="button" class="h-9 w-9 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center" @click="emit('close')">
               <span class="material-symbols-outlined">close</span>
@@ -72,25 +85,26 @@ function goRegister() {
           </div>
         </div>
         <div class="p-5 space-y-3">
-          <button
-            type="button"
-            class="w-full flex items-center justify-center gap-2 rounded-2xl bg-pink-700 text-white font-bold py-3.5"
+          <PinovaButton
+            data-testid="guest-auth-register"
+            variant="primary"
+            block
             @click="goRegister"
           >
             {{ t('guestGate.ctaRegister') }}
-          </button>
-          <button
+          </PinovaButton>
+          <PinovaButton
             v-if="googleReady"
-            type="button"
-            class="w-full flex items-center justify-center gap-2 rounded-2xl border border-neutral-200 dark:border-neutral-700 py-3.5 font-semibold"
+            variant="secondary"
+            block
             @click="googleLogin"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="" />
             {{ t('login.googleCta') }}
-          </button>
-          <button type="button" class="w-full text-sm font-semibold text-pink-700 py-2" @click="goLogin">
+          </PinovaButton>
+          <PinovaButton variant="ghost" block @click="goLogin">
             {{ t('guestGate.ctaLogin') }}
-          </button>
+          </PinovaButton>
         </div>
       </div>
     </div>

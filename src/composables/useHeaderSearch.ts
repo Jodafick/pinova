@@ -1,4 +1,4 @@
-import api from '../api'
+import api from '../api/index'
 import { mapDjangoPinToFrontend, getFullMediaUrl } from './usePins'
 import type { Pin } from '../types'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'

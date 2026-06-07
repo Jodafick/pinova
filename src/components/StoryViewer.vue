@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import type { Pin } from '../types'
 import { usePins, isAlreadyReportedError } from '../composables/usePins'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
+import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
@@ -11,7 +12,7 @@ import PinovaModal from './ui/PinovaModal.vue'
 import StorySegmentedProgressBar from './StorySegmentedProgressBar.vue'
 import StoryLikersModal from './StoryLikersModal.vue'
 import ReportContentModal from './ReportContentModal.vue'
-import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/useModeration'
+import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/moderationPolicy'
 import {
   PIN_MEDIA_ANTI_LEAK_CLASS,
   pinMediaAntiLeakImgBindings,
@@ -744,7 +745,7 @@ async function handleReportStory() {
   const pin = current.value
   if (!pin) return
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   if (currentUser.value && pin.username === currentUser.value.username) {
@@ -894,8 +895,9 @@ function onStoryVideoEnded() {
 
 async function doLike() {
   const pin = current.value
-  if (!pin || !isAuthenticated.value) {
-    router.push('/login')
+  if (!pin) return
+  if (!isAuthenticated.value) {
+    promptGuest('like', { resourceId: pin.slug })
     return
   }
   if (isOwnerViewingStory.value) return

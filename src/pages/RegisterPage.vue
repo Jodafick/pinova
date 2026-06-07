@@ -3,55 +3,49 @@ import { nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useTokenClient } from 'vue3-google-signin'
-import { GOOGLE_SIGN_IN_SCOPES } from '../env'
+import { GOOGLE_SIGN_IN_SCOPES } from '../config/env'
 import { useI18n } from '../i18n'
 import { EMAIL_DELIVERY_UNAVAILABLE_CODE } from '../constants/authErrors'
-import { clearStoredReferralCode } from '../composables/useReferralIntent'
+import { clearStoredReferralCode, getStoredReferralCode } from '../composables/useReferralIntent'
+import { buildRegisterAnalyticsProps } from '@pinova/shared'
 import { extractDrfFieldErrors, firstErroredField } from '../utils/apiValidationErrors'
 import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
 import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
+import PasswordStrengthField from '../components/PasswordStrengthField.vue'
+import PinovaButton from '../components/ui/PinovaButton.vue'
+import PinovaInput from '../components/ui/PinovaInput.vue'
+import { allPasswordRulesMet } from '../utils/passwordPolicy'
+import { trackEvent } from '../lib/analytics'
+import { guestConversionProps } from '../lib/guestConversionAnalytics'
 
 const router = useRouter()
 const { register, socialLogin, currentUser } = useAuth()
 const { t } = useI18n()
 
-const displayName = ref('')
 const email = ref('')
 const password = ref('')
-const confirmPassword = ref('')
 const error = ref('')
 const suggestGoogleForEmail = ref(false)
 const loading = ref(false)
 const showPassword = ref(false)
+const passwordValid = ref(false)
 const acceptTerms = ref(false)
 const fieldErrors = ref<Record<string, string>>({})
 
-const displayNameInput = ref<HTMLInputElement | null>(null)
-const emailInput = ref<HTMLInputElement | null>(null)
-const passwordInput = ref<HTMLInputElement | null>(null)
-const confirmPasswordInput = ref<HTMLInputElement | null>(null)
+const passwordInput = ref<InstanceType<typeof PasswordStrengthField> | null>(null)
 const termsInput = ref<HTMLInputElement | null>(null)
 
-const FIELD_ORDER = ['display_name', 'username', 'email', 'password1', 'password2'] as const
+const FIELD_ORDER = ['email', 'password1'] as const
 
 async function focusField(field: string | null) {
   await nextTick()
-  if (field === 'display_name' || field === 'username') {
-    displayNameInput.value?.focus()
-    return
-  }
   if (field === 'email') {
-    emailInput.value?.focus()
+    document.getElementById('register-email')?.focus()
     return
   }
   if (field === 'password1') {
-    passwordInput.value?.focus()
-    return
-  }
-  if (field === 'password2') {
-    confirmPasswordInput.value?.focus()
-    return
+    passwordInput.value?.$el?.querySelector('input')?.focus()
   }
 }
 
@@ -59,16 +53,12 @@ const handleRegister = async () => {
   error.value = ''
   fieldErrors.value = {}
   suggestGoogleForEmail.value = false
-  if (!displayName.value || !email.value || !password.value) {
+  if (!email.value || !password.value) {
     error.value = t('register.error.empty')
     return
   }
-  if (password.value.length < 8) {
-    error.value = t('register.error.passwordShort')
-    return
-  }
-  if (password.value !== confirmPassword.value) {
-    error.value = t('register.error.passwordMismatch')
+  if (!allPasswordRulesMet(password.value, { email: email.value })) {
+    error.value = t('passwordPolicy.checklistTitle')
     return
   }
   if (!acceptTerms.value) {
@@ -78,8 +68,15 @@ const handleRegister = async () => {
   }
 
   loading.value = true
+  trackEvent(
+    'register_started',
+    buildRegisterAnalyticsProps({
+      platform: 'web',
+      refCode: getStoredReferralCode(),
+      guestConversion: guestConversionProps(),
+    }),
+  )
   const result = await register({
-    displayName: displayName.value,
     email: email.value,
     password: password.value,
   })
@@ -104,7 +101,16 @@ const handleRegister = async () => {
         (Object.keys(fieldErrors.value).length ? '' : result.error || t('register.error.generic'))
     return
   }
+  const refCode = getStoredReferralCode()
   clearStoredReferralCode()
+  trackEvent(
+    'register_completed',
+    buildRegisterAnalyticsProps({
+      platform: 'web',
+      refCode,
+      guestConversion: guestConversionProps(),
+    }),
+  )
   // Rediriger vers la page OTP après inscription
   router.push({ name: 'verify-otp', query: { email: email.value } })
 }
@@ -179,6 +185,12 @@ async function handleGoogleClick() {
         <div class="text-center mb-10">
           <h2 class="text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('register.title') }}</h2>
           <p class="text-neutral-500 dark:text-neutral-400">{{ t('register.subtitle') }}</p>
+          <p
+            data-testid="register-social-proof"
+            class="mt-2 text-sm font-medium text-pink-700/85 dark:text-pink-400/90"
+          >
+            {{ t('register.socialProof') }}
+          </p>
         </div>
 
         <form @submit.prevent="handleRegister" class="space-y-5">
@@ -190,97 +202,30 @@ async function handleGoogleClick() {
             {{ error }}
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div class="sm:col-span-2">
-              <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('register.displayName') }}</label>
-              <div class="relative group">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">person</span>
-                <input
-                  ref="displayNameInput"
-                  v-model="displayName"
-                  type="text"
-                  autocomplete="nickname"
-                  :placeholder="t('register.displayName.placeholder')"
-                  :class="[
-                    'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all',
-                    fieldErrors.display_name || fieldErrors.username
-                      ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
-                      : 'border-neutral-200 dark:border-neutral-700',
-                  ]"
-                />
-              </div>
-              <p v-if="fieldErrors.display_name || fieldErrors.username" class="mt-1 ml-1 text-xs text-red-600">
-                {{ fieldErrors.display_name || fieldErrors.username }}
-              </p>
-              <p v-else class="mt-1 ml-1 text-xs text-neutral-500 dark:text-neutral-400">{{ t('register.displayNameHint') }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('login.email') }}</label>
-              <div class="relative group">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">mail</span>
-                <input
-                  ref="emailInput"
-                  v-model="email"
-                  type="email"
-                  :placeholder="t('register.email.placeholder')"
-                  :class="[
-                    'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all',
-                    fieldErrors.email
-                      ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
-                      : 'border-neutral-200 dark:border-neutral-700',
-                  ]"
-                />
-              </div>
-              <p v-if="fieldErrors.email" class="mt-1 ml-1 text-xs text-red-600">{{ fieldErrors.email }}</p>
-            </div>
-          </div>
+          <PinovaInput
+            v-model="email"
+            :label="t('login.email')"
+            :placeholder="t('register.email.placeholder')"
+            type="email"
+            icon="mail"
+            input-id="register-email"
+            test-id="register-email"
+            autocomplete="email"
+            :error="fieldErrors.email"
+          />
 
-          <div>
-            <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('login.password') }}</label>
-            <div class="relative group">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">lock</span>
-              <input
-                ref="passwordInput"
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
-                :placeholder="t('register.password.placeholder')"
-                :class="[
-                  'w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all',
-                  fieldErrors.password1
-                    ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
-                    : 'border-neutral-200 dark:border-neutral-700',
-                ]"
-              />
-              <button
-                type="button"
-                class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                @click="showPassword = !showPassword"
-              >
-                <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
-              </button>
-            </div>
-            <p v-if="fieldErrors.password1" class="mt-1 ml-1 text-xs text-red-600">{{ fieldErrors.password1 }}</p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('register.confirmPassword') }}</label>
-            <div class="relative group">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">verified_user</span>
-              <input
-                ref="confirmPasswordInput"
-                v-model="confirmPassword"
-                type="password"
-                :placeholder="t('register.confirmPassword.placeholder')"
-                :class="[
-                  'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:border-pink-600 transition-all',
-                  fieldErrors.password2
-                    ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500'
-                    : 'border-neutral-200 dark:border-neutral-700',
-                ]"
-              />
-            </div>
-            <p v-if="fieldErrors.password2" class="mt-1 ml-1 text-xs text-red-600">{{ fieldErrors.password2 }}</p>
-          </div>
+          <PasswordStrengthField
+            ref="passwordInput"
+            v-model="password"
+            v-model:show-password="showPassword"
+            :email="email"
+            :label="t('login.password')"
+            :placeholder="t('register.password.placeholder')"
+            input-id="register-password"
+            data-testid="register-password"
+            :error="fieldErrors.password1"
+            @update:valid="passwordValid = $event"
+          />
 
           <label class="flex items-start gap-3 cursor-pointer group px-1 py-1">
             <div class="relative flex items-center mt-1">
@@ -304,14 +249,17 @@ async function handleGoogleClick() {
             </span>
           </label>
 
-          <button
+          <PinovaButton
             type="submit"
-            class="w-full py-4 rounded-2xl bg-pink-700 dark:bg-pink-600 text-white font-bold hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-pink-700/20 flex items-center justify-center gap-2"
-            :disabled="loading"
+            data-testid="register-submit"
+            variant="primary"
+            size="lg"
+            block
+            :loading="loading"
+            :disabled="loading || !passwordValid || !acceptTerms"
           >
-            <span v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             {{ loading ? t('register.submitting') : t('register.submit') }}
-          </button>
+          </PinovaButton>
         </form>
 
         <div class="my-8 flex items-center gap-4 text-neutral-400 dark:text-neutral-500">
@@ -327,17 +275,15 @@ async function handleGoogleClick() {
           {{ t('auth.emailDeliveryBlocked.googleHint') }}
         </p>
 
-        <div class="flex justify-center">
-          <button
-            type="button"
-            @click="handleGoogleClick"
-            class="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all text-sm font-bold text-neutral-700 dark:text-neutral-200 w-full"
-            :class="suggestGoogleForEmail ? 'ring-2 ring-pink-700 dark:ring-pink-600 ring-offset-2' : ''"
-          >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" />
-            {{ t('login.googleCta') }}
-          </button>
-        </div>
+        <PinovaButton
+          variant="secondary"
+          block
+          :class="suggestGoogleForEmail ? 'ring-2 ring-pink-700 dark:ring-pink-600 ring-offset-2' : ''"
+          @click="handleGoogleClick"
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="" />
+          {{ t('login.googleCta') }}
+        </PinovaButton>
 
         <p class="mt-10 text-center text-sm text-neutral-500 dark:text-neutral-400 font-medium">
           {{ t('register.haveAccount') }}

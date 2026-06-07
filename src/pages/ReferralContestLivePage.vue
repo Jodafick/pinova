@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import api from '../api'
+import api from '../api/index'
 import ContestCountdown from '../components/contest/ContestCountdown.vue'
 import LeaderboardPodiumTopThree from '../components/contest/LeaderboardPodiumTopThree.vue'
 import { useAuth } from '../composables/useAuth'

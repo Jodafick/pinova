@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../api'
+import api from '../api/index'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
@@ -10,6 +10,7 @@ import BoostWizardPanel from '../components/BoostWizardPanel.vue'
 import CampaignComposer from '../components/CampaignComposer.vue'
 import { appendCampaignToFormData, emptyTargeting, type CampaignTargeting } from '../composables/useCampaignTargeting'
 import { openCheckoutFlow } from '../utils/checkoutFlow'
+import { trackEvent } from '../lib/analytics'
 import { useCampaignDraft, clearCampaignDraft } from '../composables/useCampaignDraft'
 
 const route = useRoute()
@@ -46,6 +47,8 @@ const mediaFileName = ref('')
 const targeting = ref<CampaignTargeting>(emptyTargeting())
 const packageSlug = ref('')
 
+useCampaignDraft({ headline, body, ctaUrl, ctaLabel, packageSlug, targeting })
+
 const pinFromQuery = computed(() => String(route.query.pin || '').trim())
 
 function onCampaignMedia(payload: { file: File | null; previewUrl: string; mediaType: 'image' | 'video'; fileName: string }) {
@@ -66,11 +69,14 @@ onMounted(async () => {
   if (tab.value === 'boost' || pinFromQuery.value) {
     await loadMyPins(pinFromQuery.value)
   }
-  if (packs.value[0]) packageSlug.value = defaultBoostPackSlug(packs.value)
+  if (packs.value[0] && !packageSlug.value) {
+    packageSlug.value = defaultBoostPackSlug(packs.value)
+  }
 })
 
 async function startBoost(packSlug: string) {
   if (!selectedSlug.value) return
+  trackEvent('boost_started', { pin_slug: selectedSlug.value, package: packSlug })
   busy.value = true
   try {
     const res = await api.post(`monetization/pins/${encodeURIComponent(selectedSlug.value)}/boost/`, { package: packSlug })
@@ -113,10 +119,12 @@ async function startCampaign() {
     const res = await api.post('monetization/pin-promo-campaigns/', fd)
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
+      trackEvent('campaign_launched', { package: packageSlug.value, checkout: true })
       openCheckoutFlow(router, 'campaign', data.checkout_url)
       return
     }
     if (data.status === 'active' || data.sandbox) {
+      trackEvent('campaign_launched', { package: packageSlug.value, checkout: false })
       clearCampaignDraft()
       await showAlert(t('promote.campaigns.created'), { variant: 'success' })
       await loadCatalog()

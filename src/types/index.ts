@@ -144,6 +144,9 @@ export type User = UserProfileExtended & {
   notificationsFollowers?: boolean
   notificationsSaves?: boolean
   notificationsRecommendations?: boolean
+  notificationsStreakReminders?: boolean
+  notificationsReactivationEmails?: boolean
+  dateJoined?: string
   avatarUrl?: string
   avatarColor: string
   bio: string

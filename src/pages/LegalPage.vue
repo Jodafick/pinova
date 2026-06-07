@@ -2,8 +2,9 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from '../i18n'
-import api from '../api'
-import { CONTACT_EMAIL as FALLBACK_EMAIL } from '../env'
+import api from '../api/index'
+import { CONTACT_EMAIL as FALLBACK_EMAIL } from '../config/env'
+import PinovaButton from '../components/ui/PinovaButton.vue'
 
 const route = useRoute()
 const { t, currentLang } = useI18n()
@@ -162,12 +163,9 @@ watch([slug, currentLang], load, { immediate: true })
         error
       </span>
       <p class="text-neutral-700 font-medium">{{ t('legal.invalid') }}</p>
-      <router-link
-        to="/"
-        class="mt-6 app-btn app-btn-primary text-sm"
-      >
+      <PinovaButton variant="primary" to="/" class="mt-6 text-sm">
         {{ t('legal.backHome') }}
-      </router-link>
+      </PinovaButton>
     </div>
 
     <!-- Erreur chargement -->
@@ -182,13 +180,13 @@ watch([slug, currentLang], load, { immediate: true })
         cloud_off
       </span>
       <p class="text-red-900/90 font-medium text-sm">{{ t('legal.loadError') }}</p>
-      <button
-        type="button"
-        class="mt-6 app-btn app-btn-secondary text-sm border-rose-300 text-rose-700 dark:text-rose-300"
+      <PinovaButton
+        variant="secondary"
+        class="mt-6 text-sm border-rose-300 text-rose-700 dark:text-rose-300"
         @click="load()"
       >
         {{ t('legal.retry') }}
-      </button>
+      </PinovaButton>
     </div>
 
     <!-- Document -->
@@ -248,13 +246,14 @@ watch([slug, currentLang], load, { immediate: true })
           v-if="slug === 'contact'"
           class="mt-10 pt-8 border-t app-divider-subtle"
         >
-          <a
+          <PinovaButton
+            variant="primary"
             :href="mailtoLegalContact"
-            class="app-btn app-btn-primary inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm shadow-md"
+            class="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm shadow-md"
           >
             <span class="material-symbols-outlined text-xl">outgoing_mail</span>
             {{ t('contact.emailCta') }}
-          </a>
+          </PinovaButton>
           <p class="mt-3 text-sm text-pink-700 dark:text-pink-600 font-medium break-all">
             {{ contactEmail.trim() || FALLBACK_EMAIL }}
           </p>

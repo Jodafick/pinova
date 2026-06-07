@@ -67,8 +67,6 @@ interface Props {
   dismissOnEscape?: boolean
   /** Désactiver le gesture drag-to-dismiss. */
   disableGesture?: boolean
-  /** @deprecated Conservé pour compat API ; la surface suit désormais le thème neutre (`--glass-fill`). */
-  rose?: boolean
   /** Intensité du scrim (0..1). Default selon presentation. */
   scrim?: number
   /** Largeur max (center / floating). Default 480. */
@@ -101,7 +99,6 @@ const props = withDefaults(defineProps<Props>(), {
   dismissOnBackdropClick: true,
   dismissOnEscape: true,
   disableGesture: false,
-  rose: false,
   depthEffect: true,
   maxWidth: 480,
   tallSheetMobileFullBleed: false,

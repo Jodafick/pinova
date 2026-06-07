@@ -4,7 +4,7 @@ import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { usePins } from '../composables/usePins'
 import { useI18n } from '../i18n'
-import api from '../api'
+import api from '../api/index'
 import { displayInitials } from '../utils/displayInitials'
 import { useDataSaver } from '../composables/useDataSaver'
 import BillingInvoicesSkeleton from '../components/BillingInvoicesSkeleton.vue'
@@ -13,6 +13,7 @@ import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import SettingsProfileExtended from '../components/settings/SettingsProfileExtended.vue'
+import PinovaButton from '../components/ui/PinovaButton.vue'
 import ProfileIdentityBlock from '../components/settings/ProfileIdentityBlock.vue'
 import BirthDatePicker from '../components/BirthDatePicker.vue'
 import { profileExtendedToApiPayload } from '../utils/mapProfileExtended'
@@ -21,7 +22,7 @@ import { isValidSettingsSectionId, resolveSettingsDetailPage, settingsDetailTitl
 import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
-import { isVerifiedAdultFromBirthDate } from '../composables/useModeration'
+import { isVerifiedAdultFromBirthDate } from '../composables/moderationPolicy'
 import { useAppearance } from '../composables/useAppearance'
 import { usePwaContext } from '../composables/usePwaContext'
 import { reloadPwaApplication } from '../utils/pwaAppReload'
@@ -61,7 +62,16 @@ const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTick
   useAuth()
 const { unblockUser } = usePins()
 const { t, currentLang } = useI18n()
-const { mode: appearanceMode, setMode: setAppearanceMode } = useAppearance()
+const { preference: appearancePreference, setPreference: setAppearancePreference } = useAppearance()
+
+async function onAppearancePreference(pref: 'light' | 'dark' | 'system') {
+  setAppearancePreference(pref)
+  try {
+    await updateProfile({ themeMode: pref } as { themeMode?: string })
+  } catch {
+    /* localStorage déjà persisté par useAppearance */
+  }
+}
 const { isStandalone } = usePwaContext()
 
 async function onReloadPwaFromSettings() {
@@ -71,7 +81,7 @@ async function onReloadPwaFromSettings() {
 function openPwaInstallGuideFromSettings() {
   requestPwaInstallModalOpen()
 }
-const { showAlert, showPrompt } = useAppModal()
+const { showAlert, showPrompt, showConfirm } = useAppModal()
 const {
   override: dataSaverOverride,
   isLowDataMode,
@@ -172,6 +182,8 @@ const webNotificationsError = ref('')
 const notificationsFollowers = ref(true)
 const notificationsSaves = ref(true)
 const notificationsRecommendations = ref(false)
+const notificationsStreakReminders = ref(true)
+const notificationsReactivationEmails = ref(true)
 const notificationsSaving = ref(false)
 const notificationsSaved = ref(false)
 const privateProfile = ref(false)
@@ -248,6 +260,7 @@ watch(seatInviteSearchOpen, (open) => {
 })
 
 const accountDeletionBusy = ref(false)
+const dataExportBusy = ref(false)
 
 const scheduledAccountDeletion = computed(() => currentUser.value?.subscription?.accountScheduledDeletionAt || null)
 
@@ -401,6 +414,8 @@ onMounted(() => {
     notificationsFollowers.value = currentUser.value.notificationsFollowers ?? true
     notificationsSaves.value = currentUser.value.notificationsSaves ?? true
     notificationsRecommendations.value = currentUser.value.notificationsRecommendations ?? false
+    notificationsStreakReminders.value = currentUser.value.notificationsStreakReminders ?? true
+    notificationsReactivationEmails.value = currentUser.value.notificationsReactivationEmails ?? true
     privateProfile.value = currentUser.value.privateProfile ?? false
     discoverableProfile.value = currentUser.value.discoverableProfile ?? true
     digestWeekly.value = currentUser.value.subscription?.digestCreatorWeekly ?? true
@@ -806,6 +821,8 @@ const persistNotificationSettings = async () => {
       notificationsFollowers: notificationsFollowers.value,
       notificationsSaves: notificationsSaves.value,
       notificationsRecommendations: notificationsRecommendations.value,
+      notificationsStreakReminders: notificationsStreakReminders.value,
+      notificationsReactivationEmails: notificationsReactivationEmails.value,
     })
     notificationsSaved.value = true
     setTimeout(() => (notificationsSaved.value = false), 2500)
@@ -1060,10 +1077,26 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
+async function requestDataExport() {
+  dataExportBusy.value = true
+  try {
+    await api.post('account/export-data/')
+    await showAlert(t('settings.gdpr.exportStarted'), { variant: 'success' })
+  } catch {
+    await showAlert(t('settings.gdpr.exportError'), { variant: 'danger', title: t('modal.errorTitle') })
+  } finally {
+    dataExportBusy.value = false
+  }
+}
+
 async function requestAccountDeletion() {
   await showAlert(t('settings.danger.delete.warningBody'), {
     variant: 'danger',
     title: t('settings.danger.delete.title'),
+  })
+  const wantExport = await showConfirm({
+    title: t('settings.gdpr.exportBeforeDeleteTitle'),
+    message: t('settings.gdpr.exportBeforeDeleteBody'),
   })
   const typed = await showPrompt({
     title: t('settings.danger.delete.promptTitle'),
@@ -1076,7 +1109,7 @@ async function requestAccountDeletion() {
   accountDeletionBusy.value = true
   try {
     const confirm = normalized === 'DELETE' ? 'DELETE' : 'SUPPRIMER'
-    await api.post('me/account-deletion/request/', { confirm })
+    await api.post('me/account-deletion/request/', { confirm, request_export: wantExport })
     await fetchCurrentUser({ silent: true })
     await showAlert(t('settings.danger.delete.scheduledOk'), { variant: 'success' })
   } catch {
@@ -1282,13 +1315,9 @@ watch(
     >
       <p class="font-semibold">{{ t('settings.password.socialBannerTitle') }}</p>
       <p class="mt-1 text-xs leading-relaxed opacity-90">{{ t('settings.password.socialBannerBody') }}</p>
-      <button
-        type="button"
-        class="mt-3 app-btn app-btn-sm bg-pink-700 dark:bg-pink-600 text-white border-pink-700 dark:border-pink-600 hover:bg-pink-800 dark:hover:opacity-90"
-        @click="openInitialPasswordModal"
-      >
+      <PinovaButton variant="primary" size="sm" class="mt-3" @click="openInitialPasswordModal">
         {{ t('settings.password.socialBannerCta') }}
-      </button>
+      </PinovaButton>
     </div>
 
 
@@ -1340,12 +1369,9 @@ watch(
                 class="hidden"
                 @change="handleFileChange"
               />
-              <button
-                class="app-btn app-btn-secondary app-btn-sm text-sm w-full sm:w-auto"
-                @click="triggerFileInput"
-              >
+              <PinovaButton variant="secondary" size="sm" class="text-sm w-full sm:w-auto" @click="triggerFileInput">
                 {{ t('settings.profile.changePhoto') }}
-              </button>
+              </PinovaButton>
               <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">{{ t('settings.profile.photoHint') }}</p>
             </div>
           </div>
@@ -1437,17 +1463,14 @@ watch(
           </div>
 
           <div class="flex justify-end">
-            <button
-              class="app-btn app-btn-primary text-sm flex items-center gap-2"
-              :disabled="saving"
+            <PinovaButton
+              variant="primary"
+              class="text-sm flex items-center gap-2"
+              :loading="saving"
               @click="handleSave"
             >
-              <svg v-if="saving" class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
               {{ saving ? t('settings.profile.saving') : t('settings.profile.save') }}
-            </button>
+            </PinovaButton>
           </div>
         </div>
       </section>
@@ -1513,6 +1536,28 @@ watch(
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
           </label>
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.streakReminders') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.streakReminders.desc') }}</p>
+            </div>
+            <div class="relative shrink-0">
+              <input v-model="notificationsStreakReminders" type="checkbox" class="sr-only peer" />
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+            </div>
+          </label>
+          <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
+            <div class="min-w-0 flex-1 pr-1">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.reactivationEmails') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.reactivationEmails.desc') }}</p>
+            </div>
+            <div class="relative shrink-0">
+              <input v-model="notificationsReactivationEmails" type="checkbox" class="sr-only peer" />
+              <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+            </div>
+          </label>
           <p class="settings-subsection-label">{{ t('settings.hub.subsectionPush') }}</p>
           <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 flex flex-col gap-3">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -1521,32 +1566,28 @@ watch(
                 <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.web.desc') }}</p>
               </div>
               <div class="flex flex-col gap-2 shrink-0 self-stretch sm:self-auto sm:min-w-[11rem]">
-                <button
+                <PinovaButton
                   v-if="!webNotificationsEnabled"
-                  type="button"
-                  class="px-4 py-2 rounded-full text-xs font-semibold transition text-center bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50"
+                  variant="primary"
+                  size="sm"
+                  block
+                  :loading="webNotificationsLoading"
                   :disabled="webNotificationsLoading || !isWebPushSupported()"
                   @click="activateWebNotifications"
                 >
-                  {{
-                    webNotificationsLoading
-                      ? t('settings.notifications.web.activating')
-                      : t('settings.notifications.web.enable')
-                  }}
-                </button>
-                <button
+                  {{ t('settings.notifications.web.enable') }}
+                </PinovaButton>
+                <PinovaButton
                   v-else
-                  type="button"
-                  class="px-4 py-2 rounded-full text-xs font-semibold transition text-center border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
+                  variant="secondary"
+                  size="sm"
+                  block
+                  :loading="webNotificationsLoading"
                   :disabled="webNotificationsLoading"
                   @click="deactivateWebNotifications"
                 >
-                  {{
-                    webNotificationsLoading
-                      ? t('settings.notifications.web.disabling')
-                      : t('settings.notifications.web.disable')
-                  }}
-                </button>
+                  {{ t('settings.notifications.web.disable') }}
+                </PinovaButton>
               </div>
             </div>
             <p
@@ -1558,13 +1599,15 @@ watch(
           </div>
           <p v-if="webNotificationsError" class="text-xs text-pink-700">{{ webNotificationsError }}</p>
           <div class="flex items-center justify-end">
-            <button
-              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
+            <PinovaButton
+              variant="primary"
+              size="sm"
+              :loading="notificationsSaving"
               :disabled="notificationsSaving"
               @click="persistNotificationSettings"
             >
               {{ notificationsSaving ? t('settings.notifications.saving') : t('settings.notifications.save') }}
-            </button>
+            </PinovaButton>
           </div>
           <p v-if="notificationsSaved" class="text-xs text-emerald-700">{{ t('settings.notifications.saved') }}</p>
         </div>
@@ -1623,30 +1666,21 @@ watch(
         </div>
         <div class="p-4 sm:p-6 space-y-4">
           <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.appearance.modeLabel') }}</p>
-          <div class="flex flex-wrap gap-2">
+          <div class="flex flex-wrap gap-2" role="group" :aria-label="t('settings.appearance.modeLabel')">
             <button
+              v-for="pref in (['light', 'dark', 'system'] as const)"
+              :key="pref"
               type="button"
-              class="px-4 py-2 rounded-full text-sm font-semibold border transition"
+              class="px-4 py-2 rounded-full text-sm font-semibold border transition pinova-focus-ring"
               :class="
-                appearanceMode === 'light'
+                appearancePreference === pref
                   ? 'border-pink-700 dark:border-pink-600 bg-pink-50 text-pink-900 dark:bg-pink-950/60 dark:text-pink-50'
                   : 'border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-200 hover:border-pink-300'
               "
-              @click="setAppearanceMode('light')"
+              :aria-pressed="appearancePreference === pref"
+              @click="onAppearancePreference(pref)"
             >
-              {{ t('settings.appearance.light') }}
-            </button>
-            <button
-              type="button"
-              class="px-4 py-2 rounded-full text-sm font-semibold border transition"
-              :class="
-                appearanceMode === 'dark'
-                  ? 'border-pink-700 dark:border-pink-600 bg-pink-50 text-pink-900 dark:bg-pink-950/60 dark:text-pink-50'
-                  : 'border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-200 hover:border-pink-300'
-              "
-              @click="setAppearanceMode('dark')"
-            >
-              {{ t('settings.appearance.dark') }}
+              {{ t(`settings.appearance.${pref}`) }}
             </button>
           </div>
           <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">{{ t('settings.appearance.hint') }}</p>
@@ -1698,13 +1732,9 @@ watch(
                 </p>
                 <p class="text-xs app-text-muted">@{{ row.username }}</p>
               </div>
-              <button
-                type="button"
-                class="app-btn app-btn-secondary app-btn-sm shrink-0 text-xs"
-                @click="handleUnblockUser(row)"
-              >
+              <PinovaButton variant="secondary" size="sm" class="shrink-0 text-xs" @click="handleUnblockUser(row)">
                 {{ t('settings.blocked.unblock') }}
-              </button>
+              </PinovaButton>
             </li>
           </ul>
         </div>
@@ -1722,30 +1752,30 @@ watch(
             <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 mb-2">{{ t('settings.access.dataSaver') }}</p>
             <p class="text-xs text-neutral-600 dark:text-neutral-300 mb-3">{{ t('settings.access.dataSaver.desc') }}</p>
             <div class="flex flex-wrap gap-2">
-              <button
-                type="button"
-                class="app-btn app-btn-sm text-xs"
-                :class="dataSaverOverride === 'auto' ? 'app-btn-primary' : 'app-btn-secondary'"
+              <PinovaButton
+                size="sm"
+                class="text-xs"
+                :variant="dataSaverOverride === 'auto' ? 'primary' : 'secondary'"
                 @click="handleDataSaverMode('auto')"
               >
                 {{ t('settings.access.dataSaver.auto') }}
-              </button>
-              <button
-                type="button"
-                class="app-btn app-btn-sm text-xs"
-                :class="dataSaverOverride === 'on' ? 'app-btn-primary' : 'app-btn-secondary'"
+              </PinovaButton>
+              <PinovaButton
+                size="sm"
+                class="text-xs"
+                :variant="dataSaverOverride === 'on' ? 'primary' : 'secondary'"
                 @click="handleDataSaverMode('on')"
               >
                 {{ t('settings.access.dataSaver.on') }}
-              </button>
-              <button
-                type="button"
-                class="app-btn app-btn-sm text-xs"
-                :class="dataSaverOverride === 'off' ? 'app-btn-primary' : 'app-btn-secondary'"
+              </PinovaButton>
+              <PinovaButton
+                size="sm"
+                class="text-xs"
+                :variant="dataSaverOverride === 'off' ? 'primary' : 'secondary'"
                 @click="handleDataSaverMode('off')"
               >
                 {{ t('settings.access.dataSaver.off') }}
-              </button>
+              </PinovaButton>
             </div>
             <p class="text-[11px] text-neutral-600 dark:text-neutral-300 mt-2">{{ t('settings.access.dataSaver.hint', { active: isLowDataMode ? t('settings.access.dataSaver.yes') : t('settings.access.dataSaver.no') }) }}</p>
           </div>
@@ -1788,14 +1818,15 @@ watch(
               </label>
             </fieldset>
             <div class="flex justify-end mt-2">
-              <button
-                type="button"
-                class="app-btn app-btn-primary app-btn-sm text-xs"
+              <PinovaButton
+                variant="primary"
+                size="sm"
+                class="text-xs"
                 :disabled="sensitiveMediaPrefsSaving"
                 @click="persistSensitiveMediaPreferences"
               >
                 {{ sensitiveMediaPrefsSaving ? t('settings.access.sensitiveMedia.saving') : t('settings.access.sensitiveMedia.save') }}
-              </button>
+              </PinovaButton>
             </div>
             <p v-if="sensitiveMediaPrefsSaved" class="text-xs text-emerald-700">{{ t('settings.access.sensitiveMedia.saved') }}</p>
           </div>
@@ -1813,14 +1844,15 @@ watch(
               </div>
             </label>
             <div class="flex justify-end mt-2">
-              <button
-                type="button"
-                class="app-btn app-btn-primary app-btn-sm text-xs"
+              <PinovaButton
+                variant="primary"
+                size="sm"
+                class="text-xs"
                 :disabled="digestSaving"
                 @click="persistDigestWeekly"
               >
                 {{ digestSaving ? t('settings.access.digestSaving') : t('settings.access.digestSave') }}
-              </button>
+              </PinovaButton>
             </div>
             <p v-if="digestSaved" class="text-xs text-emerald-700 mt-2">{{ t('settings.access.digestSaved') }}</p>
           </div>
@@ -2015,22 +2047,24 @@ watch(
                   <span class="text-neutral-400 dark:text-neutral-500">(@{{ row.owner_username }})</span>
                 </p>
                 <div class="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    class="app-btn app-btn-primary app-btn-sm text-[11px]"
+                  <PinovaButton
+                    variant="primary"
+                    size="sm"
+                    class="text-[11px]"
                     :disabled="seatBusy"
                     @click="respondSeatInvite(row.id, 'accept')"
                   >
                     {{ t('settings.seats.accept') }}
-                  </button>
-                  <button
-                    type="button"
-                    class="app-btn app-btn-secondary app-btn-sm text-[11px]"
+                  </PinovaButton>
+                  <PinovaButton
+                    variant="secondary"
+                    size="sm"
+                    class="text-[11px]"
                     :disabled="seatBusy"
                     @click="respondSeatInvite(row.id, 'decline')"
                   >
                     {{ t('settings.seats.decline') }}
-                  </button>
+                  </PinovaButton>
                 </div>
               </div>
             </div>
@@ -2039,14 +2073,15 @@ watch(
               <p class="text-xs text-neutral-700 dark:text-neutral-300">
                 {{ t('settings.seats.memberOf', { username: seatHub.sponsor_display_name || seatHub.sponsor_username || '' }) }}
               </p>
-              <button
-                type="button"
-                class="app-btn app-btn-primary app-btn-sm text-xs"
+              <PinovaButton
+                variant="primary"
+                size="sm"
+                class="text-xs"
                 :disabled="seatBusy"
                 @click="leaveSeatGroup"
               >
                 {{ t('settings.seats.leave') }}
-              </button>
+              </PinovaButton>
             </template>
 
             <template v-else-if="seatHub.role === 'owner'">
@@ -2060,15 +2095,15 @@ watch(
                 }}
               </p>
               <div class="space-y-2">
-                <button
-                  type="button"
-                  class="app-btn app-btn-secondary w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl text-xs border-pink-300 text-pink-700 dark:text-pink-600 disabled:opacity-50"
+                <PinovaButton
+                  variant="secondary"
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl text-xs border-pink-300 text-pink-700 dark:text-pink-600"
                   :disabled="seatBusy"
                   @click="seatInviteSearchOpen = true"
                 >
                   <span class="material-symbols-outlined text-lg" aria-hidden="true">person_search</span>
                   {{ t('settings.seats.inviteSearchMember') }}
-                </button>
+                </PinovaButton>
               </div>
               <p v-if="seatHub.members?.length" class="text-xs font-semibold text-neutral-800 dark:text-neutral-100 pt-2">{{ t('settings.seats.members') }}</p>
               <ul v-if="seatHub.members?.length" class="space-y-1">
@@ -2150,42 +2185,46 @@ watch(
             {{ subscriptionScheduleHint }}
           </p>
           <div class="flex flex-wrap gap-2">
-            <router-link
-              to="/premium"
-              class="px-4 py-2 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-xs font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition inline-flex items-center"
-            >
+            <PinovaButton variant="primary" size="sm" :to="{ name: 'premium' }">
               {{ t('settings.subscription.managePlans') }}
-            </router-link>
-            <button
-              class="px-4 py-2 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-xs font-semibold hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-50 transition"
+            </PinovaButton>
+            <PinovaButton
+              variant="primary"
+              size="sm"
               :disabled="subscriptionActionPending || currentPlan === 'free'"
+              :loading="subscriptionActionPending"
               @click="handleCancelAtPeriodEnd"
             >
               {{ t('settings.subscription.cancelAtEnd') }}
-            </button>
-            <button
+            </PinovaButton>
+            <PinovaButton
               v-if="currentPlan === 'pro'"
-              class="px-4 py-2 rounded-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100 text-xs font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 transition"
+              variant="secondary"
+              size="sm"
               :disabled="subscriptionActionPending"
+              :loading="subscriptionActionPending"
               @click="handleSchedulePlusAtRenewal"
             >
               {{ t('settings.subscription.scheduleToPlus') }}
-            </button>
-            <button
+            </PinovaButton>
+            <PinovaButton
               v-if="currentUser?.subscription?.scheduledPlan"
-              class="px-4 py-2 rounded-full bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 text-xs font-semibold hover:bg-neutral-300 dark:hover:bg-neutral-600 disabled:opacity-50 transition"
+              variant="ghost"
+              size="sm"
               :disabled="subscriptionActionPending"
               @click="handleClearPlannedChange"
             >
               {{ t('settings.subscription.clearSchedule') }}
-            </button>
-            <button
-              class="px-4 py-2 rounded-full bg-neutral-900 text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-50 transition"
+            </PinovaButton>
+            <PinovaButton
+              variant="secondary"
+              size="sm"
               :disabled="subscriptionActionPending"
+              :loading="subscriptionActionPending"
               @click="handleReactivateSubscription"
             >
               {{ t('settings.subscription.reactivate') }}
-            </button>
+            </PinovaButton>
           </div>
           <p v-if="subscriptionActionMessage" class="text-xs text-neutral-600 dark:text-neutral-300">{{ subscriptionActionMessage }}</p>
 
@@ -2357,13 +2396,9 @@ watch(
 
         <div v-if="needsPasswordSetup" class="p-4 sm:p-6 space-y-4">
           <p class="text-sm text-neutral-600 dark:text-neutral-300">{{ t('settings.password.socialSectionLead') }}</p>
-          <button
-            type="button"
-            class="app-btn app-btn-primary text-sm w-full sm:w-auto"
-            @click="openInitialPasswordModal"
-          >
+          <PinovaButton variant="primary" class="text-sm w-full sm:w-auto" @click="openInitialPasswordModal">
             {{ t('settings.password.socialBannerCta') }}
-          </button>
+          </PinovaButton>
         </div>
 
         <div v-else class="p-4 sm:p-6 space-y-5">
@@ -2433,27 +2468,43 @@ watch(
           <p class="mt-1 text-xs leading-relaxed text-rose-900 dark:text-rose-100/90">
             {{ t('settings.danger.delete.bannerBody', { date: scheduledAccountDeletionLabel }) }}
           </p>
-          <button
-            type="button"
-            class="mt-3 app-btn app-btn-secondary app-btn-sm border-rose-200 dark:border-rose-700/70 text-rose-900 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/30"
+          <PinovaButton
+            variant="secondary"
+            size="sm"
+            class="mt-3 border-rose-200 dark:border-rose-700/70 text-rose-900 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/30"
             :disabled="accountDeletionBusy"
             @click="cancelAccountDeletion()"
           >
             {{ t('settings.danger.delete.cancelSchedule') }}
-          </button>
+          </PinovaButton>
+        </div>
+        <div class="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-200/45 dark:border-pink-800/40">
+          <div>
+            <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.gdpr.exportTitle') }}</p>
+            <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.gdpr.exportDesc') }}</p>
+          </div>
+          <PinovaButton
+            variant="secondary"
+            class="text-sm border-pink-300 text-pink-700 dark:text-pink-600"
+            :disabled="dataExportBusy"
+            data-testid="settings-export-data"
+            @click="requestDataExport()"
+          >
+            {{ t('settings.gdpr.exportCta') }}
+          </PinovaButton>
         </div>
         <div class="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-200/45 dark:border-pink-800/40">
           <div>
             <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.danger.logout') }}</p>
             <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.danger.logout.desc') }}</p>
           </div>
-          <button
-            type="button"
-            class="app-btn app-btn-secondary text-sm border-pink-300 text-pink-700 dark:text-pink-600"
+          <PinovaButton
+            variant="secondary"
+            class="text-sm border-pink-300 text-pink-700 dark:text-pink-600"
             @click="handleLogout"
           >
             {{ t('settings.danger.logout.cta') }}
-          </button>
+          </PinovaButton>
         </div>
         <div class="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4 bg-rose-50/45 dark:bg-rose-950/20">
           <div class="max-w-xl flex-1 space-y-2">
@@ -2461,14 +2512,14 @@ watch(
             <p class="text-xs text-neutral-700 leading-relaxed">{{ t('settings.danger.delete.warningBody') }}</p>
           </div>
           <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
-            <button
-              type="button"
-              class="app-btn app-btn-danger text-sm text-center"
+            <PinovaButton
+              variant="danger"
+              class="text-sm text-center"
               :disabled="accountDeletionBusy || !!scheduledAccountDeletion"
               @click="requestAccountDeletion()"
             >
               {{ t('settings.danger.delete.scheduleCta') }}
-            </button>
+            </PinovaButton>
             <p v-if="scheduledAccountDeletion" class="text-[11px] text-rose-800 text-center sm:text-right max-w-[14rem] sm:max-w-none">
               {{ t('settings.danger.delete.useBannerCancel') }}
             </p>
@@ -2533,17 +2584,17 @@ watch(
           </div>
         </div>
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" class="app-btn app-btn-secondary app-btn-sm" @click="closeInitialPasswordModal">
+          <PinovaButton variant="secondary" size="sm" @click="closeInitialPasswordModal">
             {{ t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="app-btn app-btn-primary app-btn-sm disabled:opacity-50"
+          </PinovaButton>
+          <PinovaButton
+            variant="primary"
+            size="sm"
             :disabled="initialPwBusy || !initialPw1 || !initialPw2"
             @click="submitInitialPassword"
           >
             {{ initialPwBusy ? t('settings.password.submitting') : t('settings.password.setInitialSubmit') }}
-          </button>
+          </PinovaButton>
         </div>
       </div>
     </div>

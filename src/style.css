@@ -1782,6 +1782,7 @@ html, body {
   --pinova-glow-rose-medium:  0 0 48px rgba(224, 36, 94, 0.28);
   --pinova-glow-rose-strong:  0 0 72px rgba(224, 36, 94, 0.42);
   --pinova-focus-ring:        0 0 0 3px rgba(224, 36, 94, 0.32);
+  --pinova-focus-outline:     2px solid var(--pn-pink-strong, #e0245e);
 
   /* ── Radius unifiés ── */
   --pinova-radius-xs:         4px;
@@ -1970,6 +1971,32 @@ html, body {
 .pds-btn:focus-visible {
   outline: none;
   box-shadow: var(--pinova-focus-ring);
+}
+
+/* Anneau focus réutilisable (settings, chips, etc.) */
+.pinova-focus-ring:focus-visible {
+  outline: var(--pinova-focus-outline);
+  outline-offset: 2px;
+}
+
+/* Focus visible — tous les interactifs natifs sans style dédié */
+button:focus-visible:not(:disabled),
+a:focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible,
+[role='link']:focus-visible,
+[role='menuitem']:focus-visible,
+[role='tab']:focus-visible,
+[role='radio']:focus-visible,
+[role='switch']:focus-visible {
+  outline: var(--pinova-focus-outline);
+  outline-offset: 2px;
+}
+
+button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.app-btn):not(.lux-pin-card),
+[role='button']:focus-visible:not(.pds-btn):not(.app-btn) {
+  outline: var(--pinova-focus-outline);
+  outline-offset: 2px;
 }
 .pds-btn:disabled {
   cursor: not-allowed;

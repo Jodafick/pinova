@@ -3,44 +3,56 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n, languages as LANGUAGE_OPTIONS, type LangCode } from '../i18n'
-import api from '../api'
+import api from '../api/index'
 import {
   REFERENCE_COUNTRIES,
-  REFERENCE_ACCENT_COLORS,
   REFERENCE_INTERESTS,
-  REFERENCE_GENDERS,
-  REFERENCE_PRONOUNS,
   countryLabel,
   cityLabel,
   interestLabel,
-  accentLabel,
-  genderLabel,
-  pronounLabel,
   citiesForCountry,
   detectBrowserTimezone,
   type InterestRef,
 } from '../data/reference'
 import { fetchReferenceInterests } from '../lib/fetchReferenceInterests'
-import { useAppearance, applyAccentColor, syncAppearanceFromProfile } from '../composables/useAppearance'
+import { useAppearance } from '../composables/useAppearance'
 import { fetchMentionUsersPage, type SuggestUserRow } from '../composables/useUserSuggestSearch'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { getFullMediaUrl } from '../composables/usePins'
 
 import SearchableSelect from '../components/SearchableSelect.vue'
+import PinovaButton from '../components/ui/PinovaButton.vue'
 import BirthDatePicker from '../components/BirthDatePicker.vue'
 import { getStoredReferralCode, clearStoredReferralCode } from '../composables/useReferralIntent'
+import { isFeatureEnabled } from '../lib/featureFlags'
+import {
+  trackOnboardingStarted,
+  trackOnboardingStepViewed,
+  trackOnboardingStepCompleted,
+  trackOnboardingStepSkipped,
+  trackOnboardingCompleted,
+  type OnboardingFlowVersion,
+} from '../lib/onboardingAnalytics'
 
-const STEPS = ['welcome', 'language', 'interests', 'location', 'creators'] as const
+const MIN_INTERESTS = 2
+
+const onboardingV2 = isFeatureEnabled('onboarding_v2')
+const flowVersion: OnboardingFlowVersion = onboardingV2 ? 'v2' : 'v1'
+const STEPS = onboardingV2
+  ? (['interests', 'location', 'creators'] as const)
+  : (['welcome', 'language', 'interests', 'location', 'creators'] as const)
 
 type CreatorRow = SuggestUserRow & { reason?: string }
 
 const router = useRouter()
 const { currentUser, fetchCurrentUser } = useAuth()
 const { t, currentLang, setLang } = useI18n()
-const { setPreference, isDark } = useAppearance()
+const { isDark } = useAppearance()
+const onboardingIsDark = computed(() => isDark.value)
 
 const stepIndex = ref(0)
-const step = computed(() => STEPS[stepIndex.value] ?? 'welcome')
+const step = computed(() => STEPS[stepIndex.value] ?? STEPS[0])
+const skippedLocation = ref(false)
 const progress = computed(() => ((stepIndex.value + 1) / STEPS.length) * 100)
 
 const selectedLang = ref<LangCode>((currentLang.value as LangCode) || 'fr')
@@ -48,22 +60,10 @@ const interestOptions = ref<InterestRef[]>([...REFERENCE_INTERESTS])
 const selectedInterests = ref<string[]>([])
 const countryCode = ref(currentUser.value?.countryCode || '')
 const cityId = ref('')
-const firstName = ref(currentUser.value?.firstName || '')
-const lastName = ref(currentUser.value?.lastName || '')
 const birthDate = ref(
   currentUser.value?.birthDate ? String(currentUser.value.birthDate).slice(0, 10) : '',
 )
-const gender = ref(currentUser.value?.gender || '')
-const pronouns = ref(currentUser.value?.pronouns || '')
 const referralCode = ref(getStoredReferralCode())
-const themePref = ref<'light' | 'dark' | 'system'>('system')
-
-const onboardingIsDark = computed(() => {
-  if (themePref.value === 'dark') return true
-  if (themePref.value === 'light') return false
-  return isDark.value
-})
-const accentId = ref('rose')
 const followedCreators = ref<string[]>([])
 const creatorSearch = ref('')
 const creatorSuggestions = ref<CreatorRow[]>([])
@@ -75,6 +75,8 @@ const errorMsg = ref('')
 let creatorSearchTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(() => {
+  trackOnboardingStarted(flowVersion)
+  trackOnboardingStepViewed(step.value, stepIndex.value, flowVersion)
   void fetchReferenceInterests(selectedLang.value).then((rows) => {
     interestOptions.value = rows
   })
@@ -157,6 +159,7 @@ watch(creatorSearch, (q) => {
 })
 
 watch(step, (s) => {
+  trackOnboardingStepViewed(s, stepIndex.value, flowVersion)
   if (s === 'creators' && !creatorSuggestions.value.length) {
     void loadCreatorSuggestions()
   }
@@ -172,6 +175,7 @@ const displayedCreators = computed(() => {
 })
 
 function nextStep() {
+  trackOnboardingStepCompleted(step.value, stepIndex.value, flowVersion)
   if (stepIndex.value < STEPS.length - 1) stepIndex.value += 1
 }
 
@@ -182,16 +186,6 @@ function prevStep() {
 function pickLanguage(code: LangCode) {
   selectedLang.value = code
   setLang(code)
-}
-
-function pickTheme(m: 'light' | 'dark' | 'system') {
-  themePref.value = m
-  setPreference(m)
-}
-
-function pickAccent(id: string) {
-  accentId.value = id
-  applyAccentColor(id)
 }
 
 function toggleInterest(slug: string) {
@@ -234,22 +228,6 @@ const citySelectOptions = computed(() =>
   })),
 )
 
-const genderSelectOptions = computed(() =>
-  REFERENCE_GENDERS.filter((g) => g.id).map((g) => ({
-    value: g.id,
-    label: genderLabel(g, selectedLang.value),
-    searchText: genderLabel(g, selectedLang.value),
-  })),
-)
-
-const pronounSelectOptions = computed(() =>
-  REFERENCE_PRONOUNS.filter((p) => p.id).map((p) => ({
-    value: p.id,
-    label: pronounLabel(p, selectedLang.value),
-    searchText: pronounLabel(p, selectedLang.value),
-  })),
-)
-
 function isValidBirthDate(raw: string): boolean {
   const value = raw.trim().slice(0, 10)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
@@ -259,48 +237,51 @@ function isValidBirthDate(raw: string): boolean {
 }
 
 const canContinue = computed(() => {
-  if (step.value === 'interests') return selectedInterests.value.length >= 3
-  if (step.value === 'location') return !!countryCode.value && isValidBirthDate(birthDate.value)
+  if (step.value === 'interests') return selectedInterests.value.length >= MIN_INTERESTS
+  if (step.value === 'location') {
+    if (onboardingV2) return true
+    return !!countryCode.value && isValidBirthDate(birthDate.value)
+  }
   return true
 })
 
-const canSkipLater = computed(() => stepIndex.value >= 2)
+const canSkipLocation = computed(() => onboardingV2 && step.value === 'location')
+const canSkipLater = computed(() => !onboardingV2 && stepIndex.value >= 2)
+const primaryCtaLabel = computed(() => {
+  if (step.value === 'creators') {
+    return onboardingV2 ? t('onboarding.commencer') : t('onboarding.enterPinova')
+  }
+  return t('onboarding.continue')
+})
 
 async function finishOnboarding(opts?: { deferred?: boolean }) {
   saving.value = true
   errorMsg.value = ''
   try {
     setLang(selectedLang.value)
-    if (!opts?.deferred) {
-      setPreference(themePref.value)
-      applyAccentColor(accentId.value)
-    } else {
-      setPreference('system')
-      applyAccentColor('rose')
-    }
 
     const country = REFERENCE_COUNTRIES.find((c) => c.code === countryCode.value)
     const formData = new FormData()
     formData.append('preferred_language', selectedLang.value)
-    formData.append('preferred_currency', country?.currency || currentUser.value?.preferredCurrency || 'XOF')
-    formData.append('country_code', countryCode.value)
+    formData.append(
+      'preferred_currency',
+      country?.currency || currentUser.value?.preferredCurrency || 'XOF',
+    )
+    if (countryCode.value) formData.append('country_code', countryCode.value)
     if (selectedCityName.value) formData.append('city', selectedCityName.value)
-    const bd = birthDate.value.trim().slice(0, 10)
-    if (isValidBirthDate(bd)) formData.append('birth_date', bd)
-    const fn = firstName.value.trim()
-    if (fn) formData.append('first_name', fn)
-    const ln = lastName.value.trim()
-    if (ln) formData.append('last_name', ln)
-    if (gender.value) formData.append('gender', gender.value)
-    if (pronouns.value) formData.append('pronouns', pronouns.value)
+    if (!onboardingV2) {
+      const bd = birthDate.value.trim().slice(0, 10)
+      if (isValidBirthDate(bd)) formData.append('birth_date', bd)
+    }
     const refCode = (
       referralCode.value.trim() || getStoredReferralCode() || ''
-    ).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16)
+    )
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, 16)
     if (refCode) formData.append('referral_code', refCode)
     formData.append('interests', JSON.stringify(selectedInterests.value))
     formData.append('followed_onboarding_creators', JSON.stringify(followedCreators.value))
-    formData.append('theme_mode', themePref.value)
-    formData.append('accent_color', accentId.value)
     formData.append('timezone', detectBrowserTimezone())
     formData.append('complete_onboarding', 'true')
 
@@ -315,7 +296,13 @@ async function finishOnboarding(opts?: { deferred?: boolean }) {
       }
     }
     await fetchCurrentUser({ force: true })
-    syncAppearanceFromProfile(themePref.value)
+    trackOnboardingStepCompleted(step.value, stepIndex.value, flowVersion)
+    trackOnboardingCompleted(flowVersion, {
+      interestsCount: selectedInterests.value.length,
+      followedCreatorsCount: followedCreators.value.length,
+      skippedLocation: skippedLocation.value,
+      deferred: !!opts?.deferred,
+    })
     if (refCode) clearStoredReferralCode()
     await router.replace({ name: 'home' })
   } catch {
@@ -334,6 +321,13 @@ function onPrimaryAction() {
   nextStep()
 }
 
+function onSkipLocation() {
+  skippedLocation.value = true
+  trackOnboardingStepSkipped('location', stepIndex.value, flowVersion)
+  trackOnboardingStepCompleted('location', stepIndex.value, flowVersion, { skipped: true })
+  if (stepIndex.value < STEPS.length - 1) stepIndex.value += 1
+}
+
 function onSkipLater() {
   void finishOnboarding({ deferred: true })
 }
@@ -347,7 +341,7 @@ function onSkipLater() {
       <div class="onboarding-orb onboarding-orb--amber" />
     </div>
 
-    <div class="onboarding-progress-wrap">
+    <div class="onboarding-progress-wrap" data-testid="onboarding-progress">
       <div class="onboarding-progress-track">
         <div class="onboarding-progress-fill" :style="{ width: `${progress}%` }" />
       </div>
@@ -403,17 +397,36 @@ function onSkipLater() {
         </section>
 
         <section v-else-if="step === 'interests'" class="onboarding-panel onboarding-panel--scroll">
-          <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.interestsTitle') }}</h2>
+          <h2 class="onboarding-title onboarding-title--sm">
+            {{ onboardingV2 ? t('onboarding.interestsLangTitle') : t('onboarding.interestsTitle') }}
+          </h2>
           <p class="onboarding-lead">
-            {{ t('onboarding.interestsHint') }}
-            <span class="font-semibold text-rose-600 dark:text-rose-400">({{ selectedInterests.length }}/3+)</span>
+            {{ onboardingV2 ? t('onboarding.interestsLangHint') : t('onboarding.interestsHint') }}
+            <span class="font-semibold text-rose-600 dark:text-rose-400">({{ selectedInterests.length }}/{{ MIN_INTERESTS }}+)</span>
           </p>
+          <template v-if="onboardingV2">
+            <p class="onboarding-label mt-4">{{ t('onboarding.languageTitle') }}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+              <button
+                v-for="opt in LANGUAGE_OPTIONS"
+                :key="opt.code"
+                type="button"
+                class="onboarding-chip onboarding-chip--lg flex flex-col items-center gap-2 py-3"
+                :class="{ 'onboarding-chip--active': selectedLang === opt.code }"
+                @click="pickLanguage(opt.code)"
+              >
+                <span class="text-2xl leading-none" aria-hidden="true">{{ opt.flag }}</span>
+                <span class="font-semibold text-sm">{{ t(`onboarding.lang.${opt.code}`) }}</span>
+              </button>
+            </div>
+          </template>
           <div class="onboarding-interest-grid">
             <button
               v-for="item in interestOptions"
               :key="item.slug"
               type="button"
               class="onboarding-chip"
+              :data-testid="`onboarding-interest-${item.slug}`"
               :class="{ 'onboarding-chip--active': selectedInterests.includes(item.slug) }"
               @click="toggleInterest(item.slug)"
             >
@@ -425,7 +438,9 @@ function onSkipLater() {
 
         <section v-else-if="step === 'location'" class="onboarding-panel onboarding-panel--compact">
           <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.locationTitle') }}</h2>
-          <p class="onboarding-lead">{{ t('onboarding.locationHint') }}</p>
+          <p class="onboarding-lead">
+            {{ onboardingV2 ? t('onboarding.locationHintOptional') : t('onboarding.locationHint') }}
+          </p>
           <label class="onboarding-label">{{ t('onboarding.countryLabel') }}</label>
           <SearchableSelect
             v-model="countryCode"
@@ -444,95 +459,11 @@ function onSkipLater() {
               :search-placeholder="t('onboarding.citySearch')"
             />
           </template>
-          <label class="onboarding-label mt-5">{{ t('onboarding.birthdateLabel') }}</label>
-          <p class="text-xs text-neutral-500 mb-2">{{ t('onboarding.birthdateHint') }}</p>
-          <BirthDatePicker v-model="birthDate" variant="onboarding" :dark="onboardingIsDark" />
-        </section>
-
-        <section v-else-if="step === 'profile'" class="onboarding-panel onboarding-panel--compact onboarding-panel--profile">
-          <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.profileTitle') }}</h2>
-          <p class="onboarding-lead">{{ t('onboarding.profileHint') }}</p>
-          <div class="onboarding-field-stack">
-            <div class="onboarding-field-group onboarding-field-group--half">
-              <label class="onboarding-label">{{ t('profile.field.firstName') }}</label>
-              <input v-model="firstName" type="text" autocomplete="given-name" class="onboarding-select onboarding-select--field" />
-            </div>
-            <div class="onboarding-field-group onboarding-field-group--half">
-              <label class="onboarding-label">{{ t('profile.field.lastName') }}</label>
-              <input v-model="lastName" type="text" autocomplete="family-name" class="onboarding-select onboarding-select--field" />
-            </div>
-            <div class="onboarding-field-group onboarding-field-group--full">
-              <label class="onboarding-label">{{ t('onboarding.birthdateLabel') }}</label>
-              <BirthDatePicker v-model="birthDate" variant="onboarding" :dark="onboardingIsDark" />
-            </div>
-            <div class="onboarding-field-group onboarding-field-group--half">
-              <label class="onboarding-label">{{ t('profile.field.gender') }}</label>
-              <SearchableSelect
-                v-model="gender"
-                variant="glass"
-                :options="genderSelectOptions"
-                :placeholder="t('common.selectEmpty')"
-                :search-placeholder="t('onboarding.profileSearch')"
-              />
-            </div>
-            <div class="onboarding-field-group onboarding-field-group--half">
-              <label class="onboarding-label">{{ t('profile.field.pronouns') }}</label>
-              <SearchableSelect
-                v-model="pronouns"
-                variant="glass"
-                :options="pronounSelectOptions"
-                :placeholder="t('common.selectEmpty')"
-                :search-placeholder="t('onboarding.profileSearch')"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section v-else-if="step === 'theme'" class="onboarding-panel onboarding-panel--compact">
-          <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.themeTitle') }}</h2>
-          <p class="onboarding-lead">{{ t('onboarding.themeHint') }}</p>
-          <div class="mt-6 flex flex-wrap gap-3">
-            <button
-              v-for="m in (['light', 'dark', 'system'] as const)"
-              :key="m"
-              type="button"
-              class="onboarding-chip onboarding-chip--lg onboarding-theme-chip"
-              :class="{ 'onboarding-chip--active': themePref === m }"
-              @click="pickTheme(m)"
-            >
-              <span class="material-symbols-outlined text-[20px]">
-                {{ m === 'light' ? 'light_mode' : m === 'dark' ? 'dark_mode' : 'contrast' }}
-              </span>
-              <span>{{ t(`onboarding.theme.${m}`) }}</span>
-            </button>
-          </div>
-          <p class="onboarding-label mt-8">{{ t('onboarding.accentLabel') }}</p>
-          <div class="mt-3 flex flex-wrap gap-3">
-            <button
-              v-for="ac in REFERENCE_ACCENT_COLORS"
-              :key="ac.id"
-              type="button"
-              class="h-12 w-12 rounded-full ring-2 ring-offset-2 dark:ring-offset-neutral-900 transition-transform hover:scale-110"
-              :class="accentId === ac.id ? 'ring-rose-500 scale-110' : 'ring-transparent'"
-              :style="{ backgroundColor: ac.hex }"
-              :title="accentLabel(ac, selectedLang)"
-              @click="pickAccent(ac.id)"
-            />
-          </div>
-        </section>
-
-        <section v-else-if="step === 'referral'" class="onboarding-panel onboarding-panel--compact">
-          <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.referralTitle') }}</h2>
-          <p class="onboarding-lead">{{ t('onboarding.referralHint') }}</p>
-          <label class="onboarding-label">{{ t('onboarding.referralLabel') }}</label>
-          <input
-            v-model="referralCode"
-            type="text"
-            autocomplete="off"
-            class="onboarding-select uppercase tracking-wider"
-            :placeholder="t('onboarding.referralPlaceholder')"
-            maxlength="16"
-          />
+          <template v-if="!onboardingV2">
+            <label class="onboarding-label mt-5">{{ t('onboarding.birthdateLabel') }}</label>
+            <p class="text-xs text-neutral-500 mb-2">{{ t('onboarding.birthdateHint') }}</p>
+            <BirthDatePicker v-model="birthDate" variant="onboarding" :dark="onboardingIsDark" />
+          </template>
         </section>
 
         <section v-else-if="step === 'creators'" class="onboarding-panel onboarding-panel--creators">
@@ -617,6 +548,15 @@ function onSkipLater() {
           {{ t('onboarding.back') }}
         </button>
         <button
+          v-if="canSkipLocation"
+          type="button"
+          class="onboarding-btn onboarding-btn--ghost"
+          :disabled="saving"
+          @click="onSkipLocation"
+        >
+          {{ t('onboarding.skip') }}
+        </button>
+        <button
           v-if="canSkipLater"
           type="button"
           class="onboarding-btn onboarding-btn--ghost"
@@ -625,22 +565,18 @@ function onSkipLater() {
         >
           {{ t('onboarding.skipLater') }}
         </button>
-        <button
-          type="button"
-          class="onboarding-btn onboarding-btn--primary onboarding-btn--next"
-          :disabled="(!canContinue && step !== 'creators') || saving"
-          :aria-busy="saving"
-          @click="onPrimaryAction"
-        >
-          <span
-            v-if="saving"
-            class="onboarding-btn-spinner"
-            aria-hidden="true"
-          />
-          <span v-else>
-            {{ step === 'creators' ? t('onboarding.enterPinova') : t('onboarding.continue') }}
-          </span>
-        </button>
+        <div class="onboarding-btn--next flex-1 min-w-0">
+          <PinovaButton
+            data-testid="onboarding-continue"
+            variant="primary"
+            block
+            :loading="saving"
+            :disabled="(!canContinue && step !== 'creators') || saving"
+            @click="onPrimaryAction"
+          >
+            {{ primaryCtaLabel }}
+          </PinovaButton>
+        </div>
       </footer>
     </div>
   </div>

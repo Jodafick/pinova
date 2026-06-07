@@ -1,7 +1,6 @@
 import { createApp } from 'vue'
 import { registerSW } from 'virtual:pwa-register'
 import './style.css'
-import '@fortawesome/fontawesome-free/css/all.min.css'
 import App from './App.vue'
 import router from './router'
 import { initAppearance } from './composables/useAppearance'
@@ -17,6 +16,10 @@ import { initLayerLifecycle } from './core/layerLifecycle'
 import { initPerfMonitor } from './core/perfMonitor'
 import { initPerformanceEngine } from './core/performanceEngine'
 import { initUxOrchestrator } from './core/uxOrchestrator'
+import { initAnalytics } from './lib/analytics'
+import { applyStoredCookieConsent } from './lib/cookieConsent'
+import { initAnalyticsBridge } from './lib/initAnalyticsBridge'
+import { initSentry } from './lib/sentry'
 import { initAdaptiveNavigator } from './navigation/adaptiveNavigator'
 import { initPwaStandaloneTopInset } from './utils/pwaSafeTopInset'
 import { initInputAbstraction } from './navigation/inputAbstraction'
@@ -41,8 +44,8 @@ void initMediaEngine().catch((err) => console.warn('[Pinova] initMediaEngine', e
 registerSW({ immediate: true })
 import GoogleSignInPlugin from 'vue3-google-signin'
 import { useAuth } from './composables/useAuth'
-import { proactiveRefreshIfStale } from './api'
-import { GOOGLE_CLIENT_ID } from './env'
+import { proactiveRefreshIfStale } from './api/index'
+import { GOOGLE_CLIENT_ID } from './config/env'
 
 const app = createApp(App)
 
@@ -76,6 +79,10 @@ initInputAbstraction(router)
    layer / quality / memory / platform). À brancher en dernier : il observe
    les autres systèmes, il ne les pilote pas. */
 initUxOrchestrator(router)
+initSentry(app, router)
+applyStoredCookieConsent()
+initAnalytics({ platform: 'web' })
+initAnalyticsBridge()
 app.mount('#app')
 void proactiveRefreshIfStale()
   .catch((err) => console.warn('[Pinova] proactiveRefreshIfStale', err))

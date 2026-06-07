@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../api'
+import api from '../api/index'
 import { useI18n } from '../i18n'
 
 const route = useRoute()

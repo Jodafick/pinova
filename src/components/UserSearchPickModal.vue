@@ -5,6 +5,7 @@ import { fetchMentionUsersPage, type SuggestUserRow } from '../composables/useUs
 import { displayInitials } from '../utils/displayInitials'
 import AvatarDisc from './AvatarDisc.vue'
 import PinovaModal from './ui/PinovaModal.vue'
+import PinovaButton from './ui/PinovaButton.vue'
 
 type InviteDisambiguationRow = { username: string; display_name: string }
 
@@ -266,9 +267,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
     <template #footer>
       <div class="flex justify-end gap-2 px-2">
-        <button type="button" class="app-btn app-btn-secondary app-btn-sm" @click="close">
+        <PinovaButton variant="secondary" size="sm" @click="close">
           {{ t('common.cancel') }}
-        </button>
+        </PinovaButton>
       </div>
     </template>
   </PinovaModal>

@@ -19,15 +19,17 @@ import AmbientGlow from './components/AmbientGlow.vue'
 import ImmersiveMediaViewer from './components/ui/ImmersiveMediaViewer.vue'
 import { useImmersiveViewer } from './composables/useImmersiveViewer'
 import AppToast from './components/AppToast.vue'
+import CookieConsentBanner from './components/CookieConsentBanner.vue'
 import NotificationEnablePrompt from './components/NotificationEnablePrompt.vue'
 import GuestAuthSheet from './components/GuestAuthSheet.vue'
 import AppMobileTabBar from './components/AppMobileTabBar.vue'
 import { useGuestAuthGate } from './composables/useGuestAuthGate'
+import { usePendingIntentReplay } from './composables/usePendingIntentReplay'
 import { initPwaTheme } from './composables/usePwaTheme'
 import { initPwaContext } from './composables/usePwaContext'
 import { useEdgeSwipeBack } from './composables/useEdgeSwipeBack'
 import { useIsLgDown } from './composables/useIsLgDown'
-import { devLog } from './devLog'
+import { devLog } from './lib/devLog'
 import { resetPinovaBodyScrollLock } from './utils/pinovaModalBodyLock'
 import { getAppScrollRoot } from './utils/appScrollRoot'
 import { layerManager } from './navigation/layerManager'
@@ -44,6 +46,7 @@ import {
   profileNavMobileDrawerOpen,
 } from './composables/mobileHeaderContext'
 import { useNotificationPrompt } from './composables/useNotificationPrompt'
+import { useNotificationLive } from './composables/useNotificationLive'
 import { usePwaInstallPrompt } from './composables/usePwaInstallPrompt'
 import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
 import { isValidSettingsSectionId, settingsDetailTitleKey } from './data/settingsHubConfig'
@@ -61,11 +64,13 @@ const mainContentRef = ref<HTMLElement | null>(null)
 const edgePeekSourcePath = ref('')
 const { fetchCurrentUser, isAuthenticated, currentUser } = useAuth()
 const { guestGateOpen, guestGateIntent, closeGuestGate } = useGuestAuthGate()
+usePendingIntentReplay()
 const {
   notificationPromptOpen,
   notificationPromptSnooze,
   notificationPromptDecline,
 } = useNotificationPrompt()
+useNotificationLive()
 usePwaInstallPrompt()
 const { mobileCreateChooserOpen, openMobileCreateChooser } = useMobileCreateChooser()
 const { t, setLang, currentLang, languages } = useI18n()
@@ -656,6 +661,7 @@ const pageTransitionName = computed(() => {
 
   <!-- Toast singleton (queue gérée par useToast.ts). -->
   <AppToast />
+  <CookieConsentBanner />
 
   <NotificationEnablePrompt
     v-if="isAuthenticated"

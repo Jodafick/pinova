@@ -10,10 +10,10 @@ import {
   watchEffect,
 } from 'vue'
 
-import api from '../api'
+import api from '../api/index'
 import { buildContestSelfRankCue, type ContestSelfRankCue } from './contestRankCue'
 import { useAuth } from './useAuth'
-import { API_BASE_URL } from '../env'
+import { API_BASE_URL } from '../config/env'
 import { useI18n } from '../i18n'
 import type { ContestPinRow, ContestSettingsDto, ContestViewerDto } from '../types/contest'
 

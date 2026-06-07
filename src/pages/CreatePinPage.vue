@@ -6,11 +6,14 @@ import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { pushToast } from '../composables/useToast'
+import { trackOnce } from '../lib/analytics'
 import PrivateTags from '../components/PrivateTags.vue'
 import CreatePinEditSkeleton from '../components/CreatePinEditSkeleton.vue'
+import PinovaButton from '../components/ui/PinovaButton.vue'
+import QuickCreatePinView from '../components/QuickCreatePinView.vue'
 import StoryImageCropEditor from '../components/StoryImageCropEditor.vue'
 import BirthDateRequiredModal from '../components/BirthDateRequiredModal.vue'
-import api from '../api'
+import api from '../api/index'
 import {
   moderationScanText,
   moderationScanImageFile,
@@ -170,6 +173,16 @@ let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 const editSlug = computed(() => (route.name === 'edit-pin' ? String(route.params.slug || '').trim() : ''))
 const isEditMode = computed(() => editSlug.value.length > 0)
 const isQuickMode = computed(() => !isEditMode.value && String(route.query.mode || '') === 'quick')
+const isCompleteDetailsMode = computed(() => isEditMode.value && String(route.query.complete || '') === '1')
+
+function skipCompleteDetails() {
+  const slug = editSlug.value
+  if (!slug) {
+    leaveCreateFlow()
+    return
+  }
+  void router.push({ path: '/', query: { pin: slug } })
+}
 const loadingEdit = ref(false)
 const createStep = ref<1 | 2>(1)
 type MobilePinStep = 'pick' | 'edit' | 'meta'
@@ -532,6 +545,8 @@ function mobilePinMetaBack() {
   }
 }
 
+const CREATE_PIN_IMAGE_MAX_BYTES = 10 * 1024 * 1024
+
 async function setMediaFile(file: File) {
   if (!(await ensureBirthDateBeforeMedia())) return
   if (file.type.startsWith('video/')) {
@@ -556,6 +571,10 @@ async function setMediaFile(file: File) {
     return
   }
   if (file.type.startsWith('image/')) {
+    if (file.size > CREATE_PIN_IMAGE_MAX_BYTES) {
+      void showAlert(t('create.upload.tooLarge'), { variant: 'warning' })
+      return
+    }
     if (pinMobileUsesCropEditor(file)) {
       pinMobilePendingImage.value = file
       mobileCreateStep.value = 'edit'
@@ -602,9 +621,6 @@ const clearStep2Media = () => {
 
 const submitPin = async () => {
   fieldErrors.value = {}
-  if (!title.value.trim() && isQuickMode.value) {
-    title.value = t('create.quick.defaultTitle', { date: new Date().toLocaleDateString(currentLang.value) })
-  }
   if (!title.value) return
   const hasRemoteMedia =
     !!existingImageUrl.value || !!(existingStoryVideoUrl.value || '').trim()
@@ -614,7 +630,7 @@ const submitPin = async () => {
     return
   }
   if (mediaModerationPending.value) return
-  const textOk = moderationScanText([
+  const textOk = await moderationScanText([
     title.value,
     description.value,
     publicTagsInput.value,
@@ -699,6 +715,9 @@ const submitPin = async () => {
         ? t('create.story.success')
         : t('create.pin.success')
     pushToast({ message: successMessage, kind: 'success' })
+    if (!isEditMode.value) {
+      trackOnce('first_pin_published', { pin_slug: destSlug, is_story: isStory.value })
+    }
     if (layer.value) closeLayer()
     if (isStory.value && destSlug) {
       router.push({ path: '/', query: { story: destSlug } })
@@ -716,6 +735,12 @@ const submitPin = async () => {
       )
       if (drfErrorTouchesFields(data, CREATE_PIN_STEP_1_FIELD_KEYS)) {
         createStep.value = 1
+      } else if (fieldErrors.value.image || fieldErrors.value.story_video) {
+        createStep.value = 2
+      }
+      const mediaErr = fieldErrors.value.image || fieldErrors.value.story_video
+      if (mediaErr) {
+        pushToast({ message: mediaErr, kind: 'error' })
       }
       const first = firstErroredField(extracted, [
         'title',
@@ -846,7 +871,9 @@ usePinovaHeaderSwipeDismiss({
 </script>
 
 <template>
-  <div class="create-pin-page-root flex w-full flex-1 flex-col min-h-0">
+  <QuickCreatePinView v-if="isQuickMode" @cancel="leaveCreateFlow()" />
+
+  <div v-else class="create-pin-page-root flex w-full flex-1 flex-col min-h-0">
   <CreatePinEditSkeleton
     v-if="loadingEdit"
     class="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
@@ -857,7 +884,7 @@ usePinovaHeaderSwipeDismiss({
     ref="pinMobileShellRef"
     class="pinova-create-flow-mobile flex min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#060408] text-white pinova-min-vh-fill"
   >
-    <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange">
+    <input ref="fileInput" type="file" class="hidden" data-testid="create-pin-file" :accept="fileAcceptAttr" @change="onFileChange">
     <!-- Même entrée que desktop : absent ici, `openCameraCapture()` ne ciblait aucun élément. -->
     <input
       ref="nativeCameraInput"
@@ -1020,6 +1047,20 @@ usePinovaHeaderSwipeDismiss({
             {{ t('create.mobile.stepMeta') }}
           </p>
           <div class="mx-auto w-full max-w-md space-y-3">
+          <div
+            v-if="isCompleteDetailsMode"
+            class="rounded-2xl border border-pink-500/30 bg-pink-500/10 px-4 py-3 space-y-2"
+          >
+            <p class="text-sm font-bold text-pink-200">{{ t('create.complete.title') }}</p>
+            <p class="text-xs leading-5 text-white/55">{{ t('create.complete.subtitle') }}</p>
+            <button
+              type="button"
+              class="text-xs font-bold text-pink-300 underline underline-offset-2"
+              @click="skipCompleteDetails()"
+            >
+              {{ t('create.complete.skip') }}
+            </button>
+          </div>
           <div v-if="needsBirthDateForMedia" class="rounded-2xl border border-amber-200/25 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-100">
             {{ t('create.banner.birthDate') }}
             <a
@@ -1074,6 +1115,7 @@ usePinovaHeaderSwipeDismiss({
                 <input
                   ref="categoryInput"
                   v-model="categorySearch"
+                  data-testid="create-pin-category"
                   type="text"
                   :placeholder="t('create.field.category.placeholder')"
                   class="w-full rounded-2xl border border-white/13 bg-white/[0.055] px-4 py-3 text-sm text-white outline-none placeholder:text-white/38 focus:border-pink-700/70"
@@ -1242,7 +1284,7 @@ usePinovaHeaderSwipeDismiss({
     v-else
     class="flex min-h-full w-full min-w-0 max-w-5xl flex-1 flex-col mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
   >
-    <input ref="fileInput" type="file" class="hidden" :accept="fileAcceptAttr" @change="onFileChange">
+    <input ref="fileInput" type="file" class="hidden" data-testid="create-pin-file" :accept="fileAcceptAttr" @change="onFileChange">
     <input
       ref="nativeCameraInput"
       type="file"
@@ -1267,29 +1309,27 @@ usePinovaHeaderSwipeDismiss({
     <!-- Header -->
     <div class="flex items-center justify-between mb-8" data-pinova-swipe-dismiss-handle>
       <div>
-        <h1 class="text-[1.9375rem] sm:text-[2.1875rem] font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ isEditMode ? t('pin.edit.title') : t('create.title') }}</h1>
-        <p class="text-sm text-neutral-500 dark:text-neutral-300 mt-1">{{ isEditMode ? t('pin.edit.subtitle') : t('create.subtitle') }}</p>
-        <p v-if="isQuickMode" class="text-xs text-pink-700 mt-2 font-medium">{{ t('create.quick.banner') }}</p>
-        <p v-else-if="createStep === 1" class="text-xs text-pink-700 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
+        <h1 class="text-[1.9375rem] sm:text-[2.1875rem] font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">
+          {{ isCompleteDetailsMode ? t('create.complete.title') : isEditMode ? t('pin.edit.title') : t('create.title') }}
+        </h1>
+        <p class="text-sm text-neutral-500 dark:text-neutral-300 mt-1">
+          {{ isCompleteDetailsMode ? t('create.complete.subtitle') : isEditMode ? t('pin.edit.subtitle') : t('create.subtitle') }}
+        </p>
+        <p v-if="createStep === 1 && !isCompleteDetailsMode" class="text-xs text-pink-700 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
       </div>
       <div class="flex items-center gap-3">
-        <button
-          class="px-5 py-2.5 rounded-full text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
-          @click="leaveCreateFlow()"
-        >
+        <PinovaButton variant="ghost" size="sm" @click="leaveCreateFlow()">
           {{ t('common.cancel') }}
-        </button>
-        <button
+        </PinovaButton>
+        <PinovaButton
           v-if="createStep === 2"
-          type="button"
-          class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition flex items-center gap-2 shadow-lg shadow-pink-700/30"
+          data-testid="create-pin-publish"
+          variant="primary"
+          size="sm"
+          :loading="saving || mediaModerationPending"
           :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending || needsBirthDateForMedia"
           @click="submitPin"
         >
-          <svg v-if="saving || mediaModerationPending" class="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
           {{
             saving
               ? (isEditMode ? t('pin.edit.saving') : t('create.publishing'))
@@ -1299,17 +1339,35 @@ usePinovaHeaderSwipeDismiss({
                   ? t('pin.edit.save')
                   : t('create.publish')
           }}
-        </button>
-        <button
+        </PinovaButton>
+        <PinovaButton
           v-else
-          type="button"
-          class="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition shadow-lg shadow-pink-700/30"
+          data-testid="create-pin-next"
+          variant="primary"
+          size="sm"
           :disabled="!title.trim() || needsBirthDateForMedia"
           @click="goStep2"
         >
           {{ t('create.step.next') }}
-        </button>
+        </PinovaButton>
       </div>
+    </div>
+
+    <div
+      v-if="isCompleteDetailsMode"
+      class="mb-6 flex flex-col gap-3 rounded-2xl border border-pink-200 bg-pink-50 px-4 py-4 dark:border-pink-900/50 dark:bg-pink-950/30 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div>
+        <p class="text-sm font-bold text-pink-800 dark:text-pink-200">{{ t('create.complete.banner') }}</p>
+        <p class="mt-1 text-xs text-pink-900/70 dark:text-pink-100/70">{{ t('create.complete.hint') }}</p>
+      </div>
+      <button
+        type="button"
+        class="shrink-0 rounded-full border border-pink-300 px-4 py-2 text-xs font-bold text-pink-800 transition hover:bg-pink-100 dark:border-pink-700 dark:text-pink-200 dark:hover:bg-pink-950/50"
+        @click="skipCompleteDetails()"
+      >
+        {{ t('create.complete.skip') }}
+      </button>
     </div>
 
     <!-- Form -->
@@ -1428,6 +1486,7 @@ usePinovaHeaderSwipeDismiss({
               ref="titleInput"
               v-model="title"
               type="text"
+              data-testid="create-pin-title"
               :placeholder="t('create.field.title.placeholder')"
               :class="[
                 'w-full px-4 py-3 rounded-xl border text-base focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
@@ -1483,6 +1542,7 @@ usePinovaHeaderSwipeDismiss({
               <input
                 ref="categoryInput"
                 v-model="categorySearch"
+                data-testid="create-pin-category"
                 type="text"
                 :placeholder="t('create.field.category.placeholder')"
                 :class="[

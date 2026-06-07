@@ -3,10 +3,13 @@ import { computed, nextTick, onActivated, onMounted, onUnmounted, ref, watch } f
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
-import api from '../api'
-import { devLog } from '../devLog'
+import api from '../api/index'
+import { devLog } from '../lib/devLog'
 import { safeHttpUrl } from '../utils/safeHttpUrl'
 import TrustCenterSection from '../components/TrustCenterSection.vue'
+import { openCheckoutFlow, PENDING_SUBSCRIPTION_TX_KEY } from '../utils/checkoutFlow'
+import { trackEvent } from '../lib/analytics'
+import PinovaButton from '../components/ui/PinovaButton.vue'
 
 const { t, currentLang } = useI18n()
 const router = useRouter()
@@ -14,15 +17,13 @@ const { currentUser, isAuthenticated, fetchCurrentUser, startPlusTrial } = useAu
 
 const billingCycle = ref<'monthly' | 'yearly'>('monthly')
 const seatBundle = ref<'solo' | 'family' | 'team'>('solo')
+/** Étape 2 : comparaison avancée (cycles, bundles, Free/Pro). */
+const showComparePlans = ref(false)
 const checkoutPendingPlan = ref<string | null>(null)
 const confirmPending = ref(false)
 const paymentInfoMessage = ref('')
 const trialPending = ref(false)
-const PENDING_TX_STORAGE_KEY = 'pinova_pending_subscription_tx'
-/** Délai après paiement validé : webhooks / ledger backend, puis rechargement app. */
-const POST_PAYMENT_ACTIVATION_WAIT_MS = 10_000
-const postPaymentActivationOverlay = ref(false)
-let postPaymentActivationStarted = false
+const PENDING_TX_STORAGE_KEY = PENDING_SUBSCRIPTION_TX_KEY
 type PricingCycle = {
   amount_minor: number
   amount_display: number
@@ -186,17 +187,33 @@ const handleStartTrial = async () => {
   }
 }
 
-const openCheckoutPopup = () => {
-  if (typeof window === 'undefined') return null
-  const width = 520
-  const height = 760
-  const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2)
-  const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2)
-  return window.open(
-    'about:blank',
-    'pinova_fedapay_checkout',
-    `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
-  )
+const recommendedPlan = computed(() => plans.value.find((p) => p.id === 'plus') ?? null)
+
+/** Tarif recommandé figé : Plus · Mensuel · Solo (réduit le paradoxe du choix). */
+const recommendedPlusCycle = computed(() => {
+  const solo = pricingByBundle.value.solo ?? {}
+  return solo.plus?.monthly ?? null
+})
+
+const recommendedHighlights = computed(() => {
+  const plus = plans.value.find((p) => p.id === 'plus')
+  if (!plus) return []
+  return plus.features.filter((f) => f.included).slice(0, 5)
+})
+
+function toggleComparePlans() {
+  showComparePlans.value = !showComparePlans.value
+  if (showComparePlans.value) {
+    void nextTick(() => {
+      document.getElementById('premium-compare-plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+}
+
+async function handleRecommendedCheckout() {
+  billingCycle.value = 'monthly'
+  seatBundle.value = 'solo'
+  await handleCheckout('plus')
 }
 
 const plans = computed(() => [
@@ -338,6 +355,7 @@ watch(
 onActivated(() => {
   billingCycle.value = 'monthly'
   seatBundle.value = 'solo'
+  showComparePlans.value = false
   void flushScrollCarouselToPlus()
 })
 
@@ -397,9 +415,6 @@ const confirmPaymentTransaction = async (
         window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
       }
       paymentInfoMessage.value = t('premium.payment.success', { plan: String(response.data?.plan || '').toUpperCase() })
-      if (!silent) {
-        void runPostPaymentActivationSync()
-      }
       return 'approved'
     }
     if (!silent) {
@@ -414,32 +429,6 @@ const confirmPaymentTransaction = async (
   } finally {
     if (!silent) {
       confirmPending.value = false
-    }
-  }
-}
-
-async function runPostPaymentActivationSync() {
-  if (typeof window === 'undefined' || postPaymentActivationStarted) return
-  postPaymentActivationStarted = true
-  postPaymentActivationOverlay.value = true
-  try {
-    await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, POST_PAYMENT_ACTIVATION_WAIT_MS)
-    })
-    await fetchCurrentUser({ silent: true, force: true })
-  } catch {
-    /* ignore */
-  } finally {
-    postPaymentActivationOverlay.value = false
-    const uname = currentUser.value?.username?.trim()
-    try {
-      if (uname) {
-        await router.replace(`/profile/${encodeURIComponent(uname)}`)
-      } else {
-        await router.replace('/profile')
-      }
-    } catch {
-      window.location.assign(uname ? `/profile/${encodeURIComponent(uname)}` : '/profile')
     }
   }
 }
@@ -488,7 +477,6 @@ const handleCheckout = async (planId: string) => {
   }
   checkoutPendingPlan.value = planId
   paymentInfoMessage.value = ''
-  const popup = openCheckoutPopup()
   try {
     const response = await api.post('subscription/checkout/', {
       plan: planId,
@@ -501,18 +489,15 @@ const handleCheckout = async (planId: string) => {
       window.localStorage.setItem(PENDING_TX_STORAGE_KEY, String(transactionId))
     }
     if (checkoutUrl) {
-      if (popup && !popup.closed) {
-        popup.location.href = checkoutUrl
-        popup.focus()
-      } else {
-        window.open(checkoutUrl, '_blank', 'noopener,noreferrer')
-      }
+      const cycle = readCycle(planId, billingCycle.value)
+      openCheckoutFlow(router, 'premium', checkoutUrl, {
+        amount: cycle?.amount_display,
+        currency: cycle?.currency_iso || 'XOF',
+      })
       return
     }
-    if (popup && !popup.closed) popup.close()
     paymentInfoMessage.value = t('premium.payment.checkoutError')
   } catch (err: any) {
-    if (popup && !popup.closed) popup.close()
     paymentInfoMessage.value = err?.response?.data?.error || t('premium.payment.checkoutError')
   } finally {
     checkoutPendingPlan.value = null
@@ -558,11 +543,12 @@ const handlePaymentMessage = async (event: MessageEvent) => {
   } else {
     window.localStorage.removeItem(PENDING_TX_STORAGE_KEY)
     await fetchCurrentUser({ silent: true, force: true })
-    void runPostPaymentActivationSync()
+    paymentInfoMessage.value = t('premium.payment.success', { plan: (currentUser.value?.subscription?.plan || 'plus').toUpperCase() })
   }
 }
 
 onMounted(() => {
+  trackEvent('premium_viewed')
   if (typeof window !== 'undefined') {
     window.addEventListener('message', handlePaymentMessage)
   }
@@ -576,7 +562,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  postPaymentActivationStarted = false
   if (typeof window !== 'undefined') {
     window.removeEventListener('message', handlePaymentMessage)
   }
@@ -585,21 +570,6 @@ onUnmounted(() => {
 
 <template>
   <div class="premium-page relative isolate flex min-h-full w-full flex-1 flex-col overflow-x-hidden text-neutral-900 dark:text-neutral-100">
-    <Teleport to="body">
-      <div
-        v-if="postPaymentActivationOverlay"
-        class="fixed inset-0 z-[240] flex flex-col items-center justify-center gap-4 bg-black/65 px-8 text-center backdrop-blur-md"
-        role="status"
-        aria-live="polite"
-      >
-        <div
-          class="h-12 w-12 animate-spin rounded-full border-[3px] border-white/25 border-t-white"
-          aria-hidden="true"
-        />
-        <p class="max-w-sm text-base font-bold text-white">{{ t('premium.payment.activating') }}</p>
-        <p class="max-w-sm text-sm text-white/75">{{ t('premium.payment.activatingHint') }}</p>
-      </div>
-    </Teleport>
     <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
       <div
         class="absolute -top-44 left-[min(16vw,220px)] h-[min(400px,75vw)] w-[min(400px,92vw)] rounded-full bg-gradient-to-br from-pink-300/75 via-fuchsia-200/50 to-transparent blur-[104px] dark:from-pink-600/32 dark:via-fuchsia-600/22 dark:to-transparent dark:blur-[118px]"
@@ -643,120 +613,187 @@ onUnmounted(() => {
       >
         {{ t('premium.seatMember.manageNote') }}
       </div>
-
-      <!-- Billing toggle -->
-      <div
-        class="inline-flex items-center rounded-full p-1 mt-8 backdrop-blur-md bg-neutral-100/90 dark:bg-black/35 ring-1 ring-black/[0.07] dark:ring-white/12 shadow-inner"
-        :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''"
-      >
-        <button
-          class="px-5 py-2 rounded-full text-sm font-semibold transition"
-          type="button"
-          :disabled="isSeatMember"
-          :class="
-            billingCycle === 'monthly'
-              ? 'bg-white dark:bg-neutral-900/95 shadow-md ring-1 ring-black/[0.05] dark:ring-white/[0.12] text-neutral-900 dark:text-neutral-50'
-              : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-          "
-          @click="billingCycle = 'monthly'"
-        >
-          {{ t('premium.cycle.monthly') }}
-        </button>
-        <button
-          class="px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2"
-          type="button"
-          :disabled="isSeatMember"
-          :class="
-            billingCycle === 'yearly'
-              ? 'bg-white dark:bg-neutral-900/95 shadow-md ring-1 ring-black/[0.05] dark:ring-white/[0.12] text-neutral-900 dark:text-neutral-50'
-              : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-          "
-          @click="billingCycle = 'yearly'"
-        >
-          {{ t('premium.cycle.yearly') }}
-          <span
-            v-if="annualDiscountPercent > 0"
-            class="text-[10px] uppercase tracking-wide bg-emerald-100 dark:bg-emerald-950/65 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold"
-          >{{ yearlyDiscountBadge }}</span>
-        </button>
       </div>
+    </div>
 
-      <div class="mt-6 space-y-2">
-        <p class="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{{ t('premium.bundle.title') }}</p>
-        <div class="inline-flex flex-wrap justify-center gap-2" :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-full text-xs font-semibold border transition backdrop-blur-sm"
-            :class="
-              seatBundle === 'solo'
-                ? 'border-pink-700 dark:border-pink-500 bg-pink-50/95 dark:bg-pink-950/45 text-pink-800 dark:text-pink-300 shadow-sm ring-1 ring-pink-500/25'
-                : 'border-neutral-200/90 dark:border-white/14 bg-white/45 dark:bg-white/[0.05] text-neutral-600 dark:text-neutral-400 hover:bg-white/70 dark:hover:bg-white/[0.08]'
-            "
-            :disabled="isSeatMember"
-            @click="seatBundle = 'solo'"
-          >
-            {{ t('premium.bundle.solo') }}
-          </button>
-          <button
-            type="button"
-            class="px-4 py-2 rounded-full text-xs font-semibold border transition backdrop-blur-sm"
-            :class="
-              seatBundle === 'family'
-                ? 'border-pink-700 dark:border-pink-500 bg-pink-50/95 dark:bg-pink-950/45 text-pink-800 dark:text-pink-300 shadow-sm ring-1 ring-pink-500/25'
-                : 'border-neutral-200/90 dark:border-white/14 bg-white/45 dark:bg-white/[0.05] text-neutral-600 dark:text-neutral-400 hover:bg-white/70 dark:hover:bg-white/[0.08]'
-            "
-            :disabled="isSeatMember"
-            @click="seatBundle = 'family'"
-          >
-            {{ t('premium.bundle.family') }}
-          </button>
-          <button
-            type="button"
-            class="px-4 py-2 rounded-full text-xs font-semibold border transition backdrop-blur-sm"
-            :class="
-              seatBundle === 'team'
-                ? 'border-pink-700 dark:border-pink-500 bg-pink-50/95 dark:bg-pink-950/45 text-pink-800 dark:text-pink-300 shadow-sm ring-1 ring-pink-500/25'
-                : 'border-neutral-200/90 dark:border-white/14 bg-white/45 dark:bg-white/[0.05] text-neutral-600 dark:text-neutral-400 hover:bg-white/70 dark:hover:bg-white/[0.08]'
-            "
-            :disabled="isSeatMember"
-            @click="seatBundle = 'team'"
-          >
-            {{ t('premium.bundle.team') }}
-          </button>
+    <!-- Étape 1 : offre recommandée (Plus · Mensuel · Solo) -->
+    <section class="mb-6 max-lg:mb-8 lg:mb-10" aria-labelledby="premium-recommended-heading">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-pink-600 dark:text-pink-400 text-center mb-2">
+        {{ t('premium.funnel.recommendedKicker') }}
+      </p>
+      <p class="text-xs text-neutral-500 dark:text-neutral-400 text-center mb-4">
+        {{ t('premium.funnel.recommendedFor') }}
+      </p>
+
+      <div
+        v-if="recommendedPlan"
+        class="pinova-glass-strong rounded-3xl border-2 border-pink-700 dark:border-pink-600 ring-4 ring-pink-100 dark:ring-pink-600/25 p-6 sm:p-8 relative max-w-xl mx-auto"
+      >
+        <div
+          class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider shadow-md backdrop-blur-sm ring-1 ring-white/35 dark:ring-white/15 bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white"
+        >
+          {{ recommendedPlan.badge }}
         </div>
-        <p class="text-[11px] text-neutral-400 dark:text-neutral-500 max-w-lg mx-auto leading-relaxed">
-          {{
-            seatBundle === 'family'
-              ? t('premium.bundle.familyDesc', { n: seatInviteLimits.family })
-              : seatBundle === 'team'
-                ? t('premium.bundle.teamDesc', { n: seatInviteLimits.team })
-                : t('premium.bundle.soloDesc')
-          }}
+
+        <h2 id="premium-recommended-heading" class="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100 text-center">
+          {{ recommendedPlan.name }}
+        </h2>
+        <p class="text-sm text-neutral-500 dark:text-neutral-300 mt-1 mb-6 text-center">{{ recommendedPlan.tagline }}</p>
+
+        <div class="flex items-baseline justify-center gap-1 mb-6">
+          <template v-if="pricingLoading || !recommendedPlusCycle">
+            <span class="app-skeleton-wave inline-block h-10 w-40 rounded-xl bg-neutral-200 animate-pulse" />
+          </template>
+          <template v-else>
+            <span class="text-4xl sm:text-5xl font-bold text-neutral-900 dark:text-neutral-100">
+              {{ formatCurrency(Number(recommendedPlusCycle.amount_display), String(recommendedPlusCycle.currency_iso)) }}
+            </span>
+            <span class="text-sm text-neutral-500 dark:text-neutral-300">{{ t('premium.priceUnit') }}</span>
+          </template>
+        </div>
+
+        <ul class="space-y-2 mb-6 max-w-md mx-auto">
+          <li
+            v-for="(feature, i) in recommendedHighlights"
+            :key="i"
+            class="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-200"
+          >
+            <span class="material-symbols-outlined text-base mt-0.5 shrink-0 text-emerald-500 dark:text-emerald-400">check_circle</span>
+            <span>{{ feature.label }}</span>
+          </li>
+        </ul>
+
+        <PinovaButton
+          variant="primary"
+          block
+          size="lg"
+          :loading="checkoutPendingPlan === 'plus'"
+          :disabled="pricingLoading || !recommendedPlusCycle || recommendedPlan.tierLocked || checkoutPendingPlan === 'plus' || isSeatMember"
+          @click="handleRecommendedCheckout"
+        >
+          {{ recommendedPlan.cta }}
+        </PinovaButton>
+        <p class="text-[11px] text-neutral-400 dark:text-neutral-500 text-center mt-3">
+          {{ t('premium.funnel.paymentHint') }}
         </p>
       </div>
 
-      <div
-        v-if="showTrialCta"
-        class="mt-10 max-w-lg mx-auto rounded-2xl border border-pink-200/90 dark:border-pink-500/25 backdrop-blur-md bg-gradient-to-br from-pink-50/92 to-white/88 dark:from-pink-950/45 dark:to-black/35 p-5 text-left shadow-lg shadow-pink-900/[0.07] dark:shadow-black/50 ring-1 ring-white/50 dark:ring-white/[0.08]"
-      >
-        <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trial.title') }}</p>
-        <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{{ t('premium.trial.sub') }}</p>
+      <div class="mt-5 flex flex-col items-center gap-3">
         <button
           type="button"
-          class="mt-4 w-full sm:w-auto px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-xs font-semibold hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-50"
-          :disabled="trialPending"
-          @click="handleStartTrial"
+          class="inline-flex items-center gap-1.5 text-sm font-semibold text-pink-700 dark:text-pink-400 hover:underline"
+          @click="toggleComparePlans"
         >
-          {{ trialPending ? t('premium.trial.busy') : t('premium.trial.cta') }}
+          <span class="material-symbols-outlined text-lg" aria-hidden="true">
+            {{ showComparePlans ? 'expand_less' : 'compare_arrows' }}
+          </span>
+          {{ showComparePlans ? t('premium.funnel.hideCompare') : t('premium.funnel.comparePlans') }}
         </button>
+
+        <div
+          v-if="showTrialCta"
+          class="w-full max-w-xl rounded-2xl border border-pink-200/90 dark:border-pink-500/25 backdrop-blur-md bg-gradient-to-br from-pink-50/92 to-white/88 dark:from-pink-950/45 dark:to-black/35 p-4 sm:p-5 text-left shadow-sm ring-1 ring-white/50 dark:ring-white/[0.08]"
+        >
+          <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trial.title') }}</p>
+          <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{{ t('premium.trial.sub') }}</p>
+          <PinovaButton
+            variant="secondary"
+            size="sm"
+            block
+            class="mt-3 sm:w-auto sm:inline-flex"
+            :loading="trialPending"
+            @click="handleStartTrial"
+          >
+            {{ trialPending ? t('premium.trial.busy') : t('premium.trial.cta') }}
+          </PinovaButton>
+        </div>
       </div>
+    </section>
+
+    <!-- Étape 2 : comparaison avancée (optionnelle) -->
+    <section
+      v-show="showComparePlans"
+      id="premium-compare-plans"
+      class="mb-10 max-lg:mb-12 lg:mb-16 scroll-mt-6"
+      :aria-label="t('premium.funnel.comparePlans')"
+    >
+      <div class="text-center mb-6">
+        <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.funnel.compareTitle') }}</h2>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1 max-w-lg mx-auto">{{ t('premium.funnel.compareSub') }}</p>
       </div>
-    </div>
+
+      <div class="flex flex-col items-center gap-4 mb-8">
+        <div
+          class="inline-flex items-center rounded-full p-1 backdrop-blur-md bg-neutral-100/90 dark:bg-black/35 ring-1 ring-black/[0.07] dark:ring-white/12 shadow-inner"
+          :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''"
+        >
+          <button
+            class="px-5 py-2 rounded-full text-sm font-semibold transition"
+            type="button"
+            :disabled="isSeatMember"
+            :class="
+              billingCycle === 'monthly'
+                ? 'bg-white dark:bg-neutral-900/95 shadow-md ring-1 ring-black/[0.05] dark:ring-white/[0.12] text-neutral-900 dark:text-neutral-50'
+                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+            "
+            @click="billingCycle = 'monthly'"
+          >
+            {{ t('premium.cycle.monthly') }}
+          </button>
+          <button
+            class="px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2"
+            type="button"
+            :disabled="isSeatMember"
+            :class="
+              billingCycle === 'yearly'
+                ? 'bg-white dark:bg-neutral-900/95 shadow-md ring-1 ring-black/[0.05] dark:ring-white/[0.12] text-neutral-900 dark:text-neutral-50'
+                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+            "
+            @click="billingCycle = 'yearly'"
+          >
+            {{ t('premium.cycle.yearly') }}
+            <span
+              v-if="annualDiscountPercent > 0"
+              class="text-[10px] uppercase tracking-wide bg-emerald-100 dark:bg-emerald-950/65 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold"
+            >{{ yearlyDiscountBadge }}</span>
+          </button>
+        </div>
+
+        <div class="space-y-2 text-center">
+          <p class="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{{ t('premium.bundle.title') }}</p>
+          <div class="inline-flex flex-wrap justify-center gap-2" :class="isSeatMember ? 'opacity-60 pointer-events-none' : ''">
+            <button
+              v-for="bundle in (['solo', 'family', 'team'] as const)"
+              :key="bundle"
+              type="button"
+              class="px-4 py-2 rounded-full text-xs font-semibold border transition backdrop-blur-sm"
+              :class="
+                seatBundle === bundle
+                  ? 'border-pink-700 dark:border-pink-500 bg-pink-50/95 dark:bg-pink-950/45 text-pink-800 dark:text-pink-300 shadow-sm ring-1 ring-pink-500/25'
+                  : 'border-neutral-200/90 dark:border-white/14 bg-white/45 dark:bg-white/[0.05] text-neutral-600 dark:text-neutral-400 hover:bg-white/70 dark:hover:bg-white/[0.08]'
+              "
+              :disabled="isSeatMember"
+              @click="seatBundle = bundle"
+            >
+              {{ t(`premium.bundle.${bundle}`) }}
+            </button>
+          </div>
+          <p class="text-[11px] text-neutral-400 dark:text-neutral-500 max-w-lg mx-auto leading-relaxed">
+            {{
+              seatBundle === 'family'
+                ? t('premium.bundle.familyDesc', { n: seatInviteLimits.family })
+                : seatBundle === 'team'
+                  ? t('premium.bundle.teamDesc', { n: seatInviteLimits.team })
+                  : t('premium.bundle.soloDesc')
+            }}
+          </p>
+        </div>
+      </div>
 
     <!-- Plans — carrousel horizontal (sans flèches) tant que viewport &lt; lg ; grille colonnes ≥ lg -->
     <div
       ref="plansCarouselRef"
-      class="flex flex-row lg:grid lg:grid-cols-3 mb-10 max-lg:mb-12 lg:mb-16 gap-4 lg:gap-6 max-lg:-mx-4 max-lg:px-[9vw] overflow-x-auto lg:overflow-visible overscroll-x-contain touch-[pan-x_pan-y] snap-x snap-mandatory lg:snap-none scroll-smooth no-scrollbar max-lg:py-6 max-lg:backdrop-blur-[2px]"
+      class="flex flex-row lg:grid lg:grid-cols-3 gap-4 lg:gap-6 max-lg:-mx-4 max-lg:px-[9vw] overflow-x-auto lg:overflow-visible overscroll-x-contain touch-[pan-x_pan-y] snap-x snap-mandatory lg:snap-none scroll-smooth no-scrollbar max-lg:py-6 max-lg:backdrop-blur-[2px]"
       @scroll.passive="onPlansCarouselScroll"
     >
       <div
@@ -808,19 +845,16 @@ onUnmounted(() => {
           </template>
         </p>
 
-        <button
-          class="w-full py-3 rounded-full font-semibold text-sm transition mb-6"
-          :class="plan.id === 'plus'
-            ? 'bg-pink-700 dark:bg-pink-600 text-white hover:bg-pink-800 dark:hover:opacity-90'
-            : plan.id === 'pro'
-              ? 'bg-neutral-900 dark:bg-neutral-50 text-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-white'
-              : 'bg-neutral-100/95 dark:bg-white/[0.07] backdrop-blur-sm text-neutral-500 dark:text-neutral-400 cursor-not-allowed border border-transparent dark:border-white/10'"
+        <PinovaButton
+          :variant="plan.id === 'plus' ? 'primary' : plan.id === 'pro' ? 'secondary' : 'ghost'"
+          block
+          class="mb-6"
+          :loading="checkoutPendingPlan === plan.id"
           :disabled="pricingLoading || !plan.isPriceReady || plan.tierLocked || checkoutPendingPlan === plan.id"
           @click="handleCheckout(plan.id)"
         >
-          <span v-if="checkoutPendingPlan === plan.id" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-          <span v-else>{{ plan.cta }}</span>
-        </button>
+          {{ plan.cta }}
+        </PinovaButton>
 
         <ul class="space-y-2.5">
           <li
@@ -838,6 +872,7 @@ onUnmounted(() => {
         </ul>
       </div>
     </div>
+    </section>
 
     <div class="mb-10 max-lg:mb-12 lg:mb-16">
       <TrustCenterSection />
@@ -846,13 +881,15 @@ onUnmounted(() => {
     <!-- FAQ -->
     <div>
       <div class="max-w-2xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 backdrop-blur-md bg-white/50 dark:bg-white/[0.05] ring-1 ring-black/[0.07] dark:ring-white/12">
-        <button
-          class="app-btn app-btn-secondary app-btn-sm text-xs"
+        <PinovaButton
+          variant="secondary"
+          size="sm"
+          class="text-xs"
           :disabled="confirmPending"
           @click="confirmPendingPaymentFromButton"
         >
           {{ confirmPending ? t('premium.payment.checking') : t('premium.payment.confirmCta') }}
-        </button>
+        </PinovaButton>
         <p v-if="paymentInfoMessage" class="text-xs text-neutral-600 dark:text-neutral-300">{{ paymentInfoMessage }}</p>
       </div>
       <h2 class="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-6 text-center">{{ t('premium.faq.title') }}</h2>

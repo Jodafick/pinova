@@ -3,6 +3,7 @@ import { ref, watch, nextTick } from 'vue'
 import { useAppModal } from '../composables/useAppModal'
 import { useI18n } from '../i18n'
 import PinovaModal from './ui/PinovaModal.vue'
+import PinovaButton from './ui/PinovaButton.vue'
 
 const {
   open,
@@ -19,7 +20,7 @@ const {
 
 const { t } = useI18n()
 
-const okButtonRef = ref<HTMLButtonElement | null>(null)
+const okButtonRef = ref<InstanceType<typeof PinovaButton> | null>(null)
 const promptInputRef = ref<HTMLInputElement | null>(null)
 
 watch(open, (isOpen) => {
@@ -29,7 +30,7 @@ watch(open, (isOpen) => {
       promptInputRef.value?.focus()
       promptInputRef.value?.select()
     } else {
-      okButtonRef.value?.focus()
+      ;(okButtonRef.value?.$el as HTMLElement | undefined)?.focus()
     }
   })
 })
@@ -118,18 +119,18 @@ function variantStyles(): string {
 
     <template #footer>
       <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <button
+        <PinovaButton
           v-if="mode === 'prompt' || mode === 'confirm'"
-          type="button"
-          class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px]"
+          variant="secondary"
+          class="w-full sm:w-auto min-h-[44px]"
           @click="mode === 'confirm' ? finishConfirm(false) : finishPrompt(false)"
         >
           {{ t('common.cancel') }}
-        </button>
-        <button
+        </PinovaButton>
+        <PinovaButton
           ref="okButtonRef"
-          type="button"
-          class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px] min-w-[7.5rem]"
+          variant="primary"
+          class="w-full sm:w-auto min-h-[44px] min-w-[7.5rem]"
           @click="
             mode === 'alert'
               ? dismissAlert()
@@ -139,7 +140,7 @@ function variantStyles(): string {
           "
         >
           {{ mode === 'confirm' ? t('modal.confirm.ok') : t('common.ok') }}
-        </button>
+        </PinovaButton>
       </div>
     </template>
   </PinovaModal>

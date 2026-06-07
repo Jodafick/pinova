@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../api'
+import api from '../api/index'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { openCheckoutFlow } from '../utils/checkoutFlow'
+import { trackEvent } from '../lib/analytics'
 
 const props = defineProps<{
   open: boolean
@@ -88,10 +89,20 @@ async function submitTip() {
     })
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
+      trackEvent('tip_sent', {
+        recipient_username: props.recipientUsername,
+        amount,
+        checkout: true,
+      })
       openCheckoutFlow(router, 'tip', data.checkout_url)
       return
     }
     if (data.status === 'approved') {
+      trackEvent('tip_sent', {
+        recipient_username: props.recipientUsername,
+        amount,
+        checkout: false,
+      })
       await showAlert(t('tip.success'), { variant: 'success' })
       emit('close')
       return

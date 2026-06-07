@@ -9,7 +9,7 @@ import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
-import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/useModeration'
+import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/moderationPolicy'
 import { useDataSaver } from '../composables/useDataSaver'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
@@ -191,9 +191,17 @@ function emitOpenPin(pin: Pin, originRect: ReturnType<typeof elementToPinOverlay
 
 const { promptGuest } = useGuestAuthGate()
 
+function onSavePinClick(slug: string) {
+  if (!isAuthenticated.value) {
+    promptGuest('save', { resourceId: slug })
+    return
+  }
+  emit('toggle-save', slug)
+}
+
 async function doubleTapLike(pin: Pin) {
   if (!isAuthenticated.value) {
-    promptGuest('like')
+    promptGuest('like', { resourceId: pin.slug })
     return
   }
   if (pin.isStory && usernamesMatch(currentUser.value?.username, pin.username)) return
@@ -407,7 +415,7 @@ onUnmounted(() => {
           <button
             v-if="viewerOwnsPin(cell.pin)"
             type="button"
-            class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/35 text-white shadow-lg backdrop-blur-md border border-white/15 transition-opacity duration-200 hover:bg-black/55 opacity-100"
+            class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/35 text-white shadow-lg backdrop-blur-md border border-white/15 transition-opacity duration-200 hover:bg-black/55 opacity-100 pinova-focus-ring"
             :class="cell.pin.scheduledPublishAt ? 'top-10 left-3' : 'top-3 left-3'"
             :aria-expanded="gridOwnerMenuSlug === cell.pin.slug"
             aria-haspopup="menu"
@@ -427,10 +435,11 @@ onUnmounted(() => {
             v-if="isAuthenticated"
             type="button"
             :aria-pressed="cell.pin.saved"
-            class="z-10 lux-btn-pin-save"
+            :aria-label="cell.pin.saved ? t('pin.a11y.saved') : t('pin.a11y.save')"
+            class="z-10 lux-btn-pin-save pinova-focus-ring"
             :class="cell.pin.saved ? 'lux-btn-pin-save-saved opacity-100 translate-y-0' : ''"
             :disabled="isSavePending(cell.pin.slug)"
-            @click.stop="emit('toggle-save', cell.pin.slug)"
+            @click.stop="onSavePinClick(cell.pin.slug)"
           >
             <span v-if="isSavePending(cell.pin.slug)" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
             <span v-else>{{ cell.pin.saved ? t('pin.saved') : t('pin.save') }}</span>

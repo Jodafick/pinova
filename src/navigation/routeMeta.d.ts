@@ -42,6 +42,10 @@ declare module 'vue-router' {
     keyboardFeedNav?: boolean
     /** Désactive les transitions router-view sur cette route. */
     noTransition?: boolean
+    /** Charge Font Awesome à la demande (creator / contest). */
+    loadFontAwesome?: boolean
+    /** Précharge nsfwjs + TensorFlow.js (routes création média). */
+    preloadNsfwScanner?: boolean
   }
 }
 

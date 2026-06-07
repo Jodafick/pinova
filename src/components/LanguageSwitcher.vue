@@ -4,6 +4,7 @@ import { useI18n, type LangCode } from '../i18n'
 import { useAuth } from '../composables/useAuth'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
+import PinovaButton from './ui/PinovaButton.vue'
 
 const { t, languages, currentLangMeta, setLang } = useI18n()
 const { isAuthenticated, updateProfile } = useAuth()
@@ -59,15 +60,16 @@ function toggle() {
 
 <template>
   <div ref="anchorRef" class="relative shrink-0">
-    <button
-      type="button"
-      class="app-btn app-btn-ghost app-btn-icon !w-9 !min-w-9 !h-9 relative"
-      :title="`${t('lang.title')} : ${currentLangMeta.label}`"
+    <PinovaButton
+      variant="ghost"
+      size="icon"
+      class="relative"
+      :aria-label="`${t('lang.title')} : ${currentLangMeta.label}`"
       @click.stop="toggle()"
     >
       <span class="material-symbols-outlined text-xl">translate</span>
       <span class="absolute -bottom-0.5 -right-0.5 text-[10px] leading-none">{{ currentLangMeta.flag }}</span>
-    </button>
+    </PinovaButton>
 
     <Teleport to="body">
       <div

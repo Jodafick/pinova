@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import api from '../api'
+import api from '../api/index'
 import { useI18n } from '../i18n'
 
 const { t } = useI18n()

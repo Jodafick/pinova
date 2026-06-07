@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { feedPinsOnly, usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
 import { isFeedPin, type Pin } from '../types'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
-import api from '../api'
+import api from '../api/index'
 import { displayInitials } from '../utils/displayInitials'
 import PinGrid from '../components/PinGrid.vue'
 import PinDetailSkeleton from '../components/PinDetailSkeleton.vue'
@@ -15,15 +15,17 @@ import { useAppModal } from '../composables/useAppModal'
 import {
   moderationScanText,
   moderationScanImageFile,
+} from '../composables/useModeration'
+import {
   viewerCanRevealSensitiveMedia,
   sensitiveMediaBlurredByDefault,
-} from '../composables/useModeration'
+} from '../composables/moderationPolicy'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
 import StoryLikersModal from '../components/StoryLikersModal.vue'
 import ReportContentModal from '../components/ReportContentModal.vue'
 import TipDialog from '../components/TipDialog.vue'
-import BoostPinDialog from '../components/BoostPinDialog.vue'
+import PromotePinSheet from '../components/PromotePinSheet.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { useDataSaver } from '../composables/useDataSaver'
 import { shareUrlWithFallback } from '../utils/shareFallback'
@@ -36,6 +38,7 @@ import {
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
+import PinovaButton from '../components/ui/PinovaButton.vue'
 
 const { t } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
@@ -120,7 +123,7 @@ const savingPin = ref(false)
 const likingPin = ref(false)
 const followingAuthor = ref(false)
 const tipDialogOpen = ref(false)
-const boostDialogOpen = ref(false)
+const promoteSheetOpen = ref(false)
 const pinHeartBurst = ref(false)
 const pinHeartBurstKey = ref(0)
 let pinHeartBurstHideTimer: ReturnType<typeof setTimeout> | null = null
@@ -225,12 +228,12 @@ watch(
 )
 
 const handleLike = async () => {
-  if (!isAuthenticated.value) {
-    promptGuest('like')
-    return
-  }
   const p = pin.value
   if (!p) return
+  if (!isAuthenticated.value) {
+    promptGuest('like', { resourceId: p.slug })
+    return
+  }
   const previousLiked = !!p.liked
   const previousReactions = p.stats.reactions || 0
   p.liked = !previousLiked
@@ -268,7 +271,7 @@ const handleMediaDoubleLike = () => {
   const p = pin.value
   if (!p) return
   if (!isAuthenticated.value) {
-    promptGuest('like')
+    promptGuest('like', { resourceId: p.slug })
     return
   }
   if (p.liked) return
@@ -276,12 +279,12 @@ const handleMediaDoubleLike = () => {
 }
 
 const handleSave = () => {
-  if (!isAuthenticated.value) {
-    promptGuest('save')
-    return
-  }
   const currentPin = pin.value
   if (!currentPin) return
+  if (!isAuthenticated.value) {
+    promptGuest('save', { resourceId: currentPin.slug })
+    return
+  }
   savingPin.value = true
   toggleSavePin(currentPin.id)
   Promise.resolve(toggleSave(currentPin.slug))
@@ -295,8 +298,10 @@ const handleSave = () => {
 }
 
 const handleFollow = async () => {
+  const username = pin.value?.username?.trim()
   if (!isAuthenticated.value) {
-    promptGuest('follow')
+    if (!username) return
+    promptGuest('follow', { resourceId: username })
     return
   }
   if (pin.value && pin.value.username) {
@@ -443,7 +448,19 @@ const handleRichSubmit = async (
   payload: { text: string; gif?: string | null; mediaFile?: File | null; replyTo?: string | null; parentId?: number },
 ) => {
   if (!pin.value || !isAuthenticated.value) {
-    promptGuest('comment')
+    if (!pin.value) return
+    if (payload.mediaFile) {
+      promptGuest('comment', { resourceId: pin.value.slug })
+      return
+    }
+    promptGuest('comment', {
+      resourceId: pin.value.slug,
+      metadata: {
+        text: payload.text,
+        parentId: payload.parentId ?? null,
+        gif: payload.gif ?? null,
+      },
+    })
     return
   }
   if (pin.value.canComment === false) {
@@ -453,7 +470,7 @@ const handleRichSubmit = async (
     )
     return
   }
-  const profanityOk = moderationScanText([payload.text])
+  const profanityOk = await moderationScanText([payload.text])
   if (!profanityOk.ok) {
     await showAlert(t('moderation.textInappropriate'), { variant: 'warning' })
     return
@@ -508,7 +525,10 @@ const handleRichSubmit = async (
 
 const handleLikeComment = (id: number) => {
   if (!isAuthenticated.value) {
-    promptGuest('like')
+    promptGuest('like', {
+      resourceId: String(id),
+      metadata: { scope: 'comment', pinSlug: pin.value?.slug },
+    })
     return
   }
   const updateCommentById = (comments: UiComment[]): boolean => {
@@ -544,7 +564,12 @@ const handleLikeComment = (id: number) => {
 
 const handleTranslateComment = async (id: number) => {
   if (!isAuthenticated.value) {
-    promptGuest('generic')
+    const slug = pin.value?.slug
+    if (!slug) return
+    promptGuest('translate', {
+      resourceId: String(id),
+      metadata: { target: 'comment', commentId: id, lang: targetLang.value, pinSlug: slug },
+    })
     return
   }
 
@@ -609,7 +634,10 @@ const pinVisibility = computed<'public' | 'followers' | 'private'>(() => {
 const handleTranslateDescription = async () => {
   if (!pin.value) return
   if (!isAuthenticated.value) {
-    promptGuest('generic')
+    promptGuest('translate', {
+      resourceId: pin.value.slug,
+      metadata: { target: 'description', lang: targetLang.value, pinSlug: pin.value.slug },
+    })
     return
   }
   if (descriptionTranslated.value) {
@@ -628,6 +656,10 @@ const handleTranslateDescription = async () => {
 }
 
 const handleToggleSaveRelated = async (slug: string) => {
+  if (!isAuthenticated.value) {
+    promptGuest('save', { resourceId: slug })
+    return
+  }
   const relatedPin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
   if (relatedPin) {
     toggleSavePin(relatedPin.id)
@@ -927,15 +959,15 @@ async function deletePinFromMenu() {
     >
       <div class="pin-detail-page-wrap w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <!-- Back button -->
-        <button
-          type="button"
-          class="pin-detail-back app-btn app-btn-secondary group mb-8 hidden text-sm lg:inline-flex"
+        <PinovaButton
+          variant="secondary"
+          class="pin-detail-back group mb-8 hidden text-sm lg:inline-flex"
           :aria-label="t('pin.a11y.back')"
           @click="goBack"
         >
           <span class="material-symbols-outlined text-lg">arrow_back</span>
           {{ t('common.back') }}
-        </button>
+        </PinovaButton>
 
         <!-- Main card -->
         <div class="pin-detail-mobile-card lux-pin-detail-card flex flex-col lg:flex-row lg:max-h-[80vh]">
@@ -1264,20 +1296,22 @@ async function deletePinFromMenu() {
                       </select>
                     </label>
                     <div class="flex items-center gap-1.5">
-                      <button
-                        class="app-btn app-btn-sm text-xs"
-                        :class="commentSort === 'recent' ? 'app-btn-primary' : 'app-btn-secondary'"
+                      <PinovaButton
+                        size="sm"
+                        class="text-xs"
+                        :variant="commentSort === 'recent' ? 'primary' : 'secondary'"
                         @click="setCommentSort('recent')"
                       >
                         {{ t('pin.comments.sortRecent') }}
-                      </button>
-                      <button
-                        class="app-btn app-btn-sm text-xs"
-                        :class="commentSort === 'relevant' ? 'app-btn-primary' : 'app-btn-secondary'"
+                      </PinovaButton>
+                      <PinovaButton
+                        size="sm"
+                        class="text-xs"
+                        :variant="commentSort === 'relevant' ? 'primary' : 'secondary'"
                         @click="setCommentSort('relevant')"
                       >
                         {{ t('pin.comments.sortRelevant') }}
-                      </button>
+                      </PinovaButton>
                     </div>
                   </div>
                 </div>
@@ -1403,7 +1437,7 @@ async function deletePinFromMenu() {
           type="button"
           role="menuitem"
           class="app-menu-item w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 flex items-center gap-2 transition-colors"
-          @click="boostDialogOpen = true; pinOwnerMenuOpen = false"
+          @click="promoteSheetOpen = true; pinOwnerMenuOpen = false"
         >
           <span class="material-symbols-outlined text-lg text-amber-600" aria-hidden="true">rocket_launch</span>
           {{ t('pin.boost.cta') }}
@@ -1420,11 +1454,12 @@ async function deletePinFromMenu() {
       </div>
     </Teleport>
 
-    <BoostPinDialog
+    <PromotePinSheet
       v-if="pin"
-      :open="boostDialogOpen"
+      :open="promoteSheetOpen"
       :pin-slug="pin.slug"
-      @close="boostDialogOpen = false"
+      initial-mode="boost"
+      @close="promoteSheetOpen = false"
     />
   </div>
 </template>

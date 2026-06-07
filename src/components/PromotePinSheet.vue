@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../api'
+import api from '../api/index'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { defaultBoostPackSlug, usePromoteHub } from '../composables/usePromoteHub'

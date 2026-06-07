@@ -2,12 +2,43 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
+
+const sentryRelease = process.env.VITE_SENTRY_RELEASE || process.env.SENTRY_RELEASE || ''
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN || ''
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const useLocalApiProxy = mode === 'e2e' || process.env.VITE_E2E_LOCAL_API === 'true'
+  return {
+  server: useLocalApiProxy
+    ? {
+        port: 5175,
+        proxy: {
+          '/api': {
+            target: process.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
+            changeOrigin: true,
+          },
+        },
+      }
+    : undefined,
   plugins: [
     vue(),
     tailwindcss(),
+    ...(sentryAuthToken && sentryRelease
+      ? [
+          sentryVitePlugin({
+            org: process.env.SENTRY_ORG || 'pinova',
+            project: process.env.SENTRY_PROJECT_WEB || 'pinova-web',
+            authToken: sentryAuthToken,
+            release: { name: sentryRelease },
+            sourcemaps: {
+              assets: './dist/**',
+            },
+            telemetry: false,
+          }),
+        ]
+      : []),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
@@ -179,6 +210,27 @@ export default defineConfig({
     })
   ],
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    sourcemap: 'hidden',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('@fortawesome')) return 'vendor-icons'
+          if (id.includes('@tensorflow') || id.includes('nsfwjs') || id.includes('glin-profanity')) {
+            return 'vendor-tfjs'
+          }
+          if (
+            id.includes('/vue/') ||
+            id.includes('/vue-router/') ||
+            id.includes('/@vue/') ||
+            id.includes('/pinia/')
+          ) {
+            return 'vendor-vue'
+          }
+        },
+      },
+    },
+  },
   }
 })

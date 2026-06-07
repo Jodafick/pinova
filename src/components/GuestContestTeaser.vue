@@ -12,7 +12,7 @@ function openContest() {
 }
 
 function joinToCompete() {
-  promptGuest('contest')
+  promptGuest('contest', { resourceId: 'contest-live' })
 }
 </script>
 

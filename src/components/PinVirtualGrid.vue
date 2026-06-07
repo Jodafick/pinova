@@ -20,6 +20,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import { useWindowVirtualizer } from '@tanstack/vue-virtual'
 import type { Pin } from '../types'
 import { useAuth } from '../composables/useAuth'
+import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { usePins } from '../composables/usePins'
@@ -34,7 +35,7 @@ import {
 import PinSensitiveMedia from './PinSensitiveMedia.vue'
 import LikeHeartBurst from './LikeHeartBurst.vue'
 import { openPinContextualMenu } from '../composables/usePinContextualMenu'
-import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/useModeration'
+import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/moderationPolicy'
 import { elementToPinOverlayOriginRect, setPinOverlayOrigin } from '../utils/pinOverlayOrigin'
 import { PINOVA_FEED_KEYBOARD_SCROLL } from '../navigation/inputAbstraction'
 
@@ -63,6 +64,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { isAuthenticated, currentUser } = useAuth()
+const { promptGuest } = useGuestAuthGate()
 const { isPinSavePending, toggleLike } = usePins()
 const router = useRouter()
 const { gridImageFetchPriority, gridImageSizes, storyVideoPreload } = useDataSaver()
@@ -156,7 +158,7 @@ watch(columnCount, () => {
 
 /* ─────────────────────── Image preheat ─────────────────────── */
 
-const { preheatMany } = useImagePreheat({ maxCache: 80, concurrency: 3 })
+const { preheatMany } = useImagePreheat()
 
 watch(virtualItems, (items) => {
   if (items.length === 0) return
@@ -180,13 +182,17 @@ function isOwnedStory(pin: Pin): boolean {
 }
 
 function onSavePinClick(slug: string) {
+  if (!isAuthenticated.value) {
+    promptGuest('save', { resourceId: slug })
+    return
+  }
   emitMicroFeedback('save')
   emit('toggle-save', slug)
 }
 
 async function performLike(pin: Pin, point: { x: number; y: number }) {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('like', { resourceId: pin.slug })
     return
   }
   if (isOwnedStory(pin)) return
@@ -224,6 +230,10 @@ function openContextMenu(pin: Pin, point: { x: number; y: number }) {
     onSelect: (id) => {
       if (id === 'open') performOpen(pin, null)
       else if (id === 'save') {
+        if (!isAuthenticated.value) {
+          promptGuest('save', { resourceId: pin.slug })
+          return
+        }
         emitMicroFeedback('save')
         emit('toggle-save', pin.slug)
       }

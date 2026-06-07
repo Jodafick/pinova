@@ -1,4 +1,4 @@
-import api from '../api'
+import api from '../api/index'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 import { getFullMediaUrl } from './usePins'
 

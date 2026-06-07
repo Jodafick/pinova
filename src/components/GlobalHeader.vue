@@ -6,9 +6,9 @@ import { usePins } from '../composables/usePins'
 import { fetchHeaderSearch, type HeaderSearchUser, type HeaderSearchBoard } from '../composables/useHeaderSearch'
 import type { Pin } from '../types'
 import { useI18n } from '../i18n'
-import api from '../api'
+import api from '../api/index'
 import { navigateWebNotificationDeepLink } from '../utils/notificationDeepLink'
-import { subscribeUnreadCountFromHeader } from '../notificationRefresh'
+import { subscribeUnreadCountFromHeader, subscribeNotificationLive } from '../lib/notificationRefresh'
 import AvatarDisc from './AvatarDisc.vue'
 import { displayInitials } from '../utils/displayInitials'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
@@ -398,6 +398,7 @@ function toggleUserMenuPanel() {
 const popoverZIndex = { zIndex: 115 }
 
 let unsubscribeNotifications: (() => void) | null = null
+let unsubscribeNotificationLive: (() => void) | null = null
 
 watch(showNotifications, (open) => {
   if (open && isAuthenticated.value) {
@@ -424,6 +425,12 @@ onMounted(() => {
   unsubscribeNotifications = subscribeUnreadCountFromHeader((n) => {
     unreadCount.value = n
   })
+  unsubscribeNotificationLive = subscribeNotificationLive((payload) => {
+    if (!isAuthenticated.value || !payload?.id) return
+    const exists = notifications.value.some((n) => n.id === payload.id)
+    if (exists) return
+    notifications.value = [payload, ...notifications.value].slice(0, 40)
+  })
   if (typeof window !== 'undefined') {
     window.addEventListener('message', handleWorkerMessage)
   }
@@ -442,6 +449,8 @@ onUnmounted(() => {
   clearHeaderHeightCssVar()
   unsubscribeNotifications?.()
   unsubscribeNotifications = null
+  unsubscribeNotificationLive?.()
+  unsubscribeNotificationLive = null
   if (typeof window !== 'undefined') {
     window.removeEventListener('message', handleWorkerMessage)
   }

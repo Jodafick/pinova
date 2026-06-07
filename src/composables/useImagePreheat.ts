@@ -18,10 +18,6 @@ import { onBeforeUnmount } from 'vue'
 import { isImageCached, preloadImage, releaseImage } from '../media'
 
 export interface UseImagePreheatOptions {
-  /** @deprecated — la taille du cache est désormais globale (cf. mediaPlatformProfile). */
-  maxCache?: number
-  /** @deprecated — la concurrence est désormais pilotée par mediaPlatformProfile. */
-  concurrency?: number
   /** Désactiver dynamiquement (ex: saveData applicatif). */
   disabled?: () => boolean
   /** Forcer un release des images préchargées au démontage du composant. */

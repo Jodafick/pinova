@@ -8,7 +8,7 @@ import PinGrid from '../components/PinGrid.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { useI18n } from '../i18n'
-import api from '../api'
+import api from '../api/index'
 
 const { t } = useI18n()
 const router = useRouter()

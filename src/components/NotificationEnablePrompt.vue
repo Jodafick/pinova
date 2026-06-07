@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import PinovaModal from './ui/PinovaModal.vue'
+import PinovaButton from './ui/PinovaButton.vue'
 import { useI18n } from '../i18n'
-import api from '../api'
+import api from '../api/index'
 import {
   activateWebPushNotifications,
   isWebPushSupported,
@@ -74,7 +75,6 @@ function onDecline() {
     presentation="bottomSheet"
     presentation-lg="center"
     :presentation-lg-min-width="1024"
-    rose
     :title="t('notifications.prompt.title')"
     @update:open="emit('update:open', $event)"
   >
@@ -85,18 +85,18 @@ function onDecline() {
 
     <template #footer>
       <div class="flex w-full flex-col gap-2">
-        <button
-          type="button"
-          class="app-btn app-btn-primary w-full min-h-[48px] justify-center disabled:opacity-50"
-          :disabled="loading"
+        <PinovaButton
+          variant="primary"
+          block
+          class="min-h-[48px] justify-center"
+          :loading="loading"
           @click="onEnable"
         >
-          <span v-if="loading" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin shrink-0" />
-          <span>{{ loading ? t('settings.notifications.web.activating') : t('notifications.prompt.enable') }}</span>
-        </button>
-        <button type="button" class="app-btn app-btn-secondary w-full min-h-[44px] justify-center" @click="onLater">
+          {{ loading ? t('settings.notifications.web.activating') : t('notifications.prompt.enable') }}
+        </PinovaButton>
+        <PinovaButton variant="secondary" block class="min-h-[44px] justify-center" @click="onLater">
           {{ t('notifications.prompt.later') }}
-        </button>
+        </PinovaButton>
         <button type="button" class="text-xs font-semibold text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 py-2" @click="onDecline">
           {{ t('notifications.prompt.decline') }}
         </button>

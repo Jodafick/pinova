@@ -1,11 +1,12 @@
 import { onMounted, ref, watch, type Ref } from 'vue'
-import api from '../api'
+import api from '../api/index'
 import { useAuth } from './useAuth'
 export type DiscoveryStreak = {
   count: number
   best: number
   last_date: string | null
   paused: boolean
+  at_risk?: boolean
   grace_days: number
 }
 

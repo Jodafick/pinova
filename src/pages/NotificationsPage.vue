@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onActivated, onDeactivated, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../api'
+import api from '../api/index'
 import {
   navigateWebNotificationDeepLink,
   type WebNotificationNavInput,
@@ -11,11 +11,14 @@ import { useI18n } from '../i18n'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
 import { displayInitials } from '../utils/displayInitials'
-import { subscribeUnreadCountFromHeader } from '../notificationRefresh'
+import { subscribeUnreadCountFromHeader, subscribeNotificationLive } from '../lib/notificationRefresh'
 import {
   setMobileHeaderSubtitle,
   setMobileMarkAllReadTrailing,
 } from '../composables/mobileHeaderContext'
+import PinovaButton from '../components/ui/PinovaButton.vue'
+import PinovaEmptyState from '../components/ui/PinovaEmptyState.vue'
+import PinovaErrorState from '../components/ui/PinovaErrorState.vue'
 
 const { t, currentLang } = useI18n()
 const route = useRoute()
@@ -47,6 +50,7 @@ const error = ref(false)
 const unreadCount = ref(0)
 const loadedOnce = ref(false)
 let unsubscribe: (() => void) | null = null
+let unsubscribeLive: (() => void) | null = null
 
 const hasItems = computed(() => notifications.value.length > 0)
 
@@ -161,6 +165,29 @@ onMounted(() => {
     unreadCount.value = n
     syncNotificationsMobileHeader()
   })
+  unsubscribeLive = subscribeNotificationLive((payload) => {
+    if (!payload?.id) return
+    if (notifications.value.some((n) => n.id === payload.id)) return
+    notifications.value = [
+      {
+        id: payload.id,
+        title: payload.title,
+        message: payload.message || '',
+        sender_username: payload.sender_username,
+        sender_avatar_url: payload.sender_avatar_url ?? null,
+        sender_avatar_color: payload.sender_avatar_color ?? null,
+        is_read: !!payload.is_read,
+        pin_slug: payload.pin_slug ?? null,
+        pin_id: payload.pin_id ?? null,
+        comment_id: payload.comment_id ?? null,
+        action_url: payload.action_url ?? null,
+        metadata: payload.metadata ?? null,
+        notification_type: payload.notification_type ?? null,
+      },
+      ...notifications.value,
+    ]
+    syncNotificationsMobileHeader()
+  })
   void load(true)
 })
 
@@ -179,6 +206,8 @@ onDeactivated(() => {
 onUnmounted(() => {
   unsubscribe?.()
   unsubscribe = null
+  unsubscribeLive?.()
+  unsubscribeLive = null
   setMobileHeaderSubtitle(null)
   setMobileMarkAllReadTrailing(null)
 })
@@ -234,15 +263,15 @@ watch(
             {{ t('notifications.unreadCount', { count: unreadCount }) }}
           </p>
         </div>
-        <button
+        <PinovaButton
           v-if="unreadCount > 0"
-          type="button"
-          class="inline-flex shrink-0 items-center gap-2 rounded-full border border-pink-200/90 bg-white/80 px-4 py-2 text-xs font-semibold text-pink-700 shadow-sm backdrop-blur-md transition hover:bg-pink-50/90 dark:border-pink-800/60 dark:bg-neutral-900/60 dark:text-pink-600 dark:hover:bg-pink-950/40 sm:text-sm"
+          variant="secondary"
+          size="sm"
           @click="markAllAsRead"
         >
           <span class="material-symbols-outlined text-base leading-none">done_all</span>
           {{ t('header.notifications.markAllRead') }}
-        </button>
+        </PinovaButton>
       </header>
 
       <div v-if="loading && notifications.length === 0" class="app-skeleton-wave space-y-3" aria-hidden="true">
@@ -261,32 +290,29 @@ watch(
 
       <div
         v-else-if="error && !hasItems"
-        class="rounded-2xl border border-white/50 bg-white/55 p-8 text-center shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50"
+        class="rounded-2xl border border-white/50 bg-white/55 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50"
       >
-        <span class="material-symbols-outlined mb-2 text-4xl text-neutral-400">cloud_off</span>
-        <p class="mb-3 text-sm text-neutral-600 dark:text-neutral-300">
-          {{ t('notifications.loadError') }}
-        </p>
-        <button
-          type="button"
-          class="rounded-full bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800 dark:bg-pink-600 dark:hover:opacity-90"
-          @click="load(true)"
+        <PinovaErrorState
+          icon="cloud_off"
+          :title="t('notifications.loadError')"
         >
-          {{ t('common.retry') }}
-        </button>
+          <template #action>
+            <PinovaButton variant="primary" size="sm" block @click="load(true)">
+              {{ t('common.retry') }}
+            </PinovaButton>
+          </template>
+        </PinovaErrorState>
       </div>
 
       <div
         v-else-if="!hasItems"
-        class="rounded-2xl border border-dashed border-neutral-200/90 bg-white/50 p-10 text-center backdrop-blur-xl dark:border-neutral-700/80 dark:bg-neutral-900/45"
+        class="rounded-2xl border border-dashed border-neutral-200/90 bg-white/50 backdrop-blur-xl dark:border-neutral-700/80 dark:bg-neutral-900/45"
       >
-        <span class="material-symbols-outlined mb-3 text-5xl text-neutral-300 dark:text-neutral-600">notifications_off</span>
-        <p class="mb-1 text-base font-semibold text-neutral-700 dark:text-neutral-200">
-          {{ t('header.notifications.empty') }}
-        </p>
-        <p class="mx-auto max-w-sm text-xs text-neutral-500 dark:text-neutral-400">
-          {{ t('notifications.emptyHint') }}
-        </p>
+        <PinovaEmptyState
+          icon="notifications_off"
+          :title="t('header.notifications.empty')"
+          :description="t('notifications.emptyHint')"
+        />
       </div>
 
       <ul v-else class="space-y-3">

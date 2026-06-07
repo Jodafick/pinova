@@ -2,17 +2,19 @@
 import { computed, ref, watch, onActivated, onDeactivated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { PropType } from 'vue'
-import api from '../api'
+import api from '../api/index'
 import type { Pin, User } from '../types'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
-import { getCachedPinDetail } from '../pinClientCache'
+import { getCachedPinDetail } from '../lib/cache/pinClientCache'
 import {
   moderationScanImageFile,
   moderationScanText,
+} from '../composables/useModeration'
+import {
   sensitiveMediaBlurredByDefault,
   viewerCanRevealSensitiveMedia,
-} from '../composables/useModeration'
+} from '../composables/moderationPolicy'
 import { useDataSaver } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
 import { useI18n } from '../i18n'
@@ -20,6 +22,7 @@ import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import { consumePinOverlayOrigin, type PinOverlayOriginRect } from '../utils/pinOverlayOrigin'
 import { shareUrlWithFallback } from '../utils/shareFallback'
 import { safeHttpUrl } from '../utils/safeHttpUrl'
+import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import PinDetailMobileFullscreen from './PinDetailMobileFullscreen.vue'
 import PinDetailDesktopModal from './PinDetailDesktopModal.vue'
 import ReportContentModal from './ReportContentModal.vue'
@@ -66,6 +69,7 @@ const router = useRouter()
 const { t } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
 const { currentUser, isAuthenticated, toggleSavePin } = useAuth()
+const { promptGuest } = useGuestAuthGate()
 /**
  * Plusieurs pages utilisent KeepAlive et embarquent chacune un PinDetailOverlayHost.
  * Elles partagent la même `route` : sans garde, TOUTES afficheraient l’overlay pour `?pin=`.
@@ -288,7 +292,7 @@ async function handleLike() {
   const p = activePin.value
   if (!p) return
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('like', { resourceId: p.slug })
     return
   }
   const previousLiked = !!p.liked
@@ -313,7 +317,7 @@ function handleDoubleLike() {
   const p = activePin.value
   if (!p) return
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('like', { resourceId: p.slug })
     return
   }
   if (p.liked) return
@@ -324,7 +328,7 @@ async function handleSave() {
   const p = activePin.value
   if (!p) return
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('save', { resourceId: p.slug })
     return
   }
   const previousSaved = !!p.saved
@@ -351,7 +355,7 @@ async function handleFollow() {
   const p = activePin.value
   if (!p?.username) return
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('follow', { resourceId: p.username })
     return
   }
   const username = p.username
@@ -405,7 +409,7 @@ async function handleDownload() {
   const p = activePin.value
   if (!p) return
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   downloadingPin.value = true
@@ -431,7 +435,10 @@ async function handleTranslateDescription() {
   const p = activePin.value
   if (!p) return
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('translate', {
+      resourceId: p.slug,
+      metadata: { target: 'description', lang: targetLang.value, pinSlug: p.slug },
+    })
     return
   }
   if (descriptionTranslated.value) {
@@ -452,7 +459,19 @@ async function handleTranslateDescription() {
 async function handleRichSubmit(payload: CommentSubmitPayload) {
   const p = activePin.value
   if (!p || !isAuthenticated.value) {
-    router.push('/login')
+    if (!p) return
+    if (payload.mediaFile) {
+      promptGuest('comment', { resourceId: p.slug })
+      return
+    }
+    promptGuest('comment', {
+      resourceId: p.slug,
+      metadata: {
+        text: payload.text,
+        parentId: payload.parentId ?? null,
+        gif: payload.gif ?? null,
+      },
+    })
     return
   }
   if (p.canComment === false) {
@@ -462,7 +481,7 @@ async function handleRichSubmit(payload: CommentSubmitPayload) {
     )
     return
   }
-  const profanityOk = moderationScanText([payload.text])
+  const profanityOk = await moderationScanText([payload.text])
   if (!profanityOk.ok) {
     await showAlert(t('moderation.textInappropriate'), { variant: 'warning' })
     return
@@ -505,7 +524,10 @@ async function handleRichSubmit(payload: CommentSubmitPayload) {
 
 function handleLikeComment(id: number) {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('like', {
+      resourceId: String(id),
+      metadata: { scope: 'comment', pinSlug: activePin.value?.slug },
+    })
     return
   }
   const updateCommentById = (comments: UiComment[]): boolean => {
@@ -538,7 +560,12 @@ function handleLikeComment(id: number) {
 
 async function handleTranslateComment(id: number) {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    const slug = activePin.value?.slug
+    if (!slug) return
+    promptGuest('translate', {
+      resourceId: String(id),
+      metadata: { target: 'comment', commentId: id, lang: targetLang.value, pinSlug: slug },
+    })
     return
   }
   const updateCommentById = (comments: UiComment[], commentId: number, updater: (comment: UiComment) => void): boolean => {
@@ -605,7 +632,7 @@ async function handleModerateComment(commentId: number, hidden: boolean) {
 
 function openReportPin() {
   if (!activePin.value || !isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   if (isPinOwner.value) {
@@ -619,7 +646,7 @@ function openReportPin() {
 
 function handleReportComment(commentId: number) {
   if (!isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   reportTarget.value = 'comment'
@@ -654,7 +681,7 @@ async function handleSubmitReport(payload: { category: string; details: string }
 async function handleDeleteComment(commentId: number) {
   const p = activePin.value
   if (!p || !isAuthenticated.value) {
-    router.push('/login')
+    promptGuest('generic')
     return
   }
   const ok = await showConfirm({

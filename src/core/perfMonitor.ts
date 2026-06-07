@@ -50,6 +50,14 @@ let layoutShiftObs: PerformanceObserver | null = null
 let longTasks: number[] = []
 let layoutShifts: number[] = []
 
+type LongTaskReporter = (durationMs: number, name?: string) => void
+let longTaskReporter: LongTaskReporter | null = null
+
+/** Branché par Sentry (long tasks >50ms → breadcrumb). */
+export function registerLongTaskReporter(reporter: LongTaskReporter | null): void {
+  longTaskReporter = reporter
+}
+
 interface PerformanceMemory { usedJSHeapSize: number; jsHeapSizeLimit: number }
 function readHeap(): PerformanceMemory | null {
   if (typeof performance === 'undefined') return null
@@ -95,6 +103,10 @@ function startObservers() {
     longTaskObs = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         longTasks.push(entry.startTime + entry.duration)
+        const durationMs = entry.duration
+        if (durationMs > 50 && longTaskReporter) {
+          longTaskReporter(durationMs, entry.name || undefined)
+        }
       }
       store.longTasksLastSec.value = pruneLastSec(longTasks)
     })

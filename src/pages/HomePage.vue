@@ -6,7 +6,7 @@ import { isFeedPin, type Pin } from '../types'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
 import { useTokenClient } from 'vue3-google-signin'
-import { GOOGLE_SIGN_IN_SCOPES } from '../env'
+import { GOOGLE_SIGN_IN_SCOPES } from '../config/env'
 import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 import { useI18n } from '../i18n'
 import TopicScroller from '../components/TopicScroller.vue'
@@ -14,10 +14,11 @@ import HomeStoriesStrip from '../components/HomeStoriesStrip.vue'
 import PinGrid from '../components/PinGrid.vue'
 import ExploreDiscoverSections from '../components/ExploreDiscoverSections.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
-import api from '../api'
+import api from '../api/index'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { getAppScrollRoot } from '../utils/appScrollRoot'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
+import { trackLandingViewedOnce } from '../composables/useReferralIntent'
 import GuestContestTeaser from '../components/GuestContestTeaser.vue'
 import DiscoveryStreakBanner from '../components/DiscoveryStreakBanner.vue'
 import { useDiscoveryStreak } from '../composables/useDiscoveryStreak'
@@ -416,6 +417,9 @@ onMounted(async () => {
     }
   }
   startPageActivity()
+  if (!isAuthenticated.value) {
+    trackLandingViewedOnce(route.path || '/')
+  }
   await ensureLoaded('forYou')
   void nextTick(() => connectHomeLoadMoreObserver())
 })
@@ -554,78 +558,11 @@ async function continueWithGoogleFromLanding() {
 <template>
   <div
     class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 pb-4 sm:pb-6"
-    :class="isAuthenticated ? 'pt-0 lg:pt-6' : 'pt-4 sm:pt-6 lg:pt-6'"
+    :class="isAuthenticated ? 'pt-0 lg:pt-6' : 'pt-2 sm:pt-3 lg:pt-4'"
   >
     <div class="min-w-0 max-w-6xl max-lg:max-w-none mx-auto max-lg:mx-0 xl:max-w-none xl:mx-0">
-    <!-- Invité : landing (priorité mobile / premier écran) -->
-    <section
-      v-if="!isAuthenticated"
-      class="mb-8 sm:mb-10 rounded-3xl border border-pink-100/90 dark:border-pink-900/40 bg-gradient-to-br from-pink-50/95 via-white to-neutral-50 dark:from-pink-950/35 dark:via-neutral-950 dark:to-neutral-900 px-4 py-8 sm:px-8 sm:py-10 text-center shadow-sm"
-    >
-      <h1 class="text-2xl sm:text-3xl md:text-4xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-50 leading-tight">
-        {{ t('home.landing.title') }}
-      </h1>
-      <p class="mt-3 text-sm sm:text-base text-neutral-600 dark:text-neutral-300 max-w-xl mx-auto leading-relaxed">
-        {{ t('home.landing.subtitle') }}
-      </p>
-      <div class="mt-6 flex flex-col items-stretch justify-center gap-2.5 max-w-sm mx-auto">
-        <button
-          type="button"
-          class="inline-flex justify-center items-center gap-2 px-5 py-3.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-bold shadow-md hover:bg-pink-800 dark:hover:opacity-90 transition min-h-[48px] disabled:opacity-60"
-          :disabled="googleLandingBusy"
-          @click="continueWithGoogleFromLanding"
-        >
-          <span
-            v-if="googleLandingBusy"
-            class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin shrink-0"
-            aria-hidden="true"
-          />
-          <img
-            v-else
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            class="w-5 h-5 shrink-0"
-            alt=""
-          />
-          {{ t('home.landing.cta.primary') }}
-        </button>
-        <router-link
-          to="/register"
-          class="inline-flex justify-center items-center gap-2 px-5 py-3 rounded-full border border-neutral-200 dark:border-neutral-600 bg-white/90 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800 transition min-h-[44px]"
-        >
-          {{ t('home.landing.cta.register') }}
-        </router-link>
-        <router-link
-          to="/explore"
-          class="inline-flex justify-center items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-pink-700 dark:text-pink-600 hover:underline min-h-[40px]"
-        >
-          {{ t('home.landing.cta.explore') }}
-          <span class="material-symbols-outlined text-lg" aria-hidden="true">arrow_forward</span>
-        </router-link>
-        <router-link
-          to="/login"
-          class="text-xs font-semibold text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 py-1"
-        >
-          {{ t('home.landing.cta.loginExisting') }}
-        </router-link>
-      </div>
-      <ul class="mt-8 grid sm:grid-cols-3 gap-3 sm:gap-4 text-left text-sm text-neutral-600 dark:text-neutral-300 max-w-3xl mx-auto">
-        <li class="flex gap-2 rounded-2xl bg-white/70 dark:bg-neutral-900/50 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3">
-          <span class="material-symbols-outlined text-pink-700 shrink-0" aria-hidden="true">travel_explore</span>
-          <span>{{ t('home.landing.bullet1') }}</span>
-        </li>
-        <li class="flex gap-2 rounded-2xl bg-white/70 dark:bg-neutral-900/50 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3">
-          <span class="material-symbols-outlined text-pink-700 shrink-0" aria-hidden="true">add_photo_alternate</span>
-          <span>{{ t('home.landing.bullet2') }}</span>
-        </li>
-        <li class="flex gap-2 rounded-2xl bg-white/70 dark:bg-neutral-900/50 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3 sm:col-span-1">
-          <span class="material-symbols-outlined text-pink-700 shrink-0" aria-hidden="true">dashboard</span>
-          <span>{{ t('home.landing.bullet3') }}</span>
-        </li>
-      </ul>
-    </section>
-
     <!-- Connecté : en-tête personnalisé (caché sur mobile en faveur des tabs natives). -->
-    <section v-else class="mb-6 sm:mb-8 hidden sm:block">
+    <section v-if="isAuthenticated" class="mb-6 sm:mb-8 hidden sm:block">
       <div class="flex items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-50 mb-1">
@@ -670,17 +607,6 @@ async function continueWithGoogleFromLanding() {
         />
       </div>
     </div>
-
-    <div v-if="!isAuthenticated" class="mb-4">
-      <GuestContestTeaser />
-    </div>
-
-    <p
-      v-if="!isAuthenticated"
-      class="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-3"
-    >
-      {{ t('home.landing.previewTitle') }}
-    </p>
 
     <!--
       Connecté · mobile (< lg) : onglets style app (soulignement actif glissant)
@@ -950,14 +876,65 @@ async function continueWithGoogleFromLanding() {
       </div>
     </template>
 
-    <!-- Invité : topics + aperçu du fil -->
+    <!-- Invité : Feed First — fil immédiat, hero compact, marketing après le contenu -->
     <template v-else>
+      <!-- Hero compact : SEO (h1) + CTA principal unique -->
+      <section
+        class="mb-3 sm:mb-4 rounded-2xl border border-pink-100/80 dark:border-pink-900/35 bg-gradient-to-r from-pink-50/90 via-white to-neutral-50 dark:from-pink-950/30 dark:via-neutral-950 dark:to-neutral-900 px-3 py-3 sm:px-4 sm:py-3.5 shadow-sm"
+        :aria-label="t('home.landing.heroAria')"
+      >
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0 text-left">
+            <h1 class="text-lg sm:text-xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-50 leading-snug">
+              {{ t('home.landing.title') }}
+            </h1>
+            <p class="mt-1 text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed line-clamp-2 sm:max-w-md">
+              {{ t('home.landing.subtitle') }}
+            </p>
+            <p
+              data-testid="landing-social-proof"
+              class="mt-1.5 text-[11px] sm:text-xs font-medium text-pink-700/90 dark:text-pink-400/90"
+            >
+              {{ t('home.landing.socialProof') }}
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+            <button
+              type="button"
+              class="inline-flex flex-1 sm:flex-none justify-center items-center gap-2 px-4 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-bold shadow-sm hover:bg-pink-800 dark:hover:opacity-90 transition min-h-[44px] disabled:opacity-60"
+              :disabled="googleLandingBusy"
+              @click="continueWithGoogleFromLanding"
+            >
+              <span
+                v-if="googleLandingBusy"
+                class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin shrink-0"
+                aria-hidden="true"
+              />
+              <img
+                v-else
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                class="w-4 h-4 shrink-0"
+                alt=""
+              />
+              {{ t('home.landing.cta.primary') }}
+            </button>
+            <router-link
+              to="/login"
+              class="text-xs font-semibold text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 whitespace-nowrap px-1 py-2"
+            >
+              {{ t('home.landing.cta.login') }}
+            </router-link>
+          </div>
+        </div>
+      </section>
+
+      <!-- Fil visible immédiatement -->
       <TopicScroller :topics="activeTopics" :active-topic="activeTopic" @select="selectTopic" />
       <template
         v-if="activePins.length > 0 || (activeLoading && activePins.length === 0) || (activeFetchingMore && activePins.length > 0)"
       >
         <PinGrid
-          class="mt-4 w-full"
+          class="mt-3 sm:mt-4 w-full"
           :pins="activePins"
           :loading-initial="activeLoading && activePins.length === 0"
           :loading-more="activeFetchingMore && activePins.length > 0"
@@ -965,9 +942,9 @@ async function continueWithGoogleFromLanding() {
           @open-pin="openPin"
         />
       </template>
-      <div v-else-if="activePins.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
-        <span class="material-symbols-outlined text-6xl text-neutral-300 dark:text-neutral-600 mb-4">search_off</span>
-        <h2 class="text-xl font-auth-title font-auth-title--black text-neutral-700 dark:text-neutral-200 mb-2">{{ t('home.empty.title') }}</h2>
+      <div v-else-if="activePins.length === 0" class="flex flex-col items-center justify-center py-16 sm:py-20 text-center">
+        <span class="material-symbols-outlined text-5xl sm:text-6xl text-neutral-300 dark:text-neutral-600 mb-3 sm:mb-4">search_off</span>
+        <h2 class="text-lg sm:text-xl font-auth-title font-auth-title--black text-neutral-700 dark:text-neutral-200 mb-2">{{ t('home.empty.title') }}</h2>
         <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">
           {{ t('home.empty.desc') }}
         </p>
@@ -978,6 +955,52 @@ async function continueWithGoogleFromLanding() {
         class="h-8 w-full shrink-0"
         aria-hidden="true"
       />
+
+      <!-- Après le contenu : concours (secondaire) + arguments marketing -->
+      <section class="mt-8 sm:mt-10 space-y-6" :aria-label="t('home.landing.whyTitle')">
+        <GuestContestTeaser />
+
+        <div class="rounded-2xl border border-neutral-100 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/40 px-4 py-5 sm:px-6 sm:py-6">
+          <h2 class="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-4">
+            {{ t('home.landing.whyTitle') }}
+          </h2>
+          <ul class="grid sm:grid-cols-3 gap-3 text-left text-sm text-neutral-600 dark:text-neutral-300">
+            <li class="flex gap-2 rounded-xl bg-white/80 dark:bg-neutral-900/60 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3">
+              <span class="material-symbols-outlined text-pink-700 shrink-0 text-[20px]" aria-hidden="true">travel_explore</span>
+              <span>{{ t('home.landing.bullet1') }}</span>
+            </li>
+            <li class="flex gap-2 rounded-xl bg-white/80 dark:bg-neutral-900/60 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3">
+              <span class="material-symbols-outlined text-pink-700 shrink-0 text-[20px]" aria-hidden="true">add_photo_alternate</span>
+              <span>{{ t('home.landing.bullet2') }}</span>
+            </li>
+            <li class="flex gap-2 rounded-xl bg-white/80 dark:bg-neutral-900/60 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3">
+              <span class="material-symbols-outlined text-pink-700 shrink-0 text-[20px]" aria-hidden="true">dashboard</span>
+              <span>{{ t('home.landing.bullet3') }}</span>
+            </li>
+          </ul>
+          <div class="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+            <router-link
+              to="/register"
+              class="inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-full border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800 transition min-h-[40px]"
+            >
+              {{ t('home.landing.cta.register') }}
+            </router-link>
+            <router-link
+              to="/explore"
+              class="inline-flex justify-center items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-pink-700 dark:text-pink-600 hover:underline min-h-[40px]"
+            >
+              {{ t('home.landing.cta.explore') }}
+              <span class="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
+            </router-link>
+            <router-link
+              to="/premium"
+              class="text-xs font-semibold text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 px-2 py-2"
+            >
+              {{ t('home.landing.cta.pricing') }}
+            </router-link>
+          </div>
+        </div>
+      </section>
     </template>
 
     <PinDetailOverlayHost :pins="feedPinsOnly(activePins)" />

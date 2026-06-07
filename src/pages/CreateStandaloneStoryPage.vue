@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../api'
+import api from '../api/index'
 import { useAuth } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
 import { useI18n } from '../i18n'
@@ -315,7 +315,7 @@ async function submit() {
     return
   }
   if (mediaModerationPending.value) return
-  const descOk = moderationScanText([description.value])
+  const descOk = await moderationScanText([description.value])
   if (!descOk.ok) {
     await showAlert(t('moderation.textInappropriate'), { variant: 'warning' })
     return

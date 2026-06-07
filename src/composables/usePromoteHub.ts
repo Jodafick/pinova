@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import api from '../api'
+import api from '../api/index'
 import { useI18n } from '../i18n'
 import { useAuth } from './useAuth'
 import { mapDjangoPinToFrontend } from './usePins'

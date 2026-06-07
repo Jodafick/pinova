@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from '../i18n'
-import api from '../api'
+import api from '../api/index'
+import PinovaButton from '../components/ui/PinovaButton.vue'
 
 const { t, currentLang } = useI18n()
 
@@ -130,13 +131,13 @@ watch(currentLang, load, { immediate: true })
     >
       <span class="material-symbols-outlined text-red-400 text-[44px] mb-3 inline-block">cloud_off</span>
       <p class="text-red-900/90 font-medium text-sm">{{ t('faq.loadError') }}</p>
-      <button
-        type="button"
-        class="mt-5 app-btn app-btn-secondary border-red-300/80 dark:border-red-700/70 text-red-800 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm"
+      <PinovaButton
+        variant="secondary"
+        class="mt-5 text-sm border-red-300/80 dark:border-red-700/70 text-red-800 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
         @click="load()"
       >
         {{ t('legal.retry') }}
-      </button>
+      </PinovaButton>
     </div>
 
     <template v-else>

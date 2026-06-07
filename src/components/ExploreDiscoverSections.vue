@@ -5,7 +5,7 @@
  */
 import { ref, computed, watch, onMounted, onActivated } from 'vue'
 import type { FeedItem } from '../types'
-import api from '../api'
+import api from '../api/index'
 import PinGrid from './PinGrid.vue'
 import PinovaModal from './ui/PinovaModal.vue'
 import { useI18n } from '../i18n'

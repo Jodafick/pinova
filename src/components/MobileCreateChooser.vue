@@ -86,7 +86,6 @@ function onStoryLinkClick(ev: MouseEvent) {
   <PinovaModal
     :open="modalOpen"
     presentation="tallSheet"
-    rose
     :show-header="false"
     :depth-effect="true"
     @update:open="(v: boolean) => emit('update:modelValue', v)"

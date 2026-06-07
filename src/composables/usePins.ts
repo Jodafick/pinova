@@ -1,8 +1,9 @@
 import { ref, computed } from 'vue'
 import type { FeedItem, PartnerAd, Pin, PinLikersResponse, PinPromo, SponsoredAd } from '../types'
 import { isFeedPin } from '../types'
-import api from '../api'
-import { API_BASE_URL } from '../env'
+import api from '../api/index'
+import { trackEvent, trackOnce } from '../lib/analytics'
+import { API_BASE_URL } from '../config/env'
 import { useI18n } from '../i18n'
 import {
   feedFirstPageCacheKey,
@@ -13,7 +14,7 @@ import {
   invalidatePinDetailClientCache,
   clearFeedFirstPageClientCache,
   invalidateProfileCreatedPinsCacheForUsername,
-} from '../pinClientCache'
+} from '../lib/cache/pinClientCache'
 import { prefetchPinsMediaForOffline } from '../media/offlineCache'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 import { fetchCurrentUser } from './useAuth'
@@ -468,6 +469,10 @@ export function usePins() {
         pin.liked = response.data.status === 'liked'
         pin.stats.reactions = response.data.likes_count
       }
+      if (response.data.status === 'liked') {
+        trackEvent('pin_liked', { pin_slug: pinSlug })
+        trackOnce('first_like', { pin_slug: pinSlug })
+      }
       invalidatePinDetailClientCache(pinSlug)
       return response.data
     } catch (err) {
@@ -747,6 +752,10 @@ export function usePins() {
         pin.saved = response.data.status === 'saved'
         pin.stats.saves = response.data.saves_count
       }
+      if (response.data.status === 'saved') {
+        trackEvent('pin_saved', { pin_slug: slug })
+        trackOnce('first_save', { pin_slug: slug })
+      }
       invalidatePinDetailClientCache(slug)
       return response.data
     } catch (err) {
@@ -805,6 +814,7 @@ export function usePins() {
   }
 
   async function trackPinView(pinSlug: string) {
+    trackEvent('pin_viewed', { pin_slug: pinSlug })
     try {
       await api.post(`pins/${pinSlug}/view/`)
     } catch (err) {
@@ -813,6 +823,7 @@ export function usePins() {
   }
 
   async function trackSearchInteraction(query: string) {
+    trackEvent('search_performed', { query: query.trim().slice(0, 120) })
     try {
       await api.post('pins/search-interactions/', { query })
     } catch (err) {

@@ -4,6 +4,7 @@ import { useI18n } from '../i18n'
 import type { ReportCategoryCode } from '../constants/reportCategories'
 import { REPORT_CATEGORY_CODES } from '../constants/reportCategories'
 import PinovaModal from './ui/PinovaModal.vue'
+import PinovaButton from './ui/PinovaButton.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -68,7 +69,6 @@ function submit() {
     presentation-lg="center"
     :title="t('report.title')"
     :subtitle="contextLabel || undefined"
-    rose
     :max-width="480"
     @update:open="(v: boolean) => emit('update:modelValue', v)"
   >
@@ -112,12 +112,12 @@ function submit() {
 
     <template #footer>
       <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <button type="button" class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px]" @click="close">
+        <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px]" @click="close">
           {{ t('common.cancel') }}
-        </button>
-        <button type="button" class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px]" @click="submit">
+        </PinovaButton>
+        <PinovaButton variant="primary" class="w-full sm:w-auto min-h-[44px]" @click="submit">
           {{ t('report.submit') }}
-        </button>
+        </PinovaButton>
       </div>
     </template>
   </PinovaModal>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>PINOVA Lighthouse auth</title>
+</head>
+<body>
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('token');
+  var redirect = params.get('redirect') || '/settings';
+  if (token) {
+    try { localStorage.setItem('pinova_token', token); } catch (e) {}
+  }
+  window.location.replace(redirect);
+})();
+</script>
+</body>
+</html>

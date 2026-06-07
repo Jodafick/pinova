@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router'
 import type { User } from '../types'
 import { useAuth } from './useAuth'
 import { userNeedsOnboarding } from '../utils/onboarding'
-import api from '../api'
+import api from '../api/index'
 import { isWebPushBackendReady, isWebPushSupported } from '../utils/webPushClient'
 
 const DECLINED_KEY = 'pinova_notif_prompt_declined'

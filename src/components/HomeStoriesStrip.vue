@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../api'
+import api from '../api/index'
 import { mapDjangoPinToFrontend } from '../composables/usePins'
 import type { Pin } from '../types'
 import StoryViewer from './StoryViewer.vue'
 import { useI18n } from '../i18n'
-import { API_BASE_URL } from '../env'
+import { API_BASE_URL } from '../config/env'
 import StoryRingCover from './StoryRingCover.vue'
 import {
   initialStoryIndexForUser,

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
+import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import { usePins, mapDjangoPinToFrontend, isAlreadyReportedError } from '../composables/usePins'
 import type { User, Pin } from '../types'
 import { isFeedPin } from '../types'
@@ -15,19 +16,20 @@ import StoryRingCover from '../components/StoryRingCover.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import PinovaModal from '../components/ui/PinovaModal.vue'
+import PinovaButton from '../components/ui/PinovaButton.vue'
 import ReportContentModal from '../components/ReportContentModal.vue'
 import ProfileMobileNavDrawer from '../components/ProfileMobileNavDrawer.vue'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
-import api from '../api'
-import { getCachedProfileUser, profileDetailCacheKey } from '../entityClientCache'
+import api from '../api/index'
+import { getCachedProfileUser, profileDetailCacheKey } from '../lib/cache/entityClientCache'
 import {
   getCachedProfileCreatedFirstPage,
   profileCreatedPinsCacheKey,
   setCachedProfileCreatedFirstPage,
   getSavedPinsPageFromDisk,
   setSavedPinsPageToDisk,
-} from '../pinClientCache'
+} from '../lib/cache/pinClientCache'
 import { prefetchPinsMediaForOffline } from '../media/offlineCache'
 import { displayInitials } from '../utils/displayInitials'
 import { shareUrlWithFallback } from '../utils/shareFallback'
@@ -84,6 +86,7 @@ const {
   acceptBoardInvitation,
   declineBoardInvitation,
 } = useAuth()
+const { promptGuest } = useGuestAuthGate()
 const { pins, toggleSave, fetchPins, fetchCreatorStats, reportProfile, blockUser } = usePins()
 
 const profileUser = ref<User | null>(null)
@@ -584,7 +587,9 @@ async function handleBlockProfile() {
 
 const handleFollow = async () => {
   if (!currentUser.value) {
-    router.push('/login')
+    const username = profileUser.value?.username?.trim()
+    if (!username) return
+    promptGuest('follow', { resourceId: username })
     return
   }
   if (profileUser.value) {
@@ -884,7 +889,7 @@ const handleCreateBoard = async () => {
 
 const handleToggleSave = async (slug: string) => {
   if (!currentUser.value) {
-    router.push('/login')
+    promptGuest('save', { resourceId: slug })
     return
   }
   const pin =
@@ -1413,7 +1418,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           role="img"
           :aria-label="t('profile.proBadgeAria')"
         >
-          <i class="fa-solid fa-certificate text-base leading-none" aria-hidden="true"></i>
+          <span class="material-symbols-outlined text-base leading-none" aria-hidden="true">verified</span>
         </span>
         {{ profileUser.displayName }}
       </h1>
@@ -1450,51 +1455,47 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
       <div class="flex flex-wrap items-center justify-center gap-3 w-full">
         <template v-if="isMyProfile">
-          <router-link
-            to="/settings"
-            class="app-btn app-btn-secondary text-sm"
-          >
+          <PinovaButton variant="secondary" to="/settings" class="text-sm">
             {{ t('profile.editProfile') }}
-          </router-link>
+          </PinovaButton>
         </template>
         <template v-else>
-          <button
-            class="app-btn text-sm"
-            :class="isFollowing ? 'app-btn-secondary' : 'app-btn-primary'"
-            :disabled="followingProfilePending"
+          <PinovaButton
+            class="text-sm"
+            :variant="isFollowing ? 'secondary' : 'primary'"
+            :loading="followingProfilePending"
             @click="handleFollow"
           >
-            <span v-if="followingProfilePending" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-            <span v-else>{{ isFollowing ? t('pin.following') : t('pin.follow') }}</span>
-          </button>
+            {{ isFollowing ? t('pin.following') : t('pin.follow') }}
+          </PinovaButton>
         </template>
-        <router-link
+        <PinovaButton
           v-if="isMyProfile"
+          variant="secondary"
           to="/premium"
-          class="app-btn app-btn-secondary text-sm inline-flex items-center gap-1.5 border-amber-300 text-amber-700 dark:text-amber-300"
+          class="text-sm inline-flex items-center gap-1.5 border-amber-300 text-amber-700 dark:text-amber-300"
         >
           <span class="material-symbols-outlined text-base">workspace_premium</span>
           Plan {{ currentPlanLabel }}
-        </router-link>
-        <button
-          type="button"
-          class="app-btn app-btn-ghost app-btn-icon"
-          :title="t('profile.share.profileTitle')"
+        </PinovaButton>
+        <PinovaButton
+          variant="ghost"
+          size="icon"
+          :aria-label="t('profile.share.profileTitle')"
           @click="handleShareProfile"
         >
           <span class="material-symbols-outlined">share</span>
-        </button>
-        <div v-if="currentUser && !isMyProfile && profileUser" class="relative flex items-center">
-          <button
-            ref="profileMoreMenuTriggerRef"
-            type="button"
-            class="app-btn app-btn-ghost app-btn-icon !w-9 !min-w-9 !h-9"
+        </PinovaButton>
+        <div v-if="currentUser && !isMyProfile && profileUser" ref="profileMoreMenuTriggerRef" class="relative flex items-center">
+          <PinovaButton
+            variant="ghost"
+            size="icon"
             :aria-expanded="profileMoreMenuOpen"
             :aria-label="t('profile.moreAriaLabel')"
             @click.stop="profileMoreMenuOpen = !profileMoreMenuOpen"
           >
             <span class="material-symbols-outlined text-[22px]">more_horiz</span>
-          </button>
+          </PinovaButton>
         </div>
       </div>
     </section>
@@ -1510,15 +1511,16 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         <div v-if="boardSuggestions.new_board_hints?.length" class="mb-3">
           <p class="text-[11px] text-neutral-500 dark:text-neutral-400 mb-1">{{ t('profile.boards.suggestionsNew') }}</p>
           <div class="flex flex-wrap gap-2">
-            <button
+            <PinovaButton
               v-for="hint in boardSuggestions.new_board_hints"
               :key="hint.topic_slug + hint.name"
-              type="button"
-              class="app-btn app-btn-sm app-btn-secondary text-xs border-pink-300 text-pink-700 dark:text-pink-600"
+              variant="secondary"
+              size="sm"
+              class="text-xs border-pink-300 text-pink-700 dark:text-pink-600"
               @click="applyBoardSuggestionName(hint.name)"
             >
               + {{ hint.name }}
-            </button>
+            </PinovaButton>
           </div>
         </div>
         <div v-if="boardSuggestions.existing_boards?.length">
@@ -1641,31 +1643,34 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             >
               <span class="material-symbols-outlined text-base">lock</span>
             </span>
-            <button
-              type="button"
-              class="app-btn app-btn-secondary app-btn-icon !w-9 !min-w-9 !h-9"
-              :title="t('profile.share.boardTitle')"
+            <PinovaButton
+              variant="secondary"
+              size="icon"
+              :aria-label="t('profile.share.boardTitle')"
               @click.stop="shareBoardLink(board)"
             >
               <span class="material-symbols-outlined text-lg">ios_share</span>
-            </button>
+            </PinovaButton>
           </div>
-          <button
+          <PinovaButton
             v-if="isMyProfile && board.isOwner !== false"
-            type="button"
-            class="app-btn app-btn-secondary app-btn-icon absolute bottom-3 right-3 z-10 !w-9 !min-w-9 !h-9"
-            :title="t('profile.boards.reorganize')"
+            variant="secondary"
+            size="icon"
+            class="absolute bottom-3 right-3 z-10"
+            :aria-label="t('profile.boards.reorganize')"
             @click.stop="openOrganizeBoard(board.id)"
           >
             <span class="material-symbols-outlined text-lg">drag_indicator</span>
-          </button>
-          <button
+          </PinovaButton>
+          <PinovaButton
             v-if="isMyProfile && currentPlan !== 'free' && board.isOwner !== false"
-            class="app-btn app-btn-secondary app-btn-sm absolute top-3 left-3 text-[10px] font-bold z-10"
+            variant="secondary"
+            size="sm"
+            class="absolute top-3 left-3 text-[10px] font-bold z-10"
             @click.stop="handleInviteCollaborator(board.id)"
           >
             + Collab
-          </button>
+          </PinovaButton>
         </div>
 
       </div>
@@ -1742,17 +1747,17 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
       <template #footer>
         <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganizeBoard">
+          <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganizeBoard">
             {{ t('profile.boards.organizeClose') }}
-          </button>
-          <button
-            type="button"
-            class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px] sm:min-w-[9rem] disabled:opacity-50 disabled:cursor-not-allowed"
+          </PinovaButton>
+          <PinovaButton
+            variant="primary"
+            class="w-full sm:w-auto min-h-[44px] sm:min-w-[9rem]"
             :disabled="organizeSaving || organizeLoading || organizePins.length === 0"
             @click="saveBoardOrder"
           >
             {{ organizeSaving ? t('common.loading') : t('profile.boards.organizeSave') }}
-          </button>
+          </PinovaButton>
         </div>
       </template>
     </PinovaModal>
@@ -1804,7 +1809,6 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       presentation="bottomSheet"
       presentation-lg="center"
       :presentation-lg-min-width="1024"
-      rose
       :title="t('profile.boards.modal.title')"
       @update:open="onCreateBoardOpenChange"
     >
@@ -1836,17 +1840,17 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </div>
       <template #footer>
         <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" class="app-btn app-btn-secondary w-full sm:w-auto min-h-[44px]" @click="onCreateBoardOpenChange(false)">
+          <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px]" @click="onCreateBoardOpenChange(false)">
             {{ t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="app-btn app-btn-primary w-full sm:w-auto min-h-[44px]"
+          </PinovaButton>
+          <PinovaButton
+            variant="primary"
+            class="w-full sm:w-auto min-h-[44px]"
             :disabled="!canSubmitBoardCreation"
             @click="handleCreateBoard"
           >
             {{ t('profile.boards.modal.create') }}
-          </button>
+          </PinovaButton>
         </div>
       </template>
     </PinovaModal>
@@ -1994,28 +1998,30 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         :style="profileMoreMenuFloatingStyles"
         @pointerdown.stop
       >
-        <button
+        <PinovaButton
           v-if="!profileUser.viewerHasReportedProfile"
-          type="button"
+          variant="ghost"
+          block
           role="menuitem"
-          class="w-full px-3 py-2.5 text-left text-sm app-btn app-btn-ghost justify-start border-0 rounded-none"
+          class="px-3 py-2.5 text-left text-sm justify-start border-0 rounded-none"
           @click="profileMoreMenuOpen = false; reportProfileOpen = true"
         >
           {{ t('profile.moreReport') }}
-        </button>
+        </PinovaButton>
         <div v-else class="px-3 py-2 text-xs text-neutral-500">
           {{ t('profile.moreAlreadyReported') }}
         </div>
-        <button
+        <PinovaButton
           v-if="!isTargetBlocked"
-          type="button"
+          variant="ghost"
+          block
           role="menuitem"
-          class="w-full px-3 py-2.5 text-left text-sm app-btn app-btn-ghost justify-start border-0 rounded-none"
+          class="px-3 py-2.5 text-left text-sm justify-start border-0 rounded-none"
           :disabled="blockProfilePending"
           @click="handleBlockProfile"
         >
           {{ t('profile.moreBlock') }}
-        </button>
+        </PinovaButton>
       </div>
     </Teleport>
 

@@ -1,9 +1,7 @@
+import { userNeedsOnboarding } from '@pinova/shared'
 import type { User } from '../types'
 
-export function userNeedsOnboarding(user: User | null | undefined): boolean {
-  if (!user) return false
-  return !user.onboardingCompletedAt
-}
+export { userNeedsOnboarding }
 
 /** Destination après connexion / inscription (Google, e-mail, etc.). */
 export function getPostAuthRouteName(user: User | null | undefined): 'onboarding' | 'home' {

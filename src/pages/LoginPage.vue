@@ -3,10 +3,12 @@ import { ref, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useTokenClient } from 'vue3-google-signin'
-import { GOOGLE_SIGN_IN_SCOPES } from '../env'
+import { GOOGLE_SIGN_IN_SCOPES } from '../config/env'
 import { useI18n } from '../i18n'
 import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
+import PinovaButton from '../components/ui/PinovaButton.vue'
+import PinovaInput from '../components/ui/PinovaInput.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -55,8 +57,6 @@ const handleLogin = async () => {
     }
     return
   }
-  
-  // login() attend `GET me/` (force) avant de retourner success
   loading.value = false
   void goAfterLogin()
 }
@@ -78,7 +78,7 @@ const { login: googleLogin } = useTokenClient({
   onError: () => {
     fieldErrors.value = {}
     error.value = t('login.error.google')
-  }
+  },
 })
 
 async function handleGoogleClick() {
@@ -96,7 +96,6 @@ async function handleGoogleClick() {
 
 <template>
   <div class="min-h-screen flex bg-transparent dark:bg-transparent">
-    <!-- Left side - hero image -->
     <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-br from-pink-700/90 dark:from-pink-600/90 via-pink-700/80 dark:via-pink-600/80 to-pink-700/90 dark:to-pink-600/90 z-10"></div>
       <img
@@ -120,10 +119,8 @@ async function handleGoogleClick() {
       </div>
     </div>
 
-    <!-- Right side - login form -->
     <div class="flex-1 flex items-stretch lg:items-center justify-center px-4 py-6 sm:px-6 sm:py-12 lg:bg-neutral-50/30 lg:dark:bg-neutral-900/30">
       <div class="w-full max-w-md lg:bg-white lg:dark:bg-neutral-900 lg:p-8 xl:p-10 lg:rounded-[40px] lg:shadow-sm lg:border lg:border-neutral-100 lg:dark:border-neutral-800">
-        <!-- Mobile logo -->
         <div class="lg:hidden flex items-center justify-center gap-2 mb-10">
           <div class="w-10 h-10 rounded-full bg-pink-700 dark:bg-pink-600 flex items-center justify-center overflow-hidden shadow-sm">
             <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
@@ -139,70 +136,50 @@ async function handleGoogleClick() {
         <form @submit.prevent="handleLogin" class="space-y-5">
           <div
             v-if="error"
-            class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm animate-shake"
+            class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm animate-shake dark:bg-pink-950/30 dark:border-pink-900/40 dark:text-pink-400"
           >
             <span class="material-symbols-outlined text-lg">error</span>
             {{ error }}
           </div>
 
-          <div>
-            <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('login.email') }}</label>
-            <div class="relative group">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">mail</span>
-              <input
-                v-model="email"
-                type="email"
-                :placeholder="t('login.email.placeholder')"
-                :class="[
-                  'w-full pl-12 pr-4 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 transition-all',
-                  fieldErrors.email
-                    ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500 dark:focus:border-red-500'
-                    : 'border-neutral-200 dark:border-neutral-700 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:focus:border-pink-600',
-                ]"
-                @input="clearLoginFieldError('email')"
-              />
-            </div>
-            <p v-if="fieldErrors.email" class="mt-1 ml-1 text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.email }}</p>
-          </div>
+          <PinovaInput
+            v-model="email"
+            :label="t('login.email')"
+            :placeholder="t('login.email.placeholder')"
+            type="email"
+            icon="mail"
+            :error="fieldErrors.email"
+            @update:model-value="clearLoginFieldError('email')"
+          />
 
           <div>
             <div class="flex items-center justify-between mb-2 ml-1">
               <label class="text-sm font-bold text-neutral-700 dark:text-neutral-300">{{ t('login.password') }}</label>
               <router-link to="/forgot-password" class="text-xs font-bold text-pink-700 hover:text-pink-800 hover:underline">{{ t('login.forgot') }}</router-link>
             </div>
-            <div class="relative group">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">lock</span>
-              <input
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="••••••••"
-                :class="[
-                  'w-full pl-12 pr-12 py-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 transition-all',
-                  fieldErrors.password
-                    ? 'border-red-400 focus:ring-red-300/20 focus:border-red-500 dark:focus:border-red-500'
-                    : 'border-neutral-200 dark:border-neutral-700 focus:ring-pink-700/20 dark:focus:ring-pink-600/20 focus:border-pink-700 dark:focus:border-pink-600',
-                ]"
-                @input="clearLoginFieldError('password')"
-              />
-              <button
-                type="button"
-                class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                @click="showPassword = !showPassword"
-              >
-                <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
-              </button>
-            </div>
-            <p v-if="fieldErrors.password" class="mt-1 ml-1 text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.password }}</p>
+            <PinovaInput
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="••••••••"
+              icon="lock"
+              :error="fieldErrors.password"
+              @update:model-value="clearLoginFieldError('password')"
+            >
+              <template #suffix>
+                <button
+                  type="button"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                  @click="showPassword = !showPassword"
+                >
+                  <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+              </template>
+            </PinovaInput>
           </div>
 
-          <button
-            type="submit"
-            class="w-full py-4 rounded-2xl bg-pink-700 dark:bg-pink-600 text-white font-bold hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-pink-700/20 flex items-center justify-center gap-2"
-            :disabled="loading"
-          >
-            <span v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          <PinovaButton type="submit" variant="primary" size="lg" block :loading="loading">
             {{ loading ? t('login.submitting') : t('login.submit') }}
-          </button>
+          </PinovaButton>
         </form>
 
         <div class="my-8 flex items-center gap-4 text-neutral-400 dark:text-neutral-500">
@@ -211,16 +188,10 @@ async function handleGoogleClick() {
           <div class="flex-1 h-px bg-neutral-200 dark:bg-neutral-700"></div>
         </div>
 
-        <div class="flex justify-center">
-          <button
-            type="button"
-            @click="handleGoogleClick"
-            class="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all text-sm font-bold text-neutral-700 dark:text-neutral-200 w-full"
-          >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" />
-            {{ t('login.googleCta') }}
-          </button>
-        </div>
+        <PinovaButton variant="secondary" block @click="handleGoogleClick">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="" />
+          {{ t('login.googleCta') }}
+        </PinovaButton>
 
         <p class="mt-10 text-center text-sm text-neutral-500 dark:text-neutral-400 font-medium">
           {{ t('login.noAccount') }}

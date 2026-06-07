@@ -2,9 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuth } from '../composables/useAuth'
 import { userNeedsOnboarding } from '../utils/onboarding'
-import { devLog } from '../devLog'
+import { devLog } from '../lib/devLog'
 import { maybeRedirectWebToApp } from '../utils/appDeepLink'
 import { isValidSettingsSectionId } from '../data/settingsHubConfig'
+import { ensureFontAwesomeLoaded } from '../utils/loadFontAwesome'
 
 /*
  * Routes & meta layer system (iOS-first immersif).
@@ -99,6 +100,7 @@ const router = createRouter({
         statusBar: 'auto',
         disableEdgeBack: true,
         hideAppMobileSubheader: true,
+        preloadNsfwScanner: true,
       },
     },
     {
@@ -137,6 +139,7 @@ const router = createRouter({
         /* Pas d'anim de transition : navigation depuis le chooser mobile via
            `<a href>` doit donner une impression de continuité. */
         noTransition: true,
+        preloadNsfwScanner: true,
       },
     },
     {
@@ -152,6 +155,7 @@ const router = createRouter({
         disableEdgeBack: true,
         hideAppMobileSubheader: true,
         noTransition: true,
+        preloadNsfwScanner: true,
       },
     },
     {
@@ -266,13 +270,7 @@ const router = createRouter({
     {
       path: '/promote/campaigns',
       name: 'pin-promo-campaigns',
-      component: () => import('../pages/PinPromoDashboardPage.vue'),
-      meta: {
-        requiresAuth: true,
-        keepAlive: false,
-        presentation: 'page',
-        statusBar: 'auto',
-      },
+      redirect: () => ({ name: 'boost-promote', query: { tab: 'campaigns' } }),
     },
     {
       path: '/billing',
@@ -345,6 +343,7 @@ const router = createRouter({
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
+        loadFontAwesome: true,
       },
     },
     {
@@ -358,6 +357,7 @@ const router = createRouter({
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
+        loadFontAwesome: true,
       },
     },
     {
@@ -384,6 +384,7 @@ const router = createRouter({
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
+        loadFontAwesome: true,
       },
     },
     {
@@ -396,6 +397,7 @@ const router = createRouter({
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
+        loadFontAwesome: true,
       },
     },
     {
@@ -531,6 +533,16 @@ const router = createRouter({
         statusBar: 'auto',
       },
     },
+    ...(import.meta.env.DEV
+      ? [
+          {
+            path: '/dev/design-system',
+            name: 'dev-design-system',
+            component: () => import('../pages/dev/DesignSystemPage.vue'),
+            meta: { requiresAuth: false, presentation: 'page', statusBar: 'auto' },
+          },
+        ]
+      : []),
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -567,6 +579,13 @@ router.beforeEach(async (to, from) => {
   /* Profil serveur à jour (ex. date de naissance) avant la création — sans écran de chargement global. */
   if ((to.name === 'create' || to.name === 'edit-pin') && isAuthenticated.value) {
     await fetchCurrentUser({ silent: true })
+  }
+
+  if (to.meta.loadFontAwesome) {
+    await ensureFontAwesomeLoaded()
+  }
+  if (to.meta.preloadNsfwScanner) {
+    void import('../composables/nsfwScanner').then((m) => m.preloadNsfwScanner())
   }
   
   // Login/register invités — sauf le pont OAuth mobile (session web ≠ compte app).

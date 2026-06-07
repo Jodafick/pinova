@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import api from '../api'
+import api from '../api/index'
 import { useI18n } from '../i18n'
 import type { ReferralRefereeRowDto } from '../types/referral'
 

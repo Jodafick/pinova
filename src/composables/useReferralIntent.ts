@@ -1,7 +1,8 @@
 import { watch } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
-import api from '../api'
+import api from '../api/index'
+import { trackOnce } from '../lib/analytics'
 import { ensureDeviceBindingId } from '../utils/deviceBinding'
 
 const SESSION_CODE_KEY = 'pinova_referral_pending_code'
@@ -86,4 +87,9 @@ export function watchRouteForReferralIntent(routeRef: () => RouteLocationNormali
     },
     { immediate: true },
   )
+}
+
+/** Landing invité — une fois par session. */
+export function trackLandingViewedOnce(path = '/') {
+  trackOnce('landing_viewed', { path, page: 'home_landing', signup_platform: 'web' })
 }

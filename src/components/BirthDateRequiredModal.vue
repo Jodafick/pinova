@@ -16,7 +16,7 @@ import BirthDatePicker from './BirthDatePicker.vue'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
 import { pushToast } from '../composables/useToast'
-import { hasRequiredBirthDateForMediaPublish } from '../composables/useModeration'
+import { hasRequiredBirthDateForMediaPublish } from '../composables/moderationPolicy'
 
 const props = defineProps<{
   /** Ouverture contrôlée. */

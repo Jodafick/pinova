@@ -2,7 +2,7 @@
 import { ref, watch, computed, onMounted } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { useI18n } from '../../i18n'
-import api from '../../api'
+import api from '../../api/index'
 import SearchableSelect from '../SearchableSelect.vue'
 import {
   REFERENCE_INTERESTS,
@@ -15,6 +15,7 @@ import {
 import { fetchReferenceInterests } from '../../lib/fetchReferenceInterests'
 import { useAppearance, applyAccentColor, syncAppearanceFromProfile } from '../../composables/useAppearance'
 import { profileExtendedToApiPayload } from '../../utils/mapProfileExtended'
+import PinovaButton from '../ui/PinovaButton.vue'
 
 const props = defineProps<{ section: 'social' | 'personalization' | 'presence' }>()
 
@@ -129,14 +130,9 @@ function toggleInterest(slug: string) {
         {{ interestLabel(item, currentLang) }}
       </button>
     </div>
-    <button
-      type="button"
-      class="app-btn app-btn-primary app-btn-sm"
-      :disabled="saving"
-      @click="save"
-    >
+    <PinovaButton variant="primary" size="sm" :disabled="saving" @click="save">
       {{ saveButtonLabel }}
-    </button>
+    </PinovaButton>
   </div>
 
   <div v-else-if="section === 'personalization'" class="space-y-4">
@@ -174,14 +170,9 @@ function toggleInterest(slug: string) {
       <input v-model="allowAiTranslation" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600 text-pink-700 focus:ring-pink-700 dark:bg-neutral-900" />
       <span>{{ t('settings.personalization.autoTranslate') }}</span>
     </label>
-    <button
-      type="button"
-      class="app-btn app-btn-primary app-btn-sm"
-      :disabled="saving"
-      @click="save"
-    >
+    <PinovaButton variant="primary" size="sm" :disabled="saving" @click="save">
       {{ saveButtonLabel }}
-    </button>
+    </PinovaButton>
   </div>
 
   <div v-else-if="section === 'presence'" class="space-y-4">
@@ -191,13 +182,8 @@ function toggleInterest(slug: string) {
       :options="presenceOptions"
       :placeholder="t('profile.presence.available')"
     />
-    <button
-      type="button"
-      class="app-btn app-btn-primary app-btn-sm"
-      :disabled="saving"
-      @click="save"
-    >
+    <PinovaButton variant="primary" size="sm" :disabled="saving" @click="save">
       {{ saveButtonLabel }}
-    </button>
+    </PinovaButton>
   </div>
 </template>

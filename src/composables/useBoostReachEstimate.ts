@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue'
-import api from '../api'
+import api from '../api/index'
 
 export type BoostReachEstimate = {
   baseline_views_7d: number

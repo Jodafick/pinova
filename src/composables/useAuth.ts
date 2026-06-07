@@ -1,15 +1,15 @@
 import { ref, computed } from 'vue'
 import type { User } from '../types'
-import api, { AUTH_INVALIDATED_EVENT } from '../api'
+import api, { AUTH_INVALIDATED_EVENT } from '../api/index'
 import { readApiErrorCode } from '../constants/authErrors'
-import { clearPinClientCaches } from '../pinClientCache'
+import { clearPinClientCaches } from '../lib/cache/pinClientCache'
 import {
   getCachedProfileUser,
   profileDetailCacheKey,
   setCachedProfileUser,
-} from '../entityClientCache'
-import { devLog } from '../devLog'
-import { API_BASE_URL } from '../env'
+} from '../lib/cache/entityClientCache'
+import { devLog } from '../lib/devLog'
+import { API_BASE_URL } from '../config/env'
 import { extractMeHydrationFromApiPayload } from '../utils/mePayload'
 import {
   resyncWebPushSubscriptionForCurrentUser,
@@ -22,6 +22,16 @@ import { extractDrfFieldErrors } from '../utils/apiValidationErrors'
 import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
 import { mapProfileExtendedFromApi } from '../utils/mapProfileExtended'
 import { applyAccentColor, syncAppearanceFromProfile } from './useAppearance'
+import { clearPendingIntent } from '../lib/pendingIntentStorage'
+import { applyPremiumTrackingPolicy, identifyUser, resetAnalytics, trackOnce } from '../lib/analytics'
+import { syncRetentionCohorts } from '../lib/retentionAnalytics'
+import { setSentryUser } from '../lib/sentry'
+import {
+  clearStoredRefreshToken,
+  readStoredRefreshToken,
+  storeRefreshToken,
+  USE_HTTPONLY_REFRESH_COOKIE,
+} from '../utils/authSession'
 
 export { DEFAULT_AVATAR_COLOR_CLASS }
 
@@ -217,6 +227,9 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     notificationsFollowers: profile.notifications_followers ?? true,
     notificationsSaves: profile.notifications_saves ?? true,
     notificationsRecommendations: profile.notifications_recommendations ?? false,
+    notificationsStreakReminders: profile.notifications_streak_reminders ?? true,
+    notificationsReactivationEmails: profile.notifications_reactivation_emails ?? true,
+    dateJoined: djangoUser.date_joined ? String(djangoUser.date_joined) : undefined,
     avatarUrl: getFullMediaUrl(profile.avatar),
     avatarColor: profile.avatar_color || DEFAULT_AVATAR_COLOR_CLASS,
     bio: profile.bio || '',
@@ -318,6 +331,39 @@ export async function fetchCurrentUser(opts?: { silent?: boolean; force?: boolea
           setCachedProfileUser(profileDetailCacheKey(u.username, ''), u)
           syncAppearanceFromProfile(u.themeMode)
           applyAccentColor(u.accentColor || 'rose')
+          const apiReferral = response.data?.referral as { received?: unknown } | undefined
+          const cohorts = syncRetentionCohorts({
+            dateJoinedIso: u.dateJoined,
+            signupPlatform: 'web',
+            refCode: getStoredReferralCode() || undefined,
+          })
+          identifyUser({
+            id: u.id,
+            username: u.username,
+            email: u.email,
+            plan: u.subscription?.plan,
+            isSeatMember: u.subscription?.isSeatMember,
+            dateJoined: u.dateJoined,
+            signupPlatform: 'web',
+            signupChannel: cohorts?.signup_channel,
+            referred: !!apiReferral?.received,
+            refCode: getStoredReferralCode() || undefined,
+            retentionCohorts: cohorts
+              ? {
+                  days_since_signup: cohorts.days_since_signup,
+                  retention_cohort_j1: cohorts.retention_cohort_j1,
+                  retention_cohort_j7: cohorts.retention_cohort_j7,
+                  retention_cohort_j30: cohorts.retention_cohort_j30,
+                  signup_platform: cohorts.signup_platform,
+                  signup_channel: cohorts.signup_channel,
+                }
+              : undefined,
+          })
+          applyPremiumTrackingPolicy({
+            plan: u.subscription?.plan,
+            isSeatMember: u.subscription?.isSeatMember,
+          })
+          setSentryUser({ id: u.id, username: u.username })
         }
         void resyncWebPushSubscriptionForCurrentUser(api).catch(() => undefined)
       }
@@ -349,6 +395,8 @@ export function useAuth() {
     notificationsFollowers?: boolean
     notificationsSaves?: boolean
     notificationsRecommendations?: boolean
+    notificationsStreakReminders?: boolean
+    notificationsReactivationEmails?: boolean
     notificationsDigestCreatorWeekly?: boolean
     sensitiveMediaBlurByDefault?: boolean
     hideSensitivePins?: boolean
@@ -388,7 +436,7 @@ export function useAuth() {
     delete api.defaults.headers.common.Authorization
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('pinova_token')
-      window.localStorage.removeItem('pinova_refresh_token')
+      clearStoredRefreshToken()
       clearMePayloadCache()
     }
     currentUser.value = null
@@ -448,6 +496,9 @@ export function useAuth() {
   async function toggleFollow(username: string) {
     try {
       const response = await api.post(`profiles/${username}/follow/`)
+      if (response.data?.status === 'followed') {
+        trackOnce('first_follow', { username })
+      }
       /* Compteurs `following_count` / snapshot offline : même source que GET me/. */
       void fetchCurrentUser({ force: true, silent: true })
       return response.data
@@ -457,7 +508,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, tipsEnabled?: boolean, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean, hideSensitivePins?: boolean }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, tipsEnabled?: boolean, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsStreakReminders?: boolean, notificationsReactivationEmails?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean, hideSensitivePins?: boolean }) {
     const signature = buildUpdateProfileSignature(data)
     if (updateProfileInFlight && updateProfileInFlight.signature === signature) {
       return updateProfileInFlight.promise
@@ -480,6 +531,12 @@ export function useAuth() {
       if (data.notificationsFollowers !== undefined) formData.append('notifications_followers', data.notificationsFollowers ? 'true' : 'false')
       if (data.notificationsSaves !== undefined) formData.append('notifications_saves', data.notificationsSaves ? 'true' : 'false')
       if (data.notificationsRecommendations !== undefined) formData.append('notifications_recommendations', data.notificationsRecommendations ? 'true' : 'false')
+      if (data.notificationsStreakReminders !== undefined) {
+        formData.append('notifications_streak_reminders', data.notificationsStreakReminders ? 'true' : 'false')
+      }
+      if (data.notificationsReactivationEmails !== undefined) {
+        formData.append('notifications_reactivation_emails', data.notificationsReactivationEmails ? 'true' : 'false')
+      }
       if (data.notificationsDigestCreatorWeekly !== undefined) {
         formData.append('notifications_digest_creator_weekly', data.notificationsDigestCreatorWeekly ? 'true' : 'false')
       }
@@ -527,9 +584,9 @@ export function useAuth() {
       if (response.data?.access) {
         applyAccessToken(response.data.access)
       }
-      if (response.data?.refresh && typeof window !== 'undefined') {
-        window.localStorage.setItem('pinova_refresh_token', response.data.refresh)
-      } else if (typeof window !== 'undefined' && response.data?.access) {
+      if (response.data?.refresh) {
+        storeRefreshToken(response.data.refresh)
+      } else if (!USE_HTTPONLY_REFRESH_COOKIE && typeof window !== 'undefined' && response.data?.access) {
         console.warn(
           '[Pinova auth] Pas de refresh_token dans la réponse login — session courte uniquement ; vérifiez le backend (dj-rest-auth + SIMPLE_JWT).',
         )
@@ -581,7 +638,7 @@ export function useAuth() {
         username: data.email.split('@')[0], // Utilise le début de l'email comme username
         password1: data.password,
         password2: data.password,
-        display_name: data.displayName,
+        display_name: data.displayName || data.email.split('@')[0],
       }
       const refCode = getStoredReferralCode()
       if (refCode) {
@@ -652,9 +709,9 @@ export function useAuth() {
       if (response.data?.access) {
         applyAccessToken(response.data.access)
       }
-      if (response.data?.refresh && typeof window !== 'undefined') {
-        window.localStorage.setItem('pinova_refresh_token', response.data.refresh)
-      } else if (typeof window !== 'undefined' && response.data?.access) {
+      if (response.data?.refresh) {
+        storeRefreshToken(response.data.refresh)
+      } else if (!USE_HTTPONLY_REFRESH_COOKIE && typeof window !== 'undefined' && response.data?.access) {
         console.warn(
           '[Pinova auth] Pas de refresh_token dans la réponse connexion sociale — vérifiez le backend.',
         )
@@ -681,15 +738,37 @@ export function useAuth() {
 
   async function logout() {
     const hadToken = !!inMemoryAccessToken.value
-    const refreshToken = typeof window !== 'undefined' ? window.localStorage.getItem('pinova_refresh_token') : null
+    const refreshToken = readStoredRefreshToken()
     if (hadToken) {
       await unregisterWebPushFromBackend(api).catch(() => undefined)
     }
+    clearPendingIntent()
     clearAuthState()
+    resetAnalytics()
+    setSentryUser(null)
     if (hadToken) {
-      api.post('auth/logout/', refreshToken ? { refresh: refreshToken } : undefined).catch(() => undefined)
+      api
+        .post('auth/logout/', refreshToken ? { refresh: refreshToken } : {})
+        .catch(() => undefined)
     }
     devLog('🚪 Logged out successfully.')
+  }
+
+  async function logoutAllDevices() {
+    const hadToken = !!inMemoryAccessToken.value
+    const refreshToken = readStoredRefreshToken()
+    if (hadToken) {
+      await unregisterWebPushFromBackend(api).catch(() => undefined)
+      await api.post('auth/logout-all/', {}).catch(() => undefined)
+    }
+    clearPendingIntent()
+    clearAuthState()
+    resetAnalytics()
+    setSentryUser(null)
+    if (hadToken) {
+      api.post('auth/logout/', refreshToken ? { refresh: refreshToken } : {}).catch(() => undefined)
+    }
+    devLog('🚪 Logged out from all devices.')
   }
 
   function toggleSavePin(pinId: number) {
@@ -819,9 +898,7 @@ export function useAuth() {
 
   async function applyAuthSession(payload: { access?: string; refresh?: string }) {
     if (payload.access) applyAccessToken(payload.access)
-    if (payload.refresh && typeof window !== 'undefined') {
-      window.localStorage.setItem('pinova_refresh_token', payload.refresh)
-    }
+    if (payload.refresh) storeRefreshToken(payload.refresh)
     await fetchCurrentUser({ force: true })
     return currentUser.value
   }
@@ -834,6 +911,7 @@ export function useAuth() {
     login,
     register,
     logout,
+    logoutAllDevices,
     updateProfile,
     forgotPassword,
     resetPassword,

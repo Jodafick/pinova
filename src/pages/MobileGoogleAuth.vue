@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from '../i18n'
-import { GOOGLE_CLIENT_ID, GOOGLE_SIGN_IN_SCOPES } from '../env'
-import api from '../api'
+import { GOOGLE_CLIENT_ID, GOOGLE_SIGN_IN_SCOPES } from '../config/env'
+import api from '../api/index'
 import { openMobileDeepLink } from '../utils/appDeepLink'
 
 const { t } = useI18n()
