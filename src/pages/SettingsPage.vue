@@ -1135,6 +1135,11 @@ async function cancelAccountDeletion() {
 const activeSectionId = ref('settings-profile')
 const detailSectionId = computed(() => String(route.params.sectionId || ''))
 
+/** Bandeau global uniquement sur la liste paramètres — pas sur chaque sous-page détail. */
+const showPasswordSetupBanner = computed(
+  () => needsPasswordSetup.value && !detailSectionId.value,
+)
+
 const detailHeaderTitle = computed(() =>
   detailSectionId.value ? t(settingsDetailTitleKey(detailSectionId.value)) : t('settings.title'),
 )
@@ -1310,7 +1315,7 @@ watch(
     </header>
 
     <div
-      v-if="needsPasswordSetup"
+      v-if="showPasswordSetupBanner"
       class="mb-6 rounded-2xl border border-amber-300/80 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-700/60 px-4 py-4 text-sm text-amber-950 dark:text-amber-100"
     >
       <p class="font-semibold">{{ t('settings.password.socialBannerTitle') }}</p>
