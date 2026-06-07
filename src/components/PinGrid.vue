@@ -313,14 +313,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="pin-grid-scope app-skeleton-wave" aria-labelledby="pin-feed-grid-heading" :aria-busy="gridBusy || undefined">
+  <section class="pin-grid-scope app-skeleton-wave w-full min-w-0 max-w-full overflow-x-hidden" aria-labelledby="pin-feed-grid-heading" :aria-busy="gridBusy || undefined">
     <h2 id="pin-feed-grid-heading" class="sr-only">{{ t('feed.pinsGridHeading') }}</h2>
-    <div class="flex gap-3 sm:gap-4 items-start">
+    <div class="flex w-full min-w-0 gap-2.5 sm:gap-4 items-start">
     <div
       v-for="(column, colIndex) in columns"
       :key="colIndex"
       role="presentation"
-      class="flex-1 flex flex-col gap-3 sm:gap-4"
+      class="flex-1 min-w-0 flex flex-col gap-2.5 sm:gap-4"
     >
       <template
         v-for="cell in column"
@@ -332,8 +332,8 @@ onUnmounted(() => {
         tabindex="0"
         role="article"
         :aria-label="pinCardLabel(cell.pin)"
-        class="group lux-pin-card focus-visible:outline-none"
-        :class="cell.pin.isBoosted ? 'ring-2 ring-amber-400/70 dark:ring-amber-500/50 rounded-3xl shadow-[0_0_24px_rgba(245,158,11,0.25)]' : ''"
+        class="group lux-pin-card focus-visible:outline-none max-w-full box-border"
+        :class="cell.pin.isBoosted ? 'border-2 border-amber-400/70 dark:border-amber-500/50 shadow-[0_0_24px_rgba(245,158,11,0.25)]' : ''"
         @click="onArticleClick(cell.pin, $event)"
         @keydown="onCardKeydown(cell.pin, $event)"
       >

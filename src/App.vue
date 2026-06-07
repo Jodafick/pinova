@@ -610,7 +610,7 @@ const pageTransitionName = computed(() => {
 
         <nav class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-neutral-500 dark:text-neutral-400">
           <router-link v-if="isAuthenticated" to="/" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.home') }}</router-link>
-          <router-link to="/explore" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.explore') }}</router-link>
+          <router-link v-if="!isAuthenticated" to="/explore" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.explore') }}</router-link>
           <router-link v-if="isAuthenticated" to="/profile" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.profile') }}</router-link>
           <router-link v-if="isAuthenticated" to="/settings" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.settings') }}</router-link>
           <router-link to="/faq" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition">{{ t('nav.faq') }}</router-link>

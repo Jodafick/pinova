@@ -50,16 +50,6 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         <span class="truncate">{{ t('nav.home') }}</span>
       </router-link>
 
-      <router-link
-        to="/explore"
-        class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-colors"
-        :class="isExploreActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
-        @click="tabSwitchIfLeaving(isExploreActive())"
-      >
-        <span class="material-symbols-outlined text-[26px] leading-none">travel_explore</span>
-        <span class="truncate">{{ t('nav.explore') }}</span>
-      </router-link>
-
       <div class="flex min-w-0 flex-1 flex-col items-center justify-start">
         <button
           v-if="!profileNavMobileDrawerOpen"

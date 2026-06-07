@@ -12,7 +12,6 @@ import { useI18n } from '../i18n'
 import TopicScroller from '../components/TopicScroller.vue'
 import HomeStoriesStrip from '../components/HomeStoriesStrip.vue'
 import PinGrid from '../components/PinGrid.vue'
-import ExploreDiscoverSections from '../components/ExploreDiscoverSections.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
 import api from '../api/index'
 import AvatarDisc from '../components/AvatarDisc.vue'
@@ -20,10 +19,8 @@ import { getAppScrollRoot } from '../utils/appScrollRoot'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
 import { trackLandingViewedOnce } from '../composables/useReferralIntent'
 import GuestContestTeaser from '../components/GuestContestTeaser.vue'
-import DiscoveryStreakBanner from '../components/DiscoveryStreakBanner.vue'
-import { useDiscoveryStreak } from '../composables/useDiscoveryStreak'
 
-type TabKey = 'forYou' | 'explorer' | 'following'
+type TabKey = 'forYou' | 'following'
 
 const { t, currentLang } = useI18n()
 const router = useRouter()
@@ -41,17 +38,15 @@ const isActiveHomeRoutePath = computed(() => route.name === 'home' || route.path
  * tant qu'on n'a pas explicitement demandé un refresh.
  */
 const forYouCtx = usePins()
-const exploreCtx = usePins()
 const followingCtx = usePins()
 
-const TAB_ORDER: TabKey[] = ['forYou', 'explorer', 'following']
+const TAB_ORDER: TabKey[] = ['forYou', 'following']
 
 const activeTab = ref<TabKey>('forYou')
-const loadedOnce = ref<Record<TabKey, boolean>>({ forYou: false, explorer: false, following: false })
+const loadedOnce = ref<Record<TabKey, boolean>>({ forYou: false, following: false })
 const isPageActive = ref(false)
 const sentinelGuest = ref<HTMLElement | null>(null)
 const sentinelMobForYou = ref<HTMLElement | null>(null)
-const sentinelMobExplore = ref<HTMLElement | null>(null)
 const sentinelMobFollowing = ref<HTMLElement | null>(null)
 const sentinelDeskForYou = ref<HTMLElement | null>(null)
 /** ≥ lg : fil desktop « Pour toi » uniquement (pas de carrousel d’onglets). */
@@ -93,7 +88,6 @@ const SWIPE_LOCK_THRESHOLD_PX = 8
 /** Icônes alignées sur `Pinova-Mobile/src/components/FeedTopTabBar.tsx` (sparkles / compass / people). */
 const tabs = computed(() => [
   { key: 'forYou' as TabKey, label: t('home.tabs.forYou'), icon: 'auto_awesome' as const },
-  { key: 'explorer' as TabKey, label: t('home.tabs.explorer'), icon: 'explore' as const },
   { key: 'following' as TabKey, label: t('home.tabs.following'), icon: 'group' as const },
 ])
 
@@ -227,18 +221,7 @@ function handleMqChange() {
   })
 }
 
-const activeCtx = computed(() => {
-  switch (activeTab.value) {
-    case 'forYou':
-      return forYouCtx
-    case 'explorer':
-      return exploreCtx
-    case 'following':
-      return followingCtx
-    default:
-      return forYouCtx
-  }
-})
+const activeCtx = computed(() => (activeTab.value === 'following' ? followingCtx : forYouCtx))
 
 /** Sur desktop (≥ lg), le fil unique est toujours « Pour toi ». */
 const activePins = computed(() => (isLgUp.value ? forYouCtx.pins.value : activeCtx.value.pins.value))
@@ -251,30 +234,16 @@ const activeTopics = computed(() => forYouCtx.topics.value)
 
 /* Tableaux dérivés pour PinGrid (réactivité explicite côté template). */
 const forYouPinsView = computed(() => forYouCtx.pins.value)
-const explorePinsView = computed(() => exploreCtx.pins.value)
 const followingPinsView = computed(() => followingCtx.pins.value)
 
 const suggestionsLoading = ref(false)
 const suggestions = ref<Array<{ username: string; display_name: string; avatar_color: string; avatar?: string | null; is_pro?: boolean; reason?: string }>>([])
-
-/** Sujet discover (onglet mobile « Explorer ») — aligné sur /explore. */
-const exploreSelectedTopic = ref<string | null>(null)
-const exploreStreakActive = computed(() => isPageActive.value && activeTab.value === 'explorer')
-const { streak: discoveryStreak } = useDiscoveryStreak(exploreStreakActive)
-
-watch(exploreSelectedTopic, async (topic) => {
-  if (!isPageActive.value) return
-  if (activeTab.value !== 'explorer') return
-  await exploreCtx.fetchDiscoverPins(true, topic, null)
-})
 
 /** Charge la tab demandée seulement si elle n'a pas encore été chargée pour la session (cache). */
 async function ensureLoaded(tab: TabKey) {
   if (loadedOnce.value[tab]) return
   if (tab === 'forYou') {
     await forYouCtx.fetchHomeFeed(true, activeTopic.value)
-  } else if (tab === 'explorer') {
-    await exploreCtx.fetchDiscoverPins(true, exploreSelectedTopic.value, null)
   } else if (tab === 'following') {
     if (!isAuthenticated.value) {
       loadedOnce.value.following = true
@@ -318,7 +287,6 @@ function tryFetchNextActive() {
   const ctx = activeCtx.value
   if (!ctx.hasNextPage.value || ctx.isFetchingNextPage.value || ctx.loading.value) return
   if (activeTab.value === 'forYou') void forYouCtx.fetchHomeFeed(false, activeTopic.value)
-  else if (activeTab.value === 'explorer') void exploreCtx.fetchDiscoverPins(false, exploreSelectedTopic.value, null)
   else if (activeTab.value === 'following') void followingCtx.fetchFollowingPins(false)
 }
 
@@ -345,8 +313,6 @@ function getLoadMoreSentinelEl(): HTMLElement | null {
   switch (activeTab.value) {
     case 'forYou':
       return sentinelMobForYou.value
-    case 'explorer':
-      return sentinelMobExplore.value
     case 'following':
       return sentinelMobFollowing.value
     default:
@@ -489,9 +455,8 @@ const selectTopic = (topic: string | null) => {
 
 watch(currentLang, () => {
   if (!isPageActive.value) return
-  exploreSelectedTopic.value = null
   // Recharge la tab active uniquement ; les autres se rechargent à la prochaine visite.
-  loadedOnce.value = { forYou: false, explorer: false, following: false }
+  loadedOnce.value = { forYou: false, following: false }
   void ensureLoaded(activeTab.value)
   void nextTick(() => measureTabCenters())
 })
@@ -623,7 +588,7 @@ async function continueWithGoogleFromLanding() {
             <div class="relative shrink-0 pt-0" role="tablist" :aria-label="t('home.tabs.ariaLabel')">
               <div
                 ref="homeTabBarRef"
-                class="relative grid grid-cols-3 items-stretch gap-0 px-2 sm:px-3 pb-2 pt-0"
+                class="relative grid grid-cols-2 items-stretch gap-0 px-2 sm:px-3 pb-2 pt-0"
               >
                 <button
                   v-for="tab in tabs"
@@ -693,7 +658,7 @@ async function continueWithGoogleFromLanding() {
         @pointercancel="onSwipePointerCancel"
       >
         <div
-          class="home-tab-track flex w-[300%] motion-reduce:transition-none will-change-transform"
+          class="home-tab-track flex w-[200%] motion-reduce:transition-none will-change-transform"
           :style="{
             transform: mobileTabTrackTransform,
             transition: dragging
@@ -702,7 +667,7 @@ async function continueWithGoogleFromLanding() {
           }"
         >
           <!-- Pour toi -->
-          <div class="home-tab-panel w-1/3 min-w-0 shrink-0 px-0 pt-3">
+          <div class="home-tab-panel w-1/2 min-w-0 shrink-0 px-0 pt-3">
             <TopicScroller :topics="activeTopics" :active-topic="activeTopic" @select="selectTopic" />
             <template
               v-if="forYouCtx.pins.value.length > 0 || (forYouCtx.loading.value && forYouCtx.pins.value.length === 0) || (forYouCtx.isFetchingNextPage.value && forYouCtx.pins.value.length > 0)"
@@ -732,30 +697,8 @@ async function continueWithGoogleFromLanding() {
             />
           </div>
 
-          <!-- Explorer : même bloc que /explore (catégories + tableaux + fil). -->
-          <div class="home-tab-panel w-1/3 min-w-0 shrink-0 px-0 pt-3">
-            <DiscoveryStreakBanner :streak="discoveryStreak" />
-            <ExploreDiscoverSections
-              v-model:selected-topic="exploreSelectedTopic"
-              :text-query="null"
-              :pins="explorePinsView"
-              :loading="exploreCtx.loading.value"
-              :is-fetching-next-page="exploreCtx.isFetchingNextPage.value"
-              :bindings-active="isPageActive && activeTab === 'explorer'"
-              :show-intro="false"
-              @toggle-save="(slug: string) => handleToggleSaveFor(exploreCtx, slug)"
-              @open-pin="openPin"
-            />
-            <div
-              v-if="exploreCtx.hasNextPage.value && (exploreCtx.pins.value.length > 0 || exploreCtx.loading.value || exploreCtx.isFetchingNextPage.value)"
-              ref="sentinelMobExplore"
-              class="h-8 w-full shrink-0"
-              aria-hidden="true"
-            />
-          </div>
-
           <!-- Suivis -->
-          <div class="home-tab-panel w-1/3 min-w-0 shrink-0 px-0 pt-3">
+          <div class="home-tab-panel w-1/2 min-w-0 shrink-0 px-0 pt-3">
             <template
               v-if="followingCtx.pins.value.length > 0 || (followingCtx.loading.value && followingCtx.pins.value.length === 0) || (followingCtx.isFetchingNextPage.value && followingCtx.pins.value.length > 0)"
             >
@@ -773,12 +716,13 @@ async function continueWithGoogleFromLanding() {
               class="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 sm:p-8 text-center"
             >
               <p class="text-neutral-700 dark:text-neutral-300 mb-4 text-sm">{{ t('following.empty') }}</p>
-              <router-link
-                to="/explore"
+              <button
+                type="button"
                 class="inline-flex items-center px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition"
+                @click="void setTab('forYou')"
               >
-                {{ t('nav.explore') }}
-              </router-link>
+                {{ t('home.tabs.forYou') }}
+              </button>
               <div class="mt-6 text-left max-w-2xl mx-auto">
                 <p class="text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-3">{{ t('following.suggest') }}</p>
                 <div v-if="suggestionsLoading" class="app-skeleton-wave grid grid-cols-1 sm:grid-cols-2 gap-3" aria-hidden="true">

@@ -185,11 +185,9 @@ const profileDirectTo = computed(() =>
 type NavItem = { name: string; label: string; to: string }
 
 const navMain = computed<NavItem[]>(() => {
-  const base: NavItem[] = [
-    { name: 'home', label: t('nav.home'), to: '/' },
-    { name: 'explore', label: t('nav.explore'), to: '/explore' },
-  ]
+  const base: NavItem[] = [{ name: 'home', label: t('nav.home'), to: '/' }]
   if (!isAuthenticated.value) {
+    base.push({ name: 'explore', label: t('nav.explore'), to: '/explore' })
     base.push({ name: 'premium', label: t('nav.pricing'), to: '/premium' })
   }
   return base
