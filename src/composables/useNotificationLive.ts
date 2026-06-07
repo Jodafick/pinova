@@ -111,6 +111,7 @@ export function useNotificationLive() {
         kind: 'info',
         surface: 'notification',
         dedupKey: `notif-${payload.id}`,
+        duration: 8500,
         actionLabel: t('notifications.live.view'),
         onAction: () => {
           navigateWebNotificationDeepLink(
@@ -142,7 +143,7 @@ export function useNotificationLive() {
       kind: 'info',
       surface: 'notification',
       dedupKey: `notif-batch-${latest.id}`,
-      duration: 4200,
+      duration: 6500,
       actionLabel: t('notifications.live.view'),
       onAction: () => {
         void router.push({ name: 'notifications' })

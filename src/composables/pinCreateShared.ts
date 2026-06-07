@@ -20,7 +20,7 @@ export function resolveQuickPinTitle(
   return t('create.quick.defaultTitle', { date: new Date().toLocaleDateString(locale) })
 }
 
-/** Construit un FormData minimal pour le mode rapide (média + titre optionnel). */
+/** Construit un FormData minimal pour le mode rapide (média + titre obligatoire). */
 export function appendQuickPinFormData(formData: FormData, input: QuickPinPublishInput) {
   formData.append('title', input.title)
   formData.append('description', '')

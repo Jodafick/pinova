@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
@@ -7,7 +8,8 @@ import { useAppModal } from '../composables/useAppModal'
 import { pushToast } from '../composables/useToast'
 import BirthDateRequiredModal from './BirthDateRequiredModal.vue'
 import StoryImageCropEditor from './StoryImageCropEditor.vue'
-import { appendQuickPinFormData, resolveQuickPinTitle } from '../composables/pinCreateShared'
+import { appendQuickPinFormData } from '../composables/pinCreateShared'
+import { navigateToPublishedPin } from '../utils/postPublishNavigation'
 import { useTopicSuggestions } from '../composables/useTopicSuggestions'
 import {
   moderationScanImageFile,
@@ -21,7 +23,8 @@ import { useLayer } from '../navigation/useLayer'
 
 const emit = defineEmits<{ cancel: [] }>()
 
-const { t, currentLang } = useI18n()
+const { t } = useI18n()
+const router = useRouter()
 const { showAlert } = useAppModal()
 const { addPin } = usePins()
 const { currentUser, isAuthenticated, fetchCurrentUser } = useAuth()
@@ -51,8 +54,15 @@ const needsBirthDateForMedia = computed(
 
 const hasMedia = computed(() => !!(imagePreviewUrl.value && imageFile.value))
 
+const hasTitle = computed(() => title.value.trim().length > 0)
+
 const canPublish = computed(
-  () => hasMedia.value && !saving.value && !mediaModerationPending.value && !needsBirthDateForMedia.value,
+  () =>
+    hasMedia.value &&
+    hasTitle.value &&
+    !saving.value &&
+    !mediaModerationPending.value &&
+    !needsBirthDateForMedia.value,
 )
 
 const moderationBirthOpts = computed(() => ({
@@ -204,11 +214,16 @@ async function publish() {
         pendingSensitiveBlur.value && isVerifiedAdultFromBirthDate(currentUser.value.birthDate),
     })
     const result = await addPin(formData)
-    void fetchCurrentUser({ force: true, silent: true })
     pushToast({ message: t('create.quick.published'), kind: 'success' })
     const slug = result?.slug
-    if (slug) await navigateAfterPublish(slug)
-    else if (layer.value) closeLayer()
+    if (slug) {
+      if (layer.value) popAll()
+      await navigateToPublishedPin(router, {
+        slug,
+        username: currentUser.value.username,
+        pin: result ?? null,
+      })
+    } else if (layer.value) closeLayer()
     else emit('cancel')
   } catch (err: unknown) {
     const ax = err as { response?: { data?: unknown } }
@@ -243,7 +258,7 @@ onMounted(() => {
     <!-- Étape choix média -->
     <div
       v-else-if="step === 'pick'"
-      class="relative flex min-h-0 flex-1 flex-col px-5 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] lg:mx-auto lg:max-w-lg"
+      class="relative flex min-h-0 flex-1 flex-col px-5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] lg:mx-auto lg:max-w-lg"
     >
       <header class="relative z-10 flex items-center justify-between">
         <button
@@ -310,7 +325,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Étape publication : média + titre optionnel + publier -->
+    <!-- Étape publication : média + titre + publier -->
     <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <header class="flex shrink-0 items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]">
         <button
@@ -331,7 +346,7 @@ onMounted(() => {
         </button>
       </header>
 
-      <div class="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] lg:mx-auto lg:max-w-xl lg:w-full">
+      <div class="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] lg:mx-auto lg:max-w-xl lg:w-full">
         <div
           v-if="imagePreviewUrl"
           class="relative mx-auto mb-4 flex max-h-[min(32svh,280px)] w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/55 lg:max-h-[360px]"
@@ -354,7 +369,9 @@ onMounted(() => {
           <input
             v-model="title"
             type="text"
-            :placeholder="t('create.quick.titleOptional')"
+            :placeholder="t('create.quick.titlePlaceholder')"
+            required
+            autocomplete="off"
             class="w-full border-0 border-b-2 border-white/14 bg-transparent pb-3 text-2xl font-black tracking-tight text-white outline-none placeholder:text-white/35 focus:border-pink-500/60"
           >
 

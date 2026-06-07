@@ -6,6 +6,7 @@ import { devLog } from '../lib/devLog'
 import { maybeRedirectWebToApp } from '../utils/appDeepLink'
 import { isValidSettingsSectionId } from '../data/settingsHubConfig'
 import { ensureFontAwesomeLoaded } from '../utils/loadFontAwesome'
+import { markSkipSplash, shouldSkipSplashForPath } from '../utils/skipSplash'
 
 /*
  * Routes & meta layer system (iOS-first immersif).
@@ -100,6 +101,7 @@ const router = createRouter({
         statusBar: 'auto',
         disableEdgeBack: true,
         hideAppMobileSubheader: true,
+        suppressMainBottomInset: true,
         preloadNsfwScanner: true,
       },
     },
@@ -136,6 +138,7 @@ const router = createRouter({
         statusBar: 'auto',
         disableEdgeBack: true,
         hideAppMobileSubheader: true,
+        suppressMainBottomInset: true,
         /* Pas d'anim de transition : navigation depuis le chooser mobile via
            `<a href>` doit donner une impression de continuité. */
         noTransition: true,
@@ -154,6 +157,7 @@ const router = createRouter({
         statusBar: 'light',
         disableEdgeBack: true,
         hideAppMobileSubheader: true,
+        suppressMainBottomInset: true,
         noTransition: true,
         preloadNsfwScanner: true,
       },
@@ -562,6 +566,9 @@ const router = createRouter({
 // Navigation Guard
 router.beforeEach(async (to, from) => {
   devLog(`🧭 Navigating from ${String(from.name)} to ${String(to.name)}`)
+  if (shouldSkipSplashForPath(to.path)) {
+    markSkipSplash()
+  }
   const { isAuthenticated, fetchCurrentUser, currentUser } = useAuth()
 
   const hasStoredToken =

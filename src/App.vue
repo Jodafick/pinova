@@ -51,6 +51,7 @@ import { usePwaInstallPrompt } from './composables/usePwaInstallPrompt'
 import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
 import { isValidSettingsSectionId, settingsDetailTitleKey } from './data/settingsHubConfig'
 import { reloadPwaApplication } from './utils/pwaAppReload'
+import { consumeSkipSplashFlag, shouldSkipSplashForPath } from './utils/skipSplash'
 
 /** Réf. du bouton ⋮ board : assignée dans le template ; `void` évite TS6133 (usage non vu par vue-tsc côté script). */
 void mobileBoardMoreButtonRef
@@ -82,23 +83,14 @@ initPwaContext()
 initPwaTheme()
 
 /*
- * Saut du splash quand on arrive depuis un `<a href>` interne marqué (ex.
- * chooser mobile → /create). Donne une impression de continuité au lieu
- * du gros écran de boot rose au milieu de l'action utilisateur.
+ * Saut du splash : lien <a> marqué, route création/édition, ou flag sessionStorage.
  */
-const SKIP_SPLASH_FLAG = 'pinova-skip-splash'
-let skipSplashOnBoot = false
-try {
-  if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(SKIP_SPLASH_FLAG)) {
-    skipSplashOnBoot = true
-    sessionStorage.removeItem(SKIP_SPLASH_FLAG)
-  }
-} catch {
-  /* ignore */
-}
+const skipSplashOnBoot =
+  consumeSkipSplashFlag() ||
+  (typeof window !== 'undefined' && shouldSkipSplashForPath(window.location.pathname))
 
 /* Splash : caché dès que la première fetch user est résolue (ou 700ms max),
-   ou immédiatement si on arrive depuis un lien marqué `skip-splash`. */
+   ou immédiatement si on arrive depuis un lien marqué `skip-splash` / route création. */
 const appReady = ref(skipSplashOnBoot)
 /* Immersive media viewer singleton — ouvert via `openImmersiveViewer({...})` partout. */
 const immersiveViewer = useImmersiveViewer()

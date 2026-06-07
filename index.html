@@ -9,6 +9,23 @@
     <script>
       (function () {
         try {
+          var p = (location.pathname || '/').replace(/\/$/, '') || '/'
+          if (
+            p === '/create' ||
+            p.indexOf('/create/') === 0 ||
+            p === '/story/create' ||
+            /^\/pin\/[^/]+\/edit$/.test(p)
+          ) {
+            sessionStorage.setItem('pinova-skip-splash', '1')
+          }
+        } catch (_) {
+          /* ignore */
+        }
+      })()
+    </script>
+    <script>
+      (function () {
+        try {
           var key = 'pinova-appearance'
           var stored = localStorage.getItem(key)
           var dark =

@@ -19,6 +19,7 @@ import {
 import PinovaButton from '../components/ui/PinovaButton.vue'
 import PinovaEmptyState from '../components/ui/PinovaEmptyState.vue'
 import PinovaErrorState from '../components/ui/PinovaErrorState.vue'
+import NotificationListSkeleton from '../components/NotificationListSkeleton.vue'
 
 const { t, currentLang } = useI18n()
 const route = useRoute()
@@ -53,6 +54,7 @@ let unsubscribe: (() => void) | null = null
 let unsubscribeLive: (() => void) | null = null
 
 const hasItems = computed(() => notifications.value.length > 0)
+const showInitialSkeleton = computed(() => loading.value && !loadedOnce.value)
 
 async function markAllAsRead() {
   try {
@@ -274,19 +276,7 @@ watch(
         </PinovaButton>
       </header>
 
-      <div v-if="loading && notifications.length === 0" class="app-skeleton-wave space-y-3" aria-hidden="true">
-        <div
-          v-for="i in 6"
-          :key="`notif-skel-${i}`"
-          class="flex items-start gap-3 rounded-2xl border border-white/40 bg-white/45 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/40"
-        >
-          <div class="h-10 w-10 shrink-0 animate-pulse rounded-full bg-neutral-200/80 dark:bg-neutral-700/80" />
-          <div class="flex-1 space-y-2">
-            <div class="h-3 w-1/3 animate-pulse rounded bg-neutral-200/80 dark:bg-neutral-700/80" />
-            <div class="h-3 w-3/4 animate-pulse rounded bg-neutral-100/90 dark:bg-neutral-800/80" />
-          </div>
-        </div>
-      </div>
+      <NotificationListSkeleton v-if="showInitialSkeleton" />
 
       <div
         v-else-if="error && !hasItems"
@@ -367,6 +357,8 @@ watch(
           </button>
         </li>
       </ul>
+
+      <NotificationListSkeleton v-if="loadingMore" :rows="2" compact class="mt-3" />
 
       <div v-if="hasNext && hasItems" class="mt-6 flex justify-center">
         <button

@@ -90,13 +90,16 @@ export function pushToast(input: PushToastInput): number {
   }
 
   const id = nextId++
+  /* Auto-dismiss. */
+  const defaultDuration =
+    input.surface === 'notification' ? 8500 : DEFAULT_DURATIONS[kind]
   const toast: Toast = {
     id,
     message: input.message,
     description: input.description,
     kind,
     surface: input.surface ?? 'default',
-    duration: input.duration ?? DEFAULT_DURATIONS[kind],
+    duration: input.duration ?? defaultDuration,
     actionLabel: input.actionLabel,
     onAction: input.onAction,
     createdAt: Date.now(),

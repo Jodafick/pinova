@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onActivated, watch, nextTick } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
@@ -29,7 +29,12 @@ import {
   setCachedProfileCreatedFirstPage,
   getSavedPinsPageFromDisk,
   setSavedPinsPageToDisk,
+  getCachedPinDetail,
 } from '../lib/cache/pinClientCache'
+import {
+  prependPublishedPinToProfileGrid,
+  PROFILE_PUBLISH_PIN_QUERY,
+} from '../utils/postPublishNavigation'
 import { prefetchPinsMediaForOffline } from '../media/offlineCache'
 import { displayInitials } from '../utils/displayInitials'
 import { shareUrlWithFallback } from '../utils/shareFallback'
@@ -55,17 +60,13 @@ import {
   getCachedProfileActiveStories,
   setCachedProfileActiveStories,
 } from '../utils/activeStoriesCache'
+import { markSkipSplash } from '../utils/skipSplash'
 
 const PROFILE_PINS_PAGE_SIZE = 24
-const SKIP_SPLASH_FLAG = 'pinova-skip-splash'
 
 /** Navigation mobile vers /create : lien <a> natif (évite bugs de couches SPA). */
 function markSkipSplashOnCreateNav() {
-  try {
-    sessionStorage.setItem(SKIP_SPLASH_FLAG, '1')
-  } catch {
-    /* quota / mode privé */
-  }
+  markSkipSplash()
 }
 
 const { t, currentLang } = useI18n()
@@ -136,8 +137,8 @@ const profilePinsLoadingMore = ref(false)
 const profilePinsHasMore = ref(true)
 const profilePinsNextPage = ref(1)
 
-async function loadProfilePins(username: string, reset: boolean) {
-  if (reset) {
+async function loadProfilePins(username: string, reset: boolean, opts?: { forceNetwork?: boolean }) {
+  if (reset && !opts?.forceNetwork) {
     const pinsCacheKey = profileCreatedPinsCacheKey(username, currentLang.value)
     const warmPins = getCachedProfileCreatedFirstPage(pinsCacheKey)
     if (warmPins) {
@@ -210,6 +211,39 @@ function loadMoreCreatedPins() {
   const uname = profileUser.value?.username
   if (!uname || activeTab.value !== 'created') return
   void loadProfilePins(uname, false)
+}
+
+async function refreshProfileAfterPinPublish(slug: string) {
+  if (!isMyProfile.value) return
+  activeTab.value = 'created'
+  await fetchCurrentUser({ force: true, silent: true })
+  if (currentUser.value && profileUser.value) {
+    profileUser.value = {
+      ...profileUser.value,
+      pinsCount: currentUser.value.pinsCount ?? profileUser.value.pinsCount,
+    }
+    const mePage = currentUser.value.meCreatedPinsPage
+    if (mePage?.results?.length) {
+      profilePins.value = [...mePage.results]
+      profilePinsHasMore.value = !!mePage.next
+      profilePinsNextPage.value = profilePinsHasMore.value ? 2 : 1
+      setCachedProfileCreatedFirstPage(
+        profileCreatedPinsCacheKey(profileUser.value.username, currentLang.value),
+        [...profilePins.value],
+        profilePinsHasMore.value,
+        profilePinsNextPage.value,
+      )
+    } else {
+      prependPublishedPinToProfileGrid(profilePins, slug, getCachedPinDetail(slug))
+      const uname = profileUser.value.username
+      if (uname) await loadProfilePins(uname, true, { forceNetwork: true })
+    }
+  }
+}
+
+function publishedPinSlugFromRoute(): string {
+  const raw = route.query[PROFILE_PUBLISH_PIN_QUERY]
+  return typeof raw === 'string' ? raw.trim() : ''
 }
 
 const savedPinsList = ref<Pin[]>([])
@@ -620,6 +654,19 @@ onMounted(async () => {
 watch([() => route.params.username, () => route.query.share], () => {
   activeTab.value = 'created'
   void loadProfile()
+})
+
+watch(
+  () => route.query[PROFILE_PUBLISH_PIN_QUERY],
+  (raw) => {
+    const slug = typeof raw === 'string' ? raw.trim() : ''
+    if (slug) void refreshProfileAfterPinPublish(slug)
+  },
+)
+
+onActivated(() => {
+  const slug = publishedPinSlugFromRoute()
+  if (slug) void refreshProfileAfterPinPublish(slug)
 })
 
 watch(isMyProfile, (mine) => {

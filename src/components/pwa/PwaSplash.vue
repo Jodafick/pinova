@@ -128,11 +128,10 @@ onMounted(() => {
   justify-content: center;
   pointer-events: auto;
   box-sizing: border-box;
-  min-height: 100svh;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
   min-height: -webkit-fill-available;
-  height: 100%;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow: hidden;
   /* Animation d'entrée : on apparaît instantanément (le système iOS affichait
      déjà l'image splash, on prend le relais). */
   opacity: 1;
@@ -368,10 +367,12 @@ onMounted(() => {
 <style>
 /* Body lock pendant splash (global, hors scoped). */
 body.pinova-splash-locked {
+  position: fixed;
+  inset: 0;
+  width: 100%;
   overflow: hidden;
-  height: 100%;
-  min-height: 100svh;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
   min-height: -webkit-fill-available;
 }
 </style>

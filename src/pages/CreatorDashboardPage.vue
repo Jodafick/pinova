@@ -104,6 +104,20 @@ const exportLoading = ref(false)
 
 const isPro = computed(() => currentUser.value?.subscription?.plan === 'pro')
 
+const planLabel = computed(() => {
+  const planId = currentUser.value?.subscription?.plan ?? 'free'
+  if (planId === 'pro') return t('premium.plan.pro.name')
+  if (planId === 'plus') return t('premium.plan.plus.name')
+  return t('premium.plan.free.name')
+})
+
+const creatorGateFeatures = computed(() => [
+  { icon: 'fa-chart-line', labelKey: 'creator.gate.featureStats' as const },
+  { icon: 'fa-users', labelKey: 'creator.gate.featureAudience' as const },
+  { icon: 'fa-file-arrow-down', labelKey: 'creator.gate.featureExport' as const },
+  { icon: 'fa-envelope', labelKey: 'creator.gate.featureDigest' as const },
+])
+
 const audienceOpen = ref(false)
 const audienceKey = ref<TotalKey | null>(null)
 const audienceLoading = ref(false)
@@ -528,10 +542,15 @@ onMounted(async () => {
   }
   if (!isPro.value) {
     loading.value = false
-    router.replace('/premium')
     return
   }
   void load()
+})
+
+watch(isPro, (pro) => {
+  if (pro && isAuthenticated.value && !creatorTotals.value && !loading.value) {
+    void load()
+  }
 })
 </script>
 
@@ -551,6 +570,88 @@ onMounted(async () => {
         <span class="sr-only">{{ t('app.loading') }}</span>
         <CreatorDashboardSkeleton />
       </div>
+
+      <!-- Upsell doux pour les comptes non-Pro -->
+      <section
+        v-else-if="!isPro"
+        class="mx-auto flex w-full max-w-2xl flex-col gap-8"
+        aria-labelledby="creator-gate-title"
+      >
+        <nav aria-label="breadcrumb">
+          <router-link
+            to="/"
+            class="group inline-flex items-center gap-3 rounded-full border border-neutral-200/90 bg-white/90 px-3 py-2 pr-4 text-sm font-semibold text-neutral-700 shadow-sm backdrop-blur-xl transition hover:border-neutral-300 hover:bg-white hover:shadow-md dark:border-white/[0.08] dark:bg-neutral-900/75 dark:text-neutral-200 dark:hover:bg-neutral-900/90"
+          >
+            <span
+              class="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 ring-1 ring-black/[0.04] dark:bg-neutral-800 dark:ring-white/[0.06]"
+            >
+              <i class="fa-solid fa-house block text-[14px] leading-none" aria-hidden="true"></i>
+            </span>
+            {{ t('creator.gate.backHome') }}
+          </router-link>
+        </nav>
+
+        <div
+          class="relative overflow-hidden rounded-[1.85rem] sm:rounded-[2.25rem] isolate
+                 bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-950
+                 text-white shadow-[0_28px_80px_-24px_rgba(76,29,149,0.55)]
+                 ring-1 ring-white/15"
+        >
+          <div class="pointer-events-none absolute -right-16 -top-24 size-56 rounded-full bg-white/14 blur-3xl" aria-hidden="true" />
+          <div class="relative flex flex-col items-center gap-4 px-6 py-10 text-center sm:px-10 sm:py-12">
+            <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-white/75 sm:text-[11px]">
+              {{ t('creator.gate.kicker') }}
+            </p>
+            <h1
+              id="creator-gate-title"
+              class="font-auth-title font-auth-title--black text-[1.75rem] leading-tight tracking-tight sm:text-[2.15rem]"
+            >
+              {{ t('creator.gate.title') }}
+            </h1>
+            <p class="max-w-md text-sm leading-relaxed text-white/82 sm:text-[15px]">
+              {{ t('creator.gate.body') }}
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="rounded-[1.5rem] border border-neutral-200/90 bg-white/90 p-6 shadow-sm backdrop-blur-xl
+                 dark:border-white/[0.08] dark:bg-neutral-900/80 sm:p-8"
+        >
+          <p class="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            {{ t('creator.gate.currentPlan', { plan: planLabel }) }}
+          </p>
+
+          <ul class="mt-5 space-y-3">
+            <li
+              v-for="feat in creatorGateFeatures"
+              :key="feat.labelKey"
+              class="flex items-start gap-3 rounded-xl bg-neutral-50 px-4 py-3 dark:bg-neutral-800/60"
+            >
+              <span
+                class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+              >
+                <i class="fa-solid block text-[14px] leading-none" :class="feat.icon" aria-hidden="true"></i>
+              </span>
+              <span class="text-sm leading-relaxed text-neutral-700 dark:text-neutral-200">
+                {{ t(feat.labelKey) }}
+              </span>
+            </li>
+          </ul>
+
+          <router-link
+            to="/premium"
+            class="mt-7 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-600 to-fuchsia-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-pink-600/28 transition hover:brightness-[1.05] active:scale-[0.98]"
+          >
+            {{ t('creator.gate.cta') }}
+            <i class="fa-solid fa-arrow-right block text-[13px] leading-none" aria-hidden="true"></i>
+          </router-link>
+
+          <p class="mt-4 text-center text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">
+            {{ t('creator.gate.footnote') }}
+          </p>
+        </div>
+      </section>
 
       <template v-else>
 

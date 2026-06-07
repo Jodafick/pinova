@@ -4,7 +4,7 @@ import { peekPendingIntent } from '../lib/pendingIntentStorage'
 import { getPostAuthRouteName } from './onboarding'
 import { resolveWebPostAuthPath } from '@pinova/shared'
 
-const SKIP_SPLASH_FLAG = 'pinova-skip-splash'
+import { markSkipSplash } from './skipSplash'
 
 /**
  * Après connexion / inscription : navigation pleine page (pas de transition SPA)
@@ -26,10 +26,6 @@ export function redirectAfterAuth(
     onboardingPath,
   })
 
-  try {
-    sessionStorage.setItem(SKIP_SPLASH_FLAG, '1')
-  } catch {
-    /* ignore */
-  }
+  markSkipSplash()
   window.location.assign(href)
 }

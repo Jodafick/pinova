@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '../i18n'
 import PinovaModal from './ui/PinovaModal.vue'
+import { markSkipSplash } from '../utils/skipSplash'
 
 const props = withDefaults(
   defineProps<{
@@ -57,16 +58,6 @@ function close() {
  * vers la création. Au boot suivant, App.vue le détecte et saute le splash
  * pour donner une impression de continuité (pas de gros écran rose au milieu).
  */
-const SKIP_SPLASH_FLAG = 'pinova-skip-splash'
-
-function markSkipSplash() {
-  try {
-    sessionStorage.setItem(SKIP_SPLASH_FLAG, '1')
-  } catch {
-    /* quota / mode privé */
-  }
-}
-
 function onPinLinkClick() {
   markSkipSplash()
   close()

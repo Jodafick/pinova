@@ -39,6 +39,7 @@ import {
   invalidateHomeStoriesCache,
   invalidateProfileActiveStories,
 } from '../utils/activeStoriesCache'
+import { navigateToPublishedPin } from '../utils/postPublishNavigation'
 
 /** Champs affichés uniquement à l’étape 1 (texte / catégorie / tags publics). Pas les tags privés (étape 2). */
 const CREATE_PIN_STEP_1_FIELD_KEYS = new Set([
@@ -175,13 +176,17 @@ const isEditMode = computed(() => editSlug.value.length > 0)
 const isQuickMode = computed(() => !isEditMode.value && String(route.query.mode || '') === 'quick')
 const isCompleteDetailsMode = computed(() => isEditMode.value && String(route.query.complete || '') === '1')
 
-function skipCompleteDetails() {
+async function skipCompleteDetails() {
   const slug = editSlug.value
   if (!slug) {
     leaveCreateFlow()
     return
   }
-  window.location.assign(`/?pin=${encodeURIComponent(slug)}`)
+  if (layer.value) popAll()
+  await navigateToPublishedPin(router, {
+    slug,
+    username: currentUser.value?.username,
+  })
 }
 const loadingEdit = ref(false)
 const createStep = ref<1 | 2>(1)
@@ -708,7 +713,6 @@ const submitPin = async () => {
     /* Rafraîchit /me et le snapshot localStorage : les compteurs (pins_count,
        stories_count, etc.) du profil courant doivent refléter la nouvelle
        publication immédiatement (header, profil, suggestions). */
-    void fetchCurrentUser({ force: true, silent: true })
     const successMessage = isEditMode.value
       ? t('pin.edit.success')
       : isStory.value
@@ -721,8 +725,14 @@ const submitPin = async () => {
     if (layer.value) closeLayer()
     if (isStory.value && destSlug) {
       window.location.assign(`/?story=${encodeURIComponent(destSlug)}`)
+    } else if (destSlug) {
+      await navigateToPublishedPin(router, {
+        slug: destSlug,
+        username: currentUser.value?.username,
+        pin: resultPin ?? null,
+      })
     } else {
-      window.location.assign(destSlug ? `/pin/${encodeURIComponent(destSlug)}` : '/')
+      await router.push('/')
     }
   } catch (err: unknown) {
     console.error('Erreur lors de la publication:', err)
@@ -897,7 +907,7 @@ usePinovaHeaderSwipeDismiss({
 
     <div
       v-if="!isEditMode && mobileCreateStep === 'pick'"
-      class="relative flex min-h-0 flex-1 flex-col px-5 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
+      class="relative flex min-h-0 flex-1 flex-col px-5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
     >
       <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
       <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />
@@ -1034,7 +1044,7 @@ usePinovaHeaderSwipeDismiss({
 
       <main
         ref="pinMobileMetaScrollRef"
-        class="pin-m-sheet relative z-20 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain rounded-t-[2rem] border-t border-white/10 bg-black/72 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pt-3 shadow-[0_-12px_40px_-18px_rgba(0,0,0,0.45)] backdrop-blur-2xl backdrop-saturate-150"
+        class="pin-m-sheet relative z-20 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain rounded-t-[2rem] border-t border-white/10 bg-black/72 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-3 shadow-[0_-12px_40px_-18px_rgba(0,0,0,0.45)] backdrop-blur-2xl backdrop-saturate-150"
       >
         <div class="mx-auto mb-3 h-1.5 w-10 shrink-0 rounded-full bg-white/25" aria-hidden="true" />
         <div class="flex min-h-min flex-col justify-end">
