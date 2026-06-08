@@ -1011,6 +1011,19 @@ const openFollowingModal = async () => {
   }
 }
 
+function onRelationsModalOpenChange(open: boolean) {
+  if (!open) {
+    showFollowersModal.value = false
+    showFollowingModal.value = false
+  }
+}
+
+function closeRelationsAndNavigate(username: string) {
+  showFollowersModal.value = false
+  showFollowingModal.value = false
+  void router.push(`/profile/${username}`)
+}
+
 const handleInviteCollaborator = async (boardId: number) => {
   if (!isMyProfile.value) return
   const plan = currentPlan.value
@@ -1902,52 +1915,48 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </template>
     </PinovaModal>
 
-      <div v-if="showFollowersModal || showFollowingModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:px-4 app-modal-backdrop" @click.self="showFollowersModal = false; showFollowingModal = false">
-      <div class="app-modal-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] sm:max-h-[80vh] flex flex-col">
-        <div class="sm:hidden app-modal-sheet-handle" aria-hidden="true" />
-        <div class="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-          <h3 class="font-semibold text-neutral-900 dark:text-neutral-100">
-            {{ showFollowersModal ? t('profile.followers') : t('profile.following') }}
-          </h3>
-          <button class="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200" @click="showFollowersModal = false; showFollowingModal = false">
-            <span class="material-symbols-outlined">close</span>
-          </button>
+    <PinovaModal
+      :open="showFollowersModal || showFollowingModal"
+      presentation="tallSheet"
+      presentation-lg="center"
+      :presentation-lg-min-width="640"
+      :max-width="448"
+      :title="showFollowersModal ? t('profile.followers') : t('profile.following')"
+      @update:open="onRelationsModalOpenChange"
+    >
+      <template v-if="relationsLoading">
+        <UserListSkeleton :rows="10" />
+      </template>
+      <template v-else>
+        <div v-if="relationItems.length === 0" class="px-2 py-6 text-center text-sm text-neutral-500">
+          {{ t('following.empty') }}
         </div>
-        <div class="flex-1 overflow-y-auto">
-          <template v-if="relationsLoading">
-            <UserListSkeleton :rows="10" />
-          </template>
-          <template v-else>
-            <div v-if="relationItems.length === 0" class="p-6 text-center text-sm text-neutral-500">
-              {{ t('following.empty') }}
-            </div>
-            <button
-              v-for="item in relationItems"
-              :key="item.username"
-              class="w-full px-5 py-3 flex items-center gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-left transition-colors"
-              @click="showFollowersModal = false; showFollowingModal = false; router.push(`/profile/${item.username}`)"
-            >
-              <AvatarDisc
-                :color="item.avatar_color || DEFAULT_AVATAR_COLOR_CLASS"
-                frame-class="w-9 h-9 text-xs"
-                text-class="text-white"
-                :has-image="!!item.avatar"
-              >
-                <img v-if="item.avatar" :src="item.avatar" class="w-full h-full object-cover" />
-                <span v-else class="avatar-text">{{ displayInitials(item.display_name) }}</span>
-              </AvatarDisc>
-              <div class="min-w-0">
-                <p class="text-sm text-neutral-900 dark:text-neutral-100 truncate flex items-center gap-1">
-                  <span v-if="item.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>
-                  {{ item.display_name }}
-                </p>
-                <p class="text-xs text-neutral-500">@{{ item.username }}</p>
-              </div>
-            </button>
-          </template>
-        </div>
-      </div>
-    </div>
+        <button
+          v-for="item in relationItems"
+          :key="item.username"
+          type="button"
+          class="w-full px-2 py-3 flex items-center gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-left transition-colors rounded-2xl"
+          @click="closeRelationsAndNavigate(item.username)"
+        >
+          <AvatarDisc
+            :color="item.avatar_color || DEFAULT_AVATAR_COLOR_CLASS"
+            frame-class="w-9 h-9 text-xs"
+            text-class="text-white"
+            :has-image="!!item.avatar"
+          >
+            <img v-if="item.avatar" :src="item.avatar" class="w-full h-full object-cover" alt="" />
+            <span v-else class="avatar-text">{{ displayInitials(item.display_name) }}</span>
+          </AvatarDisc>
+          <div class="min-w-0">
+            <p class="text-sm text-neutral-900 dark:text-neutral-100 truncate flex items-center gap-1">
+              <span v-if="item.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>
+              {{ item.display_name }}
+            </p>
+            <p class="text-xs text-neutral-500">@{{ item.username }}</p>
+          </div>
+        </button>
+      </template>
+    </PinovaModal>
 
     <!-- Tabs -->
     <div class="flex items-center justify-center gap-1 mb-6 border-b border-neutral-100 dark:border-neutral-800">

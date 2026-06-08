@@ -714,6 +714,7 @@ async function handleDeleteComment(commentId: number) {
 </script>
 
 <template>
+  <Teleport to="body">
   <div
     v-if="showOverlayLoading"
     class="fixed inset-0 z-[var(--pinova-z-pin-overlay,80)] flex items-center justify-center bg-black/85"
@@ -722,6 +723,7 @@ async function handleDeleteComment(commentId: number) {
   >
     <span class="material-symbols-outlined text-4xl text-white/90 animate-spin" aria-hidden="true">progress_activity</span>
   </div>
+  </Teleport>
 
     <PinDetailMobileFullscreen
       v-if="showPinOverlayUi && activePin"

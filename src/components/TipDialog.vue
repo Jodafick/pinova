@@ -119,9 +119,10 @@ async function submitTip() {
 </script>
 
 <template>
+  <Teleport to="body">
   <div
     v-if="open"
-    class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 bg-black/50"
+    class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-[2px]"
     @click.self="emit('close')"
   >
     <div class="w-full max-w-md rounded-2xl app-card p-5 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
@@ -186,4 +187,5 @@ async function submitTip() {
       </button>
     </div>
   </div>
+  </Teleport>
 </template>
