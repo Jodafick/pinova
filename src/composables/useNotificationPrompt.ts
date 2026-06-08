@@ -5,13 +5,20 @@ import { useAuth } from './useAuth'
 import { userNeedsOnboarding } from '../utils/onboarding'
 import api from '../api/index'
 import { isWebPushBackendReady, isWebPushSupported } from '../utils/webPushClient'
+import { onEngagementMoment, type EngagementMoment } from '../utils/engagementMoments'
+import { canShowPromptAfter, setNotificationPromptOpen } from '../utils/promptCoordinator'
 
 const DECLINED_KEY = 'pinova_notif_prompt_declined'
 const SNOOZE_KEY = 'pinova_notif_prompt_snooze_until'
 const COMPLETED_KEY = 'pinova_notif_prompt_completed'
+const SESSION_FALLBACK_KEY = 'pinova_notif_prompt_fallback_session'
 
-/** Délais après navigation avant d’afficher la modale (évite le flash au login). */
-const PROMPT_DELAY_MS = 14000
+/** Délai après un moment d’engagement (laisser savourer l’action avant la demande). */
+const MOMENT_DELAY_MS = 4500
+/** Filet de sécurité : session mature sans signal fort. */
+const FALLBACK_DELAY_MS = 90000
+
+export type NotificationPromptReason = 'default' | 'follow' | 'save'
 
 function pathExcluded(pathname: string): boolean {
   const p = (pathname.split('?')[0] || '/').replace(/\/+$/, '') || '/'
@@ -26,6 +33,7 @@ function pathExcluded(pathname: string): boolean {
     '/password-reset-confirm',
     '/settings',
     '/onboarding',
+    '/create',
   ]
   return prefixes.some((pre) => p === pre || p.startsWith(`${pre}/`))
 }
@@ -46,6 +54,12 @@ function storageAllowsPrompt(): boolean {
   return true
 }
 
+function momentToReason(moment: EngagementMoment): NotificationPromptReason {
+  if (moment === 'user_followed') return 'follow'
+  if (moment === 'pin_saved') return 'save'
+  return 'default'
+}
+
 export function notificationPromptSnoozeDays(days = 7): void {
   if (typeof localStorage === 'undefined') return
   localStorage.setItem(SNOOZE_KEY, String(Date.now() + days * 86400000))
@@ -63,9 +77,14 @@ export function notificationPromptMarkCompleted(): void {
 
 export function useNotificationPrompt() {
   const open = ref(false)
+  const reason = ref<NotificationPromptReason>('default')
   const route = useRoute()
   const { isAuthenticated, currentUser } = useAuth()
   let timer: ReturnType<typeof setTimeout> | null = null
+  let unsubscribeEngagement: (() => void) | null = null
+  let sessionStartedAt = typeof window !== 'undefined' ? Date.now() : 0
+  let distinctRoutes = 0
+  let lastRoute = ''
 
   function clearTimer() {
     if (timer != null) {
@@ -74,7 +93,30 @@ export function useNotificationPrompt() {
     }
   }
 
-  function schedulePrompt() {
+  watch(open, (v) => {
+    setNotificationPromptOpen(v)
+  })
+
+  async function tryOpenPrompt(triggerReason: NotificationPromptReason) {
+    if (typeof window === 'undefined') return
+    if (!canShowPromptAfter()) return
+    if (shouldDeferNotificationPrompt(isAuthenticated.value, route.path, currentUser.value)) return
+    if (!storageAllowsPrompt()) return
+    if (!isWebPushSupported()) return
+    if (Notification.permission !== 'default') return
+
+    try {
+      const ready = await isWebPushBackendReady(api)
+      if (!ready) return
+    } catch {
+      return
+    }
+
+    reason.value = triggerReason
+    open.value = true
+  }
+
+  function schedulePrompt(delayMs: number, triggerReason: NotificationPromptReason) {
     clearTimer()
     open.value = false
 
@@ -84,37 +126,61 @@ export function useNotificationPrompt() {
     if (!isWebPushSupported()) return
     if (Notification.permission !== 'default') return
 
-    timer = setTimeout(async () => {
+    timer = setTimeout(() => {
       timer = null
-      if (shouldDeferNotificationPrompt(isAuthenticated.value, route.path, currentUser.value)) return
-      if (Notification.permission !== 'default') return
-      if (!storageAllowsPrompt()) return
+      void tryOpenPrompt(triggerReason)
+    }, delayMs)
+  }
 
-      try {
-        const ready = await isWebPushBackendReady(api)
-        if (!ready) return
-      } catch {
-        return
-      }
+  function onEngagement(moment: EngagementMoment) {
+    if (moment === 'pin_published' || moment === 'feed_engaged') return
+    schedulePrompt(MOMENT_DELAY_MS, momentToReason(moment))
+  }
 
-      open.value = true
-    }, PROMPT_DELAY_MS)
+  function scheduleSessionFallback() {
+    if (typeof window === 'undefined') return
+    if (sessionStorage.getItem(SESSION_FALLBACK_KEY) === '1') return
+    if (Date.now() - sessionStartedAt < 50000) return
+    if (distinctRoutes < 2) return
+    if (pathExcluded(route.path)) return
+
+    sessionStorage.setItem(SESSION_FALLBACK_KEY, '1')
+    schedulePrompt(FALLBACK_DELAY_MS, 'default')
   }
 
   watch(
     () => [isAuthenticated.value, route.path, currentUser.value?.onboardingCompletedAt] as const,
-    () => {
-      schedulePrompt()
+    ([auth, path]) => {
+      if (!auth) {
+        clearTimer()
+        return
+      }
+      const normalized = (path.split('?')[0] || '/').replace(/\/+$/, '') || '/'
+      if (normalized !== lastRoute) {
+        lastRoute = normalized
+        distinctRoutes += 1
+      }
+      if (shouldDeferNotificationPrompt(auth, path, currentUser.value)) {
+        clearTimer()
+        return
+      }
+      scheduleSessionFallback()
     },
     { immediate: true },
   )
 
+  unsubscribeEngagement = onEngagementMoment(onEngagement)
+
   onUnmounted(() => {
     clearTimer()
+    unsubscribeEngagement?.()
+    unsubscribeEngagement = null
+    setNotificationPromptOpen(false)
   })
 
   return {
     notificationPromptOpen: open,
+    notificationPromptReason: reason,
     notificationPromptSnooze: () => notificationPromptSnoozeDays(7),
     notificationPromptDecline: () => notificationPromptDeclineForever(),
   }

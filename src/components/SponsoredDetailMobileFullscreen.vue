@@ -109,7 +109,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="sponsored-mobile fixed inset-0 z-[95] bg-black text-white lg:hidden">
+  <Teleport to="body">
+  <section class="sponsored-mobile fixed inset-0 z-[var(--pinova-z-pin-overlay,95)] bg-black text-white lg:hidden">
     <div class="absolute inset-0 bg-black/80" aria-hidden="true" />
     <div class="pin-mobile-surface relative z-[1] h-full w-full overflow-hidden" :style="surfaceStyle">
       <div
@@ -137,4 +138,5 @@ onUnmounted(() => {
       </button>
     </div>
   </section>
+  </Teleport>
 </template>

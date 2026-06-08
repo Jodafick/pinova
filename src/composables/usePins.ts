@@ -230,9 +230,6 @@ export function usePins() {
 
     if (reset && !opts?.backgroundOnly && !opts?.revalidate) {
       feedLoadGeneration += 1
-      currentPage.value = 1
-      hasNextPage.value = true
-      pins.value = []
     }
     if (opts?.revalidate) {
       feedLoadGeneration += 1
@@ -282,18 +279,16 @@ export function usePins() {
       }
     }
 
-    if (
-      reset &&
-      currentPage.value === 1 &&
-      !opts?.bypassCache &&
-      hasNextPage.value
-    ) {
+    if (reset && !opts?.bypassCache && !opts?.backgroundOnly && !opts?.revalidate) {
       const cached = getCachedFeedFirstPage(feedKey)
       if (cached) {
         applyFirstPage(cached.items.slice(), cached.hasNextPage)
         runBackground(() => fetchFirstPageFromNetwork())
         return
       }
+      currentPage.value = 1
+      hasNextPage.value = true
+      pins.value = []
     }
 
     if (opts?.revalidate) {
@@ -829,6 +824,8 @@ export function usePins() {
       if (response.data.status === 'saved') {
         trackEvent('pin_saved', { pin_slug: slug })
         trackOnce('first_save', { pin_slug: slug })
+        const { recordEngagementMoment } = await import('../utils/engagementMoments')
+        recordEngagementMoment('pin_saved')
       }
       void fetchCurrentUser({ force: true, silent: true })
       invalidatePinDetailClientCache(slug)

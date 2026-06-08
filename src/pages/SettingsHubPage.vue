@@ -3,17 +3,13 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
-import { usePwaContext } from '../composables/usePwaContext'
 import { SETTINGS_HUB_GROUPS, type SettingsHubItem } from '../data/settingsHubConfig'
 
 const { currentUser } = useAuth()
 const { t } = useI18n()
-const { isStandalone } = usePwaContext()
 
 function itemVisible(item: SettingsHubItem): boolean {
   if (item.requiresUser && !currentUser.value) return false
-  if (item.id === 'settings-pwa-reload' && !isStandalone.value) return false
-  if (item.id === 'settings-pwa-install' && isStandalone.value) return false
   return true
 }
 

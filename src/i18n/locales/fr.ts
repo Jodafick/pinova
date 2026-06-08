@@ -705,6 +705,10 @@ export const fr: Record<string, string> = {
   'notifications.prompt.title': 'Activer les notifications ?',
   'notifications.prompt.body':
     'Recevez une alerte dans votre navigateur quand quelqu’un vous suit, enregistre un pin ou vous envoie une activité. Vous pourrez toujours modifier ou désactiver cela dans Paramètres.',
+  'notifications.prompt.bodyFollow':
+    'Vous venez de suivre un créateur — activez les notifications pour ne rien manquer de ses prochaines publications.',
+  'notifications.prompt.bodySave':
+    'Vous venez d’enregistrer une idée — recevez une alerte quand elle évolue ou qu’un créateur que vous suivez publie du nouveau contenu.',
   'notifications.prompt.enable': 'Activer les notifications',
   'notifications.prompt.later': 'Me le rappeler plus tard',
   'notifications.prompt.decline': 'Non merci, ne plus proposer',
@@ -1094,6 +1098,9 @@ export const fr: Record<string, string> = {
   'settings.hub.pageTips': 'Pourboires & publicités',
   'settings.hub.pageSupport': 'Aide & informations',
   'settings.hub.sectionOffers': 'Offres et facturation',
+  'settings.hub.subsectionDisplay': 'Apparence',
+  'settings.hub.subsectionAppOnDevice': 'Application sur l’appareil',
+  'settings.hub.subsectionEmailPush': 'Alertes & e-mails',
   'settings.hub.subsectionPush': 'Sur cet appareil',
   'settings.hub.subsectionAccess': 'Affichage & contenu',
   'settings.hub.subsectionBlocked': 'Comptes bloqués',
@@ -1303,6 +1310,11 @@ export const fr: Record<string, string> = {
   'settings.pwaInstall.subtitle':
     'Ajoutez Pinova à votre écran d’accueil ou consultez les instructions pour votre navigateur.',
   'settings.pwaInstall.openGuide': 'Voir le guide d’installation',
+  'settings.pwa.onDevice.label': 'Mode d’utilisation',
+  'settings.pwa.onDevice.actionNone': 'Choisir une action…',
+  'settings.pwa.onDevice.browserHint': 'Pinova s’ouvre dans votre navigateur. Vous pouvez l’ajouter à l’écran d’accueil pour un accès plus rapide.',
+  'settings.pwa.onDevice.standaloneHint': 'Pinova est installée sur cet appareil. Rechargez l’application si quelque chose semble bloqué.',
+  'settings.pwa.onDevice.unavailable': 'Installation non disponible sur ce navigateur.',
   'settings.pwaInstall.standaloneHint':
     'Vous utilisez déjà la version installée ; le guide indique surtout comment installer Pinova dans un navigateur.',
 
@@ -1371,6 +1383,7 @@ export const fr: Record<string, string> = {
   'settings.ads.hint.free': 'Plan Free : vous ne pouvez pas désactiver les publicités.',
   'settings.ads.hint.plus': 'Plan Plus : vous pouvez désactiver uniquement les pubs ads.',
   'settings.ads.hint.pro': 'Plan Pro : vous pouvez désactiver les pubs ads et partenaire.',
+  'settings.ads.hint.all': 'Les publicités réseau et partenaire sont activées pour tous les utilisateurs.',
   'settings.ads.network.title': 'Pubs ads',
   'settings.ads.network.desc': 'Publicités réseau classiques (placements automatiques).',
   'settings.ads.partner.title': 'Pubs partenaire',

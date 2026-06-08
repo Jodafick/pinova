@@ -3,6 +3,9 @@ export type SettingsSectionId = string
 
 const SETTINGS_DETAIL_ALIASES: Record<string, string> = {
   'settings-push': 'settings-notifications',
+  'settings-appearance': 'settings-notifications',
+  'settings-pwa-install': 'settings-notifications',
+  'settings-pwa-reload': 'settings-notifications',
   'settings-access': 'settings-privacy',
   'settings-blocked': 'settings-privacy',
   'settings-social': 'settings-profile',
@@ -23,7 +26,7 @@ export const SETTINGS_PAGE_SECTIONS: Record<string, string[]> = {
   'settings-security': ['settings-password', 'settings-security'],
   'settings-notifications': ['settings-notifications'],
   'settings-push': ['settings-notifications'],
-  'settings-appearance': ['settings-appearance'],
+  'settings-appearance': ['settings-notifications'],
   'settings-privacy': ['settings-privacy', 'settings-access', 'settings-blocked'],
   'settings-access': ['settings-privacy', 'settings-access', 'settings-blocked'],
   'settings-blocked': ['settings-privacy', 'settings-access', 'settings-blocked'],
@@ -34,8 +37,8 @@ export const SETTINGS_PAGE_SECTIONS: Record<string, string[]> = {
   'settings-legal': ['settings-support', 'settings-legal'],
   'settings-subscription': ['settings-subscription'],
   'settings-danger': ['settings-danger'],
-  'settings-pwa-install': ['settings-pwa-install'],
-  'settings-pwa-reload': ['settings-pwa-reload'],
+  'settings-pwa-install': ['settings-notifications'],
+  'settings-pwa-reload': ['settings-notifications'],
 }
 
 export function resolveSettingsDetailPage(sectionId: string): string {
@@ -53,7 +56,7 @@ export const SETTINGS_SECTION_TITLE_KEY: Record<string, string> = {
   'settings-password': 'settings.nav.password',
   'settings-notifications': 'settings.hub.pageNotifications',
   'settings-push': 'settings.hub.pageNotifications',
-  'settings-appearance': 'settings.appearance.title',
+  'settings-appearance': 'settings.hub.pageNotifications',
   'settings-privacy': 'settings.hub.pagePrivacy',
   'settings-access': 'settings.hub.pagePrivacy',
   'settings-blocked': 'settings.hub.pagePrivacy',
@@ -64,8 +67,8 @@ export const SETTINGS_SECTION_TITLE_KEY: Record<string, string> = {
   'settings-legal': 'settings.hub.pageSupport',
   'settings-subscription': 'settings.hub.sectionOffers',
   'settings-danger': 'settings.nav.danger',
-  'settings-pwa-install': 'settings.nav.pwaInstall',
-  'settings-pwa-reload': 'pwa.reload.title',
+  'settings-pwa-install': 'settings.hub.pageNotifications',
+  'settings-pwa-reload': 'settings.hub.pageNotifications',
 }
 
 export function settingsDetailTitleKey(sectionId: string): string {
@@ -98,7 +101,6 @@ export const SETTINGS_HUB_GROUPS: SettingsHubGroup[] = [
     titleKey: 'settings.hub.groupPreferences',
     items: [
       { id: 'settings-notifications', icon: 'notifications', labelKey: 'settings.nav.notifications' },
-      { id: 'settings-appearance', icon: 'dark_mode', labelKey: 'settings.nav.appearance' },
       { id: 'settings-privacy', icon: 'lock', labelKey: 'settings.nav.privacy' },
     ],
   },
@@ -115,8 +117,6 @@ export const SETTINGS_HUB_GROUPS: SettingsHubGroup[] = [
       { id: 'settings-support', icon: 'help', labelKey: 'settings.nav.support' },
       { id: 'settings-subscription', icon: 'auto_awesome', labelKey: 'settings.hub.sectionOffers' },
       { id: 'settings-danger', icon: 'warning', labelKey: 'settings.nav.danger' },
-      { id: 'settings-pwa-install', icon: 'install_mobile', labelKey: 'settings.nav.pwaInstall' },
-      { id: 'settings-pwa-reload', icon: 'refresh', labelKey: 'pwa.reload.title', requiresStandalone: true },
     ],
   },
 ]
@@ -131,4 +131,4 @@ export const SETTINGS_SECTION_IDS = [
 export function isValidSettingsSectionId(id: string): boolean {
   return SETTINGS_SECTION_IDS.includes(id)
 }
-
+

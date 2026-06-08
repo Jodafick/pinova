@@ -14,7 +14,6 @@ import PinContextualMenu from './components/PinContextualMenu.vue'
 import OfflineExperience from './components/pwa/OfflineExperience.vue'
 import PwaSplash from './components/pwa/PwaSplash.vue'
 import PwaInstallExperience from './components/pwa/PwaInstallExperience.vue'
-import NativeAppSuggestBanner from './components/NativeAppSuggestBanner.vue'
 import AmbientGlow from './components/AmbientGlow.vue'
 import ImmersiveMediaViewer from './components/ui/ImmersiveMediaViewer.vue'
 import { useImmersiveViewer } from './composables/useImmersiveViewer'
@@ -68,6 +67,7 @@ const { guestGateOpen, guestGateIntent, closeGuestGate } = useGuestAuthGate()
 usePendingIntentReplay()
 const {
   notificationPromptOpen,
+  notificationPromptReason,
   notificationPromptSnooze,
   notificationPromptDecline,
 } = useNotificationPrompt()
@@ -191,24 +191,22 @@ const edgePeekVisible = computed(
   () => appEdgeSwipe.isDragging.value || appEdgeSwipe.translateX.value > 6,
 )
 
-onMounted(async () => {
+onMounted(() => {
   resetPinovaBodyScrollLock()
   devLog('🚀 App mounted, initializing...')
-  /* Fail-safe : on relâche le splash après 1.2s même si fetch n'a pas répondu. */
-  const splashFallback = setTimeout(() => { appReady.value = true }, 1200)
-  try {
-    await fetchCurrentUser()
-    const preferred = currentUser.value?.preferredLanguage
-    if (preferred && languages.some((lang) => lang.code === preferred)) {
-      setLang(preferred as typeof languages[number]['code'])
-    }
-    devLog('✅ Initialization complete.')
-  } catch (err) {
-    console.error('❌ Initialization error:', err)
-  } finally {
-    clearTimeout(splashFallback)
-    appReady.value = true
-  }
+  /* L’UI ne doit pas attendre `me/` : profil hydraté depuis le cache JWT si dispo. */
+  appReady.value = true
+  void fetchCurrentUser()
+    .then(() => {
+      const preferred = currentUser.value?.preferredLanguage
+      if (preferred && languages.some((lang) => lang.code === preferred)) {
+        setLang(preferred as typeof languages[number]['code'])
+      }
+      devLog('✅ Session revalidated.')
+    })
+    .catch((err) => {
+      console.error('❌ Initialization error:', err)
+    })
 })
 
 const isMobileFullscreenRoute = computed(() => typeof route.query.pin === 'string' && route.query.pin.trim().length > 0)
@@ -518,7 +516,7 @@ const canCreateStory = computed(() => {
 const pageTransitionName = computed(() => {
   const meta = route.meta as { noTransition?: boolean }
   if (meta.noTransition) return 'page-none'
-  if (pageNavIsInitial.value) return 'page-initial'
+  if (pageNavIsInitial.value) return 'page-none'
   return getPageTransitionNames(pageNavDirection.value).enter
 })
 
@@ -690,8 +688,6 @@ const pageTransitionName = computed(() => {
   <PwaSplash :open="!appReady" />
   <OfflineExperience />
   <PwaInstallExperience />
-  <NativeAppSuggestBanner :app-ready="appReady" />
-
   <!-- Visionneuse média immersive singleton (image/vidéo fullscreen iOS). -->
   <ImmersiveMediaViewer
     v-model:open="immersiveViewer.open.value"
@@ -712,6 +708,7 @@ const pageTransitionName = computed(() => {
   <NotificationEnablePrompt
     v-if="isAuthenticated"
     v-model:open="notificationPromptOpen"
+    :reason="notificationPromptReason"
     @snooze="notificationPromptSnooze"
     @decline="notificationPromptDecline"
   />

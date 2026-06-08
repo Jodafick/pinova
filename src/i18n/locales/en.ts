@@ -716,6 +716,10 @@ export const en: Record<string, string> = {
   'notifications.prompt.title': 'Turn on notifications?',
   'notifications.prompt.body':
     'Get browser alerts when someone follows you, saves your pin, or there’s activity for you. You can change or turn this off anytime in Settings.',
+  'notifications.prompt.bodyFollow':
+    'You just followed a creator — turn on notifications so you don’t miss their next pins.',
+  'notifications.prompt.bodySave':
+    'You just saved an idea — get alerted when it moves or when creators you follow post something new.',
   'notifications.prompt.enable': 'Enable notifications',
   'notifications.prompt.later': 'Remind me later',
   'notifications.prompt.decline': 'No thanks, don’t ask again',
@@ -1073,6 +1077,9 @@ export const en: Record<string, string> = {
   'settings.hub.pageTips': 'Tips & ads',
   'settings.hub.pageSupport': 'Help & information',
   'settings.hub.sectionOffers': 'Plans and billing',
+  'settings.hub.subsectionDisplay': 'Appearance',
+  'settings.hub.subsectionAppOnDevice': 'App on this device',
+  'settings.hub.subsectionEmailPush': 'Alerts & email',
   'settings.hub.subsectionPush': 'On this device',
   'settings.hub.subsectionAccess': 'Display & content',
   'settings.hub.subsectionBlocked': 'Blocked accounts',
@@ -1270,6 +1277,11 @@ export const en: Record<string, string> = {
   'settings.pwaInstall.subtitle':
     'Add Pinova to your home screen or see step-by-step instructions for your browser.',
   'settings.pwaInstall.openGuide': 'Open install guide',
+  'settings.pwa.onDevice.label': 'How you use Pinova',
+  'settings.pwa.onDevice.actionNone': 'Choose an action…',
+  'settings.pwa.onDevice.browserHint': 'Pinova runs in your browser. Add it to your home screen for quicker access.',
+  'settings.pwa.onDevice.standaloneHint': 'Pinova is installed on this device. Reload the app if something feels stuck.',
+  'settings.pwa.onDevice.unavailable': 'Install isn’t available in this browser.',
   'settings.pwaInstall.standaloneHint':
     'You’re already using the installed app; the guide mainly explains how to install Pinova from a browser.',
 
@@ -1337,6 +1349,7 @@ export const en: Record<string, string> = {
   'settings.ads.hint.free': 'Free plan: you cannot disable ads.',
   'settings.ads.hint.plus': 'Plus plan: you can disable network ads only.',
   'settings.ads.hint.pro': 'Pro plan: you can disable both network and partner ads.',
+  'settings.ads.hint.all': 'Network and partner ads are enabled for all users.',
   'settings.ads.network.title': 'Network ads',
   'settings.ads.network.desc': 'Standard ad network placements.',
   'settings.ads.partner.title': 'Partner ads',

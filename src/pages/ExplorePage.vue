@@ -62,9 +62,9 @@ function stopPageActivity() {
   }
 }
 
-onMounted(async () => {
+onMounted(() => {
   startPageActivity()
-  await fetchDiscoverPins(true, null, exploreTextQuery.value)
+  void fetchDiscoverPins(true, null, exploreTextQuery.value)
 })
 
 onActivated(() => {

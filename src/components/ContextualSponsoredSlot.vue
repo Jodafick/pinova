@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import api from '../api/index'
 import { mapSponsoredFromApi } from '../composables/usePins'
 import type { SponsoredAd } from '../types'
-import SponsoredContentCard from './SponsoredContentCard.vue'
 import SponsoredNativeStrip from './SponsoredNativeStrip.vue'
 import { useAuth } from '../composables/useAuth'
 import { useRouter } from 'vue-router'
@@ -73,15 +72,14 @@ watch(() => [props.placement, props.topic], () => void load())
     >
       <SponsoredNativeStrip :item="ad" :variant="stripVariant" @dismiss="dismissed = true" />
     </div>
-    <div v-else class="space-y-3">
-      <SponsoredContentCard :item="ad" variant="detail" :open-in-overlay="false" />
-      <button
-        type="button"
-        class="text-[11px] font-medium text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-        @click="dismissed = true"
-      >
-        {{ t('common.close') }}
-      </button>
+    <div
+      v-else-if="tone === 'dark'"
+      class="w-full max-w-[calc(100vw-4.5rem)]"
+    >
+      <SponsoredNativeStrip :item="ad" variant="story" @dismiss="dismissed = true" />
+    </div>
+    <div v-else class="space-y-2">
+      <SponsoredNativeStrip :item="ad" :variant="stripVariant" @dismiss="dismissed = true" />
       <div v-if="showFreeAdsCta" class="rounded-xl border border-amber-200/80 dark:border-amber-900/40 bg-amber-50/80 dark:bg-amber-950/20 px-3 py-2 flex flex-wrap items-center justify-between gap-2">
         <p class="text-[11px] text-neutral-600 dark:text-neutral-400 flex-1 min-w-[12rem]">{{ t('ads.free.explain') }}</p>
         <button type="button" class="text-[11px] font-bold text-pink-700 shrink-0" @click="goPremium">{{ t('ads.free.upgradeCta') }}</button>

@@ -44,8 +44,6 @@ const SETTINGS_NAV_ROWS: { id: string; icon: string; labelKey: string }[] = [
   { id: 'settings-security', icon: 'shield', labelKey: 'settings.nav.security' },
   { id: 'settings-notifications', icon: 'notifications', labelKey: 'settings.nav.notifications' },
   { id: 'settings-privacy', icon: 'lock', labelKey: 'settings.nav.privacy' },
-  { id: 'settings-appearance', icon: 'dark_mode', labelKey: 'settings.nav.appearance' },
-  { id: 'settings-pwa-install', icon: 'install_mobile', labelKey: 'settings.nav.pwaInstall' },
   { id: 'settings-blocked', icon: 'block', labelKey: 'settings.nav.blocked' },
   { id: 'settings-access', icon: 'accessibility_new', labelKey: 'settings.nav.access' },
   { id: 'settings-tips', icon: 'payments', labelKey: 'settings.nav.tips' },
@@ -72,7 +70,16 @@ async function onAppearancePreference(pref: 'light' | 'dark' | 'system') {
     /* localStorage déjà persisté par useAppearance */
   }
 }
-const { isStandalone } = usePwaContext()
+const { isStandalone, canOfferInstallExperience } = usePwaContext()
+
+const appearanceSelect = computed({
+  get: () => appearancePreference.value,
+  set: (value: 'light' | 'dark' | 'system') => {
+    void onAppearancePreference(value)
+  },
+})
+
+const pwaDeviceAction = ref('')
 
 async function onReloadPwaFromSettings() {
   await reloadPwaApplication()
@@ -80,6 +87,13 @@ async function onReloadPwaFromSettings() {
 
 function openPwaInstallGuideFromSettings() {
   requestPwaInstallModalOpen()
+}
+
+function onPwaDeviceActionChange() {
+  const action = pwaDeviceAction.value
+  pwaDeviceAction.value = ''
+  if (action === 'install') openPwaInstallGuideFromSettings()
+  else if (action === 'reload') void onReloadPwaFromSettings()
 }
 const { showAlert, showPrompt, showConfirm } = useAppModal()
 const {
@@ -407,8 +421,8 @@ onMounted(() => {
     currentPlan.value = currentUser.value.subscription?.plan || 'free'
     tipsEnabled.value = currentUser.value.subscription?.tipsEnabled ?? false
     if (currentPlan.value === 'pro') void loadTipWallet()
-    adAdsEnabled.value = currentUser.value.subscription?.adAdsEnabled ?? true
-    partnerAdsEnabled.value = currentUser.value.subscription?.partnerAdsEnabled ?? true
+    adAdsEnabled.value = true
+    partnerAdsEnabled.value = true
     preferredCurrency.value = currentUser.value.preferredCurrency || 'XOF'
     detectedCountryCode.value = currentUser.value.countryCode || ''
     notificationsFollowers.value = currentUser.value.notificationsFollowers ?? true
@@ -442,22 +456,6 @@ watch(
   () => currentUser.value?.id,
   () => {
     syncWebNotificationState().catch(() => undefined)
-  },
-)
-
-watch(
-  () => [adAdsEnabled.value, partnerAdsEnabled.value, currentUser.value?.id] as const,
-  () => {
-    if (!currentUser.value) return
-    const timer = window.setTimeout(() => {
-      void api
-        .patch('me/', {
-          ad_ads_enabled: adAdsEnabled.value,
-          partner_ads_enabled: partnerAdsEnabled.value,
-        })
-        .catch(() => undefined)
-    }, 800)
-    return () => window.clearTimeout(timer)
   },
 )
 
@@ -1508,6 +1506,55 @@ watch(
         </div>
         <div class="p-4 sm:p-6 space-y-4">
           <p v-if="detailSectionId" class="hidden lg:block text-xs text-neutral-500 dark:text-neutral-400 mb-2">{{ t('settings.notifications.subtitle') }}</p>
+
+          <p class="settings-subsection-label">{{ t('settings.hub.subsectionDisplay') }}</p>
+          <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.appearance.modeLabel') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.appearance.hint') }}</p>
+            </div>
+            <select
+              v-model="appearanceSelect"
+              class="w-full sm:w-auto sm:min-w-[10.5rem] rounded-xl border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 pinova-focus-ring"
+              :aria-label="t('settings.appearance.modeLabel')"
+            >
+              <option value="light">{{ t('settings.appearance.light') }}</option>
+              <option value="dark">{{ t('settings.appearance.dark') }}</option>
+              <option value="system">{{ t('settings.appearance.system') }}</option>
+            </select>
+          </div>
+
+          <p class="settings-subsection-label">{{ t('settings.hub.subsectionAppOnDevice') }}</p>
+          <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.pwa.onDevice.label') }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                {{
+                  isStandalone
+                    ? t('settings.pwa.onDevice.standaloneHint')
+                    : t('settings.pwa.onDevice.browserHint')
+                }}
+              </p>
+            </div>
+            <select
+              v-if="isStandalone || canOfferInstallExperience"
+              v-model="pwaDeviceAction"
+              class="w-full sm:w-auto sm:min-w-[12rem] rounded-xl border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 pinova-focus-ring"
+              :aria-label="t('settings.pwa.onDevice.label')"
+              @change="onPwaDeviceActionChange"
+            >
+              <option value="">{{ t('settings.pwa.onDevice.actionNone') }}</option>
+              <option v-if="!isStandalone && canOfferInstallExperience" value="install">
+                {{ t('settings.pwaInstall.openGuide') }}
+              </option>
+              <option v-if="isStandalone" value="reload">{{ t('pwa.reload.title') }}</option>
+            </select>
+            <p v-else class="text-xs text-neutral-500 dark:text-neutral-400 sm:text-right">
+              {{ t('settings.pwa.onDevice.unavailable') }}
+            </p>
+          </div>
+
+          <p class="settings-subsection-label">{{ t('settings.hub.subsectionEmailPush') }}</p>
           <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
             <div class="min-w-0 flex-1 pr-1">
               <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.notifications.followers') }}</p>
@@ -1657,62 +1704,6 @@ watch(
             {{ privacySaving ? t('settings.privacy.saving') : t('settings.privacy.save') }}
           </button>
           <p v-if="privacySaved" class="text-xs text-emerald-700">{{ t('settings.privacy.saved') }}</p>
-        </div>
-      </section>
-
-      <!-- Apparence -->
-      <section
-        v-if="showSettingsSection('settings-appearance')" id="settings-appearance"
-        class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
-      >
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800" :class="detailCardHeaderHiddenBelowLg">
-          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.appearance.title') }}</h2>
-          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.appearance.subtitle') }}</p>
-        </div>
-        <div class="p-4 sm:p-6 space-y-4">
-          <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.appearance.modeLabel') }}</p>
-          <div class="flex flex-wrap gap-2" role="group" :aria-label="t('settings.appearance.modeLabel')">
-            <button
-              v-for="pref in (['light', 'dark', 'system'] as const)"
-              :key="pref"
-              type="button"
-              class="px-4 py-2 rounded-full text-sm font-semibold border transition pinova-focus-ring"
-              :class="
-                appearancePreference === pref
-                  ? 'border-pink-700 dark:border-pink-600 bg-pink-50 text-pink-900 dark:bg-pink-950/60 dark:text-pink-50'
-                  : 'border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-200 hover:border-pink-300'
-              "
-              :aria-pressed="appearancePreference === pref"
-              @click="onAppearancePreference(pref)"
-            >
-              {{ t(`settings.appearance.${pref}`) }}
-            </button>
-          </div>
-          <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">{{ t('settings.appearance.hint') }}</p>
-        </div>
-      </section>
-
-      <!-- Application / installation (navigateur / écran d’accueil) -->
-      <section
-        v-if="showSettingsSection('settings-pwa-install')" id="settings-pwa-install"
-        class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
-      >
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800" :class="detailCardHeaderHiddenBelowLg">
-          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('settings.pwaInstall.title') }}</h2>
-          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('settings.pwaInstall.subtitle') }}</p>
-        </div>
-        <div class="p-4 sm:p-6 space-y-3">
-          <p v-if="isStandalone" class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-            {{ t('settings.pwaInstall.standaloneHint') }}
-          </p>
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-pink-700 text-white text-sm font-semibold hover:bg-pink-800 transition dark:bg-pink-600 dark:hover:bg-pink-500"
-            @click="openPwaInstallGuideFromSettings"
-          >
-            <span class="material-symbols-outlined text-[20px]">install_mobile</span>
-            {{ t('settings.pwaInstall.openGuide') }}
-          </button>
         </div>
       </section>
 
@@ -1987,13 +1978,7 @@ watch(
             </router-link>
           </div>
           <p class="text-xs text-neutral-500 dark:text-neutral-400">
-            {{
-              currentPlan === 'pro'
-                ? t('settings.ads.hint.pro')
-                : currentPlan === 'plus'
-                  ? t('settings.ads.hint.plus')
-                  : t('settings.ads.hint.free')
-            }}
+            {{ t('settings.ads.hint.all') }}
           </p>
           <label class="flex items-start sm:items-center justify-between gap-3 py-2 cursor-pointer">
             <div class="min-w-0 flex-1 pr-1">
@@ -2001,7 +1986,7 @@ watch(
               <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.ads.network.desc') }}</p>
             </div>
             <div class="relative shrink-0">
-              <input v-model="adAdsEnabled" type="checkbox" class="sr-only peer" :disabled="currentPlan === 'free'" />
+              <input v-model="adAdsEnabled" type="checkbox" class="sr-only peer" disabled />
               <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors peer-disabled:opacity-50"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
@@ -2012,7 +1997,7 @@ watch(
               <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.ads.partner.desc') }}</p>
             </div>
             <div class="relative shrink-0">
-              <input v-model="partnerAdsEnabled" type="checkbox" class="sr-only peer" :disabled="currentPlan !== 'pro'" />
+              <input v-model="partnerAdsEnabled" type="checkbox" class="sr-only peer" disabled />
               <div class="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-checked:bg-pink-700 dark:peer-checked:bg-pink-600 rounded-full transition-colors peer-disabled:opacity-50"></div>
               <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
@@ -2293,27 +2278,6 @@ watch(
               </li>
             </ul>
           </div>
-        </div>
-      </section>
-
-      <section
-        v-if="isStandalone && showSettingsSection('settings-pwa-reload')"
-        id="settings-pwa-reload"
-        class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden"
-      >
-        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800" :class="detailCardHeaderHiddenBelowLg">
-          <h2 v-if="!detailSectionId" class="text-lg font-semibold text-neutral-900 dark:text-neutral-50">{{ t('pwa.reload.title') }}</h2>
-          <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{{ t('pwa.reload.subtitle') }}</p>
-        </div>
-        <div class="p-4 sm:p-6">
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 transition dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
-            @click="onReloadPwaFromSettings"
-          >
-            <span class="material-symbols-outlined text-[20px]">refresh</span>
-            {{ t('pwa.reload.title') }}
-          </button>
         </div>
       </section>
 

@@ -28,7 +28,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   open: true,
-  minDurationMs: 300,
+  minDurationMs: 120,
 })
 
 const visible = ref(true)
@@ -48,7 +48,7 @@ function dismiss() {
        bloqué tant que ce composant est monté dans App.vue, même si le splash
        n'est plus visuellement présent). */
     document.body.classList.remove('pinova-splash-locked')
-    setTimeout(() => { visible.value = false }, 360)
+    setTimeout(() => { visible.value = false }, 180)
   }, delay)
 }
 

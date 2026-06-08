@@ -24,6 +24,7 @@ import GuestContestTeaser from '../components/GuestContestTeaser.vue'
 import DiscoveryStreakBanner from '../components/DiscoveryStreakBanner.vue'
 import { useDiscoveryStreak } from '../composables/useDiscoveryStreak'
 import { appSoftRefreshTick } from '../utils/appSoftRefresh'
+import { recordEngagementMoment } from '../utils/engagementMoments'
 
 type TabKey = 'forYou' | 'explorer' | 'following'
 
@@ -302,9 +303,13 @@ async function loadFollowSuggestions() {
   }
 }
 
+let homeTabSwitchCount = 0
+
 async function setTab(tab: TabKey) {
   if (activeTab.value === tab) return
   activeTab.value = tab
+  homeTabSwitchCount += 1
+  if (homeTabSwitchCount >= 2) recordEngagementMoment('feed_engaged')
   await ensureLoaded(tab)
   void nextTick(() => connectHomeLoadMoreObserver())
 }
@@ -422,7 +427,7 @@ onMounted(async () => {
   if (!isAuthenticated.value) {
     trackLandingViewedOnce(route.path || '/')
   }
-  await ensureLoaded('forYou')
+  void ensureLoaded('forYou')
   void nextTick(() => connectHomeLoadMoreObserver())
 })
 

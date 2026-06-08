@@ -3,12 +3,15 @@ import { useRoute } from 'vue-router'
 import { usePwaContext } from './usePwaContext'
 import { requestPwaInstallModalOpen } from '../utils/pwaInstallBridge'
 import { isPwaInstallSnoozed } from '../utils/pwaInstallStorage'
+import { onEngagementMoment, type EngagementMoment } from '../utils/engagementMoments'
+import { canShowPromptAfter, isNotificationPromptOpen, markPromptShown } from '../utils/promptCoordinator'
 
-/** Une seule proposition automatique par session navigateur (onglet). */
 const SESSION_AUTO_PROMPT_KEY = 'pinova:pwa:auto-prompt:shown-session'
 
-/** Délai après navigation sur une page « éligible » (évite le flash au chargement). */
-const AUTO_PROMPT_DELAY_MS = 12000
+/** Après publication ou exploration : laisser l’utilisateur voir le résultat avant la proposition PWA. */
+const MOMENT_DELAY_MS = 8000
+/** Filet : navigation mobile sans signal fort. */
+const FALLBACK_DELAY_MS = 22000
 
 function pathExcluded(pathname: string): boolean {
   const p = (pathname.split('?')[0] || '/').replace(/\/+$/, '') || '/'
@@ -22,18 +25,27 @@ function pathExcluded(pathname: string): boolean {
     '/reset-password',
     '/password-reset-confirm',
     '/settings',
+    '/onboarding',
   ]
   return prefixes.some((pre) => p === pre || p.startsWith(`${pre}/`))
 }
 
+const ENGAGEMENT_ROUTES = ['/', '/explore', '/following', '/notifications']
+
+function isEngagementRoute(pathname: string): boolean {
+  const p = (pathname.split('?')[0] || '/').replace(/\/+$/, '') || '/'
+  return ENGAGEMENT_ROUTES.some((pre) => p === pre || p.startsWith(`${pre}/`))
+}
+
 /**
- * Proposition d’installation PWA sur mobile (navigateur), surtout iOS où il n’y a pas de `beforeinstallprompt`.
- * Android : s’affiche aussi si aucun événement natif n’est encore arrivé — l’utilisateur peut réessayer ou utiliser le menu ⋮.
+ * Proposition d’installation PWA au moment où l’utilisateur a déjà tiré de la valeur
+ * (pin publié, feed exploré), pas au premier chargement froid.
  */
 export function usePwaInstallPrompt() {
   const route = useRoute()
   const { isMobile, isStandalone, canOfferInstallExperience } = usePwaContext()
   let timer: ReturnType<typeof setTimeout> | null = null
+  let unsubscribeEngagement: (() => void) | null = null
 
   function clearTimer() {
     if (timer != null) {
@@ -42,24 +54,50 @@ export function usePwaInstallPrompt() {
     }
   }
 
-  function schedulePrompt() {
-    if (timer != null) return
-    if (typeof window === 'undefined') return
-    if (sessionStorage.getItem(SESSION_AUTO_PROMPT_KEY) === '1') return
-    if (!isMobile.value || isStandalone.value) return
-    if (!canOfferInstallExperience.value) return
-    if (pathExcluded(route.path)) return
-    if (isPwaInstallSnoozed()) return
+  function canAutoPromptNow(): boolean {
+    if (typeof window === 'undefined') return false
+    if (sessionStorage.getItem(SESSION_AUTO_PROMPT_KEY) === '1') return false
+    if (!isMobile.value || isStandalone.value) return false
+    if (!canOfferInstallExperience.value) return false
+    if (pathExcluded(route.path)) return false
+    if (isPwaInstallSnoozed()) return false
+    if (isNotificationPromptOpen()) return false
+    if (!canShowPromptAfter()) return false
+    return true
+  }
 
+  function openPromptOnce() {
+    if (!canAutoPromptNow()) return
+    try {
+      sessionStorage.setItem(SESSION_AUTO_PROMPT_KEY, '1')
+    } catch {
+      /* ignore */
+    }
+    markPromptShown()
+    requestPwaInstallModalOpen()
+  }
+
+  function schedulePrompt(delayMs: number) {
+    clearTimer()
+    if (!canAutoPromptNow()) return
     timer = setTimeout(() => {
       timer = null
-      try {
-        sessionStorage.setItem(SESSION_AUTO_PROMPT_KEY, '1')
-      } catch {
-        /* ignore */
-      }
-      requestPwaInstallModalOpen()
-    }, AUTO_PROMPT_DELAY_MS)
+      openPromptOnce()
+    }, delayMs)
+  }
+
+  function onEngagement(moment: EngagementMoment) {
+    if (moment === 'pin_saved' || moment === 'user_followed') return
+    const delay = moment === 'pin_published' ? MOMENT_DELAY_MS : 6000
+    schedulePrompt(delay)
+  }
+
+  function scheduleFallback() {
+    if (!isEngagementRoute(route.path)) {
+      clearTimer()
+      return
+    }
+    schedulePrompt(FALLBACK_DELAY_MS)
   }
 
   watch(
@@ -77,12 +115,16 @@ export function usePwaInstallPrompt() {
         return
       }
       if (isPwaInstallSnoozed()) return
-      schedulePrompt()
+      scheduleFallback()
     },
     { immediate: true },
   )
 
+  unsubscribeEngagement = onEngagementMoment(onEngagement)
+
   onUnmounted(() => {
     clearTimer()
+    unsubscribeEngagement?.()
+    unsubscribeEngagement = null
   })
 }

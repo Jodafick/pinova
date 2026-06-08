@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import PinovaModal from './ui/PinovaModal.vue'
 import PinovaButton from './ui/PinovaButton.vue'
 import { useI18n } from '../i18n'
@@ -9,7 +9,7 @@ import {
   isWebPushSupported,
   type WebPushActivateError,
 } from '../utils/webPushClient'
-import { notificationPromptMarkCompleted } from '../composables/useNotificationPrompt'
+import { notificationPromptMarkCompleted, type NotificationPromptReason } from '../composables/useNotificationPrompt'
 import { pushToast } from '../composables/useToast'
 
 const props = defineProps<{ open: boolean }>()
@@ -79,7 +79,7 @@ function onDecline() {
     @update:open="emit('update:open', $event)"
   >
     <p class="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
-      {{ t('notifications.prompt.body') }}
+      {{ promptBody }}
     </p>
     <p v-if="error" class="mt-3 text-xs font-medium text-pink-700 dark:text-pink-500">{{ error }}</p>
 

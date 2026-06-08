@@ -530,6 +530,8 @@ export function useAuth() {
       const response = await api.post(`profiles/${username}/follow/`)
       if (response.data?.status === 'followed') {
         trackOnce('first_follow', { username })
+        const { recordEngagementMoment } = await import('../utils/engagementMoments')
+        recordEngagementMoment('user_followed')
       }
       /* Compteurs `following_count` / snapshot offline : même source que GET me/. */
       void fetchCurrentUser({ force: true, silent: true })

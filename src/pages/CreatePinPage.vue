@@ -721,6 +721,10 @@ const submitPin = async () => {
     pushToast({ message: successMessage, kind: 'success' })
     if (!isEditMode.value) {
       trackOnce('first_pin_published', { pin_slug: destSlug, is_story: isStory.value })
+      if (!isStory.value) {
+        const { recordEngagementMoment } = await import('../utils/engagementMoments')
+        recordEngagementMoment('pin_published')
+      }
     }
     if (layer.value) closeLayer()
     if (isStory.value && destSlug) {
