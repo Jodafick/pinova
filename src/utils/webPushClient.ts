@@ -56,6 +56,36 @@ export async function fetchWebPushBackendDeviceState(
   }
 }
 
+export type WebPushSubscribePayload = {
+  endpoint: string
+  p256dh: string
+  auth: string
+}
+
+function isPushSubscribeAlreadyRegistered(err: unknown): boolean {
+  const ax = err as { response?: { status?: number; data?: Record<string, unknown> } }
+  if (ax.response?.status !== 400) return false
+  const endpointErrors = ax.response.data?.endpoint
+  const haystack = Array.isArray(endpointErrors)
+    ? endpointErrors.join(' ')
+    : String(endpointErrors ?? '')
+  return haystack.toLowerCase().includes('already exists')
+}
+
+/** Idempotent — ré-enregistrer le même endpoint ne doit pas échouer côté UI. */
+export async function registerWebPushSubscriptionOnBackend(
+  api: AxiosInstance,
+  payload: WebPushSubscribePayload,
+): Promise<boolean> {
+  try {
+    await api.post('notifications/push_subscribe/', payload)
+    return true
+  } catch (err) {
+    if (isPushSubscribeAlreadyRegistered(err)) return true
+    return false
+  }
+}
+
 export async function activateWebPushNotifications(
   api: AxiosInstance,
 ): Promise<{ ok: true } | { ok: false; error: WebPushActivateError }> {
@@ -88,11 +118,10 @@ export async function activateWebPushNotifications(
     if (!endpoint || !p256dh || !auth) {
       return { ok: false, error: 'generic' }
     }
-    await api.post('notifications/push_subscribe/', {
-      endpoint,
-      p256dh,
-      auth,
-    })
+    const ok = await registerWebPushSubscriptionOnBackend(api, { endpoint, p256dh, auth })
+    if (!ok) {
+      return { ok: false, error: 'generic' }
+    }
     return { ok: true }
   } catch {
     return { ok: false, error: 'generic' }

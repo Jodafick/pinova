@@ -1,4 +1,5 @@
 import type { AxiosInstance } from 'axios'
+import { registerWebPushSubscriptionOnBackend } from './webPushClient'
 
 /**
  * Réassocie l’abonnement Web Push du navigateur (endpoint matériel) au compte actuellement
@@ -16,7 +17,7 @@ export async function resyncWebPushSubscriptionForCurrentUser(api: AxiosInstance
     if (!sub) return
     const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } }
     if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return
-    await api.post('notifications/push_subscribe/', {
+    await registerWebPushSubscriptionOnBackend(api, {
       endpoint: json.endpoint,
       p256dh: json.keys.p256dh,
       auth: json.keys.auth,
