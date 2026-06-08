@@ -4,8 +4,7 @@ import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import { usePins, mapDjangoPinToFrontend, isAlreadyReportedError } from '../composables/usePins'
-import type { User, Pin, SponsoredAd } from '../types'
-import { pushFeedItemOverlay } from '../utils/feedOverlayNavigation'
+import type { User, Pin } from '../types'
 import { isFeedPin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
@@ -969,10 +968,6 @@ const handleToggleSave = async (slug: string) => {
 
 const openPin = (slug: string) => {
   router.push({ path: route.path, query: { ...route.query, pin: slug } })
-}
-
-const openSponsored = (item: SponsoredAd) => {
-  pushFeedItemOverlay(router, item)
 }
 
 function onPinDeletedFromGrid(slug: string) {

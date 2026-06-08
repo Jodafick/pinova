@@ -559,7 +559,7 @@ const router = createRouter({
             path: '/dev/design-system',
             name: 'dev-design-system',
             component: () => import('../pages/dev/DesignSystemPage.vue'),
-            meta: { requiresAuth: false, presentation: 'page', statusBar: 'auto' },
+            meta: { requiresAuth: false, presentation: 'page' as const, statusBar: 'auto' as const },
           },
         ]
       : []),
@@ -567,7 +567,7 @@ const router = createRouter({
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../pages/NotFoundPage.vue'),
-      meta: { presentation: 'page', statusBar: 'auto' },
+      meta: { presentation: 'page' as const, statusBar: 'auto' as const },
     },
   ],
 })

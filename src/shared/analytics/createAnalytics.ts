@@ -34,6 +34,14 @@ export type AnalyticsEvent =
   | 'referral_link_opened'
   | 'register_with_ref_code'
   | 'revenue_recorded'
+  | 'creator_suggestions_opened'
+  | 'creator_followed_after_first_pin'
+  | 'creator_level_progressed'
+  | 'first_pin_confetti_shown'
+  | 'first_pin_started'
+  | 'payment_success_animation_shown'
+  | 'premium_activated'
+  | 'boost_activated'
 
 export type SubscriptionPlan = 'free' | 'plus' | 'pro' | string
 
@@ -81,14 +89,6 @@ export function createAnalyticsClient(config: AnalyticsConfig, storage: Analytic
   async function writeStorage(key: string, value: string): Promise<void> {
     try {
       await storage.setItem(key, value)
-    } catch {
-      /* noop */
-    }
-  }
-
-  async function removeStorage(key: string): Promise<void> {
-    try {
-      await storage.removeItem(key)
     } catch {
       /* noop */
     }
@@ -297,14 +297,6 @@ export function createSyncAnalyticsClient(
   function writeStorage(key: string, value: string): void {
     try {
       storage.setItem(key, value)
-    } catch {
-      /* noop */
-    }
-  }
-
-  function removeStorage(key: string): void {
-    try {
-      storage.removeItem(key)
     } catch {
       /* noop */
     }

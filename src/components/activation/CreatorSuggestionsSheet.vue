@@ -116,11 +116,19 @@ async function done() {
         class="flex items-center gap-3 rounded-2xl border border-neutral-200 dark:border-neutral-700 px-3 py-2.5"
       >
         <AvatarDisc
-          :src="row.avatar ? getFullMediaUrl(row.avatar) : undefined"
-          :initials="row.username.slice(0, 2).toUpperCase()"
-          :color-class="row.avatar_color || 'bg-pink-500'"
-          size="md"
-        />
+          :color="row.avatar_color"
+          frame-class="w-10 h-10 text-xs"
+          text-class="text-white"
+          :has-image="!!row.avatar"
+        >
+          <img
+            v-if="row.avatar"
+            :src="getFullMediaUrl(row.avatar)"
+            alt=""
+            class="w-full h-full object-cover"
+          />
+          <span v-else>{{ row.username.slice(0, 2).toUpperCase() }}</span>
+        </AvatarDisc>
         <div class="min-w-0 flex-1">
           <p class="text-sm font-semibold truncate">{{ row.display_name || row.username }}</p>
           <p class="text-xs text-neutral-500 truncate">@{{ row.username }}</p>

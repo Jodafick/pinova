@@ -350,8 +350,10 @@ async function fetchCurrentUserFromNetwork(_opts?: { silent?: boolean }) {
                 retention_cohort_j1: cohorts.retention_cohort_j1,
                 retention_cohort_j7: cohorts.retention_cohort_j7,
                 retention_cohort_j30: cohorts.retention_cohort_j30,
-                signup_platform: cohorts.signup_platform,
-                signup_channel: cohorts.signup_channel,
+                ...(cohorts.signup_platform
+                  ? { signup_platform: cohorts.signup_platform }
+                  : {}),
+                ...(cohorts.signup_channel ? { signup_channel: cohorts.signup_channel } : {}),
               }
             : undefined,
         })
@@ -544,7 +546,7 @@ export function useAuth() {
     }
   }
 
-  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, tipsEnabled?: boolean, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsStreakReminders?: boolean, notificationsReactivationEmails?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean, hideSensitivePins?: boolean }) {
+  async function updateProfile(data: { displayName?: string, bio?: string, email?: string, avatar?: File, preferredLanguage?: string, preferredCurrency?: string, birthDate?: string | null, tipsEnabled?: boolean, privateProfile?: boolean, discoverableProfile?: boolean, notificationsFollowers?: boolean, notificationsSaves?: boolean, notificationsRecommendations?: boolean, notificationsStreakReminders?: boolean, notificationsReactivationEmails?: boolean, notificationsDigestCreatorWeekly?: boolean, sensitiveMediaBlurByDefault?: boolean, hideSensitivePins?: boolean, themeMode?: 'light' | 'dark' | 'system' }) {
     const signature = buildUpdateProfileSignature(data)
     if (updateProfileInFlight && updateProfileInFlight.signature === signature) {
       return updateProfileInFlight.promise
@@ -583,6 +585,10 @@ export function useAuth() {
 
       if (data.hideSensitivePins !== undefined) {
         formData.append('hide_sensitive_pins', data.hideSensitivePins ? 'true' : 'false')
+      }
+
+      if (data.themeMode !== undefined) {
+        formData.append('theme_mode', data.themeMode)
       }
 
       const response = await api.patch('me/', formData, {

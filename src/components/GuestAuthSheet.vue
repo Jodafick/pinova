@@ -16,7 +16,7 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 
 const { t } = useI18n()
 const router = useRouter()
-const { socialLogin } = useAuth()
+const { socialLogin, currentUser } = useAuth()
 
 const intent = () => props.intent || 'generic'
 
@@ -40,7 +40,7 @@ const { login: googleLogin, isReady: googleReady } = useTokenClient({
     const result = await socialLogin('google', response.access_token)
     if (result.success) {
       emit('close')
-      redirectAfterAuth(router, { user: result.user })
+      redirectAfterAuth(router, { user: currentUser.value })
     }
   },
 })
@@ -97,7 +97,7 @@ function goRegister() {
             v-if="googleReady"
             variant="secondary"
             block
-            @click="googleLogin"
+            @click="() => googleLogin()"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 shrink-0" alt="" />
             {{ t('login.googleCta') }}

@@ -8,7 +8,7 @@ import { useAppModal } from '../composables/useAppModal'
 import { pushToast } from '../composables/useToast'
 import BirthDateRequiredModal from './BirthDateRequiredModal.vue'
 import StoryImageCropEditor from './StoryImageCropEditor.vue'
-import { appendQuickPinFormData } from '../composables/pinCreateShared'
+import { appendQuickPinFormData, resolveQuickPinTitle } from '../composables/pinCreateShared'
 import { navigateToPublishedPin } from '../utils/postPublishNavigation'
 import { useTopicSuggestions } from '../composables/useTopicSuggestions'
 import {
@@ -23,7 +23,7 @@ import { useLayer } from '../navigation/useLayer'
 
 const emit = defineEmits<{ cancel: [] }>()
 
-const { t } = useI18n()
+const { t, currentLang } = useI18n()
 const router = useRouter()
 const { showAlert } = useAppModal()
 const { addPin } = usePins()
@@ -183,11 +183,6 @@ const canPublishHint = computed(() => {
   if (!hasMedia.value) return t('create.quick.mediaHint')
   return ''
 })
-
-async function navigateAfterPublish(slug: string) {
-  if (layer.value) popAll()
-  window.location.assign(`/?pin=${encodeURIComponent(slug)}`)
-}
 
 async function publish() {
   if (!canPublish.value || !currentUser.value) return

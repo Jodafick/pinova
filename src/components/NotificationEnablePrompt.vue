@@ -9,7 +9,7 @@ import {
   isWebPushSupported,
   type WebPushActivateError,
 } from '../utils/webPushClient'
-import { notificationPromptMarkCompleted, type NotificationPromptReason } from '../composables/useNotificationPrompt'
+import { notificationPromptMarkCompleted } from '../composables/useNotificationPrompt'
 import { pushToast } from '../composables/useToast'
 
 const props = defineProps<{ open: boolean }>()
@@ -20,6 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const promptBody = computed(() => t('notifications.prompt.body'))
 const loading = ref(false)
 const error = ref('')
 

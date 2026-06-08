@@ -21,7 +21,6 @@ import { useWindowVirtualizer } from '@tanstack/vue-virtual'
 import type { Pin } from '../types'
 import { useAuth } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
-import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { usePins } from '../composables/usePins'
 import { useDataSaver } from '../composables/useDataSaver'
@@ -66,7 +65,6 @@ const { t } = useI18n()
 const { isAuthenticated, currentUser } = useAuth()
 const { promptGuest } = useGuestAuthGate()
 const { isPinSavePending, toggleLike } = usePins()
-const router = useRouter()
 const { gridImageFetchPriority, gridImageSizes, storyVideoPreload } = useDataSaver()
 
 const viewerCanRevealSensitive = computed(() =>

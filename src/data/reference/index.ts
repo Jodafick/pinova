@@ -97,7 +97,7 @@ export async function loadCitiesForCountry(code: string): Promise<CityRef[]> {
     let cities: CityRef[] = []
 
     if (loader) {
-      cities = await loader().then((mod) => mod.default ?? (mod as unknown as CityRef[]))
+      cities = await loader()
     } else {
       cities = LEGACY_CITIES_BY_COUNTRY[upper] ?? []
     }

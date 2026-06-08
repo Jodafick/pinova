@@ -22,24 +22,6 @@ function parseCommentQueryId(raw: unknown): string | undefined {
   return Number.isFinite(n) && n > 0 ? String(Math.floor(n)) : undefined
 }
 
-function mergeRouteQuery(
-  base: Record<string, string | string[] | undefined> | undefined,
-  patch: Record<string, string>,
-): Record<string, string | string[]> {
-  const out: Record<string, string | string[]> = {}
-  if (base) {
-    for (const [k, v] of Object.entries(base)) {
-      if (v === undefined) continue
-      if (typeof v === 'string' && v) out[k] = v
-      else if (Array.isArray(v) && v.length) out[k] = v
-    }
-  }
-  for (const [k, v] of Object.entries(patch)) {
-    out[k] = v
-  }
-  return out
-}
-
 /**
  * Navigation unique pour liste déroulante header, page /notifications, et push web.
  * Aligné sur `Pinova-Mobile` `navigateFromNotificationNavInput` (types metadata, contest, parrainage).

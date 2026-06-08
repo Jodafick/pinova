@@ -283,7 +283,9 @@ export function usePins() {
       const cached = getCachedFeedFirstPage(feedKey)
       if (cached) {
         applyFirstPage(cached.items.slice(), cached.hasNextPage)
-        runBackground(() => fetchFirstPageFromNetwork())
+        runBackground(async () => {
+          await fetchFirstPageFromNetwork()
+        })
         return
       }
       currentPage.value = 1

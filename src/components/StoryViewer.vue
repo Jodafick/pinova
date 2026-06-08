@@ -49,6 +49,7 @@ const closingSessionReason = ref<'completed_all' | null>(null)
 const router = useRouter()
 const { toggleLike, reportPin, trackPinView } = usePins()
 const { isAuthenticated, currentUser } = useAuth()
+const { promptGuest } = useGuestAuthGate()
 const { t } = useI18n()
 const { showAlert } = useAppModal()
 
@@ -85,7 +86,7 @@ function clampResumeAgainstFull(resume: number, full: number): number {
 const index = ref(0)
 const heartBurst = ref(false)
 const heartBurstKey = ref(0)
-let heartBurstHideTimer: ReturnType<typeof setTimeout> | null = null
+let heartBurstHideTimer: number | null = null
 const expandedDesc = ref(false)
 const storyLikersOpen = ref(false)
 const reportStoryOpen = ref(false)
@@ -125,9 +126,9 @@ const surfacePointerActive = ref(false)
 const gestureStart = ref<{ x: number; y: number; at: number } | null>(null)
 const gestureIntent = ref<'none' | 'vertical' | 'horizontal'>('none')
 const isExitClosing = ref(false)
-let exitCloseTimer: ReturnType<typeof setTimeout> | null = null
+let exitCloseTimer: number | null = null
 const EXIT_CLOSE_ANIM_MS = 360
-let longPressTimer: ReturnType<typeof setTimeout> | null = null
+let longPressTimer: number | null = null
 let longPressTriggered = false
 const storyRootRef = ref<HTMLElement | null>(null)
 let detachStoryTouchGestures: (() => void) | null = null
@@ -420,7 +421,7 @@ function toggleStorySound() {
 }
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
-let videoSafetyTimer: ReturnType<typeof setTimeout> | null = null
+let videoSafetyTimer: number | null = null
 /** Incrémenté à chaque segment pour ignorer timeouts / événements obsolètes */
 const segmentPlaybackId = ref(0)
 

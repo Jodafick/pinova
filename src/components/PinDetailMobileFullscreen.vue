@@ -88,7 +88,7 @@ const actionsOpen = ref(false)
 const chromeVisible = ref(true)
 const heartBurst = ref(false)
 const heartBurstKey = ref(0)
-let heartBurstHideTimer: ReturnType<typeof setTimeout> | null = null
+let heartBurstHideTimer: number | null = null
 const surfaceDragX = ref(0)
 const surfaceDragY = ref(0)
 /** Doigt / pointeur actif sur la surface — transitions CSS coupées pour suivre le geste sans « combat » visuel. */
@@ -137,7 +137,6 @@ const descriptionTranslated = computed(() => {
   const current = (props.descriptionText || '').trim()
   return !!original && !!current && current !== original
 })
-const canShowDownload = computed(() => !!props.pin.imageUrl)
 const canFollowAuthor = computed(() => !props.isPinOwner && (!props.currentUser || props.currentUser.id !== props.pin.userId))
 const shareCount = computed(() => {
   return props.pin.stats.shares || 0

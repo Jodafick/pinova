@@ -11,7 +11,7 @@ import type { CheckoutFlow } from '../utils/checkoutFlow'
 
 export type { PaymentActivationPhase }
 
-export function usePaymentActivation(flow: () => CheckoutFlow) {
+export function usePaymentActivation(_flow: () => CheckoutFlow) {
   const phase = ref<PaymentActivationPhase>('confirming')
   const progress = ref(0)
   const statusLine = ref('')

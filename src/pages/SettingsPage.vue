@@ -65,7 +65,7 @@ const { preference: appearancePreference, setPreference: setAppearancePreference
 async function onAppearancePreference(pref: 'light' | 'dark' | 'system') {
   setAppearancePreference(pref)
   try {
-    await updateProfile({ themeMode: pref } as { themeMode?: string })
+    await updateProfile({ themeMode: pref })
   } catch {
     /* localStorage déjà persisté par useAppearance */
   }

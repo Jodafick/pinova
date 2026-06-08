@@ -33,6 +33,10 @@ const listRef = ref<HTMLElement | null>(null)
 
 const normalizedQuery = computed(() => query.value.trim().toLowerCase())
 
+watch(normalizedQuery, () => {
+  listRef.value?.scrollTo({ top: 0 })
+})
+
 const filteredLanguages = computed(() => {
   const q = normalizedQuery.value
   if (!q) return [...PINOVA_LANGUAGES]

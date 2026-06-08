@@ -1639,7 +1639,6 @@ export const en: Record<string, string> = {
   'referral.notifications.backContest': 'Back to contest',
 
   // Monthly contest (leaderboard)
-  'nav.contest': 'Contest',
   'contest.brand': 'Pinova Contest',
   'contest.title': 'Top Pins of the month',
   'contest.subtitle':

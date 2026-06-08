@@ -17,7 +17,7 @@ const { isAuthenticated } = useAuth()
 
 const open = ref(false)
 const DELAY_MS = 2000
-let timer: ReturnType<typeof setTimeout> | null = null
+let timer: number | null = null
 
 function clearTimer() {
   if (timer != null) {

@@ -51,16 +51,18 @@ const isMeaningfulStreak = computed(() => {
   if (milestone.value) return true
   return props.streak.count >= 7
 })
+
+const displayStreak = computed(() => (isMeaningfulStreak.value ? props.streak : null))
 </script>
 
 <template>
   <div
-    v-if="isMeaningfulStreak"
+    v-if="displayStreak"
     class="relative mx-3 mb-2 overflow-hidden flex items-start gap-2.5 rounded-2xl border px-3.5 py-2.5 transition-shadow"
     :class="
       milestone
         ? 'border-amber-300/90 bg-amber-50/95 dark:border-amber-700/60 dark:bg-amber-950/40 shadow-md animate-pulse'
-        : props.streak.at_risk
+        : displayStreak.at_risk
           ? 'border-orange-300/80 bg-orange-50/90 dark:border-orange-800/50 dark:bg-orange-950/30'
           : 'border-pink-200/80 bg-pink-50/90 dark:border-pink-900/50 dark:bg-pink-950/30'
     "
@@ -68,9 +70,9 @@ const isMeaningfulStreak = computed(() => {
     <ConfettiBurst :active="showConfetti" />
     <span
       class="material-symbols-outlined text-[20px] shrink-0"
-      :class="milestone ? 'text-amber-600' : props.streak.at_risk ? 'text-orange-600' : 'text-pink-700'"
+      :class="milestone ? 'text-amber-600' : displayStreak.at_risk ? 'text-orange-600' : 'text-pink-700'"
     >
-      {{ milestone ? 'emoji_events' : props.streak.at_risk ? 'local_fire_department' : 'explore' }}
+      {{ milestone ? 'emoji_events' : displayStreak.at_risk ? 'local_fire_department' : 'explore' }}
     </span>
     <div class="min-w-0 flex-1">
       <p
@@ -78,7 +80,7 @@ const isMeaningfulStreak = computed(() => {
         :class="
           milestone
             ? 'text-amber-800 dark:text-amber-200'
-            : props.streak.at_risk
+            : displayStreak.at_risk
               ? 'text-orange-800 dark:text-orange-200'
               : 'text-pink-800 dark:text-pink-200'
         "
