@@ -1112,6 +1112,7 @@ export const fr: Record<string, string> = {
   'settings.nav.tips': 'Pourboires',
   'settings.nav.seats': 'Abonnement groupe',
   'feed.partnerAd.badge': 'Partenaire',
+  'feed.networkAd.badge': 'Publicité',
   'feed.partnerAd.aria': 'Publicité partenaire : {title}',
   'feed.partnerAd.ctaDefault': 'En savoir plus',
   'feed.partnerAd.ctaShort': 'Voir',

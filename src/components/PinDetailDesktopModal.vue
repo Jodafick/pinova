@@ -16,6 +16,7 @@ import {
 import OfflineImg from './OfflineImg.vue'
 import OfflineVideo from './OfflineVideo.vue'
 import ContextualSponsoredSlot from './ContextualSponsoredSlot.vue'
+import NetworkAdSlot from './NetworkAdSlot.vue'
 
 type CommentSubmitPayload = {
   text: string
@@ -365,6 +366,8 @@ function onVideoMetadata(e: Event) {
               :topic="pin.topic"
               variant="detail"
             />
+
+            <NetworkAdSlot v-if="!isPinOwner" placement="detail" />
 
             <div class="pin-detail-comments-pane flex-1">
               <div class="mb-4 flex flex-col gap-3">

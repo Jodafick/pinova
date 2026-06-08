@@ -1091,6 +1091,7 @@ export const en: Record<string, string> = {
   'settings.nav.tips': 'Tips',
   'settings.nav.seats': 'Household · team',
   'feed.partnerAd.badge': 'Partner',
+  'feed.networkAd.badge': 'Ad',
   'feed.partnerAd.aria': 'Partner ad: {title}',
   'feed.partnerAd.ctaDefault': 'Learn more',
   'feed.partnerAd.ctaShort': 'View',

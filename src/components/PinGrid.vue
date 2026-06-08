@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { FeedItem, Pin, SponsoredAd } from '../types'
 import { isFeedPin, isSponsoredAd } from '../types'
 import SponsoredContentCard from './SponsoredContentCard.vue'
+import NetworkAdBanner from './NetworkAdBanner.vue'
+import { useNetworkAds } from '../composables/useNetworkAds'
 import { usePins } from '../composables/usePins'
 import { useAuth } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
@@ -52,7 +54,10 @@ const blurSensitiveByDefault = computed(() =>
 type GridCell =
   | { kind: 'pin'; pin: Pin }
   | { kind: 'sponsored'; ad: SponsoredAd }
+  | { kind: 'network_ad'; key: string }
   | { kind: 'skeleton'; key: string }
+
+const { showFeedAds, feedEveryN, webClientId, webFeedSlot } = useNetworkAds()
 
 const props = withDefaults(
   defineProps<{
@@ -101,9 +106,19 @@ const skeletonPlaceholders = computed(() => {
 const columns = computed(() => {
   const n = columnCount.value
   const cells: GridCell[] = []
+  let pinCount = 0
   props.pins.forEach((item) => {
-    if (isSponsoredAd(item)) cells.push({ kind: 'sponsored', ad: item })
-    else if (isFeedPin(item)) cells.push({ kind: 'pin', pin: item })
+    if (isSponsoredAd(item)) {
+      cells.push({ kind: 'sponsored', ad: item })
+      return
+    }
+    if (isFeedPin(item)) {
+      cells.push({ kind: 'pin', pin: item })
+      pinCount += 1
+      if (showFeedAds.value && pinCount % feedEveryN.value === 0) {
+        cells.push({ kind: 'network_ad', key: `network-ad-${pinCount}` })
+      }
+    }
   })
   const sk = skeletonPlaceholders.value
   for (let i = 0; i < sk; i++) {
@@ -327,6 +342,12 @@ onUnmounted(() => {
         :key="cell.kind === 'pin' ? cell.pin.id : cell.kind === 'sponsored' ? cell.ad.id : cell.key"
       >
       <SponsoredContentCard v-if="cell.kind === 'sponsored'" :item="cell.ad" variant="feed" />
+      <NetworkAdBanner
+        v-else-if="cell.kind === 'network_ad' && webClientId && webFeedSlot"
+        :client-id="webClientId"
+        :slot-id="webFeedSlot"
+        variant="feed"
+      />
       <article
         v-else-if="cell.kind === 'pin'"
         tabindex="0"
