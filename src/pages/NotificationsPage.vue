@@ -404,6 +404,6 @@ watch(
     </div>
 
     <!-- Fiche pin en surcouche (même mécanisme que home / profil) sans quitter la page. -->
-    <PinDetailOverlayHost :pins="[]" />
+    <PinDetailOverlayHost :feed-items="[]" />
   </div>
 </template>

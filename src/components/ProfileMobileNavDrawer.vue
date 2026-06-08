@@ -115,7 +115,7 @@ onUnmounted(() => {
   />
   <div
     v-if="modelValue"
-    class="pointer-events-none fixed inset-0 z-[9] bg-[#be185d]/25 backdrop-blur-[8px] dark:bg-black/45 dark:backdrop-blur-[12px] lg:hidden"
+    class="pointer-events-none fixed inset-0 z-[9] bg-[#be185d]/30 dark:bg-black/25 lg:hidden"
     aria-hidden="true"
   />
 

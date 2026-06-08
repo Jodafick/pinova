@@ -4,7 +4,7 @@
  * et l’onglet mobile « Explorer » sur la home (même logique, même disposition).
  */
 import { ref, computed, watch, onMounted, onActivated } from 'vue'
-import type { FeedItem } from '../types'
+import type { FeedItem, SponsoredAd } from '../types'
 import api from '../api/index'
 import PinGrid from './PinGrid.vue'
 import PinovaModal from './ui/PinovaModal.vue'
@@ -50,6 +50,7 @@ const emit = defineEmits<{
   'update:selectedTopic': [value: string | null]
   'toggle-save': [slug: string]
   'open-pin': [slug: string]
+  'open-sponsored': [item: SponsoredAd]
   'clear-search': []
 }>()
 
@@ -173,6 +174,10 @@ function onToggleSave(slug: string) {
 
 function onOpenPin(slug: string) {
   emit('open-pin', slug)
+}
+
+function onOpenSponsored(item: SponsoredAd) {
+  emit('open-sponsored', item)
 }
 </script>
 
@@ -443,6 +448,7 @@ function onOpenPin(slug: string) {
         :loading-more="isFetchingNextPage && pins.length > 0"
         @toggle-save="onToggleSave"
         @open-pin="onOpenPin"
+        @open-sponsored="onOpenSponsored"
       />
       <div
         v-else-if="!loading"
@@ -471,6 +477,7 @@ function onOpenPin(slug: string) {
         :loading-more="isFetchingNextPage && pins.length > 0"
         @toggle-save="onToggleSave"
         @open-pin="onOpenPin"
+        @open-sponsored="onOpenSponsored"
       />
       <div
         v-else-if="!loading"

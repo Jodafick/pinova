@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { feedPinsOnly, usePins } from '../composables/usePins'
-import { isFeedPin, type Pin } from '../types'
+import { usePins } from '../composables/usePins'
+import { isFeedPin, type Pin, type SponsoredAd } from '../types'
+import { pushFeedItemOverlay } from '../utils/feedOverlayNavigation'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
@@ -112,6 +113,10 @@ const openPin = (slug: string) => {
   router.push({ path: route.path, query: { ...route.query, pin: slug } })
 }
 
+const openSponsored = (item: SponsoredAd) => {
+  pushFeedItemOverlay(router, item)
+}
+
 function clearExploreSearch() {
   router.replace({ path: '/explore', query: {} })
 }
@@ -128,8 +133,9 @@ function clearExploreSearch() {
       :bindings-active="isPageActive"
       @toggle-save="handleToggleSave"
       @open-pin="openPin"
+      @open-sponsored="openSponsored"
       @clear-search="clearExploreSearch"
     />
-    <PinDetailOverlayHost :pins="feedPinsOnly(displayPins)" />
+    <PinDetailOverlayHost :feed-items="displayPins" />
   </div>
 </template>

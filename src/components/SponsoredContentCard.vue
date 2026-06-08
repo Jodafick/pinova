@@ -12,9 +12,15 @@ const props = withDefaults(
   defineProps<{
     item: SponsoredAd
     variant?: 'feed' | 'detail' | 'story'
+    /** Feed : ouvrir la fiche native (overlay) au lieu du lien externe direct. */
+    openInOverlay?: boolean
   }>(),
-  { variant: 'feed' },
+  { variant: 'feed', openInOverlay: true },
 )
+
+const emit = defineEmits<{
+  (e: 'open-overlay', item: SponsoredAd): void
+}>()
 
 const { t } = useI18n()
 const router = useRouter()
@@ -29,7 +35,12 @@ const ctaLabel = computed(() =>
     : props.item.ctaLabel || t('feed.partnerAd.ctaShort'),
 )
 
-async function onTap() {
+const heroUrl = computed(() => {
+  if (isPinPromo(props.item) && props.item.mediaUrl) return props.item.mediaUrl
+  return props.item.imageUrl
+})
+
+async function openExternal() {
   if (isPartnerAd(props.item)) {
     try {
       await api.post(`monetization/partner-campaigns/${props.item.campaignId}/click/`)
@@ -55,51 +66,83 @@ async function onTap() {
     }
   }
 }
+
+function onTap() {
+  if (props.variant === 'feed' && props.openInOverlay) {
+    emit('open-overlay', props.item)
+    return
+  }
+  void openExternal()
+}
+
+function onCtaClick(event: MouseEvent) {
+  event.stopPropagation()
+  void openExternal()
+}
 </script>
 
 <template>
   <article
     v-if="variant === 'feed'"
-    class="sponsored-card lux-pin-card rounded-3xl overflow-hidden border border-pink-200/40 dark:border-pink-500/25 bg-white dark:bg-neutral-900 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+    class="sponsored-card lux-pin-card group overflow-hidden rounded-3xl border-2 border-pink-300/50 dark:border-pink-500/35 bg-white dark:bg-neutral-900 shadow-[0_12px_40px_-18px_rgba(219,39,119,0.45)] hover:shadow-[0_18px_48px_-16px_rgba(219,39,119,0.5)] transition-shadow cursor-pointer"
     role="button"
     tabindex="0"
     @click="onTap"
     @keydown.enter="onTap"
   >
-    <div class="flex items-stretch gap-0 min-h-[5.5rem]">
-      <div
-        v-if="item.imageUrl || (isPinPromo(item) && item.mediaUrl)"
-        class="w-[4.5rem] shrink-0 bg-neutral-100 dark:bg-neutral-800"
-      >
-        <OfflineVideo
-          v-if="isPinPromo(item) && item.mediaType === 'video' && item.mediaUrl"
-          :src="item.mediaUrl"
-          class="w-full h-full object-cover min-h-[5.5rem]"
-          muted
-          playsinline
-          preload="metadata"
-        />
-        <OfflineImg
-          v-else
-          :src="isPinPromo(item) && item.mediaUrl ? item.mediaUrl : item.imageUrl"
-          :alt="item.title"
-          class="w-full h-full object-cover min-h-[5.5rem]"
-        />
-      </div>
-      <div class="flex-1 min-w-0 px-3 py-2.5 flex flex-col justify-center gap-1">
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-[9px] font-bold uppercase tracking-wide text-pink-600 dark:text-pink-400">{{ badge }}</span>
-          <span v-if="item.sponsorName" class="text-[9px] truncate text-neutral-400 max-w-[45%]">{{ item.sponsorName }}</span>
-        </div>
-        <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-2 leading-snug">
-          {{ item.title }}
-        </h3>
-        <p v-if="item.body" class="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1">
-          {{ item.body }}
-        </p>
-        <span class="inline-flex self-start text-[10px] font-bold text-pink-700 dark:text-pink-300 mt-0.5">
-          {{ ctaLabel }} →
+    <div
+      v-if="heroUrl || (isPinPromo(item) && item.mediaType === 'video' && item.mediaUrl)"
+      class="relative aspect-[3/4] w-full bg-neutral-100 dark:bg-neutral-800"
+    >
+      <OfflineVideo
+        v-if="isPinPromo(item) && item.mediaType === 'video' && item.mediaUrl"
+        :src="item.mediaUrl"
+        class="h-full w-full object-cover"
+        muted
+        playsinline
+        preload="metadata"
+      />
+      <OfflineImg
+        v-else-if="heroUrl"
+        :src="heroUrl"
+        :alt="item.title"
+        class="h-full w-full object-cover"
+      />
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+      <div class="absolute left-3 top-3 flex flex-wrap gap-2">
+        <span class="rounded-full bg-pink-600/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow">
+          {{ badge }}
         </span>
+        <span
+          v-if="item.sponsorName"
+          class="max-w-[55%] truncate rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm"
+        >
+          {{ item.sponsorName }}
+        </span>
+      </div>
+    </div>
+    <div v-else class="bg-gradient-to-br from-pink-50 to-white px-4 py-3 dark:from-pink-950/40 dark:to-neutral-900">
+      <span class="text-[10px] font-bold uppercase tracking-wide text-pink-700 dark:text-pink-400">{{ badge }}</span>
+    </div>
+
+    <div class="space-y-2 px-4 py-3.5">
+      <h3 class="text-base font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-2 leading-snug">
+        {{ item.title }}
+      </h3>
+      <p v-if="item.body" class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-3 leading-relaxed">
+        {{ item.body }}
+      </p>
+      <div class="flex items-center justify-between gap-2 pt-1">
+        <span class="text-[11px] font-semibold text-pink-700 dark:text-pink-300">
+          {{ t('feed.partnerAd.openDetail') }}
+        </span>
+        <button
+          type="button"
+          class="rounded-full bg-pink-700 px-3 py-1.5 text-[11px] font-bold text-white transition group-hover:bg-pink-800"
+          @click="onCtaClick"
+        >
+          {{ ctaLabel }}
+        </button>
       </div>
     </div>
   </article>
@@ -110,54 +153,56 @@ async function onTap() {
     :class="
       variant === 'story'
         ? 'rounded-2xl border border-white/20 bg-black/55 backdrop-blur-md shadow-2xl'
-        : 'rounded-2xl border border-pink-200/40 dark:border-pink-500/30 bg-white/95 dark:bg-neutral-900/95 shadow-sm'
+        : 'rounded-3xl border-2 border-pink-300/50 dark:border-pink-500/35 bg-white dark:bg-neutral-900 shadow-[0_12px_40px_-18px_rgba(219,39,119,0.35)]'
     "
     role="button"
     tabindex="0"
     @click="onTap"
     @keydown.enter="onTap"
   >
-    <div class="flex items-center justify-between gap-2 px-3 pt-2 pb-1">
+    <div class="flex items-center justify-between gap-2 px-4 pt-3 pb-1">
       <span
-        class="text-[10px] font-bold uppercase tracking-wide"
+        class="text-[11px] font-bold uppercase tracking-wide"
         :class="variant === 'story' ? 'text-pink-300' : 'text-pink-700 dark:text-pink-400'"
       >
         {{ badge }}
       </span>
       <span
         v-if="item.sponsorName"
-        class="text-[10px] truncate"
+        class="text-[11px] truncate"
         :class="variant === 'story' ? 'text-white/70' : 'text-neutral-500 dark:text-neutral-400'"
       >
         {{ item.sponsorName }}
       </span>
     </div>
     <div
-      v-if="item.imageUrl"
+      v-if="heroUrl"
       class="relative bg-neutral-100 dark:bg-neutral-800"
-      :class="variant === 'story' ? 'aspect-[16/9] max-h-28' : 'aspect-[4/3]'"
+      :class="variant === 'story' ? 'aspect-[16/9] max-h-36' : 'aspect-[4/5] w-full'"
     >
-      <OfflineImg :src="item.imageUrl" :alt="item.title" class="w-full h-full object-cover" />
+      <OfflineImg :src="heroUrl" :alt="item.title" class="h-full w-full object-cover" />
     </div>
-    <div class="space-y-2 p-3">
+    <div class="space-y-3 p-4">
       <h3
-        class="font-semibold line-clamp-2 text-sm"
-        :class="variant === 'story' ? 'text-white' : 'text-neutral-900 dark:text-neutral-100'"
+        class="font-semibold line-clamp-3"
+        :class="variant === 'story' ? 'text-sm text-white' : 'text-xl text-neutral-900 dark:text-neutral-100'"
       >
         {{ item.title }}
       </h3>
       <p
         v-if="item.body && variant !== 'story'"
-        class="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2"
+        class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-4 leading-relaxed"
       >
         {{ item.body }}
       </p>
-      <span
-        class="inline-flex rounded-xl text-xs font-semibold py-2 px-3"
+      <button
+        type="button"
+        class="inline-flex rounded-xl text-sm font-semibold py-2.5 px-4"
         :class="variant === 'story' ? 'bg-white text-pink-700' : 'bg-pink-700 text-white'"
+        @click.stop="onCtaClick"
       >
         {{ ctaLabel }}
-      </span>
+      </button>
     </div>
   </article>
 </template>

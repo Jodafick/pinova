@@ -17,7 +17,8 @@ import {
 } from '../lib/cache/entityClientCache'
 import { useAuth } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
-import type { Pin } from '../types'
+import type { Pin, SponsoredAd } from '../types'
+import { pushFeedItemOverlay } from '../utils/feedOverlayNavigation'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { shareUrlWithFallback } from '../utils/shareFallback'
@@ -212,6 +213,10 @@ async function loadBoard() {
 
 function openPin(slug: string) {
   router.push({ path: route.path, query: { ...route.query, pin: slug } })
+}
+
+function openSponsored(item: SponsoredAd) {
+  pushFeedItemOverlay(router, item)
 }
 
 async function onToggleSave(slug: string) {
@@ -677,7 +682,15 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <PinGrid v-if="boardPins.length" class="w-full" :pins="boardPins" @open-pin="openPin" @toggle-save="onToggleSave" @pin-deleted="onPinDeletedFromGrid" />
+      <PinGrid
+        v-if="boardPins.length"
+        class="w-full"
+        :pins="boardPins"
+        @open-pin="openPin"
+        @open-sponsored="openSponsored"
+        @toggle-save="onToggleSave"
+        @pin-deleted="onPinDeletedFromGrid"
+      />
       <p v-else class="app-text-muted text-center py-16">{{ t('board.empty') }}</p>
     </template>
 
@@ -753,7 +766,7 @@ onUnmounted(() => {
       @pick="onBoardInvitePick"
     />
 
-    <PinDetailOverlayHost :pins="boardPins" />
+    <PinDetailOverlayHost :feed-items="boardPins" />
 
     <PinovaModal
       v-model:open="organizeModalOpen"

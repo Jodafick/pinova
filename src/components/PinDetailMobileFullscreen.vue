@@ -31,6 +31,8 @@ const props = defineProps({
   pin: { type: Object as PropType<Pin>, required: true },
   previousPin: { type: Object as PropType<Pin | null>, default: null },
   nextPin: { type: Object as PropType<Pin | null>, default: null },
+  canNavigatePrevious: { type: Boolean, default: false },
+  canNavigateNext: { type: Boolean, default: false },
   openingOriginRect: { type: Object as PropType<PinOverlayOriginRect | null>, default: null },
   currentUser: { type: Object as PropType<User | null>, default: null },
   isAuthenticated: { type: Boolean, required: true },
@@ -297,7 +299,7 @@ function moveGesture(x: number, y: number) {
     surfaceDragY.value = Math.max(0, Math.round(dy * 4) / 4)
     surfaceDragX.value = 0
   } else {
-    const hasTarget = dx < 0 ? !!props.nextPin : !!props.previousPin
+    const hasTarget = dx < 0 ? (props.canNavigateNext || !!props.nextPin) : (props.canNavigatePrevious || !!props.previousPin)
     const drag = hasTarget ? dx : dx * 0.18
     const viewportWidth = window.innerWidth || 1
     surfaceDragX.value = Math.max(-viewportWidth, Math.min(viewportWidth, drag))
@@ -354,9 +356,9 @@ function endGesture(x: number, y: number) {
     if (absX > 58 && absX > absY * 1.12) {
       clearSingleTapTimer()
       resetSurfaceGesture()
-      if (dx < 0 && props.nextPin) {
+      if (dx < 0 && (props.canNavigateNext || props.nextPin)) {
         emit('next-pin')
-      } else if (dx > 0 && props.previousPin) {
+      } else if (dx > 0 && (props.canNavigatePrevious || props.previousPin)) {
         emit('prev-pin')
       }
       return

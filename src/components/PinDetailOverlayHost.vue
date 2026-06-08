@@ -3,7 +3,9 @@ import { computed, ref, watch, onActivated, onDeactivated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { PropType } from 'vue'
 import api from '../api/index'
-import type { Pin, User } from '../types'
+import type { FeedItem, Pin, User, SponsoredAd } from '../types'
+import { isFeedPin, isSponsoredAd } from '../types'
+import { findFeedOverlayIndex, siblingFeedItem } from '../utils/feedOverlayNavigation'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
 import { getCachedPinDetail } from '../lib/cache/pinClientCache'
@@ -25,6 +27,8 @@ import { safeHttpUrl } from '../utils/safeHttpUrl'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import PinDetailMobileFullscreen from './PinDetailMobileFullscreen.vue'
 import PinDetailDesktopModal from './PinDetailDesktopModal.vue'
+import SponsoredDetailMobileFullscreen from './SponsoredDetailMobileFullscreen.vue'
+import SponsoredDetailDesktopModal from './SponsoredDetailDesktopModal.vue'
 import ReportContentModal from './ReportContentModal.vue'
 import StoryLikersModal from './StoryLikersModal.vue'
 import PromotePinSheet from './PromotePinSheet.vue'
@@ -62,8 +66,10 @@ type UiComment = {
 }
 
 const props = defineProps({
-  pins: { type: Array as PropType<Pin[]>, default: () => [] },
+  feedItems: { type: Array as PropType<FeedItem[]>, default: () => [] },
 })
+
+const pins = computed(() => props.feedItems.filter(isFeedPin))
 
 const route = useRoute()
 const router = useRouter()
@@ -107,8 +113,12 @@ const overlaySlug = computed(() => {
   const raw = route.query.pin
   return typeof raw === 'string' && raw.trim() ? raw.trim() : ''
 })
-const open = computed(() => !!overlaySlug.value)
-const propPin = computed(() => props.pins.find((p) => p.slug === overlaySlug.value) ?? null)
+const overlaySponsoredId = computed(() => {
+  const raw = route.query.sponsored
+  return typeof raw === 'string' && raw.trim() ? raw.trim() : ''
+})
+const open = computed(() => !!overlaySlug.value || !!overlaySponsoredId.value)
+const propPin = computed(() => pins.value.find((p) => p.slug === overlaySlug.value) ?? null)
 const fetchedPin = ref<Pin | null>(null)
 
 /** Grille (aperçu) + réponse `pins/:slug/` : l’API écrase les champs enrichis. */
@@ -123,18 +133,43 @@ const pin = computed(() => {
   return mergeListPinWithDetail(propPin.value, detail)
 })
 const activePin = computed(() => pin.value)
-const showPinOverlayUi = computed(() => open.value && !!activePin.value && pinOverlayHostPageActive.value)
-const showOverlayLoading = computed(
-  () => open.value && !activePin.value && pinOverlayHostPageActive.value,
+const activeSponsoredAd = computed((): SponsoredAd | null => {
+  const id = overlaySponsoredId.value
+  if (!id) return null
+  const row = props.feedItems.find((item) => isSponsoredAd(item) && item.id === id)
+  return row && isSponsoredAd(row) ? row : null
+})
+const showPinOverlayUi = computed(
+  () => open.value && !!activePin.value && pinOverlayHostPageActive.value,
 )
-const activePinIndex = computed(() => props.pins.findIndex((p) => p.slug === overlaySlug.value))
+const showSponsoredOverlayUi = computed(
+  () => open.value && !!activeSponsoredAd.value && pinOverlayHostPageActive.value,
+)
+const showOverlayLoading = computed(
+  () =>
+    open.value &&
+    !!overlaySlug.value &&
+    !activePin.value &&
+    pinOverlayHostPageActive.value,
+)
+const activeFeedIndex = computed(() =>
+  findFeedOverlayIndex(props.feedItems, {
+    pin: overlaySlug.value,
+    sponsored: overlaySponsoredId.value,
+  }),
+)
+const hasPreviousFeed = computed(() => activeFeedIndex.value > 0)
+const hasNextFeed = computed(() => {
+  const idx = activeFeedIndex.value
+  return idx >= 0 && idx < props.feedItems.length - 1
+})
 const previousPin = computed(() => {
-  const idx = activePinIndex.value
-  return idx > 0 ? props.pins[idx - 1] ?? null : null
+  const prev = siblingFeedItem(props.feedItems, activeFeedIndex.value, -1)
+  return prev && isFeedPin(prev) ? prev : null
 })
 const nextPin = computed(() => {
-  const idx = activePinIndex.value
-  return idx >= 0 ? props.pins[idx + 1] ?? null : null
+  const n = siblingFeedItem(props.feedItems, activeFeedIndex.value, 1)
+  return n && isFeedPin(n) ? n : null
 })
 
 const detailImageFetchPriority = computed(() => (isLowDataMode.value ? 'low' : 'high'))
@@ -189,12 +224,22 @@ function usernamesMatch(a?: string | null, b?: string | null) {
 }
 
 function replaceOverlaySlug(slug: string) {
-  router.replace({ path: route.path, query: { ...route.query, pin: slug } })
+  const nextQuery: Record<string, string | string[] | undefined> = { ...route.query, pin: slug }
+  delete nextQuery.sponsored
+  router.replace({ path: route.path, query: nextQuery })
+}
+
+function replaceOverlaySponsored(id: string) {
+  const nextQuery: Record<string, string | string[] | undefined> = { ...route.query, sponsored: id }
+  delete nextQuery.pin
+  delete nextQuery.commentId
+  router.replace({ path: route.path, query: nextQuery })
 }
 
 function closeOverlay() {
   const nextQuery = { ...route.query }
   delete nextQuery.pin
+  delete nextQuery.sponsored
   delete nextQuery.commentId
   router.replace({ path: route.path, query: nextQuery })
 }
@@ -252,7 +297,7 @@ async function loadComments(reset = true) {
 }
 
 async function resolveOverlayPin(slug: string) {
-  const fromList = props.pins.find((p) => p.slug === slug) ?? null
+  const fromList = pins.value.find((p) => p.slug === slug) ?? null
   const fromCache = getCachedPinDetail(slug)
   fetchedPin.value = fromCache ?? null
   const mergedPreview = mergeListPinWithDetail(fromList, fromCache)
@@ -288,17 +333,15 @@ watch(
   { immediate: true },
 )
 
-function siblingPin(direction: 1 | -1): Pin | null {
-  const slug = overlaySlug.value
-  const rows = props.pins.filter((p) => p.slug)
-  const idx = rows.findIndex((p) => p.slug === slug)
-  if (idx < 0) return null
-  return rows[idx + direction] ?? null
+function siblingFeed(direction: 1 | -1): FeedItem | null {
+  return siblingFeedItem(props.feedItems, activeFeedIndex.value, direction)
 }
 
 function handleAdjacent(direction: 1 | -1) {
-  const next = siblingPin(direction)
-  if (next?.slug) replaceOverlaySlug(next.slug)
+  const next = siblingFeed(direction)
+  if (!next) return
+  if (isFeedPin(next)) replaceOverlaySlug(next.slug)
+  else if (isSponsoredAd(next)) replaceOverlaySponsored(next.id)
 }
 
 async function handleLike() {
@@ -373,7 +416,7 @@ async function handleFollow() {
     return
   }
   const username = p.username
-  const affected = props.pins.filter((row) => row.username === username)
+  const affected = pins.value.filter((row) => row.username === username)
   const previous = affected.map((row) => row.isFollowing)
   affected.forEach((row) => {
     row.isFollowing = !row.isFollowing
@@ -730,6 +773,8 @@ async function handleDeleteComment(commentId: number) {
       :pin="activePin"
     :previous-pin="previousPin"
     :next-pin="nextPin"
+    :can-navigate-previous="hasPreviousFeed"
+    :can-navigate-next="hasNextFeed"
     :opening-origin-rect="openingOriginRect"
     :current-user="currentUser as User | null"
     :is-authenticated="isAuthenticated"
@@ -778,6 +823,8 @@ async function handleDeleteComment(commentId: number) {
     <PinDetailDesktopModal
       v-if="showPinOverlayUi && activePin"
       :pin="activePin"
+    :can-navigate-previous="hasPreviousFeed"
+    :can-navigate-next="hasNextFeed"
     :current-user="currentUser as User | null"
     :is-authenticated="isAuthenticated"
     :is-pin-owner="isPinOwner"
@@ -818,7 +865,29 @@ async function handleDeleteComment(commentId: number) {
     @moderate-comment="handleModerateComment"
     @report-comment="handleReportComment"
     @delete-comment="handleDeleteComment"
+    @prev-pin="handleAdjacent(-1)"
+    @next-pin="handleAdjacent(1)"
   />
+
+    <SponsoredDetailMobileFullscreen
+      v-if="showSponsoredOverlayUi && activeSponsoredAd"
+      :item="activeSponsoredAd"
+      :has-previous="hasPreviousFeed"
+      :has-next="hasNextFeed"
+      @back="closeOverlay"
+      @prev="handleAdjacent(-1)"
+      @next="handleAdjacent(1)"
+    />
+
+    <SponsoredDetailDesktopModal
+      v-if="showSponsoredOverlayUi && activeSponsoredAd"
+      :item="activeSponsoredAd"
+      :has-previous="hasPreviousFeed"
+      :has-next="hasNextFeed"
+      @close="closeOverlay"
+      @prev="handleAdjacent(-1)"
+      @next="handleAdjacent(1)"
+    />
 
   <StoryLikersModal
     v-model="storyLikersOpen"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import type { PropType } from 'vue'
 import type { Pin, User } from '../types'
 import { useI18n } from '../i18n'
@@ -49,6 +49,8 @@ const props = defineProps({
   followingAuthor: { type: Boolean, default: false },
   translatingDescription: { type: Boolean, default: false },
   submittingComment: { type: Boolean, default: false },
+  canNavigatePrevious: { type: Boolean, default: false },
+  canNavigateNext: { type: Boolean, default: false },
 })
 
 const emit = defineEmits<{
@@ -72,6 +74,8 @@ const emit = defineEmits<{
   (e: 'moderate-comment', id: number, hidden: boolean): void
   (e: 'report-comment', id: number): void
   (e: 'delete-comment', id: number): void
+  (e: 'prev-pin'): void
+  (e: 'next-pin'): void
 }>()
 
 const { t } = useI18n()
@@ -91,6 +95,19 @@ function onVideoMetadata(e: Event) {
   if (!video.videoWidth || !video.videoHeight) return
   emit('media-orientation', video.videoWidth >= video.videoHeight)
 }
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'ArrowLeft' && props.canNavigatePrevious) {
+    e.preventDefault()
+    emit('prev-pin')
+  } else if (e.key === 'ArrowRight' && props.canNavigateNext) {
+    e.preventDefault()
+    emit('next-pin')
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -102,6 +119,26 @@ function onVideoMetadata(e: Event) {
         :aria-label="t('common.close')"
         @click="emit('close')"
       />
+
+      <button
+        v-if="canNavigatePrevious"
+        type="button"
+        class="absolute left-6 top-1/2 z-[2] -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full bg-black/45 text-white backdrop-blur-xl ring-1 ring-white/15 transition hover:bg-black/60"
+        :aria-label="t('pin.overlay.prev')"
+        @click="emit('prev-pin')"
+      >
+        <span class="pin-desktop-filled material-symbols-outlined text-3xl">chevron_left</span>
+      </button>
+
+      <button
+        v-if="canNavigateNext"
+        type="button"
+        class="absolute right-6 top-1/2 z-[2] -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full bg-black/45 text-white backdrop-blur-xl ring-1 ring-white/15 transition hover:bg-black/60"
+        :aria-label="t('pin.overlay.next')"
+        @click="emit('next-pin')"
+      >
+        <span class="pin-desktop-filled material-symbols-outlined text-3xl">chevron_right</span>
+      </button>
 
       <article
         class="pin-desktop-modal-card relative z-[1] w-full max-w-6xl overflow-hidden rounded-[2rem] bg-white/80 dark:bg-neutral-950/70 text-neutral-950 dark:text-neutral-50 shadow-[0_32px_100px_rgba(0,0,0,0.45)] ring-1 ring-white/30 dark:ring-white/10 backdrop-blur-2xl backdrop-saturate-150"

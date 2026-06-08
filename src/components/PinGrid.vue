@@ -76,6 +76,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'toggle-save', slug: string): void
   (e: 'open-pin', slug: string): void
+  (e: 'open-sponsored', item: SponsoredAd): void
   (e: 'pin-deleted', slug: string): void
 }>()
 
@@ -341,9 +342,16 @@ onUnmounted(() => {
         v-for="cell in column"
         :key="cell.kind === 'pin' ? cell.pin.id : cell.kind === 'sponsored' ? cell.ad.id : cell.key"
       >
-      <SponsoredContentCard v-if="cell.kind === 'sponsored'" :item="cell.ad" variant="feed" />
+      <SponsoredContentCard
+        v-if="cell.kind === 'sponsored'"
+        :item="cell.ad"
+        variant="feed"
+        @open-overlay="(item) => emit('open-sponsored', item)"
+      />
       <NetworkAdBanner
         v-else-if="cell.kind === 'network_ad' && webClientId && webFeedSlot"
+        :key="cell.key"
+        :ad-key="cell.key"
         :client-id="webClientId"
         :slot-id="webFeedSlot"
         variant="feed"

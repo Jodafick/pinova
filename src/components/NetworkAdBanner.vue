@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from '../i18n'
+import { queueAdsenseFill } from '../lib/adsense'
 
 const props = withDefaults(
   defineProps<{
@@ -8,55 +9,36 @@ const props = withDefaults(
     slotId: string
     format?: string
     variant?: 'feed' | 'detail'
+    /** Identifiant stable (grille) — force un nouveau `<ins>` si l'emplacement change. */
+    adKey?: string
   }>(),
-  { format: 'auto', variant: 'feed' },
+  { format: 'auto', variant: 'feed', adKey: '' },
 )
 
 const { t } = useI18n()
-const containerRef = ref<HTMLElement | null>(null)
-let scriptLoaded = false
+const insRef = ref<HTMLElement | null>(null)
 
-function loadScript(clientId: string): Promise<void> {
-  if (scriptLoaded || document.querySelector('script[src*="adsbygoogle.js"]')) {
-    scriptLoaded = true
-    return Promise.resolve()
-  }
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script')
-    script.async = true
-    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(clientId)}`
-    script.crossOrigin = 'anonymous'
-    script.onload = () => {
-      scriptLoaded = true
-      resolve()
-    }
-    script.onerror = reject
-    document.head.appendChild(script)
-  })
+async function scheduleFill() {
+  if (!props.clientId || !props.slotId) return
+  await nextTick()
+  const ins = insRef.value
+  if (!ins) return
+  queueAdsenseFill(ins, props.clientId)
 }
 
-async function renderAd() {
-  if (!props.clientId || !props.slotId || !containerRef.value) return
-  try {
-    await loadScript(props.clientId)
-    const ins = document.createElement('ins')
-    ins.className = 'adsbygoogle'
-    ins.style.display = 'block'
-    ins.setAttribute('data-ad-client', props.clientId)
-    ins.setAttribute('data-ad-slot', props.slotId)
-    ins.setAttribute('data-ad-format', props.format)
-    ins.setAttribute('data-full-width-responsive', 'true')
-    containerRef.value.replaceChildren(ins)
-    const w = window as Window & { adsbygoogle?: unknown[] }
-    w.adsbygoogle = w.adsbygoogle || []
-    w.adsbygoogle.push({})
-  } catch {
-    /* réseau bloqué ou script indisponible */
-  }
-}
+onMounted(() => {
+  void scheduleFill()
+})
 
-onMounted(() => void renderAd())
-watch(() => [props.clientId, props.slotId], () => void renderAd())
+watch(
+  () => [props.clientId, props.slotId, props.adKey] as const,
+  (next, prev) => {
+    if (prev && next[0] === prev[0] && next[1] === prev[1] && next[2] === prev[2]) return
+    const ins = insRef.value
+    if (ins) delete ins.dataset.pinovaAdQueued
+    void scheduleFill()
+  },
+)
 </script>
 
 <template>
@@ -70,7 +52,17 @@ watch(() => [props.clientId, props.slotId], () => void renderAd())
         {{ t('feed.networkAd.badge') }}
       </span>
     </div>
-    <div ref="containerRef" class="network-ad-slot min-h-[90px] px-2 pb-2" />
+    <div class="network-ad-slot min-h-[90px] px-2 pb-2">
+      <ins
+        :key="adKey || `${clientId}-${slotId}`"
+        ref="insRef"
+        class="adsbygoogle block"
+        :data-ad-client="clientId"
+        :data-ad-slot="slotId"
+        :data-ad-format="format"
+        data-full-width-responsive="true"
+      />
+    </div>
   </article>
 </template>
 

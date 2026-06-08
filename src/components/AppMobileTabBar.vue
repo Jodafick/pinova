@@ -36,39 +36,39 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
 
 <template>
   <nav
-    class="app-mobile-tab-bar fixed inset-x-0 bottom-0 z-40 flex border-t border-neutral-200 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/95 lg:hidden"
+    class="app-mobile-tab-bar fixed inset-x-0 bottom-0 z-40 flex items-end border-t border-neutral-200 bg-white/95 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/95 lg:hidden"
     :aria-label="t('nav.mobileTabBar')"
   >
     <template v-if="isAuthenticated">
       <router-link
         to="/"
-        class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-colors"
+        class="flex min-w-0 flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors"
         :class="isHomeActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(isHomeActive())"
       >
-        <span class="material-symbols-outlined text-[28px] leading-none">home</span>
+        <span class="material-symbols-outlined text-[32px] leading-none">home</span>
         <span class="truncate">{{ t('nav.home') }}</span>
       </router-link>
 
-      <div class="flex min-w-0 flex-1 flex-col items-center justify-start">
+      <div class="flex min-w-0 flex-1 flex-col items-center justify-end pb-1">
         <button
           v-if="!profileNavMobileDrawerOpen"
           type="button"
-          class="-mt-3 flex h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-full bg-pink-700 dark:bg-pink-600 text-white shadow-lg shadow-pink-700/30 transition hover:bg-pink-800 dark:hover:opacity-90 active:scale-95"
+          class="-mt-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-pink-700 dark:bg-pink-600 text-white shadow-lg shadow-pink-700/30 transition hover:bg-pink-800 dark:hover:opacity-90 active:scale-95"
           :aria-label="t('nav.create')"
           @click="openMobileCreateChooser"
         >
-          <span class="material-symbols-outlined text-[30px]">add</span>
+          <span class="material-symbols-outlined text-[36px]">add</span>
         </button>
       </div>
 
       <router-link
         :to="profileTo"
-        class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-colors"
+        class="flex min-w-0 flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors"
         :class="isProfileActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(isProfileActive())"
       >
-        <span class="material-symbols-outlined text-[26px] leading-none">person</span>
+        <span class="material-symbols-outlined text-[32px] leading-none">person</span>
         <span class="truncate">{{ t('nav.profile') }}</span>
       </router-link>
     </template>

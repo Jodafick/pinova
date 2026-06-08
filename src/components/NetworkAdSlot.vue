@@ -18,6 +18,7 @@ const slotId = props.placement === 'feed' ? webFeedSlot : webDetailSlot
 <template>
   <NetworkAdBanner
     v-if="visible && webClientId && slotId"
+    :ad-key="`network-ad-${placement}`"
     :client-id="webClientId"
     :slot-id="slotId"
     :variant="placement"

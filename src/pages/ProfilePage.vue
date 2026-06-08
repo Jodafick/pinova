@@ -4,7 +4,8 @@ import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import { usePins, mapDjangoPinToFrontend, isAlreadyReportedError } from '../composables/usePins'
-import type { User, Pin } from '../types'
+import type { User, Pin, SponsoredAd } from '../types'
+import { pushFeedItemOverlay } from '../utils/feedOverlayNavigation'
 import { isFeedPin } from '../types'
 import PinGrid from '../components/PinGrid.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
@@ -827,11 +828,7 @@ const profileNavDrawerViewportClass = computed(() => {
 
 /** Conteneur type `.page` du demo off-canvas (perspective 1500px sur parent commun). */
 const profileNavOffcanvasRootClass = computed(() => {
-  /*
-   * Active la perspective 3D sur l'ancêtre quand on est sur sa propre page profil
-   * (effet "wow" iOS / desktop). Sur Android, le CSS désactive la perspective
-   * via `html.pinova-platform-android` pour basculer en transformation 2D.
-   */
+  /* Ancêtre off-canvas : le CSS mobile applique une transformation 2D GPU-safe. */
   if (!currentUser.value || !isMyProfile.value) return ''
   return 'pinova-profile-offcanvas-root'
 })
@@ -972,6 +969,10 @@ const handleToggleSave = async (slug: string) => {
 
 const openPin = (slug: string) => {
   router.push({ path: route.path, query: { ...route.query, pin: slug } })
+}
+
+const openSponsored = (item: SponsoredAd) => {
+  pushFeedItemOverlay(router, item)
 }
 
 function onPinDeletedFromGrid(slug: string) {
@@ -2034,7 +2035,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       aria-hidden="true"
     />
 
-    <PinDetailOverlayHost :pins="displayPins" />
+    <PinDetailOverlayHost :feed-items="displayPins" />
 
     <StoryViewer
       v-if="currentUser && activeStories.length > 0"

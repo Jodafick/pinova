@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { feedPinsOnly, usePins } from '../composables/usePins'
-import { isFeedPin, type Pin } from '../types'
+import { usePins } from '../composables/usePins'
+import { isFeedPin, type Pin, type SponsoredAd } from '../types'
+import { pushFeedItemOverlay } from '../utils/feedOverlayNavigation'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import PinGrid from '../components/PinGrid.vue'
 import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
@@ -53,6 +54,10 @@ const openPin = (slug: string) => {
   router.push({ path: route.path, query: { ...route.query, pin: slug } })
 }
 
+const openSponsored = (item: SponsoredAd) => {
+  pushFeedItemOverlay(router, item)
+}
+
 function onPinDeletedFromGrid(slug: string) {
   followingPins.value = followingPins.value.filter((p) => p.slug !== slug)
 }
@@ -86,6 +91,7 @@ const followSuggestedUser = async (username: string) => {
       :loading-more="isFetchingNextPage && displayPins.length > 0"
       @toggle-save="handleToggleSave"
       @open-pin="openPin"
+      @open-sponsored="openSponsored"
       @pin-deleted="onPinDeletedFromGrid"
     />
 
@@ -145,6 +151,6 @@ const followSuggestedUser = async (username: string) => {
       </div>
     </div>
 
-    <PinDetailOverlayHost :pins="feedPinsOnly(displayPins)" />
+    <PinDetailOverlayHost :feed-items="displayPins" />
   </div>
 </template>

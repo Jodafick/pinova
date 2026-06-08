@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { feedPinsOnly, usePins } from '../composables/usePins'
-import { isFeedPin, type Pin } from '../types'
+import { usePins } from '../composables/usePins'
+import { isFeedPin, type Pin, type SponsoredAd } from '../types'
+import { pushFeedItemOverlay } from '../utils/feedOverlayNavigation'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useAppModal } from '../composables/useAppModal'
 import { useTokenClient } from 'vue3-google-signin'
@@ -534,6 +535,10 @@ const openPin = (slug: string) => {
   router.push({ path: route.path, query: { ...route.query, pin: slug } })
 }
 
+const openSponsored = (item: SponsoredAd) => {
+  pushFeedItemOverlay(router, item)
+}
+
 const googleLandingBusy = ref(false)
 
 const { login: googleTokenLogin } = useTokenClient({
@@ -727,6 +732,7 @@ async function continueWithGoogleFromLanding() {
                 :loading-more="forYouCtx.isFetchingNextPage.value && forYouCtx.pins.value.length > 0"
                 @toggle-save="(slug: string) => handleToggleSaveFor(forYouCtx, slug)"
                 @open-pin="openPin"
+                @open-sponsored="openSponsored"
               />
             </template>
             <div
@@ -758,6 +764,7 @@ async function continueWithGoogleFromLanding() {
               :show-intro="false"
               @toggle-save="(slug: string) => handleToggleSaveFor(exploreCtx, slug)"
               @open-pin="openPin"
+              @open-sponsored="openSponsored"
             />
             <div
               v-if="exploreCtx.hasNextPage.value && (exploreCtx.pins.value.length > 0 || exploreCtx.loading.value || exploreCtx.isFetchingNextPage.value)"
@@ -779,6 +786,7 @@ async function continueWithGoogleFromLanding() {
                 :loading-more="followingCtx.isFetchingNextPage.value && followingCtx.pins.value.length > 0"
                 @toggle-save="(slug: string) => handleToggleSaveFor(followingCtx, slug)"
                 @open-pin="openPin"
+                @open-sponsored="openSponsored"
               />
             </template>
             <div
@@ -870,6 +878,7 @@ async function continueWithGoogleFromLanding() {
             :loading-more="forYouCtx.isFetchingNextPage.value && forYouCtx.pins.value.length > 0"
             @toggle-save="(slug: string) => handleToggleSaveFor(forYouCtx, slug)"
             @open-pin="openPin"
+            @open-sponsored="openSponsored"
           />
         </template>
         <div
@@ -953,6 +962,7 @@ async function continueWithGoogleFromLanding() {
           :loading-more="activeFetchingMore && activePins.length > 0"
           @toggle-save="(slug: string) => handleToggleSaveFor(forYouCtx, slug)"
           @open-pin="openPin"
+          @open-sponsored="openSponsored"
         />
       </template>
       <div v-else-if="activePins.length === 0" class="flex flex-col items-center justify-center py-16 sm:py-20 text-center">
@@ -1016,7 +1026,7 @@ async function continueWithGoogleFromLanding() {
       </section>
     </template>
 
-    <PinDetailOverlayHost :pins="feedPinsOnly(activePins)" />
+    <PinDetailOverlayHost :feed-items="activePins" />
     </div>
   </div>
 </template>

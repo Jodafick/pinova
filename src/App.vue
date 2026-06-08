@@ -247,18 +247,12 @@ const isOtherUserProfileRoute = computed(() => {
   return username.toLowerCase() !== me.toLowerCase()
 })
 
-const isMyProfileRoute = computed(() => route.name === 'profile' && !isOtherUserProfileRoute.value)
-
 /** Padding bas #main-content : réserve la tab bar fixe quand elle est visible. */
 const mainMobileBottomPadClass = computed(() => {
   if (suppressAppChrome.value || suppressMobileMainBottomInset.value) return ''
   if (suppressMobileChromeForProfileDrawer.value) return ''
   if (showMobileTabBar.value) {
-    const extraTabPad =
-      route.name === 'home' || isMyProfileRoute.value
-        ? ' + 1.75rem'
-        : ''
-    return `max-lg:pb-[calc(var(--pinova-mobile-tab-bar-h,5rem)${extraTabPad}+env(safe-area-inset-bottom,0px))] lg:pb-0`
+    return 'max-lg:pb-[calc(var(--pinova-mobile-tab-bar-h,4.25rem)+env(safe-area-inset-bottom,0px))] lg:pb-0'
   }
   return 'max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] lg:pb-0'
 })

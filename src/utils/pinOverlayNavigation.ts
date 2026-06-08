@@ -16,7 +16,7 @@ export type PinOverlayRouteContext = {
   query: Record<string, string | string[] | undefined>
 }
 
-function mergeRouteQuery(
+export function mergeRouteQuery(
   base: Record<string, string | string[] | undefined> | undefined,
   patch: Record<string, string>,
 ): Record<string, string | string[]> {
