@@ -20,6 +20,7 @@ import { useImmersiveViewer } from './composables/useImmersiveViewer'
 import AppToast from './components/AppToast.vue'
 import CookieConsentBanner from './components/CookieConsentBanner.vue'
 import NotificationEnablePrompt from './components/NotificationEnablePrompt.vue'
+import ActivationExperienceHost from './components/activation/ActivationExperienceHost.vue'
 import GuestAuthSheet from './components/GuestAuthSheet.vue'
 import AppMobileTabBar from './components/AppMobileTabBar.vue'
 import { useGuestAuthGate } from './composables/useGuestAuthGate'
@@ -200,7 +201,7 @@ onMounted(() => {
     .then(() => {
       const preferred = currentUser.value?.preferredLanguage
       if (preferred && languages.some((lang) => lang.code === preferred)) {
-        setLang(preferred as typeof languages[number]['code'])
+        void setLang(preferred as typeof languages[number]['code'])
       }
       devLog('✅ Session revalidated.')
     })
@@ -712,6 +713,8 @@ const pageTransitionName = computed(() => {
     @snooze="notificationPromptSnooze"
     @decline="notificationPromptDecline"
   />
+
+  <ActivationExperienceHost v-if="isAuthenticated" />
 
   <GuestAuthSheet
     :open="guestGateOpen"

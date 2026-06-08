@@ -2,7 +2,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
-import { useI18n, languages as LANGUAGE_OPTIONS, type LangCode } from '../i18n'
+import { useI18n, type LangCode } from '../i18n'
+import LanguagePickerPanel from '../components/LanguagePickerPanel.vue'
+import { useCountryCities } from '../composables/useCountryCities'
 import api from '../api/index'
 import {
   REFERENCE_COUNTRIES,
@@ -10,7 +12,6 @@ import {
   countryLabel,
   cityLabel,
   interestLabel,
-  citiesForCountry,
   detectBrowserTimezone,
   type InterestRef,
 } from '../data/reference'
@@ -60,6 +61,7 @@ const interestOptions = ref<InterestRef[]>([...REFERENCE_INTERESTS])
 const selectedInterests = ref<string[]>([])
 const countryCode = ref(currentUser.value?.countryCode || '')
 const cityId = ref('')
+const { cities: loadedCities, loading: citiesLoading } = useCountryCities(countryCode)
 const birthDate = ref(
   currentUser.value?.birthDate ? String(currentUser.value.birthDate).slice(0, 10) : '',
 )
@@ -183,9 +185,9 @@ function prevStep() {
   if (stepIndex.value > 0) stepIndex.value -= 1
 }
 
-function pickLanguage(code: LangCode) {
+async function pickLanguage(code: LangCode) {
   selectedLang.value = code
-  setLang(code)
+  await setLang(code)
 }
 
 function toggleInterest(slug: string) {
@@ -204,7 +206,7 @@ function toggleCreator(username: string) {
 
 const cityOptions = computed(() => {
   if (!countryCode.value) return []
-  return citiesForCountry(countryCode.value)
+  return loadedCities.value
 })
 
 const selectedCityName = computed(() => {
@@ -304,7 +306,12 @@ async function finishOnboarding(opts?: { deferred?: boolean }) {
       deferred: !!opts?.deferred,
     })
     if (refCode) clearStoredReferralCode()
-    await router.replace({ name: 'home' })
+    const pins = currentUser.value?.pinsCount ?? 0
+    if (pins === 0) {
+      await router.replace({ name: 'create', query: { welcome: '1' } })
+    } else {
+      await router.replace({ name: 'home' })
+    }
   } catch {
     errorMsg.value = t('onboarding.errorSave')
   } finally {
@@ -381,18 +388,12 @@ function onSkipLater() {
         <section v-else-if="step === 'language'" class="onboarding-panel onboarding-panel--compact">
           <h2 class="onboarding-title onboarding-title--sm">{{ t('onboarding.languageTitle') }}</h2>
           <p class="onboarding-lead">{{ t('onboarding.languageHint') }}</p>
-          <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button
-              v-for="opt in LANGUAGE_OPTIONS"
-              :key="opt.code"
-              type="button"
-              class="onboarding-chip onboarding-chip--lg flex flex-col items-center gap-2 py-4"
-              :class="{ 'onboarding-chip--active': selectedLang === opt.code }"
-              @click="pickLanguage(opt.code)"
-            >
-              <span class="text-3xl leading-none" aria-hidden="true">{{ opt.flag }}</span>
-              <span class="font-semibold">{{ t(`onboarding.lang.${opt.code}`) }}</span>
-            </button>
+          <div class="mt-4 rounded-2xl border border-neutral-200/80 dark:border-neutral-700/80 overflow-hidden bg-white/60 dark:bg-neutral-900/40">
+            <LanguagePickerPanel
+              v-model="selectedLang"
+              compact
+              @select="pickLanguage"
+            />
           </div>
         </section>
 
@@ -406,18 +407,12 @@ function onSkipLater() {
           </p>
           <template v-if="onboardingV2">
             <p class="onboarding-label mt-4">{{ t('onboarding.languageTitle') }}</p>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-              <button
-                v-for="opt in LANGUAGE_OPTIONS"
-                :key="opt.code"
-                type="button"
-                class="onboarding-chip onboarding-chip--lg flex flex-col items-center gap-2 py-3"
-                :class="{ 'onboarding-chip--active': selectedLang === opt.code }"
-                @click="pickLanguage(opt.code)"
-              >
-                <span class="text-2xl leading-none" aria-hidden="true">{{ opt.flag }}</span>
-                <span class="font-semibold text-sm">{{ t(`onboarding.lang.${opt.code}`) }}</span>
-              </button>
+            <div class="mb-4 rounded-2xl border border-neutral-200/80 dark:border-neutral-700/80 overflow-hidden bg-white/60 dark:bg-neutral-900/40">
+              <LanguagePickerPanel
+                v-model="selectedLang"
+                compact
+                @select="pickLanguage"
+              />
             </div>
           </template>
           <div class="onboarding-interest-grid">
@@ -449,14 +444,15 @@ function onSkipLater() {
             :placeholder="t('onboarding.countryPlaceholder')"
             :search-placeholder="t('onboarding.countrySearch')"
           />
-          <template v-if="citySelectOptions.length">
+          <template v-if="citySelectOptions.length || citiesLoading">
             <label class="onboarding-label mt-5">{{ t('onboarding.cityLabel') }}</label>
             <SearchableSelect
               v-model="cityId"
               variant="glass"
               :options="citySelectOptions"
-              :placeholder="t('onboarding.cityPlaceholder')"
+              :placeholder="citiesLoading ? t('onboarding.cityLoading') : t('onboarding.cityPlaceholder')"
               :search-placeholder="t('onboarding.citySearch')"
+              :disabled="citiesLoading"
             />
           </template>
           <template v-if="!onboardingV2">

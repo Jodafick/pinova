@@ -26,7 +26,7 @@ import {
 
 } from '../utils/checkoutFlow'
 
-import { trackEvent } from '../lib/analytics'
+import { trackEvent, trackOnce } from '../lib/analytics'
 import { buildCheckoutSuccessClientProps } from '@pinova/shared'
 import { requestCheckoutPendingRecap } from '../lib/requestCheckoutPendingRecap'
 
@@ -232,6 +232,7 @@ async function runPremiumFlow(tx: string, cbStatus: string) {
       'checkout_success',
       buildCheckoutSuccessClientProps(flow.value, checkoutFunnelProps(flow.value), 'web'),
     )
+    emitPaymentRewardAnalytics(flow.value)
     finishSuccess(activatedPlan.value)
   } else {
     finishPending('')
@@ -269,11 +270,23 @@ async function runSimplePaidFlow(cbStatus: string) {
 
 
 
-  finishSuccess(null)
   trackEvent(
     'checkout_success',
     buildCheckoutSuccessClientProps(flow.value, checkoutFunnelProps(flow.value), 'web'),
   )
+  emitPaymentRewardAnalytics(flow.value)
+  finishSuccess(null)
+}
+
+function emitPaymentRewardAnalytics(checkoutFlow: CheckoutFlow) {
+  trackEvent('payment_success_animation_shown', { flow: checkoutFlow, surface: 'web' })
+  if (checkoutFlow === 'premium') {
+    trackOnce('premium_activated', { surface: 'web' })
+  }
+  if (checkoutFlow === 'boost') {
+    trackOnce('boost_activated', { surface: 'web' })
+    trackOnce('boost_purchased', { surface: 'web' })
+  }
 }
 
 

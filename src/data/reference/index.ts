@@ -1,5 +1,5 @@
 import countriesJson from './countries.json'
-import citiesJson from './cities.json'
+import legacyCitiesJson from './cities.json'
 import interestsJson from './interests.json'
 import accentColorsJson from './accent-colors.json'
 import gendersJson from './genders.json'
@@ -24,7 +24,6 @@ export type InterestRef = LocalizedNames & {
 export type AccentColorRef = LocalizedNames & { id: string; hex: string }
 
 export const REFERENCE_COUNTRIES = countriesJson as CountryRef[]
-export const REFERENCE_CITIES_BY_COUNTRY = citiesJson as Record<string, CityRef[]>
 export const REFERENCE_INTERESTS = interestsJson as InterestRef[]
 export const REFERENCE_ACCENT_COLORS = accentColorsJson as AccentColorRef[]
 export type GenderRef = { id: string } & LocalizedNames
@@ -33,10 +32,29 @@ export type PronounRef = { id: string } & LocalizedNames
 export const REFERENCE_GENDERS = gendersJson as GenderRef[]
 export const REFERENCE_PRONOUNS = pronounsJson as PronounRef[]
 
+/** Ancien fichier monolithique — conservé comme secours hors-ligne. */
+const LEGACY_CITIES_BY_COUNTRY = legacyCitiesJson as Record<string, CityRef[]>
+
+const cityChunkModules = import.meta.glob<CityRef[]>('./cities-by-country/*.json')
+
+const cityCache = new Map<string, CityRef[]>()
+const cityLoadPromises = new Map<string, Promise<CityRef[]>>()
+
+function slugifyCityId(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 export function pickLocalizedName(item: LocalizedNames, lang: string): string {
-  if (lang === 'en') return item.nameEn
-  if (lang === 'fon' && item.nameFon) return item.nameFon
-  return item.nameFr
+  const code = (lang || 'fr').toLowerCase().split('-')[0]
+  if (code === 'en') return item.nameEn
+  if (code === 'fon' && item.nameFon) return item.nameFon
+  if (code === 'fr') return item.nameFr
+  return item.nameFr || item.nameEn
 }
 
 export function countryLabel(c: CountryRef, lang: string): string {
@@ -63,8 +81,70 @@ export function accentLabel(a: AccentColorRef, lang: string): string {
   return pickLocalizedName(a, lang)
 }
 
+export async function loadCitiesForCountry(code: string): Promise<CityRef[]> {
+  const upper = code.toUpperCase()
+  if (!upper) return []
+
+  const cached = cityCache.get(upper)
+  if (cached) return cached
+
+  const pending = cityLoadPromises.get(upper)
+  if (pending) return pending
+
+  const promise = (async () => {
+    const chunkPath = `./cities-by-country/${upper}.json`
+    const loader = cityChunkModules[chunkPath]
+    let cities: CityRef[] = []
+
+    if (loader) {
+      cities = await loader().then((mod) => mod.default ?? (mod as unknown as CityRef[]))
+    } else {
+      cities = LEGACY_CITIES_BY_COUNTRY[upper] ?? []
+    }
+
+    cityCache.set(upper, cities)
+    return cities
+  })()
+
+  cityLoadPromises.set(upper, promise)
+  try {
+    return await promise
+  } finally {
+    cityLoadPromises.delete(upper)
+  }
+}
+
+/** Compatibilité synchrone — retourne le cache ou l'ancien jeu réduit. */
 export function citiesForCountry(code: string): CityRef[] {
-  return REFERENCE_CITIES_BY_COUNTRY[code.toUpperCase()] ?? []
+  const upper = code.toUpperCase()
+  if (!upper) return []
+  return cityCache.get(upper) ?? LEGACY_CITIES_BY_COUNTRY[upper] ?? []
+}
+
+export function searchCountries(query: string, lang: string): CountryRef[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return REFERENCE_COUNTRIES
+  return REFERENCE_COUNTRIES.filter((c) => {
+    const hay = `${c.code} ${c.nameFr} ${c.nameEn} ${c.nameFon ?? ''} ${countryLabel(c, lang)}`.toLowerCase()
+    return hay.includes(q)
+  })
+}
+
+export async function searchCitiesInCountry(
+  countryCode: string,
+  query: string,
+  lang: string,
+  limit = 80,
+): Promise<CityRef[]> {
+  const cities = await loadCitiesForCountry(countryCode)
+  const q = query.trim().toLowerCase()
+  if (!q) return cities.slice(0, limit)
+  return cities
+    .filter((c) => {
+      const hay = `${c.id} ${c.nameFr} ${c.nameEn} ${cityLabel(c, lang)}`.toLowerCase()
+      return hay.includes(q)
+    })
+    .slice(0, limit)
 }
 
 export function detectBrowserTimezone(): string {
@@ -74,3 +154,5 @@ export function detectBrowserTimezone(): string {
     return ''
   }
 }
+
+export { slugifyCityId }

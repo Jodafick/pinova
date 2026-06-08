@@ -25,6 +25,7 @@ import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../util
 import { mapProfileExtendedFromApi } from '../utils/mapProfileExtended'
 import { applyAccentColor, syncAppearanceFromProfile } from './useAppearance'
 import { clearPendingIntent } from '../lib/pendingIntentStorage'
+import { parseActivationFunnelState } from '@pinova/shared'
 import { applyPremiumTrackingPolicy, identifyUser, resetAnalytics, trackOnce } from '../lib/analytics'
 import { syncRetentionCohorts } from '../lib/retentionAnalytics'
 import { setSentryUser } from '../lib/sentry'
@@ -286,6 +287,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     meSavedPinsPage: meBundle?.savedPinsPage,
     birthDate: birthNormalized,
     pinsCount: typeof djangoUser.pins_count === 'number' ? djangoUser.pins_count : undefined,
+    activationFunnel: parseActivationFunnelState(profile.activation_funnel_json),
     blockedUsernames: Array.isArray(djangoUser.blocked_usernames)
       ? djangoUser.blocked_usernames.map((x: unknown) => String(x))
       : [],

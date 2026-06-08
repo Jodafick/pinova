@@ -128,9 +128,11 @@ export type PinLikersResponse = {
   likers: PinLikerEntry[]
 }
 
+import type { ActivationFunnelState } from '@pinova/shared'
 import type { UserProfileExtended } from './profileExtended'
 
 export type User = UserProfileExtended & {
+  activationFunnel?: ActivationFunnelState
   id: number
   isStaff?: boolean
   username: string

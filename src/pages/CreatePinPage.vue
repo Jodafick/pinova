@@ -40,6 +40,10 @@ import {
   invalidateProfileActiveStories,
 } from '../utils/activeStoriesCache'
 import { navigateToPublishedPin } from '../utils/postPublishNavigation'
+import { shouldCelebrateFirstPin } from '@pinova/shared'
+import { useActivationFunnel } from '../composables/useActivationFunnel'
+import { openFirstPinCelebration } from '../composables/useActivationMoments'
+import FirstPinWelcomeCoach from '../components/activation/FirstPinWelcomeCoach.vue'
 
 /** Champs affichés uniquement à l’étape 1 (texte / catégorie / tags publics). Pas les tags privés (étape 2). */
 const CREATE_PIN_STEP_1_FIELD_KEYS = new Set([
@@ -57,6 +61,9 @@ const router = useRouter()
 const route = useRoute()
 const { addPin, updatePin, topics, getPin, fetchPinBySlug, fetchPrivateTags } = usePins()
 const { currentUser, fetchMyBoards, isAuthenticated, fetchCurrentUser } = useAuth()
+const { funnelState } = useActivationFunnel()
+
+const welcomeCreateMode = computed(() => String(route.query.welcome ?? '') === '1')
 
 const needsBirthDateForMedia = computed(
   () => isAuthenticated.value && !hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate),
@@ -660,6 +667,7 @@ const submitPin = async () => {
     createStep.value = 1
     return
   }
+  const pinsBeforePublish = currentUser.value?.pinsCount ?? 0
   saving.value = true
 
   try {
@@ -727,6 +735,18 @@ const submitPin = async () => {
       }
     }
     if (layer.value) closeLayer()
+    const celebrateFirstPin =
+      !isEditMode.value &&
+      destSlug &&
+      shouldCelebrateFirstPin(funnelState.value, pinsBeforePublish, !!isStory.value)
+    if (celebrateFirstPin) {
+      await fetchCurrentUser({ force: true, silent: true })
+      openFirstPinCelebration({
+        slug: destSlug,
+        username: currentUser.value?.username ?? null,
+      })
+      return
+    }
     if (isStory.value && destSlug) {
       window.location.assign(`/?story=${encodeURIComponent(destSlug)}`)
     } else if (destSlug) {
@@ -950,6 +970,7 @@ usePinovaHeaderSwipeDismiss({
         <button
           type="button"
           class="pin-m-pick-card pin-m-pick-primary relative flex min-h-[11.875rem] max-h-[190px] flex-col justify-end overflow-hidden rounded-[1.75rem] px-7 pb-7 pt-16 text-left text-white shadow-[0_28px_70px_-28px_rgba(236,72,153,0.78)] transition active:scale-[0.98] active:opacity-90"
+          data-welcome-coach="media"
           @click="fileInput?.click()"
         >
           <span class="absolute right-[1.375rem] top-[1.375rem] grid h-[3.75rem] w-[3.75rem] place-items-center rounded-full bg-white/15 text-white">
@@ -1095,6 +1116,7 @@ usePinovaHeaderSwipeDismiss({
                 ref="titleInput"
                 v-model="title"
                 type="text"
+                data-welcome-coach="title"
                 :placeholder="t('create.field.title.placeholder')"
                 class="w-full border-0 border-b-2 border-white/14 bg-transparent pb-3 text-2xl font-black tracking-tight text-white outline-none placeholder:text-white/38 focus:border-pink-700/60 dark:border-pink-600/60"
               />
@@ -1260,6 +1282,7 @@ usePinovaHeaderSwipeDismiss({
             type="button"
             class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 py-4 text-base font-black text-white shadow-lg shadow-pink-700/35 transition active:scale-[0.98] disabled:opacity-50"
             :disabled="!title || (!imagePreviewUrl && !storyVideoPreviewUrl && !(existingImageUrl || '').trim() && !(existingStoryVideoUrl || '').trim()) || saving || mediaModerationPending || needsBirthDateForMedia"
+            data-welcome-coach="publish"
             @click="submitPin"
           >
             <svg v-if="saving || mediaModerationPending" class="h-5 w-5 shrink-0 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
@@ -1338,6 +1361,7 @@ usePinovaHeaderSwipeDismiss({
         <PinovaButton
           v-if="createStep === 2"
           data-testid="create-pin-publish"
+          data-welcome-coach="publish"
           variant="primary"
           size="sm"
           :loading="saving || mediaModerationPending"
@@ -1399,6 +1423,7 @@ usePinovaHeaderSwipeDismiss({
             @dragover.prevent="isDragging = true"
             @dragleave.prevent="isDragging = false"
             @drop="onDrop"
+            data-welcome-coach="media"
             @click="fileInput?.click()"
           >
             <div class="w-16 h-16 rounded-full bg-neutral-200 flex items-center justify-center">
@@ -1501,6 +1526,7 @@ usePinovaHeaderSwipeDismiss({
               v-model="title"
               type="text"
               data-testid="create-pin-title"
+              data-welcome-coach="title"
               :placeholder="t('create.field.title.placeholder')"
               :class="[
                 'w-full px-4 py-3 rounded-xl border text-base focus:outline-none focus:ring-2 focus:border-transparent transition placeholder:text-neutral-400',
@@ -1771,6 +1797,7 @@ usePinovaHeaderSwipeDismiss({
     required
     @saved="() => { /* refresh déjà géré dans le composant via fetchCurrentUser */ }"
   />
+  <FirstPinWelcomeCoach :welcome-query="welcomeCreateMode" />
   </div>
 
 </template>

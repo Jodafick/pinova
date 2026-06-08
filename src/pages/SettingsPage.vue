@@ -17,7 +17,7 @@ import PinovaButton from '../components/ui/PinovaButton.vue'
 import ProfileIdentityBlock from '../components/settings/ProfileIdentityBlock.vue'
 import BirthDatePicker from '../components/BirthDatePicker.vue'
 import { profileExtendedToApiPayload } from '../utils/mapProfileExtended'
-import { citiesForCountry, cityLabel } from '../data/reference'
+import { loadCitiesForCountry, cityLabel } from '../data/reference'
 import { isValidSettingsSectionId, resolveSettingsDetailPage, settingsDetailTitleKey, settingsPageShowsSection } from '../data/settingsHubConfig'
 import type { DataSaverOverride } from '../composables/useDataSaver'
 import { useAppModal } from '../composables/useAppModal'
@@ -413,10 +413,14 @@ onMounted(() => {
     favoriteQuote.value = currentUser.value.favoriteQuote || ''
     profileCountryCode.value = currentUser.value.countryCode || ''
     const cityName = currentUser.value.city || ''
-    const cityMatch = citiesForCountry(profileCountryCode.value).find(
-      (c) => cityLabel(c, currentLang.value) === cityName,
-    )
-    profileCityId.value = cityMatch?.id || ''
+    if (profileCountryCode.value && cityName) {
+      void loadCitiesForCountry(profileCountryCode.value).then((cities) => {
+        const cityMatch = cities.find((c) => cityLabel(c, currentLang.value) === cityName)
+        profileCityId.value = cityMatch?.id || ''
+      })
+    } else {
+      profileCityId.value = ''
+    }
     avatarPreview.value = currentUser.value.avatarUrl || null
     currentPlan.value = currentUser.value.subscription?.plan || 'free'
     tipsEnabled.value = currentUser.value.subscription?.tipsEnabled ?? false
@@ -629,7 +633,10 @@ const handleSave = async () => {
     const bd = birthDate.value.trim().slice(0, 10)
     if (bd) formData.append('birth_date', bd)
 
-    const pickedCity = citiesForCountry(profileCountryCode.value).find((c) => c.id === profileCityId.value)
+    const profileCities = profileCountryCode.value
+      ? await loadCitiesForCountry(profileCountryCode.value)
+      : []
+    const pickedCity = profileCities.find((c) => c.id === profileCityId.value)
     const cityName = pickedCity ? cityLabel(pickedCity, currentLang.value) : ''
     Object.entries(
       profileExtendedToApiPayload({
