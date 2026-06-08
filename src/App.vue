@@ -50,7 +50,7 @@ import { useNotificationLive } from './composables/useNotificationLive'
 import { usePwaInstallPrompt } from './composables/usePwaInstallPrompt'
 import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
 import { isValidSettingsSectionId, settingsDetailTitleKey } from './data/settingsHubConfig'
-import { reloadPwaApplication } from './utils/pwaAppReload'
+import { triggerAppSoftRefresh } from './utils/appSoftRefresh'
 import { consumeSkipSplashFlag, shouldSkipSplashForPath } from './utils/skipSplash'
 
 /** Réf. du bouton ⋮ board : assignée dans le template ; `void` évite TS6133 (usage non vu par vue-tsc côté script). */
@@ -237,12 +237,28 @@ const isImmersiveMobileRoute = computed(
   () => isLgDown.value && suppressMobileMainChromeInsets.value,
 )
 
+/** Profil d’un autre utilisateur : pas de tab bar mobile (navigation secondaire). */
+const isOtherUserProfileRoute = computed(() => {
+  if (route.name !== 'profile') return false
+  const username = String(route.params.username || '').trim()
+  if (!username) return false
+  const me = currentUser.value?.username?.trim()
+  if (!me) return true
+  return username.toLowerCase() !== me.toLowerCase()
+})
+
+const isMyProfileRoute = computed(() => route.name === 'profile' && !isOtherUserProfileRoute.value)
+
 /** Padding bas #main-content : réserve la tab bar fixe quand elle est visible. */
 const mainMobileBottomPadClass = computed(() => {
   if (suppressAppChrome.value || suppressMobileMainBottomInset.value) return ''
   if (suppressMobileChromeForProfileDrawer.value) return ''
   if (showMobileTabBar.value) {
-    return 'max-lg:pb-[calc(var(--pinova-mobile-tab-bar-h,5rem)+env(safe-area-inset-bottom,0px))] lg:pb-0'
+    const extraTabPad =
+      route.name === 'home' || isMyProfileRoute.value
+        ? ' + 1.75rem'
+        : ''
+    return `max-lg:pb-[calc(var(--pinova-mobile-tab-bar-h,5rem)${extraTabPad}+env(safe-area-inset-bottom,0px))] lg:pb-0`
   }
   return 'max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] lg:pb-0'
 })
@@ -278,7 +294,10 @@ const pullToRefreshEnabled = computed(
 const { pullDistance: pullToRefreshPx, progress: pullToRefreshProgress } = useMobilePullToRefresh({
   scrollRootRef: mainContentRef,
   enabled: pullToRefreshEnabled,
-  onRefresh: () => reloadPwaApplication(),
+  onRefresh: async () => {
+    triggerAppSoftRefresh()
+    await fetchCurrentUser({ force: true, silent: true }).catch(() => undefined)
+  },
 })
 
 const pullRefreshIndicatorOpacity = computed(() =>
@@ -295,7 +314,8 @@ const showMobileTabBar = computed(
     !suppressMobileChromeForProfileDrawer.value &&
     !layerManager.hasLayers.value &&
     !immersiveViewer.open.value &&
-    ['home', 'explore', 'explore-boards', 'profile', 'login', 'register'].includes(String(route.name || '')),
+    ['home', 'explore', 'explore-boards', 'profile', 'login', 'register'].includes(String(route.name || '')) &&
+    !isOtherUserProfileRoute.value,
 )
 
 /** FAB création mobile : masqué quand la tab bar est visible (bouton création intégré). */

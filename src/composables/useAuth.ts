@@ -3,6 +3,8 @@ import type { User } from '../types'
 import api, { AUTH_INVALIDATED_EVENT } from '../api/index'
 import { readApiErrorCode } from '../constants/authErrors'
 import { clearPinClientCaches } from '../lib/cache/pinClientCache'
+import { clearNotificationsClientCache } from '../lib/cache/notificationsClientCache'
+import { runBackground, shallowJsonEqual } from '../lib/cache/staleRevalidate'
 import {
   getCachedProfileUser,
   profileDetailCacheKey,
@@ -78,6 +80,8 @@ const inMemoryAccessToken = ref<string | null>(
 )
 let hasAuthInvalidationListener = false
 const CURRENT_USER_CACHE_TTL_MS = 30 * 60 * 1000
+/** Au-delà de ce délai, `GET me/` est relancé en arrière-plan (SWR) sans vider l’UI. */
+const CURRENT_USER_STALE_MS = 60 * 1000
 let currentUserLastFetchAt = 0
 let currentUserFetchPromise: Promise<void> | null = null
 let updateProfileInFlight:
@@ -118,7 +122,8 @@ function hydrateCurrentUserFromMeCacheWhenTokenPresent() {
     const parsed = JSON.parse(raw)
     if (parsed && typeof parsed === 'object' && parsed.username != null) {
       currentUser.value = mapDjangoUserToFrontend(parsed)
-      currentUserLastFetchAt = Date.now()
+      /* 0 → prochain fetchCurrentUser revalide en arrière-plan sans flash. */
+      currentUserLastFetchAt = 0
     }
   } catch {
     /* JSON invalide */
@@ -303,79 +308,91 @@ export type FetchUserProfileResult = {
  * `pinova_me_payload_v1` dans localStorage.
  * Exporté pour les actions hors `useAuth()` (ex. follow depuis `usePins`).
  */
+async function fetchCurrentUserFromNetwork(_opts?: { silent?: boolean }) {
+  devLog('📡 Fetching user from API...')
+  try {
+    const response = await api.get('me/')
+    if (response.data) {
+      devLog('✅ User received:', response.data.username)
+      const mapped = mapDjangoUserToFrontend(response.data)
+      if (!shallowJsonEqual(mapped, currentUser.value)) {
+        currentUser.value = mapped
+      }
+      persistMePayloadFromApi(response.data)
+      currentUserLastFetchAt = Date.now()
+      const u = currentUser.value
+      if (u) {
+        setCachedProfileUser(profileDetailCacheKey(u.username, ''), u)
+        syncAppearanceFromProfile(u.themeMode)
+        applyAccentColor(u.accentColor || 'rose')
+        const apiReferral = response.data?.referral as { received?: unknown } | undefined
+        const cohorts = syncRetentionCohorts({
+          dateJoinedIso: u.dateJoined,
+          signupPlatform: 'web',
+          refCode: getStoredReferralCode() || undefined,
+        })
+        identifyUser({
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          plan: u.subscription?.plan,
+          isSeatMember: u.subscription?.isSeatMember,
+          dateJoined: u.dateJoined,
+          signupPlatform: 'web',
+          signupChannel: cohorts?.signup_channel,
+          referred: !!apiReferral?.received,
+          refCode: getStoredReferralCode() || undefined,
+          retentionCohorts: cohorts
+            ? {
+                days_since_signup: cohorts.days_since_signup,
+                retention_cohort_j1: cohorts.retention_cohort_j1,
+                retention_cohort_j7: cohorts.retention_cohort_j7,
+                retention_cohort_j30: cohorts.retention_cohort_j30,
+                signup_platform: cohorts.signup_platform,
+                signup_channel: cohorts.signup_channel,
+              }
+            : undefined,
+        })
+        applyPremiumTrackingPolicy({
+          plan: u.subscription?.plan,
+          isSeatMember: u.subscription?.isSeatMember,
+        })
+        setSentryUser({ id: u.id, username: u.username })
+      }
+      void resyncWebPushSubscriptionForCurrentUser(api).catch(() => undefined)
+    }
+  } catch (err) {
+    if (!currentUser.value) {
+      currentUser.value = null
+    }
+    console.warn('❌ Session absente ou expirée.')
+  }
+}
+
 export async function fetchCurrentUser(opts?: { silent?: boolean; force?: boolean }) {
   const force = !!opts?.force
-  if (
-    !force &&
-    currentUser.value &&
-    currentUserLastFetchAt > 0 &&
-    Date.now() - currentUserLastFetchAt < CURRENT_USER_CACHE_TTL_MS
-  ) {
-    return
+
+  if (!force && currentUser.value && currentUserLastFetchAt > 0) {
+    const age = Date.now() - currentUserLastFetchAt
+    if (age < CURRENT_USER_STALE_MS) return
+    if (age < CURRENT_USER_CACHE_TTL_MS) {
+      if (!currentUserFetchPromise) {
+        currentUserFetchPromise = fetchCurrentUserFromNetwork(opts).finally(() => {
+          currentUserFetchPromise = null
+        })
+      }
+      return
+    }
   }
+
   if (currentUserFetchPromise) {
     await currentUserFetchPromise
     return
   }
-  currentUserFetchPromise = (async () => {
-    devLog('📡 Fetching user from API...')
-    try {
-      const response = await api.get('me/')
-      if (response.data) {
-        devLog('✅ User received:', response.data.username)
-        currentUser.value = mapDjangoUserToFrontend(response.data)
-        persistMePayloadFromApi(response.data)
-        currentUserLastFetchAt = Date.now()
-        const u = currentUser.value
-        if (u) {
-          setCachedProfileUser(profileDetailCacheKey(u.username, ''), u)
-          syncAppearanceFromProfile(u.themeMode)
-          applyAccentColor(u.accentColor || 'rose')
-          const apiReferral = response.data?.referral as { received?: unknown } | undefined
-          const cohorts = syncRetentionCohorts({
-            dateJoinedIso: u.dateJoined,
-            signupPlatform: 'web',
-            refCode: getStoredReferralCode() || undefined,
-          })
-          identifyUser({
-            id: u.id,
-            username: u.username,
-            email: u.email,
-            plan: u.subscription?.plan,
-            isSeatMember: u.subscription?.isSeatMember,
-            dateJoined: u.dateJoined,
-            signupPlatform: 'web',
-            signupChannel: cohorts?.signup_channel,
-            referred: !!apiReferral?.received,
-            refCode: getStoredReferralCode() || undefined,
-            retentionCohorts: cohorts
-              ? {
-                  days_since_signup: cohorts.days_since_signup,
-                  retention_cohort_j1: cohorts.retention_cohort_j1,
-                  retention_cohort_j7: cohorts.retention_cohort_j7,
-                  retention_cohort_j30: cohorts.retention_cohort_j30,
-                  signup_platform: cohorts.signup_platform,
-                  signup_channel: cohorts.signup_channel,
-                }
-              : undefined,
-          })
-          applyPremiumTrackingPolicy({
-            plan: u.subscription?.plan,
-            isSeatMember: u.subscription?.isSeatMember,
-          })
-          setSentryUser({ id: u.id, username: u.username })
-        }
-        void resyncWebPushSubscriptionForCurrentUser(api).catch(() => undefined)
-      }
-    } catch (err) {
-      if (!currentUser.value) {
-        currentUser.value = null
-      }
-      console.warn('❌ Session absente ou expirée.')
-    } finally {
-      currentUserFetchPromise = null
-    }
-  })()
+
+  currentUserFetchPromise = fetchCurrentUserFromNetwork(opts).finally(() => {
+    currentUserFetchPromise = null
+  })
   await currentUserFetchPromise
 }
 
@@ -442,6 +459,7 @@ export function useAuth() {
     currentUser.value = null
     isInitializing.value = false
     clearPinClientCaches()
+    clearNotificationsClientCache()
   }
 
   function applyAccessToken(token: string | null) {
@@ -476,7 +494,21 @@ export function useAuth() {
     const cacheKey = profileDetailCacheKey(username, shareRaw)
     if (!opts?.force) {
       const warm = getCachedProfileUser(cacheKey)
-      if (warm) return { user: warm }
+      if (warm) {
+        runBackground(async () => {
+          try {
+            const params = shareRaw ? { share: shareRaw } : {}
+            const response = await api.get(`profiles/${username}/`, { params })
+            const user = mapDjangoUserToFrontend(response.data)
+            if (!shallowJsonEqual(user, warm)) {
+              setCachedProfileUser(cacheKey, user)
+            }
+          } catch {
+            /* revalidation silencieuse */
+          }
+        })
+        return { user: warm }
+      }
     }
     try {
       const params = shareRaw ? { share: shareRaw } : {}

@@ -69,7 +69,7 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
-const { currentUser, isAuthenticated, toggleSavePin } = useAuth()
+const { currentUser, isAuthenticated, toggleSavePin, fetchCurrentUser } = useAuth()
 const { promptGuest } = useGuestAuthGate()
 /**
  * Plusieurs pages utilisent KeepAlive et embarquent chacune un PinDetailOverlayHost.
@@ -124,6 +124,9 @@ const pin = computed(() => {
 })
 const activePin = computed(() => pin.value)
 const showPinOverlayUi = computed(() => open.value && !!activePin.value && pinOverlayHostPageActive.value)
+const showOverlayLoading = computed(
+  () => open.value && !activePin.value && pinOverlayHostPageActive.value,
+)
 const activePinIndex = computed(() => props.pins.findIndex((p) => p.slug === overlaySlug.value))
 const previousPin = computed(() => {
   const idx = activePinIndex.value
@@ -190,7 +193,10 @@ function replaceOverlaySlug(slug: string) {
 }
 
 function closeOverlay() {
-  router.back()
+  const nextQuery = { ...route.query }
+  delete nextQuery.pin
+  delete nextQuery.commentId
+  router.replace({ path: route.path, query: nextQuery })
 }
 
 function mapComment(comment: any): UiComment {
@@ -348,6 +354,7 @@ async function handleSave() {
     const response = await api.post(`pins/${encodeURIComponent(p.slug)}/save/`)
     p.saved = response.data.status === 'saved'
     p.stats.saves = response.data.saves_count
+    void fetchCurrentUser({ force: true, silent: true })
   } catch (err) {
     p.saved = previousSaved
     p.stats.saves = previousSaves
@@ -707,6 +714,15 @@ async function handleDeleteComment(commentId: number) {
 </script>
 
 <template>
+  <div
+    v-if="showOverlayLoading"
+    class="fixed inset-0 z-[var(--pinova-z-pin-overlay,80)] flex items-center justify-center bg-black/85"
+    aria-busy="true"
+    :aria-label="t('common.loading')"
+  >
+    <span class="material-symbols-outlined text-4xl text-white/90 animate-spin" aria-hidden="true">progress_activity</span>
+  </div>
+
     <PinDetailMobileFullscreen
       v-if="showPinOverlayUi && activePin"
       :pin="activePin"

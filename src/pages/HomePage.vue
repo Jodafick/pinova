@@ -22,6 +22,7 @@ import { trackLandingViewedOnce } from '../composables/useReferralIntent'
 import GuestContestTeaser from '../components/GuestContestTeaser.vue'
 import DiscoveryStreakBanner from '../components/DiscoveryStreakBanner.vue'
 import { useDiscoveryStreak } from '../composables/useDiscoveryStreak'
+import { appSoftRefreshTick } from '../utils/appSoftRefresh'
 
 type TabKey = 'forYou' | 'explorer' | 'following'
 
@@ -496,6 +497,18 @@ watch(currentLang, () => {
   void nextTick(() => measureTabCenters())
 })
 
+watch(appSoftRefreshTick, () => {
+  if (!isPageActive.value) return
+  const revalidate = { revalidate: true as const }
+  if (activeTab.value === 'forYou') {
+    void forYouCtx.fetchHomeFeed(true, activeTopic.value, revalidate)
+  } else if (activeTab.value === 'explorer') {
+    void exploreCtx.fetchDiscoverPins(true, exploreSelectedTopic.value, null, revalidate)
+  } else if (activeTab.value === 'following' && isAuthenticated.value) {
+    void followingCtx.fetchFollowingPins(true, revalidate)
+  }
+})
+
 const handleToggleSaveFor = async (ctx: typeof forYouCtx, slug: string) => {
   const pin = ctx.pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
   if (pin) {
@@ -557,7 +570,7 @@ async function continueWithGoogleFromLanding() {
 
 <template>
   <div
-    class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 pb-4 sm:pb-6"
+    class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 pb-4 sm:pb-6 max-lg:pb-2"
     :class="isAuthenticated ? 'pt-0 lg:pt-6' : 'pt-2 sm:pt-3 lg:pt-4'"
   >
     <div class="min-w-0 max-w-6xl max-lg:max-w-none mx-auto max-lg:mx-0 xl:max-w-none xl:mx-0">

@@ -43,11 +43,19 @@ const headline = computed(() => {
 })
 
 const showConfetti = computed(() => milestone.value === 7 || milestone.value === 30)
+
+/** Masque le bandeau « 1 jour d’exploration » peu explicite ; garde les états utiles. */
+const isMeaningfulStreak = computed(() => {
+  if (!props.streak) return false
+  if (props.streak.at_risk || props.streak.paused) return true
+  if (milestone.value) return true
+  return props.streak.count >= 7
+})
 </script>
 
 <template>
   <div
-    v-if="props.streak && props.streak.count >= 1"
+    v-if="isMeaningfulStreak"
     class="relative mx-3 mb-2 overflow-hidden flex items-start gap-2.5 rounded-2xl border px-3.5 py-2.5 transition-shadow"
     :class="
       milestone
@@ -77,7 +85,12 @@ const showConfetti = computed(() => milestone.value === 7 || milestone.value ===
       >
         {{ headline }}
       </p>
-      <p class="text-[11px] text-pink-900/70 dark:text-pink-100/70 mt-0.5">{{ t('discovery.streak.hint') }}</p>
+      <p
+        v-if="props.streak?.paused || props.streak?.at_risk"
+        class="text-[11px] text-pink-900/70 dark:text-pink-100/70 mt-0.5"
+      >
+        {{ t('discovery.streak.hint') }}
+      </p>
     </div>
   </div>
 </template>

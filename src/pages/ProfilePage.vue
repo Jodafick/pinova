@@ -1412,7 +1412,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       :class="['relative w-full min-w-0', profileNavShellSurfaceClass]"
     >
       <div
-        class="relative z-0 w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12"
+        class="relative z-0 w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 max-lg:pb-4"
         :class="profileNavShellInnerClass"
         @click="onProfileDrawerSurfaceClick"
       >

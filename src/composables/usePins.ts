@@ -18,6 +18,7 @@ import {
 import { prefetchPinsMediaForOffline } from '../media/offlineCache'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 import { fetchCurrentUser } from './useAuth'
+import { runBackground, shallowJsonEqual } from '../lib/cache/staleRevalidate'
 
 type PaginatedResponse<T> = {
   count: number
@@ -222,18 +223,64 @@ export function usePins() {
     endpoint: string,
     reset = false,
     extraParams: Record<string, string | number | null | undefined> = {},
-    opts?: { bypassCache?: boolean },
+    opts?: { bypassCache?: boolean; backgroundOnly?: boolean; revalidate?: boolean },
   ) => {
     const lang = currentLang.value
     const feedKey = feedFirstPageCacheKey(endpoint, lang, extraParams)
 
-    if (reset) {
+    if (reset && !opts?.backgroundOnly && !opts?.revalidate) {
       feedLoadGeneration += 1
       currentPage.value = 1
       hasNextPage.value = true
       pins.value = []
     }
+    if (opts?.revalidate) {
+      feedLoadGeneration += 1
+    }
     const ticket = feedLoadGeneration
+
+    const applyFirstPage = (items: FeedItem[], next: boolean) => {
+      pins.value = items.slice()
+      currentPage.value = 2
+      hasNextPage.value = next
+      loading.value = false
+      isFetchingNextPage.value = false
+      error.value = null
+    }
+
+    const fetchFirstPageFromNetwork = async (): Promise<boolean> => {
+      try {
+        const response = await api.get(endpoint, {
+          params: {
+            page: 1,
+            lang,
+            ...extraParams,
+          },
+        })
+        if (ticket !== feedLoadGeneration) return false
+
+        const { rows: pinsData, next } = extractFeedPageRows(response.data)
+        const newPins: FeedItem[] = []
+        for (const raw of pinsData) {
+          if (raw == null || typeof raw !== 'object') continue
+          const mapped = mapFeedRow(raw as Record<string, unknown>)
+          if (mapped) newPins.push(mapped)
+        }
+
+        if (newPins.length > 0 || pinsData.length === 0) {
+          setCachedFeedFirstPage(feedKey, newPins.slice(), !!next)
+          if (!shallowJsonEqual(newPins, pins.value)) {
+            applyFirstPage(newPins, !!next)
+          } else {
+            hasNextPage.value = !!next
+            currentPage.value = 2
+          }
+        }
+        return true
+      } catch {
+        return false
+      }
+    }
 
     if (
       reset &&
@@ -243,14 +290,21 @@ export function usePins() {
     ) {
       const cached = getCachedFeedFirstPage(feedKey)
       if (cached) {
-        pins.value = cached.items.slice()
-        currentPage.value = 2
-        hasNextPage.value = cached.hasNextPage
-        loading.value = false
-        isFetchingNextPage.value = false
-        error.value = null
+        applyFirstPage(cached.items.slice(), cached.hasNextPage)
+        runBackground(() => fetchFirstPageFromNetwork())
         return
       }
+    }
+
+    if (opts?.revalidate) {
+      loading.value = false
+      await fetchFirstPageFromNetwork()
+      return
+    }
+
+    if (opts?.backgroundOnly) {
+      await fetchFirstPageFromNetwork()
+      return
     }
 
     if (!hasNextPage.value) return
@@ -323,6 +377,23 @@ export function usePins() {
         } else {
           pins.value.push(hit)
         }
+        runBackground(async () => {
+          try {
+            const response = await api.get(`pins/${encodeURIComponent(slug)}/`, {
+              params: { lang: currentLang.value },
+            })
+            const mapped = mapDjangoPinToFrontend(response.data)
+            if (shallowJsonEqual(mapped, hit)) return
+            setCachedPinDetail(slug, mapped)
+            prefetchPinsMediaForOffline([mapped])
+            const liveIdx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
+            if (liveIdx >= 0 && isFeedPin(pins.value[liveIdx])) {
+              pins.value[liveIdx] = { ...pins.value[liveIdx], ...mapped }
+            }
+          } catch {
+            /* revalidation silencieuse */
+          }
+        })
         return hit
       }
       const inflight = pinDetailInFlight.get(slug)
@@ -414,7 +485,7 @@ export function usePins() {
   async function fetchHomeFeed(
     reset = false,
     topic?: string | null,
-    opts?: { bypassCache?: boolean },
+    opts?: { bypassCache?: boolean; revalidate?: boolean },
   ) {
     try {
       await loadPinCollection('pins/home-feed/', reset, topic ? { topic } : {}, opts)
@@ -428,7 +499,7 @@ export function usePins() {
     reset = false,
     topic?: string | null,
     textQuery?: string | null,
-    opts?: { bypassCache?: boolean },
+    opts?: { bypassCache?: boolean; revalidate?: boolean },
   ) {
     try {
       const extra: Record<string, string> = {}
@@ -442,7 +513,10 @@ export function usePins() {
     }
   }
 
-  async function fetchFollowingPins(reset = false, opts?: { bypassCache?: boolean }) {
+  async function fetchFollowingPins(
+    reset = false,
+    opts?: { bypassCache?: boolean; revalidate?: boolean },
+  ) {
     try {
       await loadPinCollection('pins/following/', reset, {}, opts)
     } catch (err) {
@@ -756,6 +830,7 @@ export function usePins() {
         trackEvent('pin_saved', { pin_slug: slug })
         trackOnce('first_save', { pin_slug: slug })
       }
+      void fetchCurrentUser({ force: true, silent: true })
       invalidatePinDetailClientCache(slug)
       return response.data
     } catch (err) {

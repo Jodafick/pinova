@@ -1,4 +1,5 @@
 import type { Router } from 'vue-router'
+import { pushPinDetailOverlay } from './pinOverlayNavigation'
 
 /**
  * Données minimales pour router comme une notification API / un clic push (service worker).
@@ -58,11 +59,12 @@ export function navigateWebNotificationDeepLink(
   const senderUser = String(input.sender_username || '').trim()
 
   const overlayPush = () => {
-    if (mode !== 'notificationsPage' || !routeContext) return false
-    const query: Record<string, string> = {}
-    if (pinSlug) query.pin = pinSlug
-    if (commentId) query.commentId = commentId
-    router.push({ path: routeContext.path, query: mergeRouteQuery(routeContext.query, query) })
+    if (!pinSlug) return false
+    pushPinDetailOverlay(router, pinSlug, {
+      commentId,
+      routeContext: mode === 'notificationsPage' ? routeContext : undefined,
+      preferNotificationsFallback: mode === 'header',
+    })
     return true
   }
 
@@ -73,18 +75,7 @@ export function navigateWebNotificationDeepLink(
 
   if (metadataKind === 'contest_rank_update' || metadataKind === 'contest_display_rank_change') {
     if (pinSlug) {
-      if (mode === 'notificationsPage' && routeContext) {
-        router.push({
-          path: routeContext.path,
-          query: mergeRouteQuery(routeContext.query, { pin: pinSlug, ...(commentId ? { commentId } : {}) }),
-        })
-        return
-      }
-      router.push({
-        path: `/pin/${encodeURIComponent(pinSlug)}`,
-        ...(commentId ? { query: { commentId } } : {}),
-      })
-      return
+      if (overlayPush()) return
     }
     router.push('/contest/live')
     return
@@ -113,11 +104,6 @@ export function navigateWebNotificationDeepLink(
 
   if (pinSlug) {
     if (overlayPush()) return
-    router.push({
-      path: `/pin/${encodeURIComponent(pinSlug)}`,
-      ...(commentId ? { query: { commentId } } : {}),
-    })
-    return
   }
 
   if (nType === 'follow' && senderUser) {

@@ -20,6 +20,11 @@ import PinovaButton from '../components/ui/PinovaButton.vue'
 import PinovaEmptyState from '../components/ui/PinovaEmptyState.vue'
 import PinovaErrorState from '../components/ui/PinovaErrorState.vue'
 import NotificationListSkeleton from '../components/NotificationListSkeleton.vue'
+import {
+  getCachedNotificationsFirstPage,
+  setCachedNotificationsFirstPage,
+} from '../lib/cache/notificationsClientCache'
+import { runBackground, shallowJsonEqual } from '../lib/cache/staleRevalidate'
 
 const { t, currentLang } = useI18n()
 const route = useRoute()
@@ -93,13 +98,31 @@ function syncNotificationsMobileHeader() {
   )
 }
 
-async function load(reset = true) {
+async function load(reset = true, opts?: { silent?: boolean }) {
   if (!isAuthenticated.value) return
   const nextPage = reset ? 1 : page.value + 1
-  if (reset) {
+
+  if (reset && !opts?.silent) {
+    const cached = getCachedNotificationsFirstPage(currentLang.value)
+    if (cached?.items?.length) {
+      notifications.value = cached.items as NotificationRow[]
+      hasNext.value = cached.hasNext
+      page.value = 1
+      loadedOnce.value = true
+      loading.value = false
+      error.value = false
+      syncNotificationsMobileHeader()
+      runBackground(async () => {
+        await load(true, { silent: true })
+      })
+      return
+    }
+  }
+
+  if (reset && !opts?.silent) {
     loading.value = true
     error.value = false
-  } else {
+  } else if (!reset) {
     loadingMore.value = true
   }
   try {
@@ -107,24 +130,31 @@ async function load(reset = true) {
       params: { page: nextPage, page_size: 20, lang: currentLang.value },
     })
     const data = response.data
+    let chunk: NotificationRow[] = []
     if (Array.isArray(data)) {
-      notifications.value = data
+      chunk = data
       hasNext.value = false
       page.value = 1
     } else {
-      const chunk = (data?.results ?? []) as NotificationRow[]
-      notifications.value = reset ? chunk : [...notifications.value, ...chunk]
+      chunk = (data?.results ?? []) as NotificationRow[]
       hasNext.value = !!data?.next
       page.value = nextPage
+    }
+    const nextList = reset ? chunk : [...notifications.value, ...chunk]
+    if (!shallowJsonEqual(nextList, notifications.value)) {
+      notifications.value = nextList
+    }
+    if (reset && nextPage === 1) {
+      setCachedNotificationsFirstPage(currentLang.value, notifications.value, hasNext.value)
     }
     loadedOnce.value = true
   } catch (err) {
     console.error('NotificationsPage: load error', err)
-    if (reset) {
+    if (reset && !opts?.silent && notifications.value.length === 0) {
       notifications.value = []
       hasNext.value = false
+      error.value = true
     }
-    error.value = true
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -196,7 +226,7 @@ onMounted(() => {
 onActivated(() => {
   syncNotificationsMobileHeader()
   if (loadedOnce.value) {
-    void load(true)
+    void load(true, { silent: true })
   }
 })
 

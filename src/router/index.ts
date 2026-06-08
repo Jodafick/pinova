@@ -108,13 +108,22 @@ const router = createRouter({
     {
       path: '/pin/:slug',
       name: 'pin-detail',
-      redirect: (to) => ({
-        path: '/',
-        query: {
-          ...to.query,
-          pin: String(to.params.slug || ''),
-        },
-      }),
+      redirect: (to, from) => {
+        const slug = String(to.params.slug || '')
+        const fromName = from?.name
+        const keepContext =
+          fromName &&
+          ['home', 'profile', 'explore', 'explore-boards', 'following', 'board', 'notifications'].includes(
+            String(fromName),
+          )
+        return {
+          path: keepContext ? from.path : '/',
+          query: {
+            ...(keepContext ? from.query : to.query),
+            pin: slug,
+          },
+        }
+      },
       meta: {
         requiresAuth: false,
         keepAlive: true,
