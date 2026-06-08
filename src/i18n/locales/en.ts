@@ -1703,7 +1703,6 @@ export const en: Record<string, string> = {
   'contest.rankCue.up': '📈 Live rank no. {rank} (was no. {prev}). "{title}".',
   'contest.rankCue.down': '📉 Live rank no. {rank} (you were no. {prev}). "{title}" — momentum can swing back.',
   'contest.rankCue.leftPodium': 'You left the podium (now no. {rank}). "{title}" is still in the race.',
-
   'onboarding.welcomeTitle': 'Welcome to Pinova',
   'onboarding.welcomeSubtitle': 'A few steps to personalize your feed, suggestions, and experience.',
   'onboarding.welcomeBullet1': 'A feed tuned to your interests',

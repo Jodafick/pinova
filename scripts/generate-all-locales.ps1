@@ -1,5 +1,5 @@
 # Génère toutes les locales WEB via googletrans (Python + venv local).
-# Reprend automatiquement via scripts/.checkpoints/web/ si interrompu.
+# Progression temps réel via tqdm dans le terminal.
 param(
   [switch]$Force
 )
@@ -12,24 +12,43 @@ $venv = Join-Path $PSScriptRoot '.venv'
 $py = Join-Path $venv 'Scripts\python.exe'
 
 if (-not (Test-Path $py)) {
-  Write-Host "Création du venv Python…" -ForegroundColor DarkGray
+  Write-Host "Creation du venv Python..." -ForegroundColor DarkGray
   python -m venv $venv
 }
 
-Write-Host "Installation googletrans…" -ForegroundColor DarkGray
+Write-Host "Installation dependances..." -ForegroundColor DarkGray
 & $py -m pip install -q -U pip
 & $py -m pip install -q -r ./scripts/requirements-locales.txt
 
 $env:PYTHONUTF8 = '1'
+$env:PYTHONUNBUFFERED = '1'
+
+# PowerShell traite stderr des commandes natives comme des erreurs fatales avec Stop.
+if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+  $PSNativeCommandUseErrorActionPreference = $false
+}
+
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $logWeb = "./scripts/generate-locales-web-$stamp.log"
 
-$args = @('./scripts/generate-locales.py')
-if ($Force) { $args += '--force' }
+$pyArgs = @('-u', './scripts/generate-locales.py')
+if ($Force) { $pyArgs += '--force' }
 
-Write-Host "`n=== Locales WEB uniquement ===" -ForegroundColor Cyan
-& $py @args *>&1 | Out-File -Encoding utf8 $logWeb
-Get-Content $logWeb -Tail 25
+Write-Host "`n=== Locales WEB (tqdm) ===" -ForegroundColor Cyan
+Write-Host "Log: $logWeb`n" -ForegroundColor DarkGray
 
-Write-Host "`n=== Terminé (web) ===" -ForegroundColor Green
-Write-Host "Log: $logWeb"
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+  & $py @pyArgs 2>&1 | Tee-Object -FilePath $logWeb
+  $exitCode = $LASTEXITCODE
+} finally {
+  $ErrorActionPreference = $prevEap
+}
+
+if ($exitCode -ne 0) {
+  Write-Host "`nEchec (code $exitCode). Voir $logWeb" -ForegroundColor Red
+  exit $exitCode
+}
+
+Write-Host "`n=== Termine (web) ===" -ForegroundColor Green

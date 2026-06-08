@@ -33,7 +33,7 @@ export const PINOVA_LANGUAGES: readonly PinovaLanguage[] = [
   { code: 'uk', label: 'Ukrainien', nativeLabel: 'Українська', flag: '🇺🇦', googleCode: 'uk', region: 'europe' },
   { code: 'bn', label: 'Bengali', nativeLabel: 'বাংলা', flag: '🇧🇩', googleCode: 'bn', region: 'asia' },
   { code: 'ur', label: 'Urdu', nativeLabel: 'اردو', flag: '🇵🇰', rtl: true, googleCode: 'ur', region: 'asia' },
-  { code: 'fon', label: 'Fon', nativeLabel: 'Fɔngbè', flag: '🇧🇯', region: 'africa' },
+  { code: 'fon', label: 'Fon', nativeLabel: 'Fɔngbè', flag: '🇧🇯', googleCode: 'fon', region: 'africa' },
   { code: 'yo', label: 'Yoruba', nativeLabel: 'Yorùbá', flag: '🇳🇬', googleCode: 'yo', region: 'africa' },
   { code: 'ee', label: 'Éwé', nativeLabel: 'Eʋegbe', flag: '🇬🇭', googleCode: 'ee', region: 'africa' },
   { code: 'ln', label: 'Lingala', nativeLabel: 'Lingála', flag: '🇨🇩', googleCode: 'ln', region: 'africa' },

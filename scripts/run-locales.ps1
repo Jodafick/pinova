@@ -17,4 +17,6 @@ if (-not (Test-Path $py)) {
 }
 
 $env:PYTHONUTF8 = '1'
-& $py ./scripts/generate-locales.py @Args
+$env:PYTHONUNBUFFERED = '1'
+& $py -m pip install -q -r ./scripts/requirements-locales.txt
+& $py -u ./scripts/generate-locales.py @Args
