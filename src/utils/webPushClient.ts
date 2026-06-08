@@ -82,10 +82,16 @@ export async function activateWebPushNotifications(
         applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
       }))
     const json = subscription.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } }
+    const endpoint = String(json.endpoint ?? '').trim()
+    const p256dh = String(json.keys?.p256dh ?? '').trim()
+    const auth = String(json.keys?.auth ?? '').trim()
+    if (!endpoint || !p256dh || !auth) {
+      return { ok: false, error: 'generic' }
+    }
     await api.post('notifications/push_subscribe/', {
-      endpoint: json.endpoint,
-      p256dh: json.keys?.p256dh,
-      auth: json.keys?.auth,
+      endpoint,
+      p256dh,
+      auth,
     })
     return { ok: true }
   } catch {

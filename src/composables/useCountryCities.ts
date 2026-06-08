@@ -14,7 +14,8 @@ export function useCountryCities(countryCode: Ref<string>) {
       }
       loading.value = true
       try {
-        cities.value = await loadCitiesForCountry(code)
+        const result = await loadCitiesForCountry(code)
+        cities.value = Array.isArray(result) ? result : []
       } finally {
         loading.value = false
       }

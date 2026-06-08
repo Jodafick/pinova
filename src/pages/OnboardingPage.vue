@@ -206,7 +206,8 @@ function toggleCreator(username: string) {
 
 const cityOptions = computed(() => {
   if (!countryCode.value) return []
-  return loadedCities.value
+  const rows = loadedCities.value
+  return Array.isArray(rows) ? rows : []
 })
 
 const selectedCityName = computed(() => {

@@ -35,7 +35,16 @@ export const REFERENCE_PRONOUNS = pronounsJson as PronounRef[]
 /** Ancien fichier monolithique — conservé comme secours hors-ligne. */
 const LEGACY_CITIES_BY_COUNTRY = legacyCitiesJson as Record<string, CityRef[]>
 
-const cityChunkModules = import.meta.glob<CityRef[]>('./cities-by-country/*.json')
+const cityChunkModules = import.meta.glob('./cities-by-country/*.json')
+
+function normalizeCityChunk(mod: unknown): CityRef[] {
+  if (Array.isArray(mod)) return mod as CityRef[]
+  if (mod && typeof mod === 'object' && 'default' in mod) {
+    const inner = (mod as { default?: unknown }).default
+    if (Array.isArray(inner)) return inner as CityRef[]
+  }
+  return []
+}
 
 const cityCache = new Map<string, CityRef[]>()
 const cityLoadPromises = new Map<string, Promise<CityRef[]>>()
@@ -97,7 +106,7 @@ export async function loadCitiesForCountry(code: string): Promise<CityRef[]> {
     let cities: CityRef[] = []
 
     if (loader) {
-      cities = await loader()
+      cities = normalizeCityChunk(await loader())
     } else {
       cities = LEGACY_CITIES_BY_COUNTRY[upper] ?? []
     }
