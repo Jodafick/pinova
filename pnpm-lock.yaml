@@ -72,9 +72,6 @@ importers:
       country-state-city:
         specifier: ^3.2.1
         version: 3.2.1
-      google-translate-api-x:
-        specifier: ^10.7.3
-        version: 10.7.3
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0
@@ -1926,10 +1923,6 @@ packages:
   globalthis@1.0.4:
     resolution: {integrity: sha512-DpLKbNU4WylpxJykQujfCcwYWiV/Jhm50Goo0wrVILAv5jOr9d+H+UR3PhSCD2rCCEIg0uc+G+muBTwD54JhDQ==}
     engines: {node: '>= 0.4'}
-
-  google-translate-api-x@10.7.3:
-    resolution: {integrity: sha512-UCLhGMyzUiQQJuUjw6KM4scl4WJjMq5kYbq3eqLHB0KB96XBQ+VV7L/NUpJ9eMfVxXswXxA6xWhAX1h1OdDLZg==}
-    engines: {node: '>=21.0.0'}
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -5101,8 +5094,6 @@ snapshots:
     dependencies:
       define-properties: 1.2.1
       gopd: 1.2.0
-
-  google-translate-api-x@10.7.3: {}
 
   gopd@1.2.0: {}
 
