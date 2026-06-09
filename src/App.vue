@@ -6,7 +6,6 @@ import { useMobileCreateChooser } from './composables/useMobileCreateChooser'
 import { useI18n } from './i18n'
 import GlobalHeader from './components/GlobalHeader.vue'
 import AppMobilePageHeader from './components/AppMobilePageHeader.vue'
-import PwaSplash from './components/pwa/PwaSplash.vue'
 import AmbientGlow from './components/AmbientGlow.vue'
 import { useImmersiveViewer } from './composables/useImmersiveViewer'
 import AppToast from './components/AppToast.vue'
@@ -40,7 +39,6 @@ import { usePwaInstallPrompt } from './composables/usePwaInstallPrompt'
 import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
 import { isValidSettingsSectionId, settingsDetailTitleKey } from './data/settingsHubConfig'
 import { triggerAppSoftRefresh } from './utils/appSoftRefresh'
-import { consumeSkipSplashFlag, shouldSkipSplashForPath } from './utils/skipSplash'
 import { userNeedsOnboarding } from './utils/onboarding'
 
 /** Composants non critiques au 1er paint — chargés après le shell chrome. */
@@ -87,16 +85,6 @@ setLang(currentLang.value)
 initPwaContext()
 initPwaTheme()
 
-/*
- * Saut du splash : lien <a> marqué, route création/édition, ou flag sessionStorage.
- */
-const skipSplashOnBoot =
-  consumeSkipSplashFlag() ||
-  (typeof window !== 'undefined' && shouldSkipSplashForPath(window.location.pathname))
-
-/* Splash : caché dès que la première fetch user est résolue (ou 700ms max),
-   ou immédiatement si on arrive depuis un lien marqué `skip-splash` / route création. */
-const appReady = ref(skipSplashOnBoot)
 /* Immersive media viewer singleton — ouvert via `openImmersiveViewer({...})` partout. */
 const immersiveViewer = useImmersiveViewer()
 
@@ -213,7 +201,6 @@ onMounted(() => {
   resetAppShellVisualState()
   devLog('🚀 App mounted, initializing...')
   /* L’UI ne doit pas attendre `me/` : profil hydraté depuis le cache JWT si dispo. */
-  appReady.value = true
   void fetchCurrentUser()
     .then(() => {
       const preferred = currentUser.value?.preferredLanguage
@@ -716,8 +703,7 @@ const pageTransitionName = computed(() => {
   -->
   <PinContextualMenu />
 
-  <!-- PWA premium experience : splash boot + bannière offline. -->
-  <PwaSplash :open="!appReady" />
+  <!-- PWA : bannière offline + invite installation. -->
   <OfflineExperience />
   <PwaInstallExperience />
   <!-- Visionneuse média immersive singleton (image/vidéo fullscreen iOS). -->

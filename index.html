@@ -9,23 +9,6 @@
     <script>
       (function () {
         try {
-          var p = (location.pathname || '/').replace(/\/$/, '') || '/'
-          if (
-            p === '/create' ||
-            p.indexOf('/create/') === 0 ||
-            p === '/story/create' ||
-            /^\/pin\/[^/]+\/edit$/.test(p)
-          ) {
-            sessionStorage.setItem('pinova-skip-splash', '1')
-          }
-        } catch (_) {
-          /* ignore */
-        }
-      })()
-    </script>
-    <script>
-      (function () {
-        try {
           var key = 'pinova-appearance'
           var stored = localStorage.getItem(key)
           var dark =
@@ -87,8 +70,6 @@
     <!--
       Splash screens iOS (générés via PWA Builder ou similaire).
       NOTE : iOS ne supporte qu'un seul splash via apple-touch-startup-image.
-      Si tu génères les variantes (iPhone 14 Pro / iPhone SE / iPad / etc.), pose-les ici.
-      En attendant, le PwaSplash.vue couvre le boot une fois le HTML rendu.
     -->
     <link rel="apple-touch-startup-image" href="/logo.png" />
 
@@ -169,37 +150,9 @@
         min-height: 100dvh;
         min-height: -webkit-fill-available;
       }
-
-      /* Splash instantané avant le bundle JS (mobile PWA : plus d'écran vide). */
-      #pinova-boot-splash {
-        position: fixed;
-        inset: 0;
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background:
-          radial-gradient(circle at 30% 25%, rgba(255, 145, 180, 0.88) 0%, transparent 52%),
-          linear-gradient(145deg, #d01f56 0%, #e0245e 22%, #ff4d7d 48%, #ff9ab8 100%);
-        transition: opacity 280ms ease;
-      }
-      html.dark #pinova-boot-splash {
-        background:
-          radial-gradient(circle at 78% 82%, rgba(60, 8, 28, 0.18) 0%, transparent 55%),
-          #050507;
-      }
-      #pinova-boot-splash img {
-        width: 72px;
-        height: 72px;
-        border-radius: 18px;
-        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-      }
     </style>
   </head>
   <body>
-    <div id="pinova-boot-splash" aria-hidden="true">
-      <img src="/logo.png" alt="" width="72" height="72" decoding="async" fetchpriority="high" />
-    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

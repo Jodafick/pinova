@@ -6,7 +6,6 @@ import { devLog } from '../lib/devLog'
 import { maybeRedirectWebToApp } from '../utils/appDeepLink'
 import { isValidSettingsSectionId } from '../data/settingsHubConfig'
 import { ensureFontAwesomeLoaded } from '../utils/loadFontAwesome'
-import { markSkipSplash, shouldSkipSplashForPath } from '../utils/skipSplash'
 
 /*
  * Routes & meta layer system (iOS-first immersif).
@@ -575,9 +574,6 @@ const router = createRouter({
 // Navigation Guard
 router.beforeEach(async (to, from) => {
   devLog(`🧭 Navigating from ${String(from.name)} to ${String(to.name)}`)
-  if (shouldSkipSplashForPath(to.path)) {
-    markSkipSplash()
-  }
   const { isAuthenticated, fetchCurrentUser, currentUser } = useAuth()
 
   const hasStoredToken =

@@ -22,7 +22,6 @@ import { initAnalyticsBridge } from './lib/initAnalyticsBridge'
 import { initSentry } from './lib/sentry'
 import { initAdaptiveNavigator } from './navigation/adaptiveNavigator'
 import { initPwaStandaloneTopInset } from './utils/pwaSafeTopInset'
-import { removeBootSplash } from './utils/bootSplash'
 import { initInputAbstraction } from './navigation/inputAbstraction'
 import { initMediaEngine } from './media'
 import { VueQueryPlugin } from '@tanstack/vue-query'
@@ -97,13 +96,12 @@ applyStoredCookieConsent()
 initAnalytics({ platform: 'web' })
 initAnalyticsBridge()
 app.mount('#app')
-removeBootSplash()
 
 void proactiveRefreshIfStale().catch((err) =>
   console.warn('[Pinova] proactiveRefreshIfStale', err),
 )
 
-/* Prefetch du chunk accueil pendant l’idle — accélère le 1er paint après le splash. */
+/* Prefetch du chunk accueil pendant l’idle. */
 if (typeof requestIdleCallback === 'function') {
   requestIdleCallback(() => {
     void import('./pages/HomePage.vue')

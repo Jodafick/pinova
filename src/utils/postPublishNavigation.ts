@@ -2,7 +2,6 @@ import type { Router } from 'vue-router'
 import type { Pin } from '../types'
 import { fetchCurrentUser } from '../composables/useAuth'
 import { getCachedPinDetail } from '../lib/cache/pinClientCache'
-import { markSkipSplash } from './skipSplash'
 
 export const PROFILE_PUBLISH_PIN_QUERY = 'pin'
 
@@ -28,7 +27,6 @@ export async function navigateToPublishedPin(
     return
   }
 
-  markSkipSplash()
   window.location.assign(`/?pin=${encodeURIComponent(slug)}`)
 }
 

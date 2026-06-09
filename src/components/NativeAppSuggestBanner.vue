@@ -9,8 +9,6 @@ import {
   shouldOfferNativeAppOneTimeBanner,
 } from '../utils/appDeepLink'
 
-const props = defineProps<{ appReady: boolean }>()
-
 const route = useRoute()
 const { t } = useI18n()
 const { isAuthenticated } = useAuth()
@@ -29,7 +27,6 @@ function clearTimer() {
 function scheduleShow() {
   clearTimer()
   open.value = false
-  if (!props.appReady) return
   /** Connecté au web : on ne propose pas « ouvrir l’app » (compte mobile souvent différent). */
   if (isAuthenticated.value) return
   if (route.meta.guest === true || route.meta.mobileOAuthBridge === true) return
@@ -44,7 +41,7 @@ function scheduleShow() {
 }
 
 watch(
-  () => [props.appReady, route.fullPath, isAuthenticated.value] as const,
+  () => [route.fullPath, isAuthenticated.value] as const,
   () => {
     scheduleShow()
   },

@@ -61,14 +61,8 @@ import {
   getCachedProfileActiveStories,
   setCachedProfileActiveStories,
 } from '../utils/activeStoriesCache'
-import { markSkipSplash } from '../utils/skipSplash'
 
 const PROFILE_PINS_PAGE_SIZE = 24
-
-/** Navigation mobile vers /create : lien <a> natif (évite bugs de couches SPA). */
-function markSkipSplashOnCreateNav() {
-  markSkipSplash()
-}
 
 const { t, currentLang } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
@@ -2012,7 +2006,6 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         v-if="activeTab === 'created'"
         to="/create"
         class="inline-flex px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition no-underline"
-        @click="markSkipSplashOnCreateNav"
       >
         {{ t('home.createPin') }}
       </router-link>

@@ -4,11 +4,9 @@ import { peekPendingIntent } from '../lib/pendingIntentStorage'
 import { getPostAuthRouteName } from './onboarding'
 import { resolveWebPostAuthPath } from '@pinova/shared'
 
-import { markSkipSplash } from './skipSplash'
-
 /**
  * Après connexion / inscription : navigation pleine page (pas de transition SPA)
- * pour réinitialiser l’état Vue Query, le splash et les guards avec les tokens frais.
+ * pour réinitialiser l’état Vue Query et les guards avec les tokens frais.
  */
 export function redirectAfterAuth(
   router: Router,
@@ -26,6 +24,5 @@ export function redirectAfterAuth(
     onboardingPath,
   })
 
-  markSkipSplash()
   window.location.assign(href)
 }

@@ -2,7 +2,6 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '../i18n'
 import PinovaModal from './ui/PinovaModal.vue'
-import { markSkipSplash } from '../utils/skipSplash'
 
 const props = withDefaults(
   defineProps<{
@@ -53,13 +52,8 @@ function close() {
  * cold-start, ce qui évite les bugs de couche plein écran (écran noir,
  * clics morts) observés en navigation interne. On ferme juste la modale
  * avant que le navigateur prenne la main, sans preventDefault.
- *
- * `pinova-skip-splash` (sessionStorage) : marque l'intention de navigation
- * vers la création. Au boot suivant, App.vue le détecte et saute le splash
- * pour donner une impression de continuité (pas de gros écran rose au milieu).
  */
 function onPinLinkClick() {
-  markSkipSplash()
   close()
 }
 
@@ -68,7 +62,6 @@ function onStoryLinkClick(ev: MouseEvent) {
     ev.preventDefault()
     return
   }
-  markSkipSplash()
   close()
 }
 </script>
