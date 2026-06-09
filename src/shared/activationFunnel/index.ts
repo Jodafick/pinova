@@ -126,12 +126,10 @@ export function computeCreatorLevelProgress(
 }
 
 export function shouldShowWelcomeCreateTutorial(
-  state: ActivationFunnelState,
-  pinsCount: number,
+  _state: ActivationFunnelState,
+  _pinsCount: number,
 ): boolean {
-  if (pinsCount > 0) return false
-  const status = state.welcomeCreateTutorial
-  return status !== 'completed' && status !== 'dismissed'
+  return false
 }
 
 export function shouldCelebrateFirstPin(

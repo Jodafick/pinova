@@ -43,7 +43,6 @@ import { navigateToPublishedPin } from '../utils/postPublishNavigation'
 import { shouldCelebrateFirstPin } from '@pinova/shared'
 import { useActivationFunnel } from '../composables/useActivationFunnel'
 import { openFirstPinCelebration } from '../composables/useActivationMoments'
-import FirstPinWelcomeCoach from '../components/activation/FirstPinWelcomeCoach.vue'
 
 /** Champs affichés uniquement à l’étape 1 (texte / catégorie / tags publics). Pas les tags privés (étape 2). */
 const CREATE_PIN_STEP_1_FIELD_KEYS = new Set([
@@ -62,8 +61,6 @@ const route = useRoute()
 const { addPin, updatePin, topics, getPin, fetchPinBySlug, fetchPrivateTags } = usePins()
 const { currentUser, fetchMyBoards, isAuthenticated, fetchCurrentUser } = useAuth()
 const { funnelState } = useActivationFunnel()
-
-const welcomeCreateMode = computed(() => String(route.query.welcome ?? '') === '1')
 
 const needsBirthDateForMedia = computed(
   () => isAuthenticated.value && !hasRequiredBirthDateForMediaPublish(currentUser.value?.birthDate),
@@ -1797,7 +1794,6 @@ usePinovaHeaderSwipeDismiss({
     required
     @saved="() => { /* refresh déjà géré dans le composant via fetchCurrentUser */ }"
   />
-  <FirstPinWelcomeCoach :welcome-query="welcomeCreateMode" />
   </div>
 
 </template>

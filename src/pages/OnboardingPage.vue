@@ -309,12 +309,7 @@ async function finishOnboarding(opts?: { deferred?: boolean }) {
     })
     if (refCode) clearStoredReferralCode()
     resetAppShellVisualState({ resetOverflow: true })
-    const pins = currentUser.value?.pinsCount ?? 0
-    if (pins === 0) {
-      await router.replace({ name: 'create', query: { welcome: '1' } })
-    } else {
-      await router.replace({ name: 'home' })
-    }
+    await router.replace({ name: 'home' })
   } catch {
     errorMsg.value = t('onboarding.errorSave')
   } finally {
