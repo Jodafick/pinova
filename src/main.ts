@@ -22,6 +22,7 @@ import { initAnalyticsBridge } from './lib/initAnalyticsBridge'
 import { initSentry } from './lib/sentry'
 import { initAdaptiveNavigator } from './navigation/adaptiveNavigator'
 import { initPwaStandaloneTopInset } from './utils/pwaSafeTopInset'
+import { removeBootSplash } from './utils/bootSplash'
 import { initInputAbstraction } from './navigation/inputAbstraction'
 import { initMediaEngine } from './media'
 import { VueQueryPlugin } from '@tanstack/vue-query'
@@ -43,7 +44,6 @@ void initMediaEngine().catch((err) => console.warn('[Pinova] initMediaEngine', e
 
 registerSW({ immediate: true })
 import GoogleSignInPlugin from 'vue3-google-signin'
-import { useAuth } from './composables/useAuth'
 import { proactiveRefreshIfStale } from './api/index'
 import { GOOGLE_CLIENT_ID } from './config/env'
 
@@ -64,8 +64,7 @@ app.use(VueQueryPlugin, { queryClient })
 installQueryPersister()
 
 // Monter l’app tout de suite : l’UI ne doit pas rester bloquée sur le splash si l’API est lente ou injoignable.
-// Session : refresh proactif + profil en arrière-plan (App.vue relance aussi fetchCurrentUser au besoin).
-const { fetchCurrentUser } = useAuth()
+// Session : refresh proactif + profil en arrière-plan (App.vue relance fetchCurrentUser au besoin).
 app.use(router)
 installRouterViewTransition(router)
 /* Brancher la pile native iOS-like + interception layers basée sur meta.presentation. */
@@ -98,8 +97,19 @@ applyStoredCookieConsent()
 initAnalytics({ platform: 'web' })
 initAnalyticsBridge()
 app.mount('#app')
-void proactiveRefreshIfStale()
-  .catch((err) => console.warn('[Pinova] proactiveRefreshIfStale', err))
-  .then(() =>
-    fetchCurrentUser().catch((err) => console.warn('[Pinova] fetchCurrentUser (bootstrap)', err)),
-  )
+removeBootSplash()
+
+void proactiveRefreshIfStale().catch((err) =>
+  console.warn('[Pinova] proactiveRefreshIfStale', err),
+)
+
+/* Prefetch du chunk accueil pendant l’idle — accélère le 1er paint après le splash. */
+if (typeof requestIdleCallback === 'function') {
+  requestIdleCallback(() => {
+    void import('./pages/HomePage.vue')
+  })
+} else {
+  setTimeout(() => {
+    void import('./pages/HomePage.vue')
+  }, 120)
+}

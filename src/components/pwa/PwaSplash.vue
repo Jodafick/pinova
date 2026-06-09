@@ -28,7 +28,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   open: true,
-  minDurationMs: 120,
+  minDurationMs: 0,
 })
 
 const visible = ref(true)

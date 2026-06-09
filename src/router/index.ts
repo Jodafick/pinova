@@ -584,8 +584,14 @@ router.beforeEach(async (to, from) => {
     typeof window !== 'undefined' && !!window.localStorage.getItem('pinova_token')
 
   // JWT stocké mais profil pas encore hydraté (ex. retour sur l’accueil après Google).
+  // Routes publiques : ne pas bloquer le 1er paint sur `GET me/` (Render cold start).
   if (!isAuthenticated.value && hasStoredToken) {
-    await fetchCurrentUser({ silent: true }).catch(() => undefined)
+    const revalidate = fetchCurrentUser({ silent: true }).catch(() => undefined)
+    if (to.meta.requiresAuth) {
+      await revalidate
+    } else {
+      void revalidate
+    }
   }
 
   const isMobileOAuthBridge = to.meta.mobileOAuthBridge === true

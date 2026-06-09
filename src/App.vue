@@ -1,27 +1,15 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from './composables/useAuth'
 import { useMobileCreateChooser } from './composables/useMobileCreateChooser'
 import { useI18n } from './i18n'
 import GlobalHeader from './components/GlobalHeader.vue'
 import AppMobilePageHeader from './components/AppMobilePageHeader.vue'
-import MobileCreateChooser from './components/MobileCreateChooser.vue'
-import AppAlertModal from './components/AppAlertModal.vue'
-import ReferralRouteCapture from './components/referral/ReferralRouteCapture.vue'
-import LayerHost from './components/layers/LayerHost.vue'
-import PinContextualMenu from './components/PinContextualMenu.vue'
-import OfflineExperience from './components/pwa/OfflineExperience.vue'
 import PwaSplash from './components/pwa/PwaSplash.vue'
-import PwaInstallExperience from './components/pwa/PwaInstallExperience.vue'
 import AmbientGlow from './components/AmbientGlow.vue'
-import ImmersiveMediaViewer from './components/ui/ImmersiveMediaViewer.vue'
 import { useImmersiveViewer } from './composables/useImmersiveViewer'
 import AppToast from './components/AppToast.vue'
-import CookieConsentBanner from './components/CookieConsentBanner.vue'
-import NotificationEnablePrompt from './components/NotificationEnablePrompt.vue'
-import ActivationExperienceHost from './components/activation/ActivationExperienceHost.vue'
-import GuestAuthSheet from './components/GuestAuthSheet.vue'
 import AppMobileTabBar from './components/AppMobileTabBar.vue'
 import { useGuestAuthGate } from './composables/useGuestAuthGate'
 import { usePendingIntentReplay } from './composables/usePendingIntentReplay'
@@ -53,6 +41,21 @@ import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
 import { isValidSettingsSectionId, settingsDetailTitleKey } from './data/settingsHubConfig'
 import { triggerAppSoftRefresh } from './utils/appSoftRefresh'
 import { consumeSkipSplashFlag, shouldSkipSplashForPath } from './utils/skipSplash'
+import { userNeedsOnboarding } from './utils/onboarding'
+
+/** Composants non critiques au 1er paint — chargés après le shell chrome. */
+const MobileCreateChooser = defineAsyncComponent(() => import('./components/MobileCreateChooser.vue'))
+const AppAlertModal = defineAsyncComponent(() => import('./components/AppAlertModal.vue'))
+const ReferralRouteCapture = defineAsyncComponent(() => import('./components/referral/ReferralRouteCapture.vue'))
+const LayerHost = defineAsyncComponent(() => import('./components/layers/LayerHost.vue'))
+const PinContextualMenu = defineAsyncComponent(() => import('./components/PinContextualMenu.vue'))
+const OfflineExperience = defineAsyncComponent(() => import('./components/pwa/OfflineExperience.vue'))
+const PwaInstallExperience = defineAsyncComponent(() => import('./components/pwa/PwaInstallExperience.vue'))
+const ImmersiveMediaViewer = defineAsyncComponent(() => import('./components/ui/ImmersiveMediaViewer.vue'))
+const CookieConsentBanner = defineAsyncComponent(() => import('./components/CookieConsentBanner.vue'))
+const NotificationEnablePrompt = defineAsyncComponent(() => import('./components/NotificationEnablePrompt.vue'))
+const ActivationExperienceHost = defineAsyncComponent(() => import('./components/activation/ActivationExperienceHost.vue'))
+const GuestAuthSheet = defineAsyncComponent(() => import('./components/GuestAuthSheet.vue'))
 
 /** Réf. du bouton ⋮ board : assignée dans le template ; `void` évite TS6133 (usage non vu par vue-tsc côté script). */
 void mobileBoardMoreButtonRef
@@ -223,6 +226,30 @@ onMounted(() => {
       console.error('❌ Initialization error:', err)
     })
 })
+
+/*
+ * Quand `GET me/` termine en arrière-plan (routes publiques non bloquantes),
+ * appliquer les redirections onboarding / login déjà gérées dans le guard.
+ */
+watch(
+  () => currentUser.value,
+  (user) => {
+    if (!user) return
+    const meta = route.meta as { guest?: boolean; mobileOAuthBridge?: boolean }
+    if (meta.mobileOAuthBridge) return
+
+    if (userNeedsOnboarding(user)) {
+      if (route.name !== 'onboarding') {
+        void router.replace({ name: 'onboarding' })
+      }
+      return
+    }
+
+    if (meta.guest && route.name !== 'onboarding') {
+      void router.replace({ name: 'home' })
+    }
+  },
+)
 
 const isMobileFullscreenRoute = computed(() => typeof route.query.pin === 'string' && route.query.pin.trim().length > 0)
 
