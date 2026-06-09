@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, onActivated, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
@@ -49,6 +49,7 @@ import {
   setProfileNavMobileDrawerOpen,
 } from '../composables/mobileHeaderContext'
 import { clearProfileDrawerPwaTheme } from '../composables/usePwaTheme'
+import { resetAppShellVisualState } from '../utils/resetAppShellVisualState'
 import {
   initialStoryIndexForUser,
   initialStorySegmentElapsedForUser,
@@ -781,6 +782,14 @@ const profileNavDrawerOpen = ref(false)
 /** KeepAlive + tiroir ouvert : sinon `overflow:hidden` sur #main-content fuit vers les autres routes (scroll mort). */
 onBeforeRouteLeave(() => {
   profileNavDrawerOpen.value = false
+})
+
+/** KeepAlive : au changement d’onglet (tab bar), le tiroir doit libérer overflow + thème PWA. */
+onDeactivated(() => {
+  profileNavDrawerOpen.value = false
+  setProfileNavMobileDrawerOpen(false)
+  clearProfileDrawerPwaTheme()
+  resetAppShellVisualState({ forceClearDrawerTheme: true, resetOverflow: true })
 })
 
 /*
@@ -1999,18 +2008,11 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       <p class="text-sm text-neutral-500 mb-4">
         {{ activeTab === 'created' ? t('profile.empty.created.desc') : t('profile.empty.saved.desc') }}
       </p>
-      <a
-        v-if="activeTab === 'created'"
-        href="/create"
-        class="inline-flex px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition no-underline lg:hidden"
-        @click="markSkipSplashOnCreateNav"
-      >
-        {{ t('home.createPin') }}
-      </a>
       <router-link
         v-if="activeTab === 'created'"
         to="/create"
-        class="hidden lg:inline-flex px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition"
+        class="inline-flex px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition no-underline"
+        @click="markSkipSplashOnCreateNav"
       >
         {{ t('home.createPin') }}
       </router-link>

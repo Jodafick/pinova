@@ -31,6 +31,7 @@ import { useEdgeSwipeBack } from './composables/useEdgeSwipeBack'
 import { useIsLgDown } from './composables/useIsLgDown'
 import { devLog } from './lib/devLog'
 import { resetPinovaBodyScrollLock } from './utils/pinovaModalBodyLock'
+import { resetAppShellVisualState } from './utils/resetAppShellVisualState'
 import { getAppScrollRoot } from './utils/appScrollRoot'
 import { layerManager } from './navigation/layerManager'
 import { adaptiveProfile, getPageTransitionNames } from './navigation/adaptiveNavigator'
@@ -192,8 +193,21 @@ const edgePeekVisible = computed(
   () => appEdgeSwipe.isDragging.value || appEdgeSwipe.translateX.value > 6,
 )
 
+function reconcileShellAfterNavigation() {
+  /*
+   * Ferme toute couche orpheline (ex. layer fullscreen ouvert puis tab bar → home).
+   * Avant : les routes meta.presentation === 'fullscreen' ne déclenchaient pas le
+   * popAll → blur/scroll-lock persistants sur mobile.
+   */
+  if (layerManager.hasLayers.value) {
+    layerManager.popAll()
+  }
+  resetAppShellVisualState({ resetOverflow: true })
+}
+
 onMounted(() => {
   resetPinovaBodyScrollLock()
+  resetAppShellVisualState()
   devLog('🚀 App mounted, initializing...')
   /* L’UI ne doit pas attendre `me/` : profil hydraté depuis le cache JWT si dispo. */
   appReady.value = true
@@ -400,10 +414,22 @@ watch(isLgDown, () => {
 
 onMounted(() => {
   void nextTick(() => attachAppScrollListener())
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', onPageShowRestoreShell)
+  }
 })
 onUnmounted(() => {
   detachAppScrollListener?.()
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('pageshow', onPageShowRestoreShell)
+  }
 })
+
+/** iOS bfcache : au retour sur l’onglet, les styles inline / layers peuvent être incohérents. */
+function onPageShowRestoreShell(ev: PageTransitionEvent) {
+  if (!ev.persisted) return
+  reconcileShellAfterNavigation()
+}
 
 watch(
   () => route.path,
@@ -411,29 +437,7 @@ watch(
     void nextTick(() => {
       attachAppScrollListener()
     })
-    /*
-     * Quand on arrive sur une route « page » classique (pas un layer
-     * `fullscreen`/`modal`), on ferme toute couche orpheline qui aurait
-     * survécu à la navigation (cas typique : layer ouvert → router.push
-     * vers `/` sans passer par le bridge). Sans ça, le layer persistait
-     * visuellement + son scroll-lock body bloquait toute la nouvelle page.
-     */
-    const meta = (route.meta as { presentation?: string }) || {}
-    const targetIsLayer = meta.presentation === 'fullscreen' || meta.presentation === 'modal' || meta.presentation === 'sheet'
-    if (!targetIsLayer && layerManager.hasLayers.value) {
-      layerManager.popAll()
-    }
-    /*
-     * Garde-fou : si aucun layer n'est ouvert mais que le verrou body est
-     * resté actif (modal qui ne s'est pas démontée proprement, race au
-     * démontage, etc.), on relâche. Sans ça, le scroll restait bloqué après
-     * navigation depuis certaines vues qui ouvrent des modals.
-     */
-    if (typeof document !== 'undefined' && !layerManager.hasLayers.value) {
-      document.documentElement.classList.remove('pinova-layer-scroll-lock')
-      document.body.classList.remove('pinova-modal-scroll-lock')
-      resetPinovaBodyScrollLock()
-    }
+    reconcileShellAfterNavigation()
   },
 )
 

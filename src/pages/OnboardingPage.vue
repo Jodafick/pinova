@@ -26,6 +26,7 @@ import PinovaButton from '../components/ui/PinovaButton.vue'
 import BirthDatePicker from '../components/BirthDatePicker.vue'
 import { getStoredReferralCode, clearStoredReferralCode } from '../composables/useReferralIntent'
 import { isFeatureEnabled } from '../lib/featureFlags'
+import { resetAppShellVisualState } from '../utils/resetAppShellVisualState'
 import {
   trackOnboardingStarted,
   trackOnboardingStepViewed,
@@ -307,6 +308,7 @@ async function finishOnboarding(opts?: { deferred?: boolean }) {
       deferred: !!opts?.deferred,
     })
     if (refCode) clearStoredReferralCode()
+    resetAppShellVisualState({ resetOverflow: true })
     const pins = currentUser.value?.pinsCount ?? 0
     if (pins === 0) {
       await router.replace({ name: 'create', query: { welcome: '1' } })

@@ -70,8 +70,22 @@ app.use(router)
 installRouterViewTransition(router)
 /* Brancher la pile native iOS-like + interception layers basée sur meta.presentation. */
 bindNativeStack(router)
+/*
+ * Routes « workflow » plein écran : toujours rendues par `<router-view>`, jamais
+ * interceptées en couche. Sur mobile réel, ouvrir /create ou /onboarding en layer
+ * laissait blur + scroll-lock sur #app-shell (écran blanc/noir figé) — l’émulateur
+ * desktop ne reproduisait pas toujours le bug ; un lien <a> natif fonctionnait car
+ * cold-start = page réelle.
+ */
 installRouterLayerBridge(router, {
-  alwaysPage: ['mobile-google-auth', 'mobile-google-auth-callback'],
+  alwaysPage: [
+    'mobile-google-auth',
+    'mobile-google-auth-callback',
+    'create',
+    'create-standalone-story',
+    'edit-pin',
+    'onboarding',
+  ],
 })
 initInputAbstraction(router)
 /* Transitions `<router-view>` : pile session + styles adaptatifs (cf. routerViewTransition + style.css). */
