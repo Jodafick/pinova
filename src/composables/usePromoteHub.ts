@@ -62,7 +62,8 @@ export function usePromoteHub() {
   const { currentLang } = useI18n()
   const { currentUser } = useAuth()
 
-  const packs = ref<BoostPack[]>([])
+  const boostPacks = ref<BoostPack[]>([])
+  const campaignPacks = ref<BoostPack[]>([])
   const history = ref<BoostHistoryRow[]>([])
   const campaigns = ref<CampaignRow[]>([])
   const myPins = ref<Pin[]>([])
@@ -78,12 +79,14 @@ export function usePromoteHub() {
   async function loadCatalog() {
     loading.value = true
     try {
-      const [packRes, histRes, campRes] = await Promise.all([
-        api.get<{ results: BoostPack[] }>('monetization/boost-packages/'),
+      const [boostPackRes, campaignPackRes, histRes, campRes] = await Promise.all([
+        api.get<{ results: BoostPack[] }>('monetization/boost-packages/', { params: { kind: 'boost' } }),
+        api.get<{ results: BoostPack[] }>('monetization/boost-packages/', { params: { kind: 'campaign' } }),
         api.get<{ results: BoostHistoryRow[] }>('monetization/my-boosts/'),
         api.get<{ results: CampaignRow[] }>('monetization/pin-promo-campaigns/'),
       ])
-      packs.value = packRes.data.results ?? []
+      boostPacks.value = boostPackRes.data.results ?? []
+      campaignPacks.value = campaignPackRes.data.results ?? []
       history.value = histRes.data.results ?? []
       campaigns.value = campRes.data.results ?? []
     } finally {
@@ -145,7 +148,8 @@ export function usePromoteHub() {
   }
 
   return {
-    packs,
+    boostPacks,
+    campaignPacks,
     history,
     campaigns,
     myPins,

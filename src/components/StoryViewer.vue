@@ -1036,6 +1036,17 @@ onUnmounted(() => {
       >
         <!-- Progress + auteur -->
         <div class="shrink-0 z-50 px-2 pt-safe pt-3 space-y-2">
+          <div class="flex items-start justify-between gap-2 px-1">
+            <button
+              type="button"
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white backdrop-blur-md hover:bg-black/55 pointer-events-auto"
+              :aria-label="t('common.close')"
+              @click.stop="close"
+            >
+              <PinovaIcon name="close" class="text-[22px]" />
+            </button>
+            <div class="min-w-0 flex-1" aria-hidden="true" />
+          </div>
           <StorySegmentedProgressBar
             :segment-count="pins.length"
             :current-index="index"

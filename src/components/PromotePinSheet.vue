@@ -20,7 +20,8 @@ const { t } = useI18n()
 const router = useRouter()
 const { showAlert } = useAppModal()
 const {
-  packs,
+  boostPacks,
+  campaignPacks,
   myPins,
   selectedSlug,
   selectedPin,
@@ -77,8 +78,9 @@ watch(
       await loadMyPins(props.pinSlug)
       if (props.pinSlug) selectedSlug.value = props.pinSlug
     }
-    if (packs.value[0]) {
-      packageSlug.value = defaultBoostPackSlug(packs.value)
+    const catalog = props.initialMode === 'campaign' ? campaignPacks.value : boostPacks.value
+    if (catalog[0]) {
+      packageSlug.value = defaultBoostPackSlug(catalog)
     }
   },
 )
@@ -203,7 +205,7 @@ async function startCampaign() {
         <div class="flex-1 overflow-y-auto px-5 py-4">
           <BoostWizardPanel
             v-if="mode === 'boost'"
-            :packs="packs"
+            :packs="boostPacks"
             :my-pins="myPins"
             :selected-slug="selectedSlug"
             :selected-pin="selectedPin"
@@ -221,7 +223,7 @@ async function startCampaign() {
           />
           <CampaignComposer
             v-else
-            :packs="packs"
+            :packs="campaignPacks"
             :headline="headline"
             :body="body"
             :cta-url="ctaUrl"

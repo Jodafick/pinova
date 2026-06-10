@@ -19,7 +19,8 @@ const { t } = useI18n()
 const { isAuthenticated } = useAuth()
 const { showAlert } = useAppModal()
 const {
-  packs,
+  boostPacks,
+  campaignPacks,
   history,
   campaigns,
   myPins,
@@ -69,8 +70,8 @@ onMounted(async () => {
   if (tab.value === 'boost' || pinFromQuery.value) {
     await loadMyPins(pinFromQuery.value)
   }
-  if (packs.value[0] && !packageSlug.value) {
-    packageSlug.value = defaultBoostPackSlug(packs.value)
+  if (campaignPacks.value[0] && !packageSlug.value) {
+    packageSlug.value = defaultBoostPackSlug(campaignPacks.value)
   }
 })
 
@@ -173,7 +174,7 @@ async function togglePause(id: number, status: string) {
 
       <section v-if="tab === 'boost'" class="app-card rounded-2xl p-4 sm:p-6 shadow-lg">
         <BoostWizardPanel
-          :packs="packs"
+          :packs="boostPacks"
           :my-pins="myPins"
           :selected-slug="selectedSlug"
           :selected-pin="selectedPin"
@@ -193,7 +194,7 @@ async function togglePause(id: number, status: string) {
 
       <section v-else-if="tab === 'campaigns'" class="app-card rounded-2xl p-4 sm:p-6 shadow-lg max-w-xl mx-auto lg:max-w-2xl">
         <CampaignComposer
-          :packs="packs"
+          :packs="campaignPacks"
           :headline="headline"
           :body="body"
           :cta-url="ctaUrl"
