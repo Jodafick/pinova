@@ -88,7 +88,7 @@ const showRetry = computed(() => props.phase === 'error' || props.phase === 'pen
             : 'bg-pink-50 dark:bg-pink-950/35'
       "
     >
-      <span class="material-symbols-outlined text-4xl" :class="iconClass">{{ iconName }}</span>
+      <PinovaIcon :name="iconName" class="text-4xl" :class="iconClass" />
     </div>
 
     <div class="space-y-2">
@@ -124,7 +124,7 @@ const showRetry = computed(() => props.phase === 'error' || props.phase === 'pen
         :key="key"
         class="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-200"
       >
-        <span class="material-symbols-outlined text-base text-emerald-500 shrink-0 mt-0.5">check_circle</span>
+        <PinovaIcon name="check_circle" class="text-base text-emerald-500 shrink-0 mt-0.5" />
         <span>{{ t(key) }}</span>
       </li>
     </ul>

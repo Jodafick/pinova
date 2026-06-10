@@ -36,9 +36,7 @@ function onClear() {
   <div
     class="header-mobile-search-field pointer-events-auto flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-full bg-neutral-100/90 px-3 py-1.5 text-sm text-neutral-900 shadow-sm ring-1 ring-black/[0.04] transition hover:bg-neutral-200/85 dark:bg-neutral-800/90 dark:text-neutral-100 dark:ring-white/[0.06] dark:hover:bg-neutral-700/85"
   >
-    <span class="material-symbols-outlined shrink-0 text-lg text-neutral-400 dark:text-neutral-500" aria-hidden="true">
-      search
-    </span>
+    <PinovaIcon name="search" class="shrink-0 text-lg text-neutral-400 dark:text-neutral-500" />
     <input
       :value="modelValue"
       type="search"
@@ -60,7 +58,7 @@ function onClear() {
       :aria-label="t('common.cancel')"
       @click="onClear"
     >
-      <span class="material-symbols-outlined text-base leading-none">close</span>
+      <PinovaIcon name="close" class="text-base leading-none" />
     </button>
   </div>
 </template>

@@ -76,9 +76,7 @@ function ruleLabel(id: PasswordRuleId): string {
     </label>
 
     <div class="relative group">
-      <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">
-        lock
-      </span>
+      <PinovaIcon name="lock" class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-pink-700 transition-colors" />
       <input
         :id="inputId"
         :value="modelValue"
@@ -97,7 +95,7 @@ function ruleLabel(id: PasswordRuleId): string {
         class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
         @click="showPassword = !showPassword"
       >
-        <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+        <PinovaIcon :name="showPassword ? 'visibility_off' : 'visibility'" class="text-xl" />
       </button>
     </div>
 

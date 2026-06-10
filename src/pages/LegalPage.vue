@@ -117,7 +117,7 @@ watch([slug, currentLang], load, { immediate: true })
         to="/"
         class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-800 font-medium transition-colors"
       >
-        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        <PinovaIcon name="arrow_back" class="text-[18px]" />
         {{ t('legal.backHome') }}
       </router-link>
     </nav>
@@ -156,12 +156,7 @@ watch([slug, currentLang], load, { immediate: true })
       v-else-if="error === 'invalid'"
       class="app-card-soft rounded-3xl p-10 sm:p-12 text-center"
     >
-      <span
-        class="material-symbols-outlined text-neutral-400 text-[48px] mb-4 inline-block"
-        aria-hidden="true"
-      >
-        error
-      </span>
+      <PinovaIcon name="error" class="text-neutral-400 text-[48px] mb-4 inline-block" />
       <p class="text-neutral-700 font-medium">{{ t('legal.invalid') }}</p>
       <PinovaButton variant="primary" to="/" class="mt-6 text-sm">
         {{ t('legal.backHome') }}
@@ -173,12 +168,7 @@ watch([slug, currentLang], load, { immediate: true })
       v-else-if="error"
       class="app-card rounded-3xl p-10 sm:p-12 text-center border-rose-300/70"
     >
-      <span
-        class="material-symbols-outlined text-red-400 text-[44px] mb-4 inline-block"
-        aria-hidden="true"
-      >
-        cloud_off
-      </span>
+      <PinovaIcon name="cloud_off" class="text-red-400 text-[44px] mb-4 inline-block" />
       <p class="text-red-900/90 font-medium text-sm">{{ t('legal.loadError') }}</p>
       <PinovaButton
         variant="secondary"
@@ -201,7 +191,7 @@ watch([slug, currentLang], load, { immediate: true })
             class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 ring-black/[0.05]"
             :class="docVisual.iconBg"
           >
-            <span class="material-symbols-outlined text-[28px]">{{ docVisual.icon }}</span>
+            <PinovaIcon :name="docVisual.icon" class="text-[28px]" />
           </div>
           <div class="min-w-0 flex-1 pt-0.5 space-y-3">
             <span
@@ -251,7 +241,7 @@ watch([slug, currentLang], load, { immediate: true })
             :href="mailtoLegalContact"
             class="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm shadow-md"
           >
-            <span class="material-symbols-outlined text-xl">outgoing_mail</span>
+            <PinovaIcon name="outgoing_mail" class="text-xl" />
             {{ t('contact.emailCta') }}
           </PinovaButton>
           <p class="mt-3 text-sm text-pink-700 dark:text-pink-600 font-medium break-all">

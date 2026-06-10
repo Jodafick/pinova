@@ -369,15 +369,15 @@ function onSkipLater() {
           </div>
           <ul class="onboarding-bullets">
             <li>
-              <span class="onboarding-bullet-icon onboarding-bullet-icon--rose material-symbols-outlined">auto_awesome</span>
+              <PinovaIcon name="auto_awesome" class="onboarding-bullet-icon onboarding-bullet-icon--rose" />
               {{ t('onboarding.welcomeBullet1') }}
             </li>
             <li>
-              <span class="onboarding-bullet-icon onboarding-bullet-icon--violet material-symbols-outlined">groups</span>
+              <PinovaIcon name="groups" class="onboarding-bullet-icon onboarding-bullet-icon--violet" />
               {{ t('onboarding.welcomeBullet2') }}
             </li>
             <li>
-              <span class="onboarding-bullet-icon onboarding-bullet-icon--emerald material-symbols-outlined">tune</span>
+              <PinovaIcon name="tune" class="onboarding-bullet-icon onboarding-bullet-icon--emerald" />
               {{ t('onboarding.welcomeBullet3') }}
             </li>
           </ul>
@@ -423,7 +423,7 @@ function onSkipLater() {
               :class="{ 'onboarding-chip--active': selectedInterests.includes(item.slug) }"
               @click="toggleInterest(item.slug)"
             >
-              <span class="material-symbols-outlined text-[18px] shrink-0">{{ item.icon }}</span>
+              <PinovaIcon :name="item.icon" class="text-[18px] shrink-0" />
               <span class="truncate">{{ interestLabel(item, selectedLang) }}</span>
             </button>
           </div>
@@ -469,7 +469,7 @@ function onSkipLater() {
           </p>
 
           <div v-if="creatorsLoading" class="onboarding-creators-loading">
-            <span class="material-symbols-outlined animate-spin text-rose-500">progress_activity</span>
+            <PinovaIcon name="progress_activity" spin class="animate-spin text-rose-500" />
             {{ t('onboarding.creatorsLoading') }}
           </div>
 
@@ -497,11 +497,8 @@ function onSkipLater() {
                   {{ creatorReasonLabel(u.reason) }}
                 </p>
               </div>
-              <span
-                v-if="followedCreators.includes(u.username)"
-                class="material-symbols-outlined text-rose-500 shrink-0"
-              >check_circle</span>
-              <span v-else class="material-symbols-outlined text-neutral-300 dark:text-neutral-600 shrink-0">add_circle</span>
+              <PinovaIcon name="check_circle" class="text-rose-500 shrink-0" />
+              <PinovaIcon name="add_circle" class="text-neutral-300 dark:text-neutral-600 shrink-0" />
             </li>
           </ul>
 
@@ -518,7 +515,7 @@ function onSkipLater() {
 
         <section v-else class="onboarding-panel onboarding-panel--done">
           <div class="onboarding-done-badge">
-            <span class="material-symbols-outlined text-white text-4xl">celebration</span>
+            <PinovaIcon name="celebration" class="text-white text-4xl" />
           </div>
           <h2 class="onboarding-title onboarding-title--welcome font-auth-title font-auth-title--black text-center">
             {{ t('onboarding.doneTitle') }}
@@ -965,7 +962,7 @@ function onSkipLater() {
   font-weight: 700;
 }
 
-.onboarding-chip--active .material-symbols-outlined {
+.onboarding-chip--active .pinova-icon {
   color: #fff;
 }
 

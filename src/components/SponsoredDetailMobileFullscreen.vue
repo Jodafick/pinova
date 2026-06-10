@@ -134,7 +134,7 @@ onUnmounted(() => {
         :aria-label="t('common.close')"
         @click="startDismiss"
       >
-        <span class="material-symbols-outlined text-xl">close</span>
+        <PinovaIcon name="close" class="text-xl" />
       </button>
     </div>
   </section>

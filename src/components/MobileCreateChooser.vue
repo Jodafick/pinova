@@ -86,7 +86,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           :aria-label="t('common.close')"
           @click="close"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+          <PinovaIcon name="close" class="text-[22px] leading-none" />
         </button>
       </div>
 
@@ -103,7 +103,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           @click="onPinLinkClick"
         >
           <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-amber-600 text-white shadow-lg shadow-amber-900/20 dark:bg-amber-500">
-            <span class="material-symbols-outlined text-2xl">bolt</span>
+            <PinovaIcon name="bolt" class="text-2xl" />
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-black">{{ t('create.mobile.quickTitle') }}</span>
@@ -117,7 +117,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           @click="onPinLinkClick"
         >
           <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-pink-700 text-white shadow-lg shadow-pink-900/20 dark:bg-pink-600">
-            <span class="material-symbols-outlined text-2xl">add_photo_alternate</span>
+            <PinovaIcon name="add_photo_alternate" class="text-2xl" />
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-black">{{ t('create.mobile.pinTitle') }}</span>
@@ -132,7 +132,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           @click="onStoryLinkClick"
         >
           <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white shadow-lg bg-violet-600 shadow-violet-900/20">
-            <span class="material-symbols-outlined text-2xl">auto_stories</span>
+            <PinovaIcon name="auto_stories" class="text-2xl" />
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-black">{{ t('create.mobile.storyTitle') }}</span>
@@ -146,7 +146,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           disabled
         >
           <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white shadow-lg bg-neutral-400 shadow-black/10">
-            <span class="material-symbols-outlined text-2xl">auto_stories</span>
+            <PinovaIcon name="auto_stories" class="text-2xl" />
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-black">{{ t('create.mobile.storyTitle') }}</span>

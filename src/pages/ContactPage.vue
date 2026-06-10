@@ -73,7 +73,7 @@ watch(currentLang, load, { immediate: true })
         to="/"
         class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-800 font-medium transition-colors"
       >
-        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        <PinovaIcon name="arrow_back" class="text-[18px]" />
         {{ t('legal.backHome') }}
       </router-link>
     </nav>
@@ -104,9 +104,7 @@ watch(currentLang, load, { immediate: true })
       v-else-if="error"
       class="app-card rounded-3xl p-10 sm:p-12 text-center border-rose-300/70"
     >
-      <span class="material-symbols-outlined text-red-400 text-[44px] mb-4 inline-block" aria-hidden="true">
-        cloud_off
-      </span>
+      <PinovaIcon name="cloud_off" class="text-red-400 text-[44px] mb-4 inline-block" />
       <p class="text-red-900/90 font-medium text-sm">{{ t('legal.loadError') }}</p>
       <PinovaButton
         variant="secondary"
@@ -126,7 +124,7 @@ watch(currentLang, load, { immediate: true })
           <div
             class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 ring-black/[0.05] bg-pink-700/15 dark:bg-pink-600/15 text-pink-700"
           >
-            <span class="material-symbols-outlined text-[28px]">mail</span>
+            <PinovaIcon name="mail" class="text-[28px]" />
           </div>
           <div class="min-w-0 flex-1 pt-0.5 space-y-3">
             <span
@@ -160,7 +158,7 @@ watch(currentLang, load, { immediate: true })
             :href="mailtoHref"
             class="inline-flex items-center justify-center gap-2 w-full sm:w-auto min-w-[220px] px-6 py-3.5 text-sm shadow-md"
           >
-            <span class="material-symbols-outlined text-xl">outgoing_mail</span>
+            <PinovaIcon name="outgoing_mail" class="text-xl" />
             {{ t('contact.emailCta') }}
           </PinovaButton>
           <p class="mt-3 text-sm text-pink-700 dark:text-pink-600 font-medium break-all">

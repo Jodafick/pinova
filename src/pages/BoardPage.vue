@@ -625,7 +625,7 @@ onUnmounted(() => {
       class="group mb-8 hidden text-sm lg:inline-flex"
       @click="router.back()"
     >
-      <span class="material-symbols-outlined text-lg">arrow_back</span>
+      <PinovaIcon name="arrow_back" class="text-lg" />
       {{ t('common.back') }}
     </PinovaButton>
 
@@ -678,7 +678,7 @@ onUnmounted(() => {
           :aria-label="t('pin.ownerMenu.more')"
           @click="boardActionsOpen = !boardActionsOpen"
         >
-          <span class="material-symbols-outlined text-[22px]">more_vert</span>
+          <PinovaIcon name="more_vert" class="text-[22px]" />
         </button>
       </div>
 
@@ -709,7 +709,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="shareThisBoardFromMenu"
         >
-          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">share</span>
+          <PinovaIcon name="share" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
           {{ t('board.share') }}
         </button>
         <button
@@ -719,7 +719,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="openBoardEditorFromMenu"
         >
-          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">edit</span>
+          <PinovaIcon name="edit" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
           {{ t('board.editBoard') }}
         </button>
         <button
@@ -729,7 +729,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="openOrganizeFromMenu"
         >
-          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">drag_indicator</span>
+          <PinovaIcon name="drag_indicator" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
           {{ t('board.organizePins') }}
         </button>
         <button
@@ -739,7 +739,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="openInviteCollaboratorFromBoard"
         >
-          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">person_add</span>
+          <PinovaIcon name="person_add" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
           {{ t('profile.boards.invitePromptTitle') }}
         </button>
         <button
@@ -751,7 +751,7 @@ onUnmounted(() => {
           @click="confirmDeleteBoardFromMenu"
         >
           <span v-if="boardDeletePending" class="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" aria-hidden="true" />
-          <span v-else class="material-symbols-outlined text-lg shrink-0" aria-hidden="true">delete</span>
+          <PinovaIcon v-else name="delete" class="text-lg shrink-0" aria-hidden="true" />
           {{ t('board.deleteBoard') }}
         </button>
       </div>
@@ -783,7 +783,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="closeOrganize"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+          <PinovaIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 
@@ -829,7 +829,7 @@ onUnmounted(() => {
               @dragstart.stop="onOrganizeDragStart(idx, $event)"
               @dragend="onOrganizeDragEnd"
             >
-              <span class="material-symbols-outlined text-[30px] leading-none" aria-hidden="true">drag_indicator</span>
+              <PinovaIcon name="drag_indicator" class="text-[30px] leading-none" aria-hidden="true" />
             </button>
           </li>
         </ul>
@@ -865,7 +865,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="closeBoardEditor"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+          <PinovaIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 

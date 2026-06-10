@@ -50,24 +50,19 @@ const chain = computed(() => {
           class="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
           :class="certified ? 'bg-emerald-500' : 'bg-neutral-400'"
         >
-          <span class="material-symbols-outlined text-white text-lg fill-1">
-            {{ certified ? 'verified' : 'gpp_bad' }}
-          </span>
+          <PinovaIcon :name="certified ? 'verified' : 'gpp_bad'" class="text-white text-lg fill-1" />
         </div>
         <div class="text-left min-w-0">
           <p class="text-sm font-bold text-neutral-900 flex items-center gap-1.5">
             {{ t('provenance.title') }}
-            <span class="material-symbols-outlined text-xs" :class="certified ? 'text-emerald-600' : 'text-neutral-400'">lock</span>
+            <PinovaIcon name="lock" class="text-xs" :class="certified ? 'text-emerald-600' : 'text-neutral-400'" />
           </p>
           <p class="text-[11px] text-neutral-500 truncate">
             {{ t('provenance.subtitle') }}
           </p>
         </div>
       </div>
-      <span
-        class="material-symbols-outlined text-neutral-400 transition-transform"
-        :class="{ 'rotate-180': open }"
-      >expand_more</span>
+      <PinovaIcon name="expand_more" class="text-neutral-400 transition-transform" :class="{ 'rotate-180': open }" />
     </button>
 
     <div v-if="open" class="px-4 pb-4">
@@ -80,12 +75,7 @@ const chain = computed(() => {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
               <p class="text-sm font-bold text-neutral-900">{{ creator }}</p>
-              <span
-                class="material-symbols-outlined text-base fill-1"
-                :class="certified ? 'text-emerald-600' : 'text-neutral-400'"
-              >
-                {{ certified ? 'verified' : 'gpp_bad' }}
-              </span>
+              <PinovaIcon :name="certified ? 'verified' : 'gpp_bad'" class="text-base fill-1" :class="certified ? 'text-emerald-600' : 'text-neutral-400'" />
             </div>
             <p class="text-xs text-neutral-500">{{ t('provenance.creator') }}</p>
             <p class="text-[10px] text-neutral-400 mt-1">
@@ -115,7 +105,7 @@ const chain = computed(() => {
                     class="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded font-bold"
                     :class="step.type === 'creation' ? 'bg-pink-100 text-pink-700' : step.type === 'remix' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'"
                   >{{ step.label }}</span>
-                  <span v-if="step.verified" class="material-symbols-outlined text-xs text-emerald-600 fill-1">verified</span>
+                  <PinovaIcon name="verified" class="text-xs text-emerald-600 fill-1" />
                 </div>
                 <p class="text-[11px] text-neutral-500">{{ step.date }}</p>
               </div>
@@ -132,10 +122,10 @@ const chain = computed(() => {
             {{ t('provenance.hash') }}
           </p>
           <div class="flex items-center gap-2 bg-neutral-50 rounded-lg px-3 py-2 font-mono text-[10px] text-neutral-600">
-            <span class="material-symbols-outlined text-sm">tag</span>
+            <PinovaIcon name="tag" class="text-sm" />
             <span class="truncate flex-1">{{ hash || '0x7f4a8b...c9e2d1' }}</span>
             <button class="text-neutral-400 hover:text-neutral-700">
-              <span class="material-symbols-outlined text-sm">content_copy</span>
+              <PinovaIcon name="content_copy" class="text-sm" />
             </button>
           </div>
           <p class="text-[10px] text-neutral-400 mt-2">

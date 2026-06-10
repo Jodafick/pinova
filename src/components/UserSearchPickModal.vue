@@ -173,7 +173,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   >
     <div class="px-4 pt-2 pb-2">
       <div class="app-input-surface flex items-center gap-2 rounded-2xl px-3 py-2.5 transition">
-        <span class="material-symbols-outlined text-neutral-400 text-xl" aria-hidden="true">person_search</span>
+        <PinovaIcon name="person_search" class="text-neutral-400 text-xl" />
         <input
           ref="inputRef"
           v-model="searchQuery"

@@ -127,7 +127,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         :aria-label="t('pin.overlay.prev')"
         @click="emit('prev-pin')"
       >
-        <span class="pin-desktop-filled material-symbols-outlined text-3xl">chevron_left</span>
+        <PinovaIcon name="chevron_left" filled class="text-3xl" />
       </button>
 
       <button
@@ -137,7 +137,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         :aria-label="t('pin.overlay.next')"
         @click="emit('next-pin')"
       >
-        <span class="pin-desktop-filled material-symbols-outlined text-3xl">chevron_right</span>
+        <PinovaIcon name="chevron_right" filled class="text-3xl" />
       </button>
 
       <article
@@ -152,7 +152,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
           :aria-label="t('common.close')"
           @click="emit('close')"
         >
-          <span class="pin-desktop-filled material-symbols-outlined text-2xl">close</span>
+          <PinovaIcon name="close" filled class="text-2xl" />
         </button>
 
         <div class="pin-detail-mobile-card flex max-h-[86vh] flex-row">
@@ -212,7 +212,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   :aria-label="t('pin.boost.cta')"
                   @click="emit('boost')"
                 >
-                  <span class="pin-desktop-filled material-symbols-outlined text-amber-600" aria-hidden="true">rocket_launch</span>
+                  <PinovaIcon name="rocket_launch" filled class="text-amber-600" aria-hidden="true" />
                 </button>
                 <button
                   v-if="!isOwnStory"
@@ -225,7 +225,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   @click="emit('like')"
                 >
                   <span v-if="likingPin" class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
-                  <span v-else class="pin-desktop-filled material-symbols-outlined" :class="pin.liked ? 'text-pink-700' : 'text-neutral-700 dark:text-neutral-200'" aria-hidden="true">favorite</span>
+                  <PinovaIcon v-else name="favorite" filled :class="pin.liked ? 'text-pink-700' : 'text-neutral-700 dark:text-neutral-200'" aria-hidden="true" />
                 </button>
                 <button
                   v-else
@@ -234,10 +234,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   :aria-label="t('story.likers.openListAria', { count: pin.stats.reactions })"
                   @click="emit('open-likers')"
                 >
-                  <span class="pin-desktop-filled material-symbols-outlined text-pink-700" aria-hidden="true">favorite</span>
+                  <PinovaIcon name="favorite" filled class="text-pink-700" aria-hidden="true" />
                 </button>
                 <button type="button" class="lux-icon-ring-btn" :aria-label="t('pin.a11y.share')" @click="emit('share')">
-                  <span class="pin-desktop-filled material-symbols-outlined" aria-hidden="true">share</span>
+                  <PinovaIcon name="share" filled aria-hidden="true" />
                 </button>
                 <button
                   type="button"
@@ -247,7 +247,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   @click="emit('download')"
                 >
                   <span v-if="downloadingPin" class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
-                  <span v-else class="pin-desktop-filled material-symbols-outlined" aria-hidden="true">download</span>
+                  <PinovaIcon v-else name="download" filled aria-hidden="true" />
                 </button>
                 <button
                   v-if="isAuthenticated && !isPinOwner && !pin.viewerHasReported"
@@ -256,7 +256,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   :aria-label="t('moderation.report')"
                   @click="emit('report')"
                 >
-                  <span class="pin-desktop-filled material-symbols-outlined text-[22px]" aria-hidden="true">flag</span>
+                  <PinovaIcon name="flag" filled class="text-[22px]" aria-hidden="true" />
                 </button>
               </div>
               <button
@@ -269,7 +269,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                 @click="emit('save')"
               >
                 <span v-if="savingPin" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <span v-else class="pin-desktop-filled material-symbols-outlined" aria-hidden="true">bookmark</span>
+                <PinovaIcon v-else name="bookmark" filled aria-hidden="true" />
                 <span v-if="!savingPin">{{ pin.saved ? t('pin.saved') : t('pin.save') }}</span>
               </button>
             </div>
@@ -281,7 +281,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               rel="noopener noreferrer"
               class="mb-4 inline-flex items-center gap-1.5 text-sm text-neutral-800 underline underline-offset-2 hover:text-neutral-950 dark:text-neutral-200 dark:hover:text-white"
             >
-              <span class="material-symbols-outlined text-base">open_in_new</span>
+              <PinovaIcon name="open_in_new" class="text-base" />
               {{ pin.link }}
             </a>
 
@@ -292,7 +292,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                 class="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider"
                 :class="pinVisibility === 'private' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'"
               >
-                <span class="material-symbols-outlined text-xs">{{ pinVisibility === 'private' ? 'lock' : 'group' }}</span>
+                <PinovaIcon :name="pinVisibility === 'private' ? 'lock' : 'group'" class="text-xs" />
                 {{ pinVisibility === 'private' ? t('pin.visibility.private') : t('pin.visibility.followers') }}
               </span>
             </div>
@@ -357,7 +357,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
             <div class="mb-6 mt-6 flex items-center gap-6 text-sm text-neutral-500">
               <span class="flex items-center gap-1.5">
                 {{ formatCount(pin.stats.saves) }}
-                <span class="pin-desktop-filled material-symbols-outlined text-lg" :class="{ 'text-neutral-600': pin.saved }">bookmark</span>
+                <PinovaIcon name="bookmark" filled class="text-lg" :class="{ 'text-neutral-600': pin.saved }" />
               </span>
               <button
                 v-if="pin.isStory && isPinOwner"
@@ -367,14 +367,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                 @click="emit('open-likers')"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <span class="pin-desktop-filled material-symbols-outlined text-lg text-pink-700" aria-hidden="true">favorite</span>
+                <PinovaIcon name="favorite" filled class="text-lg text-pink-700" aria-hidden="true" />
               </button>
               <span v-else-if="!pin.isStory" class="flex items-center gap-1.5">
                 {{ formatCount(pin.stats.reactions) }}
-                <span class="pin-desktop-filled material-symbols-outlined text-lg" :class="pin.liked ? 'text-pink-700' : 'text-neutral-300'">favorite</span>
+                <PinovaIcon name="favorite" filled class="text-lg" :class="pin.liked ? 'text-pink-700' : 'text-neutral-300'" />
               </span>
               <span class="flex min-w-0 items-center gap-1.5">
-                <span class="material-symbols-outlined text-lg">sell</span>
+                <PinovaIcon name="sell" class="text-lg" />
                 <span class="truncate">{{ pin.topicDisplay ?? pin.topic }}</span>
               </span>
             </div>
@@ -392,7 +392,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                 :to="`/profile/${board.ownerUsername || pin.username}/board/${board.id}`"
                 class="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700 transition hover:bg-purple-100 dark:bg-purple-950/35 dark:text-purple-300 dark:hover:bg-purple-900/45"
               >
-                <span class="material-symbols-outlined text-sm" aria-hidden="true">dashboard</span>
+                <PinovaIcon name="dashboard" class="text-sm" aria-hidden="true" />
                 {{ board.name }}
               </router-link>
             </div>

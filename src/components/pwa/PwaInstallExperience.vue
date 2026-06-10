@@ -145,15 +145,15 @@ defineExpose({ open, close, isSnoozed, scenario })
       </p>
       <ul class="mb-5 flex list-none flex-col gap-2 p-0">
         <li class="flex items-center gap-2.5 text-[15px] text-neutral-800 dark:text-neutral-100">
-          <span class="material-symbols-outlined shrink-0 text-[22px] text-pink-600 dark:text-pink-400">flash_on</span>
+          <PinovaIcon name="flash_on" class="shrink-0 text-[22px] text-pink-600 dark:text-pink-400" />
           <span>{{ t('pwa.install.bullet.fast') }}</span>
         </li>
         <li class="flex items-center gap-2.5 text-[15px] text-neutral-800 dark:text-neutral-100">
-          <span class="material-symbols-outlined shrink-0 text-[22px] text-pink-600 dark:text-pink-400">offline_bolt</span>
+          <PinovaIcon name="offline_bolt" class="shrink-0 text-[22px] text-pink-600 dark:text-pink-400" />
           <span>{{ t('pwa.install.bullet.offline') }}</span>
         </li>
         <li class="flex items-center gap-2.5 text-[15px] text-neutral-800 dark:text-neutral-100">
-          <span class="material-symbols-outlined shrink-0 text-[22px] text-pink-600 dark:text-pink-400">notifications_active</span>
+          <PinovaIcon name="notifications_active" class="shrink-0 text-[22px] text-pink-600 dark:text-pink-400" />
           <span>{{ t('pwa.install.bullet.notifs') }}</span>
         </li>
       </ul>
@@ -167,7 +167,7 @@ defineExpose({ open, close, isSnoozed, scenario })
         class="w-full flex items-center justify-center gap-2 rounded-2xl border-0 bg-gradient-to-br from-pink-600 to-pink-500 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-pink-600/30 transition [transition-property:transform,filter] active:scale-[0.98] active:brightness-[0.96] dark:shadow-pink-900/45"
         @click="clickInstall"
       >
-        <span class="material-symbols-outlined text-[22px]">install_mobile</span>
+        <PinovaIcon name="install_mobile" class="text-[22px]" />
         {{ t('pwa.install.installNow') }}
       </button>
       <button
@@ -192,22 +192,13 @@ defineExpose({ open, close, isSnoozed, scenario })
         <div
           class="mb-2.5 flex items-center justify-center gap-1.5 rounded-xl bg-black/[0.06] px-3 py-2 text-[13px] font-semibold text-neutral-800 dark:bg-white/10 dark:text-neutral-100"
         >
-          <span class="pwa-install__safari-lock material-symbols-outlined !text-sm opacity-60">lock</span>
+          <PinovaIcon name="lock" class="pwa-install__safari-lock !text-sm opacity-60" />
           <span class="pwa-install__safari-host tracking-tight">pinova…</span>
         </div>
         <div class="flex items-center justify-center gap-4 px-1 pb-1 pt-2">
-          <span
-            class="pwa-install__glass-icon-btn material-symbols-outlined text-[22px] leading-none text-neutral-900 dark:text-white"
-            style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
-          ><span class="block translate-y-px opacity-[0.38]">chevron_backward</span></span>
-          <span
-            class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse material-symbols-outlined text-[22px] leading-none text-neutral-900 dark:text-white"
-            style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
-          ><span class="block translate-y-px">ios_share</span></span>
-          <span
-            class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
-            style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
-          ><span class="block translate-y-px">more_horiz</span></span>
+          <PinovaIcon name="chevron_backward" class="pwa-install__glass-icon-btn text-[22px] leading-none text-neutral-900 dark:text-white block translate-y-px opacity-[0.38]" />
+          <PinovaIcon name="ios_share" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse text-[22px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
+          <PinovaIcon name="more_horiz" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
         </div>
       </div>
 
@@ -221,10 +212,7 @@ defineExpose({ open, close, isSnoozed, scenario })
             1
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
-            <div
-              class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
-              style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
-            ><span class="block translate-y-px">more_horiz</span></div>
+            <PinovaIcon name="more_horiz" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step1') }}
             </p>
@@ -239,10 +227,7 @@ defineExpose({ open, close, isSnoozed, scenario })
             2
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
-            <div
-              class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
-              style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
-            ><span class="block translate-y-px">ios_share</span></div>
+            <PinovaIcon name="ios_share" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step2') }}
             </p>
@@ -257,10 +242,7 @@ defineExpose({ open, close, isSnoozed, scenario })
             3
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
-            <div
-              class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
-              style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
-            ><span class="block translate-y-px">add_box</span></div>
+            <PinovaIcon name="add_box" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step3') }}
             </p>
@@ -275,10 +257,7 @@ defineExpose({ open, close, isSnoozed, scenario })
             4
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
-            <div
-              class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm material-symbols-outlined text-[21px] leading-none text-neutral-900 dark:text-white"
-              style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24"
-            ><span class="block translate-y-px">touch_app</span></div>
+            <PinovaIcon name="touch_app" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step4') }}
             </p>

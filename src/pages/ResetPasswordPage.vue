@@ -57,14 +57,14 @@ const handleResetPassword = async () => {
       </div>
 
       <div v-if="success" class="bg-green-50 border border-green-100 rounded-2xl p-6 text-center animate-fade-in">
-        <span class="material-symbols-outlined text-green-600 text-4xl mb-3">check_circle</span>
+        <PinovaIcon name="check_circle" class="text-green-600 text-4xl mb-3" />
         <h3 class="text-green-800 font-bold mb-1">{{ t('reset.success.title') }}</h3>
         <p class="text-green-700 text-sm">{{ t('reset.success.desc') }}</p>
       </div>
 
       <form v-else @submit.prevent="handleResetPassword" class="space-y-5">
         <div v-if="error" class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm">
-          <span class="material-symbols-outlined text-lg">error</span>
+          <PinovaIcon name="error" class="text-lg" />
           {{ error }}
         </div>
 
@@ -80,7 +80,7 @@ const handleResetPassword = async () => {
         <div>
           <label class="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2 ml-1">{{ t('reset.confirmPassword') }}</label>
           <div class="relative group">
-            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 transition-colors">verified_user</span>
+            <PinovaIcon name="verified_user" class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-pink-700 transition-colors" />
             <input
               v-model="confirmPassword"
               type="password"

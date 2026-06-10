@@ -87,7 +87,7 @@ async function onTap() {
       :aria-label="t('common.close')"
       @click.stop="emit('dismiss')"
     >
-      <span class="material-symbols-outlined text-base">close</span>
+      <PinovaIcon name="close" class="text-base" />
     </button>
   </div>
 </template>

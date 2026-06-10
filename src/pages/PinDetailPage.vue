@@ -941,7 +941,7 @@ async function deletePinFromMenu() {
       v-else-if="pinDetailNotFound || !pin"
       class="flex flex-col items-center justify-center py-32 text-center px-6"
     >
-      <span class="material-symbols-outlined text-7xl text-neutral-300 mb-4">broken_image</span>
+      <PinovaIcon name="broken_image" class="text-7xl text-neutral-300 mb-4" />
       <h1 class="text-2xl font-auth-title font-auth-title--black text-neutral-800 mb-2">{{ t('pin.notFound.title') }}</h1>
       <p class="text-neutral-500 mb-6">{{ t('pin.notFound.desc') }}</p>
       <router-link to="/" class="lux-btn-primary lux-btn-pill text-sm">
@@ -965,7 +965,7 @@ async function deletePinFromMenu() {
           :aria-label="t('pin.a11y.back')"
           @click="goBack"
         >
-          <span class="material-symbols-outlined text-lg">arrow_back</span>
+          <PinovaIcon name="arrow_back" class="text-lg" />
           {{ t('common.back') }}
         </PinovaButton>
 
@@ -1034,7 +1034,7 @@ async function deletePinFromMenu() {
               </PinSensitiveMedia>
               <transition name="pin-detail-heart">
                 <div v-if="pinHeartBurst" :key="pinHeartBurstKey" class="pin-detail-heart-burst pointer-events-none">
-                  <span class="material-symbols-outlined">favorite</span>
+                  <PinovaIcon name="favorite" />
                 </div>
               </transition>
             </div>
@@ -1055,9 +1055,7 @@ async function deletePinFromMenu() {
                     aria-haspopup="menu"
                     @click.stop.prevent="togglePinOwnerMenu"
                   >
-                    <span class="material-symbols-outlined text-[22px] leading-none translate-y-px" aria-hidden="true">
-                      more_horiz
-                    </span>
+                    <PinovaIcon name="more_horiz" class="text-[22px] leading-none translate-y-px" aria-hidden="true" />
                   </button>
                 </div>
                 <button
@@ -1071,7 +1069,7 @@ async function deletePinFromMenu() {
                   @click="handleLike"
                 >
                   <span v-if="likingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-                  <span v-else class="material-symbols-outlined" :class="pin.liked ? 'text-pink-700' : 'text-neutral-700'" aria-hidden="true">favorite</span>
+                  <PinovaIcon v-else name="favorite" :class="pin.liked ? 'text-pink-700' : 'text-neutral-700'" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
@@ -1079,7 +1077,7 @@ async function deletePinFromMenu() {
                   :aria-label="t('pin.a11y.share')"
                   @click="handleShare"
                 >
-                  <span class="material-symbols-outlined" aria-hidden="true">share</span>
+                  <PinovaIcon name="share" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
@@ -1089,7 +1087,7 @@ async function deletePinFromMenu() {
                   @click="handleDownload"
                 >
                   <span v-if="downloadingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-                  <span v-else class="material-symbols-outlined" aria-hidden="true">download</span>
+                  <PinovaIcon v-else name="download" aria-hidden="true" />
                 </button>
                 <button
                   v-if="isAuthenticated && !isPinOwner && !pin.viewerHasReported"
@@ -1098,7 +1096,7 @@ async function deletePinFromMenu() {
                   :aria-label="t('moderation.report')"
                   @click="handleReportPin"
                 >
-                  <span class="material-symbols-outlined text-[22px]" aria-hidden="true">flag</span>
+                  <PinovaIcon name="flag" class="text-[22px]" aria-hidden="true" />
                 </button>
               </div>
               <button
@@ -1111,7 +1109,7 @@ async function deletePinFromMenu() {
                 @click="handleSave"
               >
                 <span v-if="savingPin" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                <span v-else class="pin-detail-save-icon material-symbols-outlined" aria-hidden="true">bookmark</span>
+                <PinovaIcon v-else name="bookmark" class="pin-detail-save-icon" aria-hidden="true" />
                 <span v-if="!savingPin">{{ pin.saved ? t('pin.saved') : t('pin.save') }}</span>
               </button>
             </div>
@@ -1124,7 +1122,7 @@ async function deletePinFromMenu() {
               rel="noopener noreferrer"
               class="inline-flex items-center gap-1.5 text-sm text-neutral-800 hover:text-neutral-950 underline underline-offset-2 mb-4"
             >
-              <span class="material-symbols-outlined text-base">open_in_new</span>
+              <PinovaIcon name="open_in_new" class="text-base" />
               {{ pin.link }}
             </a>
 
@@ -1136,7 +1134,7 @@ async function deletePinFromMenu() {
                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0"
                 :class="pinVisibility === 'private' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'"
               >
-                <span class="material-symbols-outlined text-xs">{{ pinVisibility === 'private' ? 'lock' : 'group' }}</span>
+                <PinovaIcon :name="pinVisibility === 'private' ? 'lock' : 'group'" class="text-xs" />
                 {{ pinVisibility === 'private' ? t('pin.visibility.private') : t('pin.visibility.followers') }}
               </span>
             </div>
@@ -1227,7 +1225,7 @@ async function deletePinFromMenu() {
             <div class="flex items-center gap-6 mb-6 text-sm text-neutral-500">
               <span class="flex items-center gap-1.5">
                 {{ formatCount(pin.stats.saves) }}
-                <span class="material-symbols-outlined text-lg" :class="{ 'fill-1 text-neutral-600': pin.saved }">bookmark</span>
+                <PinovaIcon name="bookmark" class="text-lg" :class="{ 'fill-1 text-neutral-600': pin.saved }" />
               </span>
               <button
                 v-if="pin.isStory && isPinOwner"
@@ -1237,17 +1235,17 @@ async function deletePinFromMenu() {
                 @click="storyLikersOpen = true"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <span class="material-symbols-outlined text-lg text-pink-700" aria-hidden="true">favorite</span>
+                <PinovaIcon name="favorite" class="text-lg text-pink-700" aria-hidden="true" />
               </button>
               <span
                 v-else-if="!pin.isStory"
                 class="flex items-center gap-1.5"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <span class="material-symbols-outlined text-lg" :class="pin.liked ? 'text-pink-700' : 'text-neutral-300'">favorite</span>
+                <PinovaIcon name="favorite" class="text-lg" :class="pin.liked ? 'text-pink-700' : 'text-neutral-300'" />
               </span>
               <span class="flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-lg">sell</span>
+                <PinovaIcon name="sell" class="text-lg" />
                 {{ pin.topicDisplay ?? pin.topic }}
               </span>
             </div>
@@ -1268,7 +1266,7 @@ async function deletePinFromMenu() {
                 :to="`/profile/${board.ownerUsername || pin.username}/board/${board.id}`"
                 class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/35 text-xs font-semibold text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/45 transition"
               >
-                <span class="material-symbols-outlined text-sm" aria-hidden="true">dashboard</span>
+                <PinovaIcon name="dashboard" class="text-sm" aria-hidden="true" />
                 {{ board.name }}
               </router-link>
             </div>
@@ -1430,7 +1428,7 @@ async function deletePinFromMenu() {
           class="app-menu-item w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 flex items-center gap-2 transition-colors"
           @click="goEditPinFromMenu"
         >
-          <span class="material-symbols-outlined text-lg text-neutral-500" aria-hidden="true">edit</span>
+          <PinovaIcon name="edit" class="text-lg text-neutral-500" aria-hidden="true" />
           {{ t('pin.ownerMenu.edit') }}
         </button>
         <button
@@ -1439,7 +1437,7 @@ async function deletePinFromMenu() {
           class="app-menu-item w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 flex items-center gap-2 transition-colors"
           @click="promoteSheetOpen = true; pinOwnerMenuOpen = false"
         >
-          <span class="material-symbols-outlined text-lg text-amber-600" aria-hidden="true">rocket_launch</span>
+          <PinovaIcon name="rocket_launch" class="text-lg text-amber-600" aria-hidden="true" />
           {{ t('pin.boost.cta') }}
         </button>
         <button
@@ -1448,7 +1446,7 @@ async function deletePinFromMenu() {
           class="app-menu-item w-full px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-300 flex items-center gap-2 transition-colors"
           @click="deletePinFromMenu"
         >
-          <span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
+          <PinovaIcon name="delete" class="text-lg" aria-hidden="true" />
           {{ t('pin.ownerMenu.delete') }}
         </button>
       </div>

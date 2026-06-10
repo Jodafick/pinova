@@ -46,7 +46,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="isHomeActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(isHomeActive())"
       >
-        <span class="material-symbols-outlined text-[32px] leading-none">home</span>
+        <PinovaIcon name="home" class="text-[32px] leading-none" />
         <span class="truncate">{{ t('nav.home') }}</span>
       </router-link>
 
@@ -58,7 +58,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
           :aria-label="t('nav.create')"
           @click="openMobileCreateChooser"
         >
-          <span class="material-symbols-outlined text-[36px]">add</span>
+          <PinovaIcon name="add" class="text-[36px]" />
         </button>
       </div>
 
@@ -68,7 +68,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="isProfileActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(isProfileActive())"
       >
-        <span class="material-symbols-outlined text-[32px] leading-none">person</span>
+        <PinovaIcon name="person" class="text-[32px] leading-none" />
         <span class="truncate">{{ t('nav.profile') }}</span>
       </router-link>
     </template>
@@ -80,7 +80,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="isHomeActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(isHomeActive())"
       >
-        <span class="material-symbols-outlined text-[28px] leading-none">home</span>
+        <PinovaIcon name="home" class="text-[28px] leading-none" />
         <span class="truncate">{{ t('nav.home') }}</span>
       </router-link>
 
@@ -90,7 +90,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="isExploreActive() ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(isExploreActive())"
       >
-        <span class="material-symbols-outlined text-[28px] leading-none">travel_explore</span>
+        <PinovaIcon name="travel_explore" class="text-[28px] leading-none" />
         <span class="truncate">{{ t('nav.explore') }}</span>
       </router-link>
 
@@ -100,7 +100,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="route.name === 'contest-live' ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(route.name === 'contest-live')"
       >
-        <span class="material-symbols-outlined text-[28px] leading-none">emoji_events</span>
+        <PinovaIcon name="emoji_events" class="text-[28px] leading-none" />
         <span class="truncate">{{ t('nav.contest') }}</span>
       </router-link>
 
@@ -110,7 +110,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="route.name === 'login' ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(route.name === 'login')"
       >
-        <span class="material-symbols-outlined text-[28px] leading-none">login</span>
+        <PinovaIcon name="login" class="text-[28px] leading-none" />
         <span class="truncate">{{ t('nav.login') }}</span>
       </router-link>
 
@@ -120,7 +120,7 @@ function tabSwitchIfLeaving(alreadyActive: boolean) {
         :class="route.name === 'register' ? 'text-pink-700 dark:text-pink-600' : 'text-neutral-500 dark:text-neutral-400'"
         @click="tabSwitchIfLeaving(route.name === 'register')"
       >
-        <span class="material-symbols-outlined text-[28px] leading-none">person_add</span>
+        <PinovaIcon name="person_add" class="text-[28px] leading-none" />
         <span class="truncate">{{ t('nav.register') }}</span>
       </router-link>
     </template>

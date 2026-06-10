@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
           @pointerup="onPointerUp($event, toast)"
           @pointercancel="onPointerUp($event, toast)"
         >
-          <span class="pinova-toast__icon material-symbols-outlined" aria-hidden="true">{{ iconFor(toast.kind) }}</span>
+          <PinovaIcon :name="iconFor(toast.kind)" class="pinova-toast__icon" />
           <div class="pinova-toast__body">
             <p class="pinova-toast__message">{{ toast.message }}</p>
             <p v-if="toast.description" class="pinova-toast__desc">{{ toast.description }}</p>
@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
             :aria-label="t('common.close')"
             @click.stop="closeToast(toast)"
           >
-            <span class="material-symbols-outlined text-[18px] leading-none">close</span>
+            <PinovaIcon name="close" class="text-[18px] leading-none" />
           </button>
         </div>
       </transition-group>

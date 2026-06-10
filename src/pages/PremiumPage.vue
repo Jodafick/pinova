@@ -598,7 +598,7 @@ onUnmounted(() => {
       <div
         class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-4 backdrop-blur-md bg-white/60 dark:bg-white/[0.08] text-pink-900 dark:text-pink-400 ring-1 ring-pink-200/65 dark:ring-pink-500/25 shadow-sm"
       >
-        <span class="material-symbols-outlined text-sm">block</span>
+        <PinovaIcon name="block" class="text-sm" />
         {{ t('premium.adFree') }}
       </div>
       <h1 class="text-4xl sm:text-[3.5rem] font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-3">
@@ -663,7 +663,7 @@ onUnmounted(() => {
             :key="i"
             class="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-200"
           >
-            <span class="material-symbols-outlined text-base mt-0.5 shrink-0 text-emerald-500 dark:text-emerald-400">check_circle</span>
+            <PinovaIcon name="check_circle" class="text-base mt-0.5 shrink-0 text-emerald-500 dark:text-emerald-400" />
             <span>{{ feature.label }}</span>
           </li>
         </ul>
@@ -689,9 +689,7 @@ onUnmounted(() => {
           class="inline-flex items-center gap-1.5 text-sm font-semibold text-pink-700 dark:text-pink-400 hover:underline"
           @click="toggleComparePlans"
         >
-          <span class="material-symbols-outlined text-lg" aria-hidden="true">
-            {{ showComparePlans ? 'expand_less' : 'compare_arrows' }}
-          </span>
+          <PinovaIcon :name="showComparePlans ? 'expand_less' : 'compare_arrows'" class="text-lg" />
           {{ showComparePlans ? t('premium.funnel.hideCompare') : t('premium.funnel.comparePlans') }}
         </button>
 
@@ -868,10 +866,7 @@ onUnmounted(() => {
             class="flex items-start gap-2 text-sm"
             :class="feature.included ? 'text-neutral-700 dark:text-neutral-200' : 'text-neutral-300 dark:text-neutral-600'"
           >
-            <span
-              class="material-symbols-outlined text-base mt-0.5 shrink-0"
-              :class="feature.included ? 'text-emerald-500 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'"
-            >{{ feature.included ? 'check_circle' : 'cancel' }}</span>
+            <PinovaIcon :name="feature.included ? 'check_circle' : 'cancel'" class="text-base mt-0.5 shrink-0" :class="feature.included ? 'text-emerald-500 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'" />
             <span>{{ feature.label }}</span>
           </li>
         </ul>
@@ -906,7 +901,7 @@ onUnmounted(() => {
         >
           <summary class="px-5 py-4 cursor-pointer flex items-center justify-between text-sm font-semibold text-neutral-900 dark:text-neutral-100">
             {{ faq.q }}
-            <span class="material-symbols-outlined text-neutral-400 group-open:rotate-180 transition-transform">expand_more</span>
+            <PinovaIcon name="expand_more" class="text-neutral-400 group-open:rotate-180 transition-transform" />
           </summary>
           <div class="px-5 pb-4 text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
             {{ faq.a }}

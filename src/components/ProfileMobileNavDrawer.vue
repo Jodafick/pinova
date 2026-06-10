@@ -173,7 +173,7 @@ onUnmounted(() => {
             :aria-label="t('common.close')"
             @click="close"
           >
-            <span class="material-symbols-outlined text-[22px]">close</span>
+            <PinovaIcon name="close" class="text-[22px]" />
           </button>
         </div>
 
@@ -195,10 +195,10 @@ onUnmounted(() => {
             @click="close"
           >
             <span :class="iconBoxClass">
-              <span class="material-symbols-outlined text-[22px] text-white">home</span>
+              <PinovaIcon name="home" class="text-[22px] text-white" />
             </span>
             <span class="flex-1 text-[15px] font-bold text-white">{{ t('mobile.profile.drawerHome') }}</span>
-            <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+            <PinovaIcon name="chevron_right" class="text-[20px] text-white/45 dark:text-white/32" />
           </router-link>
 
           <router-link
@@ -207,10 +207,10 @@ onUnmounted(() => {
             @click="close"
           >
             <span :class="iconBoxClass">
-              <span class="material-symbols-outlined text-[22px] text-white">emoji_events</span>
+              <PinovaIcon name="emoji_events" class="text-[22px] text-white" />
             </span>
             <span class="flex-1 text-[15px] font-bold text-white">{{ t('nav.contest') }}</span>
-            <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+            <PinovaIcon name="chevron_right" class="text-[20px] text-white/45 dark:text-white/32" />
           </router-link>
 
           <router-link
@@ -219,12 +219,12 @@ onUnmounted(() => {
             @click="close"
           >
             <span :class="iconBoxClass">
-              <span class="material-symbols-outlined text-[22px] text-white">card_giftcard</span>
+              <PinovaIcon name="card_giftcard" class="text-[22px] text-white" />
             </span>
             <span class="flex-1 text-[15px] font-bold text-white">{{
               t('mobile.profile.drawerReferralContest')
             }}</span>
-            <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+            <PinovaIcon name="chevron_right" class="text-[20px] text-white/45 dark:text-white/32" />
           </router-link>
 
           <router-link
@@ -233,12 +233,12 @@ onUnmounted(() => {
             @click="close"
           >
             <span :class="iconBoxClass">
-              <span class="material-symbols-outlined text-[22px] text-white">group_add</span>
+              <PinovaIcon name="group_add" class="text-[22px] text-white" />
             </span>
             <span class="flex-1 text-[15px] font-bold text-white">{{
               t('mobile.profile.drawerReferralInvite')
             }}</span>
-            <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+            <PinovaIcon name="chevron_right" class="text-[20px] text-white/45 dark:text-white/32" />
           </router-link>
 
           <button
@@ -247,10 +247,10 @@ onUnmounted(() => {
             @click="onShareProfile"
           >
             <span :class="iconBoxClass">
-              <span class="material-symbols-outlined text-[22px] text-white">share</span>
+              <PinovaIcon name="share" class="text-[22px] text-white" />
             </span>
             <span class="flex-1 text-[15px] font-bold text-white">{{ t('profile.share.profileTitle') }}</span>
-            <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+            <PinovaIcon name="chevron_right" class="text-[20px] text-white/45 dark:text-white/32" />
           </button>
 
           <router-link
@@ -259,10 +259,10 @@ onUnmounted(() => {
             @click="close"
           >
             <span :class="iconBoxClass">
-              <span class="material-symbols-outlined text-[22px] text-white">settings</span>
+              <PinovaIcon name="settings" class="text-[22px] text-white" />
             </span>
             <span class="flex-1 text-[15px] font-bold text-white">{{ t('nav.settings') }}</span>
-            <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+            <PinovaIcon name="chevron_right" class="text-[20px] text-white/45 dark:text-white/32" />
           </router-link>
 
           <button
@@ -272,10 +272,10 @@ onUnmounted(() => {
             @click="onReloadPwa"
           >
             <span :class="iconBoxClass">
-              <span class="material-symbols-outlined text-[22px] text-white">refresh</span>
+              <PinovaIcon name="refresh" class="text-[22px] text-white" />
             </span>
             <span class="flex-1 text-[15px] font-bold text-white">{{ t('pwa.reload.title') }}</span>
-            <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+            <PinovaIcon name="chevron_right" class="text-[20px] text-white/45 dark:text-white/32" />
           </button>
 
           <p
@@ -293,9 +293,7 @@ onUnmounted(() => {
               <span
                 class="mb-2 grid h-11 w-11 place-items-center rounded-full bg-violet-500/[0.13] dark:bg-violet-500/20"
               >
-                <span class="material-symbols-outlined text-[24px] text-violet-600 dark:text-violet-400"
-                  >workspace_premium</span
-                >
+                <PinovaIcon name="workspace_premium" class="text-[24px] text-violet-600 dark:text-violet-400" />
               </span>
               <span class="text-center text-[12px] font-extrabold text-neutral-900 dark:text-neutral-100">{{
                 t('mobile.profile.drawerPremium')
@@ -309,9 +307,7 @@ onUnmounted(() => {
               <span
                 class="mb-2 grid h-11 w-11 place-items-center rounded-full bg-amber-500/15 dark:bg-amber-600/25"
               >
-                <span class="material-symbols-outlined text-[24px] text-amber-700 dark:text-amber-400"
-                  >rocket_launch</span
-                >
+                <PinovaIcon name="rocket_launch" class="text-[24px] text-amber-700 dark:text-amber-400" />
               </span>
               <span class="text-center text-[12px] font-extrabold text-amber-800 dark:text-amber-300">{{
                 t('nav.promote')
@@ -325,9 +321,7 @@ onUnmounted(() => {
               <span
                 class="mb-2 grid h-11 w-11 place-items-center rounded-full bg-pink-500/15 dark:bg-pink-600/25"
               >
-                <span class="material-symbols-outlined text-[24px] text-pink-700 dark:text-pink-400"
-                  >show_chart</span
-                >
+                <PinovaIcon name="show_chart" class="text-[24px] text-pink-700 dark:text-pink-400" />
               </span>
               <span class="text-center text-[12px] font-extrabold text-pink-700 dark:text-pink-400">{{
                 t('mobile.profile.drawerCreator')
@@ -350,10 +344,10 @@ onUnmounted(() => {
               @click="close"
             >
               <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white/[0.14] dark:bg-white/[0.1]">
-                <span class="material-symbols-outlined text-[20px] text-white">help</span>
+                <PinovaIcon name="help" class="text-[20px] text-white" />
               </span>
               <span class="flex-1 text-[14.5px] font-bold text-white/[0.95]">{{ t('nav.faq') }}</span>
-              <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+              <PinovaIcon name="chevron_right" class="text-[20px] text-white/45 dark:text-white/32" />
             </router-link>
             <div class="ml-[46px] h-px bg-white/[0.12] dark:bg-white/[0.1]" />
             <router-link
@@ -362,12 +356,12 @@ onUnmounted(() => {
               @click="close"
             >
               <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white/[0.14] dark:bg-white/[0.1]">
-                <span class="material-symbols-outlined text-[20px] text-white">mail</span>
+                <PinovaIcon name="mail" class="text-[20px] text-white" />
               </span>
               <span class="flex-1 text-[14.5px] font-bold text-white/[0.95]">{{
                 t('mobile.profile.drawerContact')
               }}</span>
-              <span class="material-symbols-outlined text-[20px] text-white/45 dark:text-white/32">chevron_right</span>
+              <PinovaIcon name="chevron_right" class="text-[20px] text-white/45 dark:text-white/32" />
             </router-link>
           </div>
 
@@ -383,7 +377,7 @@ onUnmounted(() => {
               class="flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.14] px-3.5 py-2.5 backdrop-blur-sm transition-colors active:bg-white/[0.22] dark:border-white/[0.12] dark:bg-black/35 dark:active:bg-black/50"
               @click="close"
             >
-              <span class="material-symbols-outlined text-[16px] text-white/90 dark:text-white/85">description</span>
+              <PinovaIcon name="description" class="text-[16px] text-white/90 dark:text-white/85" />
               <span class="text-[12.5px] font-bold text-white">{{ t('legal.badgeTerms') }}</span>
             </router-link>
             <router-link
@@ -391,7 +385,7 @@ onUnmounted(() => {
               class="flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.14] px-3.5 py-2.5 backdrop-blur-sm transition-colors active:bg-white/[0.22] dark:border-white/[0.12] dark:bg-black/35 dark:active:bg-black/50"
               @click="close"
             >
-              <span class="material-symbols-outlined text-[16px] text-white/90 dark:text-white/85">shield_lock</span>
+              <PinovaIcon name="shield_lock" class="text-[16px] text-white/90 dark:text-white/85" />
               <span class="text-[12.5px] font-bold text-white">{{ t('legal.badgePrivacy') }}</span>
             </router-link>
           </div>
@@ -402,11 +396,7 @@ onUnmounted(() => {
           class="mt-2 flex w-full shrink-0 items-center justify-center gap-2.5 rounded-2xl border border-white/30 bg-white/40 px-4 py-3.5 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 transition active:scale-[0.99] active:opacity-95 dark:border-white/12 dark:bg-black/45 dark:shadow-black/50"
           @click="onLogout"
         >
-          <span
-            class="material-symbols-outlined text-[21px] text-neutral-900 dark:text-white"
-            aria-hidden="true"
-            >logout</span
-          >
+          <PinovaIcon name="logout" class="text-[21px] text-neutral-900 dark:text-white" aria-hidden="true" />
           <span class="text-base font-extrabold tracking-tight text-neutral-900 dark:text-white">{{
             t('nav.logout')
           }}</span>

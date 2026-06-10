@@ -78,9 +78,7 @@ const bannerLabel = computed(() => {
       role="status"
       aria-live="polite"
     >
-      <span class="material-symbols-outlined pinova-offline-banner__icon">
-        {{ justBackOnline ? 'wifi' : 'wifi_off' }}
-      </span>
+      <PinovaIcon :name="justBackOnline ? 'wifi' : 'wifi_off'" class="pinova-offline-banner__icon" />
       <span class="pinova-offline-banner__label">{{ bannerLabel }}</span>
       <button
         v-if="!justBackOnline"

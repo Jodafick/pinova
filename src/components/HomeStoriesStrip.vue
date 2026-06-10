@@ -375,7 +375,7 @@ onUnmounted(() => {
         :aria-label="t('home.stories.prev')"
         @click="scrollPrev"
       >
-        <span class="material-symbols-outlined text-2xl">chevron_left</span>
+        <PinovaIcon name="chevron_left" class="text-2xl" />
       </button>
 
       <div
@@ -427,7 +427,7 @@ onUnmounted(() => {
         :aria-label="t('home.stories.next')"
         @click="scrollNext"
       >
-        <span class="material-symbols-outlined text-2xl">chevron_right</span>
+        <PinovaIcon name="chevron_right" class="text-2xl" />
       </button>
     </div>
 

@@ -940,7 +940,7 @@ usePinovaHeaderSwipeDismiss({
           :aria-label="t('common.cancel')"
           @click="leaveCreateFlow()"
         >
-          <span class="material-symbols-outlined text-xl">close</span>
+          <PinovaIcon name="close" class="text-xl" />
         </button>
         <p class="text-sm font-black tracking-tight">{{ t('create.pinMobile.header') }}</p>
         <span class="h-9 w-9" />
@@ -971,7 +971,7 @@ usePinovaHeaderSwipeDismiss({
           @click="fileInput?.click()"
         >
           <span class="absolute right-[1.375rem] top-[1.375rem] grid h-[3.75rem] w-[3.75rem] place-items-center rounded-full bg-white/15 text-white">
-            <span class="material-symbols-outlined text-3xl">imagesmode</span>
+            <PinovaIcon name="imagesmode" class="text-3xl" />
           </span>
           <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/60">{{ t('create.pinMobile.galleryLabel') }}</span>
           <span class="text-2xl font-black tracking-tight">{{ t('create.pinMobile.chooseFile') }}</span>
@@ -983,7 +983,7 @@ usePinovaHeaderSwipeDismiss({
           @click="openCameraCapture()"
         >
           <span class="absolute right-[1.375rem] top-[1.375rem] grid h-[3.75rem] w-[3.75rem] place-items-center rounded-full bg-white/5 text-pink-700 dark:text-pink-600">
-            <span class="material-symbols-outlined text-3xl">photo_camera</span>
+            <PinovaIcon name="photo_camera" class="text-3xl" />
           </span>
           <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/35">{{ t('create.pinMobile.cameraLabel') }}</span>
           <span class="text-[1.35rem] font-black tracking-tight">{{ t('create.pinMobile.capturePin') }}</span>
@@ -1027,14 +1027,14 @@ usePinovaHeaderSwipeDismiss({
           :aria-label="t('common.back')"
           @click="mobilePinMetaBack()"
         >
-          <span class="material-symbols-outlined text-xl">chevron_left</span>
+          <PinovaIcon name="chevron_left" class="text-xl" />
         </button>
         <button
           type="button"
           class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3 py-2 text-xs font-bold text-white/80 transition active:scale-95"
           @click="fileInput?.click()"
         >
-          <span class="material-symbols-outlined text-base">imagesmode</span>
+          <PinovaIcon name="imagesmode" class="text-base" />
           {{ (imagePreviewUrl || storyVideoPreviewUrl || (existingImageUrl || '').trim() || (existingStoryVideoUrl || '').trim()) ? t('create.pinMobile.changeMedia') : t('create.pinMobile.galleryPill') }}
         </button>
       </header>
@@ -1131,7 +1131,7 @@ usePinovaHeaderSwipeDismiss({
               <p v-if="fieldErrors.description" class="mt-1 text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.description }}</p>
             </div>
             <div class="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-              <span class="material-symbols-outlined text-lg text-white/35">link</span>
+              <PinovaIcon name="link" class="text-lg text-white/35" />
               <input
                 ref="linkInput"
                 v-model="link"
@@ -1159,7 +1159,7 @@ usePinovaHeaderSwipeDismiss({
                   class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full hover:bg-white/10"
                   @click="showCategoryDropdown = !showCategoryDropdown"
                 >
-                  <span class="material-symbols-outlined text-white/50">expand_more</span>
+                  <PinovaIcon name="expand_more" class="text-white/50" />
                 </button>
               </div>
               <Teleport to="body">
@@ -1177,7 +1177,7 @@ usePinovaHeaderSwipeDismiss({
                     class="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white/90 hover:bg-white/10"
                     @click="selectCategory(topicItem)"
                   >
-                    <span class="material-symbols-outlined text-base text-white/40">{{ topicItem.icon || 'category' }}</span>
+                    <PinovaIcon :name="topicItem.icon || 'category'" class="text-base text-white/40" />
                     <span>{{ topicItem.name }}</span>
                   </button>
                   <button
@@ -1209,7 +1209,7 @@ usePinovaHeaderSwipeDismiss({
                 :class="visibility === option.id ? 'border-pink-700 dark:border-pink-600 bg-pink-700/15 dark:bg-pink-600/15 text-pink-200' : 'border-white/10 bg-white/[0.04] text-white/50'"
                 @click="setPinVisibility(option.id as 'public' | 'followers' | 'private')"
               >
-                <span class="material-symbols-outlined mb-0.5 block text-base">{{ option.icon }}</span>
+                <PinovaIcon :name="option.icon" class="mb-0.5 block text-base" />
                 {{ option.label }}
               </button>
             </div>
@@ -1286,7 +1286,7 @@ usePinovaHeaderSwipeDismiss({
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <span v-else class="material-symbols-outlined text-xl">rocket_launch</span>
+            <PinovaIcon v-else name="rocket_launch" class="text-xl" />
             {{
               saving
                 ? (isEditMode ? t('pin.edit.saving') : t('create.publishing'))
@@ -1304,7 +1304,7 @@ usePinovaHeaderSwipeDismiss({
               class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold text-white/45 transition active:scale-95"
               @click="openCameraCapture()"
             >
-              <span class="material-symbols-outlined text-base">photo_camera</span>
+              <PinovaIcon name="photo_camera" class="text-base" />
               {{ t('create.pinMobile.cameraShortcut') }}
             </button>
           </div>
@@ -1424,7 +1424,7 @@ usePinovaHeaderSwipeDismiss({
             @click="fileInput?.click()"
           >
             <div class="w-16 h-16 rounded-full bg-neutral-200 flex items-center justify-center">
-              <span class="material-symbols-outlined text-3xl text-neutral-500">cloud_upload</span>
+              <PinovaIcon name="cloud_upload" class="text-3xl text-neutral-500" />
             </div>
             <div>
               <p class="text-sm font-semibold text-neutral-700 mb-1">
@@ -1438,7 +1438,7 @@ usePinovaHeaderSwipeDismiss({
                 <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded font-bold">PNG</span>
                 <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded font-bold">WEBP</span>
                 <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-pink-100 text-pink-700 rounded font-bold flex items-center gap-1">
-                  <span class="material-symbols-outlined text-xs">animation</span>
+                  <PinovaIcon name="animation" class="text-xs" />
                   {{ t('create.upload.gifBadge') }}
                 </span>
               </div>
@@ -1475,7 +1475,7 @@ usePinovaHeaderSwipeDismiss({
                 v-if="isGif"
                 class="absolute top-3 left-3 px-2 py-1 rounded-md bg-pink-700 dark:bg-pink-600 text-white text-[10px] font-bold tracking-wider flex items-center gap-1 shadow"
               >
-                <span class="material-symbols-outlined text-sm">animation</span>
+                <PinovaIcon name="animation" class="text-sm" />
                 {{ t('create.gif.label') }}
               </span>
             </template>
@@ -1496,7 +1496,7 @@ usePinovaHeaderSwipeDismiss({
               class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition z-20"
               @click="clearStep2Media"
             >
-              <span class="material-symbols-outlined text-neutral-600">close</span>
+              <PinovaIcon name="close" class="text-neutral-600" />
             </button>
           </div>
         </div>
@@ -1556,7 +1556,7 @@ usePinovaHeaderSwipeDismiss({
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.link') }}</label>
             <div class="relative">
-              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-lg">link</span>
+              <PinovaIcon name="link" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-lg" />
               <input
                 ref="linkInput"
                 v-model="link"
@@ -1597,7 +1597,7 @@ usePinovaHeaderSwipeDismiss({
                 :aria-expanded="showCategoryDropdown"
                 @click="showCategoryDropdown = !showCategoryDropdown"
               >
-                <span class="material-symbols-outlined text-neutral-500">expand_more</span>
+                <PinovaIcon name="expand_more" class="text-neutral-500" />
               </button>
             </div>
             <Teleport to="body">
@@ -1615,7 +1615,7 @@ usePinovaHeaderSwipeDismiss({
                   class="w-full text-left px-3 py-2 text-sm text-neutral-800 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
                   @click="selectCategory(topicItem)"
                 >
-                  <span class="material-symbols-outlined text-base text-neutral-500 dark:text-neutral-400">{{ topicItem.icon || 'category' }}</span>
+                  <PinovaIcon :name="topicItem.icon || 'category'" class="text-base text-neutral-500 dark:text-neutral-400" />
                   <span>{{ topicItem.name }}</span>
                 </button>
                 <div
@@ -1703,10 +1703,7 @@ usePinovaHeaderSwipeDismiss({
                 @click="setPinVisibility(option.id as 'public' | 'followers' | 'private')"
               >
                 <div class="flex items-center gap-1.5 mb-0.5">
-                  <span
-                    class="material-symbols-outlined text-base"
-                    :class="visibility === option.id ? 'text-pink-700' : 'text-neutral-500'"
-                  >{{ option.icon }}</span>
+                  <PinovaIcon :name="option.icon" class="text-base" :class="visibility === option.id ? 'text-pink-700' : 'text-neutral-500'" />
                   <span
                     class="text-xs font-bold"
                     :class="visibility === option.id ? 'text-pink-700' : 'text-neutral-700'"
@@ -1762,7 +1759,7 @@ usePinovaHeaderSwipeDismiss({
 
           <div class="pt-4 border-t border-neutral-100">
             <div class="flex items-start gap-3 text-sm text-neutral-500 bg-blue-50/40 border border-blue-100 rounded-xl px-4 py-3">
-              <span class="material-symbols-outlined text-lg text-blue-600">shield</span>
+              <PinovaIcon name="shield" class="text-lg text-blue-600" />
               <p class="text-xs leading-relaxed">
                 <span v-html="createNoTrackingSafeHtml"></span>
                 <a

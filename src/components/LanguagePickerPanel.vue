@@ -107,12 +107,7 @@ defineExpose({
 
       <label class="relative block">
         <span class="sr-only">{{ t('lang.searchPlaceholder') }}</span>
-        <span
-          class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-lg pointer-events-none"
-          aria-hidden="true"
-        >
-          search
-        </span>
+        <PinovaIcon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-lg pointer-events-none" />
         <input
           ref="searchRef"
           v-model="query"
@@ -128,7 +123,7 @@ defineExpose({
           :aria-label="t('lang.clearSearch')"
           @click="query = ''"
         >
-          <span class="material-symbols-outlined text-lg">close</span>
+          <PinovaIcon name="close" class="text-lg" />
         </button>
       </label>
 
@@ -182,13 +177,7 @@ defineExpose({
                 {{ lang.label }}
               </span>
             </span>
-            <span
-              v-if="modelValue === lang.code"
-              class="material-symbols-outlined text-base text-pink-700 shrink-0"
-              aria-hidden="true"
-            >
-              check
-            </span>
+            <PinovaIcon name="check" class="text-base text-pink-700 shrink-0" />
           </button>
         </section>
 
@@ -221,13 +210,7 @@ defineExpose({
                   {{ lang.label }}
                 </span>
               </span>
-              <span
-                v-if="modelValue === lang.code"
-                class="material-symbols-outlined text-base text-pink-700 shrink-0"
-                aria-hidden="true"
-              >
-                check
-              </span>
+              <PinovaIcon name="check" class="text-base text-pink-700 shrink-0" />
             </button>
           </section>
         </template>
@@ -257,13 +240,7 @@ defineExpose({
                 {{ lang.label }}
               </span>
             </span>
-            <span
-              v-if="modelValue === lang.code"
-              class="material-symbols-outlined text-base text-pink-700 shrink-0"
-              aria-hidden="true"
-            >
-              check
-            </span>
+            <PinovaIcon name="check" class="text-base text-pink-700 shrink-0" />
           </button>
         </template>
       </template>

@@ -63,7 +63,7 @@ async function onContinue() {
         class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-violet-600 text-white shadow-lg"
         aria-hidden="true"
       >
-        <span class="material-symbols-outlined text-4xl">celebration</span>
+        <PinovaIcon name="celebration" class="text-4xl" />
       </div>
       <div class="space-y-1">
         <h2 class="text-2xl font-black text-neutral-900 dark:text-neutral-50">
@@ -73,12 +73,7 @@ async function onContinue() {
           {{ t('activation.celebration.subtitle') }}
         </p>
       </div>
-      <span
-        class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 px-3 py-1 text-xs font-bold ring-1 ring-amber-300/60"
-      >
-        <span class="material-symbols-outlined text-[16px]">military_tech</span>
-        {{ t('activation.celebration.badge') }}
-      </span>
+      <PinovaIcon :name="t('activation.celebration.badge')" class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 px-3 py-1 text-xs font-bold ring-1 ring-amber-300/60" />
       <div class="text-left space-y-1.5 px-1">
         <div class="flex items-center justify-between text-[11px] font-semibold text-neutral-600 dark:text-neutral-400">
           <span>{{ t('activation.progress.level1') }}</span>

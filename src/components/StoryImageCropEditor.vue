@@ -434,7 +434,7 @@ async function applyCrop() {
       class="flex shrink-0 items-center justify-between border-b border-white/10 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
     >
       <button type="button" class="story-editor-icon-btn" @click="emit('cancel')">
-        <span class="material-symbols-outlined text-xl">close</span>
+        <PinovaIcon name="close" class="text-xl" />
       </button>
       <p class="text-sm font-black">{{ cropHeading }}</p>
       <button type="button" class="story-editor-text-btn" :disabled="busy" @click="applyCrop">
@@ -550,7 +550,7 @@ async function applyCrop() {
           "
           @click.stop="aspectKey = a.key"
         >
-          <span class="material-symbols-outlined shrink-0 text-[18px] leading-none sm:text-[20px]">{{ a.icon }}</span>
+          <PinovaIcon :name="a.icon" class="shrink-0 text-[18px] leading-none sm:text-[20px]" />
           <span class="line-clamp-2 w-full text-center leading-tight">{{ a.label }}</span>
         </button>
         </div>
@@ -558,19 +558,19 @@ async function applyCrop() {
         <section class="mx-auto mt-3 max-w-md space-y-3 rounded-[1.25rem] border border-white/10 bg-white/[0.055] p-3 backdrop-blur sm:p-4">
         <div class="grid grid-cols-4 gap-2">
           <button type="button" class="story-editor-tool-btn" @click.stop="rotation = (rotation + 270) % 360">
-            <span class="material-symbols-outlined text-xl sm:text-2xl">rotate_left</span>
+            <PinovaIcon name="rotate_left" class="text-xl sm:text-2xl" />
             <span class="story-editor-tool-caption">{{ t('story.editor.rotateLeft') }}</span>
           </button>
           <button type="button" class="story-editor-tool-btn" @click.stop="rotation = (rotation + 90) % 360">
-            <span class="material-symbols-outlined text-xl sm:text-2xl">rotate_right</span>
+            <PinovaIcon name="rotate_right" class="text-xl sm:text-2xl" />
             <span class="story-editor-tool-caption">{{ t('story.editor.rotateRight') }}</span>
           </button>
           <button type="button" class="story-editor-tool-btn" :class="{ 'story-editor-tool-btn--active': flipH }" @click.stop="flipH = !flipH">
-            <span class="material-symbols-outlined text-xl sm:text-2xl">flip</span>
+            <PinovaIcon name="flip" class="text-xl sm:text-2xl" />
             <span class="story-editor-tool-caption">{{ t('story.editor.flipHorizontal') }}</span>
           </button>
           <button type="button" class="story-editor-tool-btn" :class="{ 'story-editor-tool-btn--active': flipV }" @click.stop="flipV = !flipV">
-            <span class="material-symbols-outlined text-xl sm:text-2xl">swap_vert</span>
+            <PinovaIcon name="swap_vert" class="text-xl sm:text-2xl" />
             <span class="story-editor-tool-caption">{{ t('story.editor.flipVertical') }}</span>
           </button>
         </div>

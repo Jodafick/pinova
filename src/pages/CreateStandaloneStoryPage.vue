@@ -470,7 +470,7 @@ usePinovaHeaderSwipeDismiss({
           :aria-label="t('common.cancel')"
           @click="leaveStoryFlow()"
         >
-          <span class="material-symbols-outlined text-xl">close</span>
+          <PinovaIcon name="close" class="text-xl" />
         </button>
         <p class="text-sm font-black tracking-tight">{{ t('story.standalone.navShort') }}</p>
         <span class="h-9 w-9" />
@@ -486,7 +486,7 @@ usePinovaHeaderSwipeDismiss({
         <div class="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <label class="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">
             <span class="grid h-6 w-6 place-items-center rounded-lg bg-pink-700/15 dark:bg-pink-600/15 text-pink-700 dark:text-pink-600">
-              <span class="material-symbols-outlined text-sm">chat_bubble</span>
+              <PinovaIcon name="chat_bubble" class="text-sm" />
             </span>
             {{ t('story.standalone.caption') }}
           </label>
@@ -503,7 +503,7 @@ usePinovaHeaderSwipeDismiss({
           class="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 py-4 text-base font-black text-white shadow-lg shadow-pink-700/35 transition active:scale-[0.98]"
           @click="goCaptionToMedia"
         >
-          <span class="material-symbols-outlined text-xl">arrow_forward</span>
+          <PinovaIcon name="arrow_forward" class="text-xl" />
           {{ t('create.step.next') }}
         </button>
       </section>
@@ -526,7 +526,7 @@ usePinovaHeaderSwipeDismiss({
           :aria-label="t('common.cancel')"
           @click="leaveStoryFlow()"
         >
-          <span class="material-symbols-outlined text-xl">close</span>
+          <PinovaIcon name="close" class="text-xl" />
         </button>
         <p class="text-sm font-black tracking-tight">{{ t('story.standalone.navShort') }}</p>
         <span class="h-9 w-9" />
@@ -555,7 +555,7 @@ usePinovaHeaderSwipeDismiss({
           @click="galleryInput?.click()"
         >
           <span class="story-pick-icon bg-white/15 text-white">
-            <span class="material-symbols-outlined text-3xl">imagesmode</span>
+            <PinovaIcon name="imagesmode" class="text-3xl" />
           </span>
           <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/60">{{ t('story.standalone.galleryLabel') }}</span>
           <span class="text-2xl font-black tracking-tight">{{ t('story.standalone.chooseFile') }}</span>
@@ -568,7 +568,7 @@ usePinovaHeaderSwipeDismiss({
           @click="openStoryCameraCapture()"
         >
           <span class="story-pick-icon bg-white/5 text-pink-700 dark:text-pink-600">
-            <span class="material-symbols-outlined text-3xl">videocam</span>
+            <PinovaIcon name="videocam" class="text-3xl" />
           </span>
           <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/35">{{ t('story.standalone.cameraLabel') }}</span>
           <span class="text-[1.35rem] font-black tracking-tight">{{ t('story.standalone.captureStory') }}</span>
@@ -614,7 +614,7 @@ usePinovaHeaderSwipeDismiss({
           :aria-label="t('common.back')"
           @click="storyMetaBack()"
         >
-          <span class="material-symbols-outlined text-xl">chevron_left</span>
+          <PinovaIcon name="chevron_left" class="text-xl" />
         </button>
         <div class="flex shrink-0 items-center gap-2">
           <button
@@ -623,7 +623,7 @@ usePinovaHeaderSwipeDismiss({
             :disabled="mediaModerationPending || saving"
             @click="galleryInput?.click()"
           >
-            <span class="material-symbols-outlined text-base">imagesmode</span>
+            <PinovaIcon name="imagesmode" class="text-base" />
             {{ t('story.standalone.changeMedia') }}
           </button>
           <button
@@ -633,7 +633,7 @@ usePinovaHeaderSwipeDismiss({
             :disabled="mediaModerationPending || saving"
             @click="openStoryCameraCapture()"
           >
-            <span class="material-symbols-outlined text-xl">photo_camera</span>
+            <PinovaIcon name="photo_camera" class="text-xl" />
           </button>
         </div>
       </header>
@@ -691,7 +691,7 @@ usePinovaHeaderSwipeDismiss({
           <div class="story-glass-card story-enter-up">
             <label class="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">
               <span class="grid h-6 w-6 place-items-center rounded-lg bg-pink-700/15 dark:bg-pink-600/15 text-pink-700 dark:text-pink-600">
-                <span class="material-symbols-outlined text-sm">chat_bubble</span>
+                <PinovaIcon name="chat_bubble" class="text-sm" />
               </span>
               {{ t('story.standalone.caption') }}
             </label>
@@ -712,7 +712,7 @@ usePinovaHeaderSwipeDismiss({
             @click="submit()"
           >
             <span v-if="saving" class="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
-            <span v-else class="material-symbols-outlined text-lg">auto_stories</span>
+            <PinovaIcon v-else name="auto_stories" class="text-lg" />
             {{ saving ? t('create.publishing') : t('story.standalone.publish') }}
           </button>
         </div>

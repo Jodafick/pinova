@@ -1307,7 +1307,7 @@ watch(
         :to="{ name: 'settings' }"
         class="flex items-center gap-3 px-4 py-3.5 text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition"
       >
-        <span class="material-symbols-outlined text-[22px] text-rose-600 dark:text-rose-400">arrow_back</span>
+        <PinovaIcon name="arrow_back" class="text-[22px] text-rose-600 dark:text-rose-400" />
         <div class="min-w-0 flex-1">
           <p class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
             {{ t('settings.title') }}
@@ -1336,7 +1336,7 @@ watch(
       v-if="saved"
       class="mb-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm"
     >
-      <span class="material-symbols-outlined text-lg">check_circle</span>
+      <PinovaIcon name="check_circle" class="text-lg" />
       {{ t('settings.saved') }}
     </div>
 
@@ -2017,7 +2017,7 @@ watch(
             to="/staff/partner-ads"
             class="inline-flex items-center gap-2 text-sm font-semibold text-pink-700 dark:text-pink-400 hover:underline mt-2"
           >
-            <span class="material-symbols-outlined text-lg" aria-hidden="true">campaign</span>
+            <PinovaIcon name="campaign" class="text-lg" />
             {{ t('settings.nav.partnerAdsStaff') }}
           </router-link>
         </div>
@@ -2098,7 +2098,7 @@ watch(
                   :disabled="seatBusy"
                   @click="seatInviteSearchOpen = true"
                 >
-                  <span class="material-symbols-outlined text-lg" aria-hidden="true">person_search</span>
+                  <PinovaIcon name="person_search" class="text-lg" />
                   {{ t('settings.seats.inviteSearchMember') }}
                 </PinovaButton>
               </div>
@@ -2337,19 +2337,19 @@ watch(
         </div>
         <div class="divide-y divide-neutral-100 dark:divide-neutral-800">
           <RouterLink to="/faq" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
-            <span class="material-symbols-outlined text-[20px] text-rose-600 dark:text-rose-400">help</span>
+            <PinovaIcon name="help" class="text-[20px] text-rose-600 dark:text-rose-400" />
             {{ t('nav.faq') }}
           </RouterLink>
           <RouterLink to="/legal/privacy" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
-            <span class="material-symbols-outlined text-[20px] text-rose-600 dark:text-rose-400">shield</span>
+            <PinovaIcon name="shield" class="text-[20px] text-rose-600 dark:text-rose-400" />
             {{ t('legal.badgePrivacy') }}
           </RouterLink>
           <RouterLink to="/legal/terms" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
-            <span class="material-symbols-outlined text-[20px] text-rose-600 dark:text-rose-400">description</span>
+            <PinovaIcon name="description" class="text-[20px] text-rose-600 dark:text-rose-400" />
             {{ t('legal.badgeTerms') }}
           </RouterLink>
           <RouterLink to="/contact" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
-            <span class="material-symbols-outlined text-[20px] text-rose-600 dark:text-rose-400">mail</span>
+            <PinovaIcon name="mail" class="text-[20px] text-rose-600 dark:text-rose-400" />
             {{ t('app.footer.contact') }}
           </RouterLink>
         </div>
@@ -2365,7 +2365,7 @@ watch(
             </p>
           </div>
           <div v-if="passwordSaved" class="text-green-600 flex items-center gap-1 text-xs font-bold animate-fade-in shrink-0">
-            <span class="material-symbols-outlined text-sm">check_circle</span>
+            <PinovaIcon name="check_circle" class="text-sm" />
             {{ t('settings.password.saved') }}
           </div>
         </div>
@@ -2528,7 +2528,7 @@ watch(
             :aria-label="t('common.close')"
             @click="closeInitialPasswordModal"
           >
-            <span class="material-symbols-outlined text-xl">close</span>
+            <PinovaIcon name="close" class="text-xl" />
           </button>
         </div>
         <p class="text-sm text-neutral-600 dark:text-neutral-300">{{ t('settings.password.setInitialModalBody') }}</p>

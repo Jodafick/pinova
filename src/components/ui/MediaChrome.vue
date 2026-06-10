@@ -127,7 +127,7 @@ defineExpose({ show, hide })
             aria-label="Retour"
             @click="$emit('back')"
           >
-            <span class="material-symbols-outlined">arrow_back_ios_new</span>
+            <PinovaIcon name="arrow_back_ios_new" />
           </button>
           <div class="media-chrome__center">
             <slot name="title" />
@@ -234,7 +234,7 @@ defineExpose({ show, hide })
   padding: 0;
 }
 
-.media-chrome__btn--icon .material-symbols-outlined {
+.media-chrome__btn--icon .pinova-icon {
   font-size: 18px;
 }
 

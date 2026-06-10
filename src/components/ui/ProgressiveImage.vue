@@ -234,7 +234,7 @@ const antiLeakAttrs = computed(() => {
 
     <!-- Error state minimal. -->
     <div v-if="hasError" class="progressive-image__error" aria-live="polite">
-      <span class="material-symbols-outlined">broken_image</span>
+      <PinovaIcon name="broken_image" />
     </div>
   </div>
 </template>
@@ -291,7 +291,7 @@ const antiLeakAttrs = computed(() => {
   background: var(--pinova-skel-base, #f1f0f2);
 }
 
-.progressive-image__error .material-symbols-outlined {
+.progressive-image__error .pinova-icon {
   font-size: 38px;
   opacity: 0.5;
 }

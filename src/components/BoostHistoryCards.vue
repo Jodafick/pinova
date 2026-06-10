@@ -63,7 +63,7 @@ const sorted = computed(() => [...props.rows].sort((a, b) => (b.starts_at || '')
             class="w-full h-full object-cover"
           />
           <div v-else class="h-full w-full grid place-items-center text-neutral-300">
-            <span class="material-symbols-outlined text-xl">image</span>
+            <PinovaIcon name="image" class="text-xl" />
           </div>
         </div>
         <div class="min-w-0 flex-1">

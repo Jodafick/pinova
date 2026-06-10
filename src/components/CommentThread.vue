@@ -305,9 +305,7 @@ function menuDelete() {
                 aria-haspopup="menu"
                 @click.stop.prevent="toggleMenu(comment.id, $event)"
               >
-                <span class="material-symbols-outlined text-[22px] leading-none translate-y-px">
-                  more_horiz
-                </span>
+                <PinovaIcon name="more_horiz" class="text-[22px] leading-none translate-y-px" />
               </button>
             </div>
           </div>
@@ -328,7 +326,7 @@ function menuDelete() {
             v-if="!comment.contentMasked && comment.translated"
             class="mt-1 text-[11px] text-neutral-500 dark:text-neutral-500 italic flex items-center gap-1"
           >
-            <span class="material-symbols-outlined text-xs">translate</span>
+            <PinovaIcon name="translate" class="text-xs" />
             {{ t('translate.auto') }}
           </div>
         </div>
@@ -346,9 +344,7 @@ function menuDelete() {
             "
             @click="emit('like', comment.id)"
           >
-            <span class="material-symbols-outlined text-base comment-thread-heart-icon" aria-hidden="true">
-              favorite
-            </span>
+            <PinovaIcon name="favorite" class="text-base comment-thread-heart-icon" />
             {{ comment.likes }}
           </button>
           <span v-else aria-hidden="true" class="w-px h-px overflow-hidden">{{ ' ' }}</span>
@@ -403,9 +399,7 @@ function menuDelete() {
                       aria-haspopup="menu"
                       @click.stop.prevent="toggleMenu(reply.id, $event)"
                     >
-                      <span class="material-symbols-outlined text-lg leading-none translate-y-px">
-                        more_horiz
-                      </span>
+                      <PinovaIcon name="more_horiz" class="text-lg leading-none translate-y-px" />
                     </button>
                   </div>
                 </div>
@@ -426,7 +420,7 @@ function menuDelete() {
                   v-if="!reply.contentMasked && reply.translated"
                   class="mt-1 text-[11px] text-neutral-500 dark:text-neutral-500 italic flex items-center gap-1"
                 >
-                  <span class="material-symbols-outlined text-xs">translate</span>
+                  <PinovaIcon name="translate" class="text-xs" />
                   {{ t('translate.auto') }}
                 </div>
               </div>
@@ -444,9 +438,7 @@ function menuDelete() {
                   "
                   @click="emit('like', reply.id)"
                 >
-                  <span class="material-symbols-outlined text-sm comment-thread-heart-icon" aria-hidden="true">
-                    favorite
-                  </span>
+                  <PinovaIcon name="favorite" class="text-sm comment-thread-heart-icon" />
                   {{ reply.likes }}
                 </button>
                 <span v-else aria-hidden="true" class="w-px h-px overflow-hidden">{{ ' ' }}</span>
@@ -484,7 +476,7 @@ function menuDelete() {
             class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
             @click="menuReply"
           >
-            <span class="material-symbols-outlined text-lg text-neutral-500">reply</span>
+            <PinovaIcon name="reply" class="text-lg text-neutral-500" />
             {{ t('comment.menu.reply') }}
           </button>
           <button
@@ -494,7 +486,7 @@ function menuDelete() {
             class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
             @click="menuTranslate"
           >
-            <span class="material-symbols-outlined text-lg text-neutral-500">translate</span>
+            <PinovaIcon name="translate" class="text-lg text-neutral-500" />
             {{
               floatingMenuComment.translated
                 ? t('comment.menu.viewOriginal')
@@ -508,9 +500,7 @@ function menuDelete() {
             class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
             @click="menuModerateToggle"
           >
-            <span class="material-symbols-outlined text-lg text-neutral-500">{{
-              floatingMenuComment.hiddenByOwner ? 'visibility' : 'visibility_off'
-            }}</span>
+            <PinovaIcon :name="floatingMenuComment.hiddenByOwner ? 'visibility' : 'visibility_off'" class="text-lg text-neutral-500" />
             {{
               floatingMenuComment.hiddenByOwner ? t('comment.menu.show') : t('comment.menu.hide')
             }}
@@ -522,7 +512,7 @@ function menuDelete() {
             class="w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
             @click="menuReport"
           >
-            <span class="material-symbols-outlined text-lg text-amber-600">flag</span>
+            <PinovaIcon name="flag" class="text-lg text-amber-600" />
             {{ t('comment.menu.report') }}
           </button>
           <button
@@ -532,7 +522,7 @@ function menuDelete() {
             class="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2"
             @click="menuDelete"
           >
-            <span class="material-symbols-outlined text-lg">delete</span>
+            <PinovaIcon name="delete" class="text-lg" />
             {{ t('comment.menu.delete') }}
           </button>
         </template>

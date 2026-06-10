@@ -137,7 +137,7 @@ const followSuggestedUser = async (username: string) => {
               </AvatarDisc>
               <div class="min-w-0">
                 <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate flex items-center gap-1">
-                  <span v-if="suggestion.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>
+                  <PinovaIcon name="verified" class="text-amber-500 text-sm" />
                   {{ suggestion.display_name }}
                 </p>
                 <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">@{{ suggestion.username }}</p>

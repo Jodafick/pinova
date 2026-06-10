@@ -1079,7 +1079,7 @@ onUnmounted(() => {
             :title="storySoundOn ? t('story.sound.mute') : t('story.sound.unmute')"
             @click.stop="toggleStorySound"
           >
-            <span class="material-symbols-outlined text-[22px]">{{ storySoundOn ? 'volume_up' : 'volume_off' }}</span>
+            <PinovaIcon :name="storySoundOn ? 'volume_up' : 'volume_off'" class="text-[22px]" />
           </button>
         </div>
 
@@ -1195,10 +1195,7 @@ onUnmounted(() => {
               :title="t('pin.doubleTapLikeHint')"
               @click.stop="doLike"
             >
-              <span
-                class="material-symbols-outlined text-[26px] transition-colors"
-                  :class="currentStoryLiked ? 'text-pink-700 dark:text-pink-600' : 'text-white'"
-              >favorite</span>
+              <PinovaIcon name="favorite" class="text-[26px] transition-colors" :class="currentStoryLiked ? 'text-pink-700 dark:text-pink-600' : 'text-white'" />
             </button>
             <button
               v-else
@@ -1207,7 +1204,7 @@ onUnmounted(() => {
               :aria-label="t('story.likers.title', { count: currentStoryReactions })"
               @click.stop="openStoryLikersModal"
             >
-                <span class="material-symbols-outlined text-[24px] text-pink-700 dark:text-pink-600">favorite</span>
+                <PinovaIcon name="favorite" class="text-[24px] text-pink-700 dark:text-pink-600" />
               <span class="text-xs font-semibold tabular-nums min-w-[1.25rem]">{{ currentStoryReactions }}</span>
             </button>
 
@@ -1217,9 +1214,7 @@ onUnmounted(() => {
                 :key="heartBurstKey"
                 class="pointer-events-none absolute inset-0 flex items-center justify-center z-[45]"
               >
-                <span class="material-symbols-outlined text-pink-700 dark:text-pink-600 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]">
-                  favorite
-                </span>
+                <PinovaIcon name="favorite" class="text-pink-700 dark:text-pink-600 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]" />
               </div>
             </transition>
           </div>
@@ -1258,7 +1253,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="storyActionsOpen = false"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+          <PinovaIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
       <div class="space-y-2">
@@ -1268,7 +1263,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-neutral-900 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-white/10"
           @click="closeActionsAndShare"
         >
-          <span class="material-symbols-outlined text-[20px]">share</span>
+          <PinovaIcon name="share" class="text-[20px]" />
           {{ t('pin.shareLink') }}
         </button>
         <button
@@ -1277,7 +1272,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-neutral-900 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-white/10"
           @click="closeActionsAndReport"
         >
-          <span class="material-symbols-outlined text-[20px]">flag</span>
+          <PinovaIcon name="flag" class="text-[20px]" />
           {{ t('moderation.report') }}
         </button>
       </div>

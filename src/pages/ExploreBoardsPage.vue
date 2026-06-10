@@ -107,7 +107,7 @@ watch(
         v-if="searchQ"
         class="text-xs font-medium text-pink-700 dark:text-pink-600 mt-2 inline-flex items-center gap-1 rounded-full bg-pink-50 dark:bg-pink-950/40 px-3 py-1 border border-pink-100 dark:border-pink-900/50"
       >
-        <span class="material-symbols-outlined text-sm">search</span>
+        <PinovaIcon name="search" class="text-sm" />
         {{ searchQ }}
       </p>
     </header>
@@ -151,7 +151,7 @@ watch(
               v-else
               class="col-span-2 row-span-2 flex items-center justify-center bg-gradient-to-br from-pink-100 to-neutral-100 dark:from-pink-950/50 dark:to-neutral-900"
             >
-              <span class="material-symbols-outlined text-4xl text-pink-700 dark:text-pink-600 opacity-90">collections</span>
+              <PinovaIcon name="collections" class="text-4xl text-pink-700 dark:text-pink-600 opacity-90" />
             </div>
           </div>
           <div

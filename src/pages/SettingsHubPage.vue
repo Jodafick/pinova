@@ -52,12 +52,9 @@ const visibleGroups = computed(() =>
             class="settings-hub-row group"
             :class="{ 'settings-hub-row--border': idx < group.items.length - 1 }"
           >
-            <span
-              class="settings-hub-row-icon material-symbols-outlined"
-              aria-hidden="true"
-            >{{ item.icon }}</span>
+            <PinovaIcon :name="item.icon" class="settings-hub-row-icon" />
             <span class="settings-hub-row-label">{{ t(item.labelKey) }}</span>
-            <span class="material-symbols-outlined settings-hub-row-chevron" aria-hidden="true">chevron_right</span>
+            <PinovaIcon name="chevron_right" class="settings-hub-row-chevron" />
           </RouterLink>
         </div>
       </section>

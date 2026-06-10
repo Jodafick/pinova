@@ -547,7 +547,7 @@ watch(
         v-if="isOffline"
         class="ml-3 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1 animate-pulse"
       >
-        <span class="material-symbols-outlined text-sm">cloud_off</span>
+        <PinovaIcon name="cloud_off" class="text-sm" />
         {{ t('app.offline') }}
       </div>
     </nav>
@@ -576,7 +576,7 @@ watch(
         <summary
           class="list-none cursor-pointer rounded-full px-3 py-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1 [&::-webkit-details-marker]:hidden"
         >
-          <span class="material-symbols-outlined text-lg leading-none">apps</span>
+          <PinovaIcon name="apps" class="text-lg leading-none" />
           <span class="sr-only lg:not-sr-only">{{ t('header.nav.more') }}</span>
         </summary>
         <div
@@ -599,7 +599,7 @@ watch(
         v-if="isOffline"
         class="ml-2 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1 animate-pulse"
       >
-        <span class="material-symbols-outlined text-sm">cloud_off</span>
+        <PinovaIcon name="cloud_off" class="text-sm" />
         {{ t('app.offline') }}
       </div>
     </nav>
@@ -617,7 +617,7 @@ watch(
             : 'focus-within:shadow-lg'
         "
       >
-        <span class="material-symbols-outlined text-lg text-neutral-400 dark:text-neutral-500">search</span>
+        <PinovaIcon name="search" class="text-lg text-neutral-400 dark:text-neutral-500" />
         <input
           v-model="searchQuery"
           type="text"
@@ -632,7 +632,7 @@ watch(
           class="w-6 h-6 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center justify-center"
           @click="searchQuery = ''"
         >
-          <span class="material-symbols-outlined text-sm text-neutral-400 dark:text-neutral-500">close</span>
+          <PinovaIcon name="close" class="text-sm text-neutral-400 dark:text-neutral-500" />
         </button>
       </div>
     </div>
@@ -647,7 +647,7 @@ watch(
       class="lg:hidden flex-1 min-w-0 flex items-center gap-2 rounded-full bg-neutral-100/90 dark:bg-neutral-800/90 hover:bg-neutral-200/80 dark:hover:bg-neutral-700/80 px-3 py-2 text-sm text-neutral-500 dark:text-neutral-400 transition-colors"
       :aria-label="t('common.search')"
     >
-      <span class="material-symbols-outlined text-lg shrink-0">search</span>
+      <PinovaIcon name="search" class="text-lg shrink-0" />
       <span class="flex-1 truncate text-xs sm:text-sm">{{ t('header.search.placeholder') }}</span>
     </router-link>
 
@@ -837,7 +837,7 @@ watch(
           "
           :aria-label="t('header.notifications')"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">notifications</span>
+          <PinovaIcon name="notifications" class="text-[22px] leading-none" />
           <span
             v-if="unreadCount > 0"
             class="absolute top-1 right-1 w-2.5 h-2.5 bg-pink-700 dark:bg-pink-600 rounded-full border-2 border-white dark:border-neutral-900"
@@ -851,7 +851,7 @@ watch(
             class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 transition relative"
             @click.stop="toggleNotificationsPanel()"
           >
-            <span class="material-symbols-outlined text-xl">notifications</span>
+            <PinovaIcon name="notifications" class="text-xl" />
             <span
               v-if="unreadCount > 0"
               class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-700 dark:bg-pink-600 rounded-full border-2 border-white dark:border-neutral-900 ring-1 ring-pink-200/70 dark:ring-pink-600/40"
@@ -930,7 +930,7 @@ watch(
             </div>
             <div class="max-h-80 overflow-y-auto">
               <div v-if="notifications.length === 0" class="p-8 text-center text-neutral-400">
-                <span class="material-symbols-outlined text-4xl mb-2">notifications_off</span>
+                <PinovaIcon name="notifications_off" class="text-4xl mb-2" />
                 <p class="text-sm">{{ t('header.notifications.empty') }}</p>
               </div>
               <div
@@ -1006,12 +1006,7 @@ watch(
               </AvatarDisc>
               <div class="min-w-0 flex-1">
                 <p class="font-semibold text-neutral-900 text-sm flex items-center gap-1.5">
-                  <span
-                    v-if="currentPlan === 'pro'"
-                    class="material-symbols-outlined text-amber-500 text-base shrink-0"
-                  >
-                    verified
-                  </span>
+                  <PinovaIcon name="verified" class="text-amber-500 text-base shrink-0" />
                   <span class="truncate">{{ currentUser?.displayName }}</span>
                 </p>
                 <p class="text-xs text-neutral-500 truncate">@{{ currentUser?.username }}</p>
@@ -1025,7 +1020,7 @@ watch(
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
               >
-                <span class="material-symbols-outlined text-lg">person</span>
+                <PinovaIcon name="person" class="text-lg" />
                 {{ t('header.user.myProfile') }}
               </router-link>
               <router-link
@@ -1033,7 +1028,7 @@ watch(
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
               >
-                <span class="material-symbols-outlined text-lg">settings</span>
+                <PinovaIcon name="settings" class="text-lg" />
                 {{ t('nav.settings') }}
               </router-link>
               <router-link
@@ -1042,7 +1037,7 @@ watch(
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
               >
-                <span class="material-symbols-outlined text-lg">receipt_long</span>
+                <PinovaIcon name="receipt_long" class="text-lg" />
                 {{ t('nav.billing') }}
               </router-link>
               <router-link
@@ -1050,7 +1045,7 @@ watch(
                 class="flex items-center gap-3 px-4 py-2.5 hover:bg-pink-50 transition text-sm text-pink-700 font-semibold"
                 @click="showUserMenu = false"
               >
-                <span class="material-symbols-outlined text-lg">workspace_premium</span>
+                <PinovaIcon name="workspace_premium" class="text-lg" />
                 {{ t('nav.premium') }}
                 <span
                   class="ml-auto text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold"
@@ -1073,7 +1068,7 @@ watch(
                 :class="isProfileMenuItemActive(item) ? 'bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : ''"
                 @click="closeDropdowns"
               >
-                <span class="material-symbols-outlined text-lg">campaign</span>
+                <PinovaIcon name="campaign" class="text-lg" />
                 {{ item.label }}
               </router-link>
             </div>
@@ -1093,9 +1088,7 @@ watch(
                 :class="isProfileMenuItemActive(item) ? 'bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : ''"
                 @click="closeDropdowns"
               >
-                <span class="material-symbols-outlined text-lg">{{
-                  item.name === 'contest-live' ? 'emoji_events' : 'card_giftcard'
-                }}</span>
+                <PinovaIcon :name="item.name === 'contest-live' ? 'emoji_events' : 'card_giftcard'" class="text-lg" />
                 {{ item.label }}
               </router-link>
             </div>
@@ -1106,7 +1099,7 @@ watch(
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 w-full transition text-sm text-pink-700 dark:text-pink-600"
                 @click="handleLogout"
               >
-                <span class="material-symbols-outlined text-lg">logout</span>
+                <PinovaIcon name="logout" class="text-lg" />
                 {{ t('nav.logout') }}
               </button>
             </div>

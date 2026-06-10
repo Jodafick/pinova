@@ -80,7 +80,7 @@ function goRegister() {
               <p class="text-xs font-semibold text-pink-600/90 dark:text-pink-400 mt-2">{{ t('guestGate.socialProof') }}</p>
             </div>
             <button type="button" class="h-9 w-9 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center" @click="emit('close')">
-              <span class="material-symbols-outlined">close</span>
+              <PinovaIcon name="close" />
             </button>
           </div>
         </div>

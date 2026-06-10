@@ -18,7 +18,8 @@ import { initPwaStandaloneTopInset } from './utils/pwaSafeTopInset'
 import { initInputAbstraction } from './navigation/inputAbstraction'
 import { scheduleDeferredBoot } from './core/bootDeferred'
 import { markBootPhase } from './core/bootMarks'
-import { ensureMaterialSymbolsLoaded } from './utils/loadMaterialSymbols'
+import '@fortawesome/fontawesome-free/css/all.min.css'
+import PinovaIcon from './components/ui/PinovaIcon.vue'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import { queryClient, installQueryPersister } from './data'
 import { applyStoredCookieConsent } from './lib/cookieConsent'
@@ -36,11 +37,11 @@ initMotionBudget()
 initAdaptiveNavigator()
 initPwaStandaloneTopInset()
 initLayerLifecycle()
-void ensureMaterialSymbolsLoaded()
-
 registerSW({ immediate: true })
 
 const app = createApp(App)
+
+app.component('PinovaIcon', PinovaIcon)
 
 app.directive('press', vPress)
 app.directive('spring', vSpring)

@@ -475,9 +475,7 @@ onUnmounted(() => {
             :aria-label="t('pin.ownerMenu.more')"
             @click="toggleGridOwnerMenu(cell.pin, $event)"
           >
-            <span class="material-symbols-outlined text-[22px] leading-none translate-y-px pointer-events-none" aria-hidden="true">
-              more_horiz
-            </span>
+            <PinovaIcon name="more_horiz" class="text-[22px] leading-none translate-y-px pointer-events-none" />
           </button>
 
           <!-- Dark overlay on hover (sous les boutons, au-dessus du média) -->
@@ -508,7 +506,7 @@ onUnmounted(() => {
               class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/92 dark:bg-neutral-900/92 backdrop-blur-md text-xs font-semibold text-neutral-800 dark:text-neutral-100 shadow-xl shadow-black/10 ring-1 ring-white/60 dark:ring-neutral-700/80 hover:bg-white dark:hover:bg-neutral-800 max-w-[60%] truncate transition"
               @click.stop
             >
-              <span class="material-symbols-outlined text-sm">link</span>
+              <PinovaIcon name="link" class="text-sm" />
               <span class="truncate">{{ cell.pin.link }}</span>
             </a>
             <div v-else></div>
@@ -547,7 +545,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="gridOwnerMenuSlug ? goGridOwnerEdit(gridOwnerMenuSlug) : null"
         >
-          <span class="material-symbols-outlined text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true">edit</span>
+          <PinovaIcon name="edit" class="text-lg text-neutral-500 dark:text-neutral-400" />
           {{ t('pin.ownerMenu.edit') }}
         </button>
         <button
@@ -556,7 +554,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="gridOwnerMenuSlug ? openPromoteSheet(gridOwnerMenuSlug, 'boost') : null"
         >
-          <span class="material-symbols-outlined text-lg text-amber-600" aria-hidden="true">rocket_launch</span>
+          <PinovaIcon name="rocket_launch" class="text-lg text-amber-600" />
           {{ t('pin.boost.cta') }}
         </button>
         <button
@@ -565,7 +563,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-400 hover:bg-red-50/90 dark:hover:bg-red-950/35 transition-colors"
           @click="gridOwnerMenuSlug ? confirmDeleteGridOwnedPin(gridOwnerMenuSlug) : null"
         >
-          <span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
+          <PinovaIcon name="delete" class="text-lg" />
           {{ t('pin.ownerMenu.delete') }}
         </button>
       </div>

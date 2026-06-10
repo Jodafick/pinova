@@ -73,13 +73,7 @@ const filteredPins = computed(() => {
           </p>
           <p class="text-xs text-neutral-500 truncate">{{ p.slug }}</p>
         </div>
-        <span
-          v-if="selectedSlug === p.slug"
-          class="material-symbols-outlined text-pink-600 text-lg shrink-0"
-          aria-hidden="true"
-        >
-          check_circle
-        </span>
+        <PinovaIcon name="check_circle" class="text-pink-600 text-lg shrink-0" />
       </button>
     </div>
 

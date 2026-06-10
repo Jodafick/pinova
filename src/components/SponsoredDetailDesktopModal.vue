@@ -52,7 +52,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         :aria-label="t('pin.overlay.prev')"
         @click="emit('prev')"
       >
-        <span class="material-symbols-outlined text-3xl">chevron_left</span>
+        <PinovaIcon name="chevron_left" class="text-3xl" />
       </button>
 
       <button
@@ -62,7 +62,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         :aria-label="t('pin.overlay.next')"
         @click="emit('next')"
       >
-        <span class="material-symbols-outlined text-3xl">chevron_right</span>
+        <PinovaIcon name="chevron_right" class="text-3xl" />
       </button>
 
       <article
@@ -76,7 +76,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
           :aria-label="t('common.close')"
           @click="emit('close')"
         >
-          <span class="material-symbols-outlined text-2xl">close</span>
+          <PinovaIcon name="close" class="text-2xl" />
         </button>
         <SponsoredDetailView :item="item" tone="dark" layout="desktop" />
       </article>

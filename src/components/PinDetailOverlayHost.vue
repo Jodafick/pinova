@@ -764,7 +764,7 @@ async function handleDeleteComment(commentId: number) {
     aria-busy="true"
     :aria-label="t('common.loading')"
   >
-    <span class="material-symbols-outlined text-4xl text-white/90 animate-spin" aria-hidden="true">progress_activity</span>
+    <PinovaIcon name="progress_activity" spin class="text-4xl text-white/90 animate-spin" />
   </div>
   </Teleport>
 

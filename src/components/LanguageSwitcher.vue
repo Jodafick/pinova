@@ -75,7 +75,7 @@ function toggle() {
       :aria-label="`${t('lang.title')} : ${currentLangMeta.nativeLabel}`"
       @click.stop="toggle()"
     >
-      <span class="material-symbols-outlined text-xl">translate</span>
+      <PinovaIcon name="translate" class="text-xl" />
       <span class="absolute -bottom-0.5 -right-0.5 text-[10px] leading-none">{{ currentLangMeta.flag }}</span>
     </PinovaButton>
 

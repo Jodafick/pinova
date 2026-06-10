@@ -757,7 +757,7 @@ const pageTransitionName = computed(() => {
       :aria-label="t('nav.create')"
       @click="openMobileCreateChooser()"
     >
-      <span class="material-symbols-outlined text-[30px] leading-none">add</span>
+      <PinovaIcon name="add" class="text-[30px] leading-none" />
     </button>
   </Teleport>
 
@@ -778,7 +778,7 @@ const pageTransitionName = computed(() => {
           :aria-label="mobileBoardMoreTrailing.ariaLabel"
           @click="mobileBoardMoreTrailing.onClick()"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">more_vert</span>
+          <PinovaIcon name="more_vert" class="text-[22px] leading-none" />
         </button>
         <button
           v-else-if="mobileMarkAllReadTrailing"
@@ -787,7 +787,7 @@ const pageTransitionName = computed(() => {
           :aria-label="mobileMarkAllReadTrailing.ariaLabel"
           @click="mobileMarkAllReadTrailing.onClick()"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">done_all</span>
+          <PinovaIcon name="done_all" class="text-[22px] leading-none" />
         </button>
         <button
           v-else-if="mobileProfileTrailing"
@@ -796,7 +796,7 @@ const pageTransitionName = computed(() => {
           :aria-label="mobileProfileTrailing.ariaLabel"
           @click="mobileProfileTrailing.onClick()"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">{{ mobileProfileTrailing.icon }}</span>
+          <PinovaIcon :name="mobileProfileTrailing.icon" class="text-[22px] leading-none" />
         </button>
       </template>
     </AppMobilePageHeader>
@@ -814,11 +814,11 @@ const pageTransitionName = computed(() => {
         class="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200/70 bg-white/95 shadow-md backdrop-blur-md dark:border-neutral-700/65 dark:bg-neutral-950/94 pinova-ptr-bubble"
         :style="{ opacity: pullRefreshIndicatorOpacity }"
       >
-        <span
-          class="material-symbols-outlined text-[25px] text-pink-600 dark:text-pink-400"
+        <PinovaIcon
+          name="refresh"
+          class="text-[25px] text-pink-600 dark:text-pink-400"
           :style="{ transform: `rotate(${pullToRefreshPx * 3.2}deg)` }"
-          >refresh</span
-        >
+        />
       </div>
       <span
         v-if="pullToRefreshProgress >= 0.94"
@@ -868,7 +868,7 @@ const pageTransitionName = computed(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinova-ptr-bubble span.material-symbols-outlined[style] {
+  .pinova-ptr-bubble .pinova-icon[style] {
     transform: none !important;
   }
 }

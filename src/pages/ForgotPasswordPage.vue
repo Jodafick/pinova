@@ -34,14 +34,14 @@ const handleForgotPassword = async () => {
     <div class="w-full max-w-md lg:bg-white lg:dark:bg-neutral-900 lg:p-8 xl:p-10 lg:rounded-[40px] lg:shadow-sm lg:border lg:border-neutral-100 lg:dark:border-neutral-800">
       <div class="text-center mb-8">
         <div class="w-16 h-16 rounded-full bg-pink-50 flex items-center justify-center mx-auto mb-6">
-          <span class="material-symbols-outlined text-pink-700 text-3xl">lock_reset</span>
+          <PinovaIcon name="lock_reset" class="text-pink-700 text-3xl" />
         </div>
         <h2 class="text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('forgot.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('forgot.subtitle') }}</p>
       </div>
 
       <div v-if="success" class="bg-green-50 border border-green-100 rounded-2xl p-6 text-center animate-fade-in">
-        <span class="material-symbols-outlined text-green-600 text-4xl mb-3">mark_email_read</span>
+        <PinovaIcon name="mark_email_read" class="text-green-600 text-4xl mb-3" />
         <h3 class="text-green-800 font-bold mb-1">{{ t('forgot.success.title') }}</h3>
         <p class="text-green-700 text-sm">{{ t('forgot.success.desc') }}</p>
         <router-link to="/login" class="inline-block mt-6 text-green-800 font-bold hover:underline">{{ t('forgot.success.back') }}</router-link>
@@ -49,7 +49,7 @@ const handleForgotPassword = async () => {
 
       <form v-else @submit.prevent="handleForgotPassword" class="space-y-6">
         <div v-if="error" class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm">
-          <span class="material-symbols-outlined text-lg">error</span>
+          <PinovaIcon name="error" class="text-lg" />
           {{ error }}
         </div>
 

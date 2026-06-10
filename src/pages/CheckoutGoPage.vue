@@ -46,7 +46,7 @@ function goBack() {
   <div class="min-h-[70vh] flex items-center justify-center px-4">
     <div class="max-w-md w-full rounded-3xl border app-divider-subtle p-8 text-center space-y-4 shadow-lg">
       <template v-if="missingUrl">
-        <span class="material-symbols-outlined text-5xl text-amber-500">error</span>
+        <PinovaIcon name="error" class="text-5xl text-amber-500" />
         <h1 class="text-xl font-bold">{{ t('checkout.go.errorTitle') }}</h1>
         <p class="text-sm text-neutral-500">{{ t('checkout.go.errorSubtitle') }}</p>
         <PinovaButton variant="primary" block @click="goBack">
@@ -54,7 +54,7 @@ function goBack() {
         </PinovaButton>
       </template>
       <template v-else>
-        <span class="material-symbols-outlined text-5xl text-pink-600">lock</span>
+        <PinovaIcon name="lock" class="text-5xl text-pink-600" />
         <h1 class="text-xl font-bold">{{ t('checkout.go.title') }}</h1>
         <p class="text-sm text-neutral-500">{{ t('checkout.go.subtitle') }}</p>
         <p

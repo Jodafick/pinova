@@ -138,7 +138,7 @@ async function handleGoogleClick() {
             v-if="error"
             class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm animate-shake dark:bg-pink-950/30 dark:border-pink-900/40 dark:text-pink-400"
           >
-            <span class="material-symbols-outlined text-lg">error</span>
+            <PinovaIcon name="error" class="text-lg" />
             {{ error }}
           </div>
 
@@ -171,7 +171,7 @@ async function handleGoogleClick() {
                   class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
                   @click="showPassword = !showPassword"
                 >
-                  <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+                  <PinovaIcon :name="showPassword ? 'visibility_off' : 'visibility'" class="text-xl" />
                 </button>
               </template>
             </PinovaInput>

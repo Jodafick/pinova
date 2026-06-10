@@ -168,13 +168,9 @@ function goBack() {
           :disabled="loading || !trimmedQuery"
           @click="submit"
         >
-          <span
-            v-if="loading"
-            class="material-symbols-outlined animate-spin text-[22px] leading-none"
-            aria-hidden="true"
-          >progress_activity</span>
+          <PinovaIcon v-if="loading" name="progress_activity" spin class="animate-spin text-[22px] leading-none" aria-hidden="true" />
           <template v-else>
-            <span class="material-symbols-outlined text-[22px] leading-none sm:hidden" aria-hidden="true">search</span>
+            <PinovaIcon name="search" class="text-[22px] leading-none sm:hidden" aria-hidden="true" />
             <span class="hidden text-sm font-semibold sm:inline">{{ t('common.search') }}</span>
           </template>
         </button>
@@ -190,7 +186,7 @@ function goBack() {
           <div
             class="flex flex-1 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2.5 transition focus-within:border-transparent focus-within:ring-2 focus-within:ring-pink-700 dark:focus-within:ring-pink-600 dark:border-neutral-700 dark:bg-neutral-900"
           >
-            <span class="material-symbols-outlined text-lg text-neutral-400 dark:text-neutral-500">search</span>
+            <PinovaIcon name="search" class="text-lg text-neutral-400 dark:text-neutral-500" />
             <input
               ref="inputRef"
               v-model="inputValue"
@@ -210,7 +206,7 @@ function goBack() {
               :aria-label="t('common.cancel')"
               @click="clearInput"
             >
-              <span class="material-symbols-outlined text-base">close</span>
+              <PinovaIcon name="close" class="text-base" />
             </button>
           </div>
           <button
@@ -218,12 +214,8 @@ function goBack() {
             class="flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-pink-700 dark:bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-60 sm:px-5"
             :disabled="loading || !trimmedQuery"
           >
-            <span
-              v-if="loading"
-              class="material-symbols-outlined animate-spin text-base leading-none"
-              aria-hidden="true"
-            >progress_activity</span>
-            <span v-else class="material-symbols-outlined text-base leading-none sm:hidden" aria-hidden="true">search</span>
+            <PinovaIcon v-if="loading" name="progress_activity" spin class="animate-spin text-base leading-none" aria-hidden="true" />
+            <PinovaIcon v-else name="search" class="text-base leading-none sm:hidden" aria-hidden="true" />
             <span class="hidden sm:inline">{{ t('common.search') }}</span>
           </button>
         </form>
@@ -310,7 +302,7 @@ function goBack() {
                     v-else
                     class="col-span-2 row-span-2 flex items-center justify-center bg-gradient-to-br from-pink-100 to-neutral-100 dark:from-pink-950/50 dark:to-neutral-900"
                   >
-                    <span class="material-symbols-outlined text-3xl text-pink-700 dark:text-pink-600 opacity-90">collections</span>
+                    <PinovaIcon name="collections" class="text-3xl text-pink-700 dark:text-pink-600 opacity-90" />
                   </div>
                 </div>
                 <div class="p-3">
@@ -406,7 +398,7 @@ function goBack() {
           v-if="!loading && hasSubmitted && !hasResults"
           class="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-8 text-center"
         >
-          <span class="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-600 mb-2">search_off</span>
+          <PinovaIcon name="search_off" class="text-4xl text-neutral-300 dark:text-neutral-600 mb-2" />
           <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
             {{ t('header.search.empty') }}
           </p>
@@ -427,7 +419,7 @@ function goBack() {
           v-else-if="!loading && !hasSubmitted && !showRecommended"
           class="rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-700 bg-white/50 dark:bg-neutral-900/40 p-8 text-center"
         >
-          <span class="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-600 mb-2">search</span>
+          <PinovaIcon name="search" class="text-4xl text-neutral-300 dark:text-neutral-600 mb-2" />
           <p class="text-sm text-neutral-600 dark:text-neutral-300">
             {{ t('search.promptHint') }}
           </p>

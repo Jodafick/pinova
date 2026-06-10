@@ -195,7 +195,7 @@ function onOpenSponsored(item: SponsoredAd) {
         v-if="textQuery"
         class="mt-4 inline-flex flex-wrap items-center gap-2 rounded-full bg-pink-50 dark:bg-pink-950/40 border border-pink-100 dark:border-pink-900/60 px-4 py-2 text-sm text-pink-700 dark:text-pink-600"
       >
-        <span class="material-symbols-outlined text-base text-pink-700">search</span>
+        <PinovaIcon name="search" class="text-base text-pink-700" />
         <span>{{ t('explore.searchActive', { q: textQuery }) }}</span>
         <button type="button" class="ml-1 text-xs font-semibold text-pink-700 hover:underline" @click="emit('clear-search')">
           {{ t('explore.clearSearch') }}
@@ -213,9 +213,9 @@ function onOpenSponsored(item: SponsoredAd) {
           class="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs sm:text-sm font-extrabold text-pink-700 dark:text-pink-600 bg-pink-50 dark:bg-pink-950/50 border border-pink-200/90 dark:border-pink-700/70 shadow-sm shadow-pink-900/5 hover:bg-pink-100/90 dark:hover:bg-pink-900/35 active:scale-[0.98] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-700 dark:outline-pink-600"
           @click="openCategoriesModal"
         >
-          <span class="material-symbols-outlined text-[18px] leading-none text-pink-700 dark:text-pink-600" aria-hidden="true">apps</span>
+          <PinovaIcon name="apps" class="text-[18px] leading-none text-pink-700 dark:text-pink-600" />
           {{ t('explore.allCategories') }}
-          <span class="material-symbols-outlined text-[18px] leading-none opacity-80" aria-hidden="true">expand_more</span>
+          <PinovaIcon name="expand_more" class="text-[18px] leading-none opacity-80" />
         </button>
       </div>
       <div v-if="categoriesLoading" class="flex items-center gap-3 overflow-x-auto pb-1 pt-0.5 no-scrollbar touch-pan-x">
@@ -260,9 +260,7 @@ function onOpenSponsored(item: SponsoredAd) {
           />
           <div v-else class="absolute inset-0 pointer-events-none" :style="{ background: category.color || '#6B7280' }" />
           <div class="relative z-[1]">
-            <span class="material-symbols-outlined text-2xl mb-1.5 opacity-90 block drop-shadow-md">
-              {{ category.icon || 'category' }}
-            </span>
+            <PinovaIcon :name="category.icon || 'category'" class="text-2xl mb-1.5 opacity-90 block drop-shadow-md" />
             <p class="text-xs font-semibold leading-tight drop-shadow line-clamp-2">{{ category.name }}</p>
             <p class="text-[11px] opacity-90 mt-0.5 drop-shadow">
               {{ t('explore.pinsCount', { count: category.pinCount }) }}
@@ -275,7 +273,7 @@ function onOpenSponsored(item: SponsoredAd) {
           class="snap-start shrink-0 w-[10.25rem] sm:w-40 min-h-[7rem] flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-pink-200/90 dark:border-pink-700/70 bg-gradient-to-br from-pink-50 to-white dark:from-pink-950/40 dark:to-neutral-900/80 text-pink-700 dark:text-pink-600 text-xs font-bold px-2 text-center shadow-sm shadow-pink-900/10 hover:from-pink-100 hover:to-pink-50/80 dark:hover:from-pink-900/50 dark:hover:to-neutral-900 transition active:scale-[0.98] ring-1 ring-pink-100/80 dark:ring-pink-800/40"
           @click="openCategoriesModal"
         >
-          <span class="material-symbols-outlined text-2xl text-pink-700 dark:text-pink-600">grid_view</span>
+          <PinovaIcon name="grid_view" class="text-2xl text-pink-700 dark:text-pink-600" />
           {{ t('explore.showMoreCategories') }}
         </button>
       </div>
@@ -291,7 +289,7 @@ function onOpenSponsored(item: SponsoredAd) {
           class="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs sm:text-sm font-extrabold text-pink-700 dark:text-pink-600 bg-pink-50 dark:bg-pink-950/50 border border-pink-200/90 dark:border-pink-700/70 hover:bg-pink-100/90 dark:hover:bg-pink-900/35 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-700 dark:outline-pink-600"
         >
           {{ t('explore.seeAllBoards') }}
-          <span class="material-symbols-outlined text-[18px] leading-none" aria-hidden="true">arrow_forward</span>
+          <PinovaIcon name="arrow_forward" class="text-[18px] leading-none" />
         </router-link>
       </div>
       <div v-if="boardsLoading" class="flex items-center gap-3 sm:gap-4 overflow-x-auto pb-1 pt-0.5 no-scrollbar touch-pan-x">
@@ -332,7 +330,7 @@ function onOpenSponsored(item: SponsoredAd) {
               v-else
               class="col-span-2 row-span-2 flex items-center justify-center bg-gradient-to-br from-pink-100 to-neutral-100 dark:from-pink-950/50 dark:to-[#0a0a0c]"
             >
-              <span class="material-symbols-outlined text-4xl text-pink-700 dark:text-pink-600 opacity-90">collections</span>
+              <PinovaIcon name="collections" class="text-4xl text-pink-700 dark:text-pink-600 opacity-90" />
             </div>
           </div>
           <div
@@ -369,7 +367,7 @@ function onOpenSponsored(item: SponsoredAd) {
           :aria-label="t('common.close')"
           @click="categoriesModalOpen = false"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+          <PinovaIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
       <div class="-mx-2 sm:mx-0">
@@ -411,9 +409,7 @@ function onOpenSponsored(item: SponsoredAd) {
             />
             <div v-else class="absolute inset-0 pointer-events-none" :style="{ background: category.color || '#6B7280' }" />
             <div class="relative z-[1]">
-              <span class="material-symbols-outlined text-2xl mb-1 opacity-90 block drop-shadow-md">
-                {{ category.icon || 'category' }}
-              </span>
+              <PinovaIcon :name="category.icon || 'category'" class="text-2xl mb-1 opacity-90 block drop-shadow-md" />
               <p class="text-xs font-semibold leading-tight drop-shadow">{{ category.name }}</p>
               <p class="text-[11px] opacity-90 mt-0.5 drop-shadow">
                 {{ t('explore.pinsCount', { count: category.pinCount }) }}
@@ -435,7 +431,7 @@ function onOpenSponsored(item: SponsoredAd) {
           class="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center gap-1"
           @click="emit('update:selectedTopic', null)"
         >
-          <span class="material-symbols-outlined text-base">close</span>
+          <PinovaIcon name="close" class="text-base" />
           {{ t('common.close') }}
         </button>
       </div>
@@ -454,7 +450,7 @@ function onOpenSponsored(item: SponsoredAd) {
         v-else-if="!loading"
         class="flex flex-col items-center justify-center py-16 text-center"
       >
-        <span class="material-symbols-outlined text-5xl text-neutral-300 dark:text-neutral-600 mb-3">search_off</span>
+        <PinovaIcon name="search_off" class="text-5xl text-neutral-300 dark:text-neutral-600 mb-3" />
         <h2 class="text-lg font-semibold text-neutral-700 dark:text-neutral-200 mb-1">{{ t('home.empty.title') }}</h2>
         <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">{{ t('home.empty.desc') }}</p>
       </div>
@@ -463,10 +459,7 @@ function onOpenSponsored(item: SponsoredAd) {
     <section v-if="!selectedTopic">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('explore.trending') }}</h2>
-        <span class="flex items-center gap-1 text-sm text-pink-700 font-medium">
-          <span class="material-symbols-outlined text-lg">trending_up</span>
-          {{ t('explore.popular') }}
-        </span>
+        <PinovaIcon :name="t('explore.popular')" class="flex items-center gap-1 text-sm text-pink-700 font-medium" />
       </div>
 
       <PinGrid
@@ -483,7 +476,7 @@ function onOpenSponsored(item: SponsoredAd) {
         v-else-if="!loading"
         class="flex flex-col items-center justify-center py-16 text-center"
       >
-        <span class="material-symbols-outlined text-5xl text-neutral-300 dark:text-neutral-600 mb-3">search_off</span>
+        <PinovaIcon name="search_off" class="text-5xl text-neutral-300 dark:text-neutral-600 mb-3" />
         <h2 class="text-lg font-semibold text-neutral-700 dark:text-neutral-200 mb-1">{{ t('home.empty.title') }}</h2>
         <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">{{ t('home.empty.desc') }}</p>
       </div>

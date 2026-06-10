@@ -301,7 +301,7 @@ watch(
           size="sm"
           @click="markAllAsRead"
         >
-          <span class="material-symbols-outlined text-base leading-none">done_all</span>
+          <PinovaIcon name="done_all" class="text-base leading-none" />
           {{ t('header.notifications.markAllRead') }}
         </PinovaButton>
       </header>
@@ -397,7 +397,7 @@ watch(
           :disabled="loadingMore"
           @click="load(false)"
         >
-          <span v-if="loadingMore" class="material-symbols-outlined animate-spin text-base">progress_activity</span>
+          <PinovaIcon v-if="loadingMore" name="progress_activity" spin class="animate-spin text-base" />
           <span v-else>{{ t('header.notifications.loadMore') }}</span>
         </button>
       </div>

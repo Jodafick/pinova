@@ -16,7 +16,7 @@
  * (cf. `style.css` § « Component Adaptation Layer »).
  *
  *   <PinovaButton variant="primary" @click="install">
- *     <span class="material-symbols-outlined">install_mobile</span>
+ *     <PinovaIcon name="install_mobile" />
  *     Installer
  *   </PinovaButton>
  */

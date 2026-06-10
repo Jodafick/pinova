@@ -29,7 +29,7 @@ describe('PasswordStrengthField', () => {
     expect(wrapper.text()).toContain('Votre mot de passe doit :')
     expect(wrapper.text()).toContain('[v]')
     expect(wrapper.text()).toContain('Au moins 8 caractères.')
-    expect(wrapper.text()).toContain('Exemple valide : Pinova2026')
+    expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('Exemple valide : Pinova2026')
     expect(wrapper.html()).toMatchSnapshot()
   })
 

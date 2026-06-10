@@ -48,12 +48,7 @@ function onInput(event: Event) {
     </label>
 
     <div class="relative group">
-      <span
-        v-if="icon"
-        class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 group-focus-within:text-pink-700 dark:group-focus-within:text-pink-500 transition-colors"
-      >
-        {{ icon }}
-      </span>
+      <PinovaIcon :name="icon" class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-pink-700 dark:group-focus-within:text-pink-500 transition-colors" />
       <slot name="prefix" />
       <input
         :id="fieldId"

@@ -143,7 +143,7 @@ function applyPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
         class="text-xs font-semibold text-pink-700 flex items-center gap-1"
         @click="showAdvanced = !showAdvanced"
       >
-        <span class="material-symbols-outlined text-base">{{ showAdvanced ? 'expand_less' : 'expand_more' }}</span>
+        <PinovaIcon :name="showAdvanced ? 'expand_less' : 'expand_more'" class="text-base" />
         {{ t('promote.campaigns.moreOptions') }}
       </button>
 
@@ -171,7 +171,7 @@ function applyPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
         :class="targetingCount ? 'border-pink-500 bg-pink-50 text-pink-800 dark:bg-pink-950/40' : 'border-neutral-200 dark:border-neutral-700'"
         @click="targetingOpen = true"
       >
-        <span class="material-symbols-outlined text-base">target</span>
+        <PinovaIcon name="target" class="text-base" />
         {{ t('promote.targeting.open') }}
         <span v-if="targetingCount" class="rounded-full bg-pink-600 text-white text-[9px] px-1.5 py-0.5 min-w-[1.25rem]">{{ targetingCount }}</span>
       </button>
@@ -206,7 +206,7 @@ function applyPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
       @click="emit('submit')"
     >
       <span v-if="busy" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-      <span v-else class="material-symbols-outlined">campaign</span>
+      <PinovaIcon v-else name="campaign" />
       {{ busy ? t('common.loading') : t('promote.campaigns.publishFun') }}
     </button>
 

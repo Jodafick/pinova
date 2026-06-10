@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
             :disabled="item.disabled"
             @click="handleSelect(item)"
           >
-            <span v-if="item.icon" class="material-symbols-outlined pin-ctx-menu__icon">{{ item.icon }}</span>
+            <PinovaIcon :name="item.icon" class="pin-ctx-menu__icon" />
             <span class="pin-ctx-menu__label">{{ item.label }}</span>
           </button>
         </div>

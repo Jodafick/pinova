@@ -262,7 +262,7 @@ onMounted(() => {
           :aria-label="t('common.cancel')"
           @click="emit('cancel')"
         >
-          <span class="material-symbols-outlined text-xl">close</span>
+          <PinovaIcon name="close" class="text-xl" />
         </button>
         <p class="text-sm font-black tracking-tight">{{ t('create.mobile.quickTitle') }}</p>
         <span class="h-9 w-9" />
@@ -286,7 +286,7 @@ onMounted(() => {
           @click="fileInput?.click()"
         >
           <span class="absolute right-5 top-5 grid h-14 w-14 place-items-center rounded-full bg-white/15">
-            <span class="material-symbols-outlined text-3xl">imagesmode</span>
+            <PinovaIcon name="imagesmode" class="text-3xl" />
           </span>
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/60">{{ t('create.pinMobile.galleryLabel') }}</span>
           <span class="text-xl font-black">{{ t('create.pinMobile.chooseFile') }}</span>
@@ -297,7 +297,7 @@ onMounted(() => {
           @click="openCameraCapture()"
         >
           <span class="absolute right-5 top-5 grid h-14 w-14 place-items-center rounded-full bg-white/5 text-pink-500">
-            <span class="material-symbols-outlined text-3xl">photo_camera</span>
+            <PinovaIcon name="photo_camera" class="text-3xl" />
           </span>
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/35">{{ t('create.pinMobile.cameraLabel') }}</span>
           <span class="text-lg font-black">{{ t('create.pinMobile.capturePin') }}</span>
@@ -310,7 +310,7 @@ onMounted(() => {
           @drop="onDrop"
           @click="fileInput?.click()"
         >
-          <span class="material-symbols-outlined text-4xl text-white/40">cloud_upload</span>
+          <PinovaIcon name="cloud_upload" class="text-4xl text-white/40" />
           <p class="text-sm font-semibold text-white/70">{{ t('create.upload.title') }}</p>
         </div>
       </section>
@@ -329,14 +329,14 @@ onMounted(() => {
           :aria-label="t('common.back')"
           @click="clearImage()"
         >
-          <span class="material-symbols-outlined text-xl">chevron_left</span>
+          <PinovaIcon name="chevron_left" class="text-xl" />
         </button>
         <button
           type="button"
           class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3 py-2 text-xs font-bold text-white/80"
           @click="fileInput?.click()"
         >
-          <span class="material-symbols-outlined text-base">imagesmode</span>
+          <PinovaIcon name="imagesmode" class="text-base" />
           {{ t('create.pinMobile.changeMedia') }}
         </button>
       </header>
@@ -401,7 +401,7 @@ onMounted(() => {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <span v-else class="material-symbols-outlined text-xl">rocket_launch</span>
+            <PinovaIcon v-else name="rocket_launch" class="text-xl" />
             {{
               saving
                 ? t('create.publishing')

@@ -518,7 +518,7 @@ onUnmounted(() => {
       :aria-label="t('common.close')"
       @click="startDismissClose"
     >
-      <span class="pin-mobile-filled material-symbols-outlined text-2xl">close</span>
+      <PinovaIcon name="close" filled class="text-2xl" />
     </button>
 
     <div
@@ -581,7 +581,7 @@ onUnmounted(() => {
             />
           </PinSensitiveMedia>
           <div v-else class="grid h-full w-full place-items-center bg-black text-white/30">
-            <span class="pin-mobile-filled material-symbols-outlined text-5xl">more_horiz</span>
+            <PinovaIcon name="more_horiz" filled class="text-5xl" />
           </div>
 
           <template v-if="slide.pin">
@@ -630,9 +630,7 @@ onUnmounted(() => {
                   @click.stop="handleFollowClick"
                 >
                   <span v-if="followingAuthor" class="h-2 w-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span v-else class="pin-mobile-filled material-symbols-outlined text-[13px] leading-none text-white">
-                    {{ followBadgeState === 'checking' ? 'check' : 'add' }}
-                  </span>
+                  <PinovaIcon v-else :name="followBadgeState === 'checking' ? 'check' : 'add'" filled class="text-[13px] leading-none text-white" />
                 </button>
               </div>
 
@@ -646,7 +644,7 @@ onUnmounted(() => {
                 :aria-label="pin.liked ? t('pin.a11y.unlike') : t('pin.a11y.like')"
                 @click="handleLikePress"
               >
-                <span class="pin-mobile-filled material-symbols-outlined text-[31px]">favorite</span>
+                <PinovaIcon name="favorite" filled class="text-[31px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(pin.stats.reactions || 0) }}</span>
               </button>
 
@@ -657,7 +655,7 @@ onUnmounted(() => {
                 :aria-label="t('story.likers.openListAria', { count: pin.stats.reactions })"
                 @click="emit('open-likers')"
               >
-                <span class="pin-mobile-filled material-symbols-outlined text-[31px]">favorite</span>
+                <PinovaIcon name="favorite" filled class="text-[31px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(pin.stats.reactions || 0) }}</span>
               </button>
 
@@ -666,7 +664,7 @@ onUnmounted(() => {
                 class="pin-mobile-rail-btn"
                 :class="{ 'pin-mobile-rail-btn--active': slide.pin.liked }"
               >
-                <span class="pin-mobile-filled material-symbols-outlined text-[31px]">favorite</span>
+                <PinovaIcon name="favorite" filled class="text-[31px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(slide.pin.stats.reactions || 0) }}</span>
               </div>
 
@@ -678,11 +676,11 @@ onUnmounted(() => {
                 :aria-label="t('pin.comments')"
                 @click="commentsOpen = true"
               >
-                <span class="pin-mobile-filled material-symbols-outlined text-[29px]">chat_bubble</span>
+                <PinovaIcon name="chat_bubble" filled class="text-[29px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(commentsTotalCount) }}</span>
               </button>
               <div v-else class="pin-mobile-rail-btn">
-                <span class="pin-mobile-filled material-symbols-outlined text-[29px]">chat_bubble</span>
+                <PinovaIcon name="chat_bubble" filled class="text-[29px]" />
                 <span class="pin-mobile-rail-label">0</span>
               </div>
 
@@ -697,7 +695,7 @@ onUnmounted(() => {
                 @click="emit('save')"
               >
                 <span v-if="savingPin" class="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <span v-else class="pin-mobile-filled material-symbols-outlined text-[29px]">bookmark</span>
+                <PinovaIcon v-else name="bookmark" filled class="text-[29px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(pin.stats.saves || 0) }}</span>
               </button>
               <div
@@ -705,7 +703,7 @@ onUnmounted(() => {
                 class="pin-mobile-rail-btn"
                 :class="{ 'pin-mobile-rail-btn--active': slide.pin.saved }"
               >
-                <span class="pin-mobile-filled material-symbols-outlined text-[29px]">bookmark</span>
+                <PinovaIcon name="bookmark" filled class="text-[29px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(slide.pin.stats.saves || 0) }}</span>
               </div>
 
@@ -716,11 +714,11 @@ onUnmounted(() => {
                 :aria-label="t('pin.a11y.share')"
                 @click="emit('share')"
               >
-                <span class="pin-mobile-filled material-symbols-outlined text-[28px]">share</span>
+                <PinovaIcon name="share" filled class="text-[28px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(shareCount) }}</span>
               </button>
               <div v-else class="pin-mobile-rail-btn">
-                <span class="pin-mobile-filled material-symbols-outlined text-[28px]">share</span>
+                <PinovaIcon name="share" filled class="text-[28px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(slide.pin.stats.shares || 0) }}</span>
               </div>
             </aside>
@@ -752,7 +750,7 @@ onUnmounted(() => {
                 v-if="slide.pin.isBoosted"
                 class="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-white"
               >
-                <span class="material-symbols-outlined text-[12px]">rocket_launch</span>
+                <PinovaIcon name="rocket_launch" class="text-[12px]" />
                 {{ t('feed.pinBoosted') }}
               </span>
 
@@ -774,7 +772,7 @@ onUnmounted(() => {
                 >
                   <span v-if="translatingDescription" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
                   <template v-else-if="descriptionTranslated">
-                    <span class="pin-mobile-filled material-symbols-outlined text-[14px]">language</span>
+                    <PinovaIcon name="language" filled class="text-[14px]" />
                     <span>{{ t('translate.auto') }}</span>
                   </template>
                   <span v-else>{{ t('comment.translate') }}</span>
@@ -804,9 +802,9 @@ onUnmounted(() => {
 
     <transition name="pin-mobile-heart">
       <div v-if="heartBurst" :key="heartBurstKey" class="pin-mobile-heart pointer-events-none">
-        <span class="pin-mobile-filled material-symbols-outlined">favorite</span>
+        <PinovaIcon name="favorite" filled />
         <span class="pin-mobile-heart-particles" aria-hidden="true">
-          <span v-for="n in 7" :key="n" class="pin-mobile-filled pin-mobile-heart-particle material-symbols-outlined">favorite</span>
+          <PinovaIcon v-for="n in 7" :key="n" name="favorite" filled class="pin-mobile-heart-particle" />
         </span>
       </div>
     </transition>
@@ -824,7 +822,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="commentsOpen = false"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+          <PinovaIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 
@@ -877,7 +875,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="actionsOpen = false"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+          <PinovaIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 
@@ -889,7 +887,7 @@ onUnmounted(() => {
           @click="closeActionsAnd('share')"
         >
           <span class="pin-mobile-action-icon">
-            <span class="pin-mobile-filled material-symbols-outlined text-[20px]">share</span>
+            <PinovaIcon name="share" filled class="text-[20px]" />
           </span>
           <span class="min-w-0 flex-1 text-left font-bold">{{ t('pin.shareLink') }}</span>
         </button>
@@ -902,7 +900,7 @@ onUnmounted(() => {
           @click="actionsOpen = false; emit('boost')"
         >
           <span class="pin-mobile-action-icon pin-mobile-action-icon--boost">
-            <span class="pin-mobile-filled material-symbols-outlined text-[20px]">rocket_launch</span>
+            <PinovaIcon name="rocket_launch" filled class="text-[20px]" />
           </span>
           <span class="min-w-0 flex-1 text-left font-bold">{{ t('pin.boost.cta') }}</span>
         </button>
@@ -915,7 +913,7 @@ onUnmounted(() => {
         >
           <span class="pin-mobile-action-icon">
             <span v-if="downloadingPin" class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            <span v-else class="pin-mobile-filled material-symbols-outlined text-[20px]">download</span>
+            <PinovaIcon v-else name="download" filled class="text-[20px]" />
           </span>
           <span class="min-w-0 flex-1 text-left font-bold">{{ t('pin.a11y.download') }}</span>
         </button>
@@ -929,7 +927,7 @@ onUnmounted(() => {
           @click="closeActionsAnd('report')"
         >
           <span class="pin-mobile-action-icon">
-            <span class="pin-mobile-filled material-symbols-outlined text-[20px]">flag</span>
+            <PinovaIcon name="flag" filled class="text-[20px]" />
           </span>
           <span class="min-w-0 flex-1 text-left font-bold">
             {{ pin.viewerHasReported ? t('moderation.reportAlready') : t('moderation.report') }}
@@ -1117,7 +1115,7 @@ onUnmounted(() => {
   color: var(--pn-pink-strong);
 }
 
-.pin-mobile-rail-btn--active .material-symbols-outlined {
+.pin-mobile-rail-btn--active .pinova-icon {
   filter: drop-shadow(0 0 14px rgb(219 39 119 / 0.5));
 }
 
@@ -1148,7 +1146,7 @@ onUnmounted(() => {
   text-shadow: 0 18px 50px rgb(0 0 0 / 0.55);
 }
 
-.pin-mobile-heart .material-symbols-outlined {
+.pin-mobile-heart .pinova-icon {
   font-size: clamp(4.25rem, 24vw, 9rem);
   animation: pin-mobile-heart-pop 0.88s cubic-bezier(0.2, 0.88, 0.34, 1.02) forwards;
 }

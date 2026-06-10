@@ -610,14 +610,14 @@ async function continueWithGoogleFromLanding() {
             to="/story/create"
             class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-pink-200 dark:border-pink-800 bg-white dark:bg-neutral-900 text-pink-700 dark:text-pink-600 text-sm font-semibold shadow-sm hover:bg-pink-50 dark:hover:bg-neutral-800 transition-all"
           >
-            <span class="material-symbols-outlined text-lg">auto_stories</span>
+            <PinovaIcon name="auto_stories" class="text-lg" />
             {{ t('story.standalone.navShort') }}
           </router-link>
           <router-link
             to="/create"
             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold shadow-sm hover:bg-pink-800 dark:hover:opacity-90 hover:shadow-md transition-all"
           >
-            <span class="material-symbols-outlined text-lg">add</span>
+            <PinovaIcon name="add" class="text-lg" />
             {{ t('home.createPin') }}
           </router-link>
         </div>
@@ -671,16 +671,11 @@ async function continueWithGoogleFromLanding() {
                   "
                   @click="setTab(tab.key)"
                 >
-                  <span
-                    class="material-symbols-outlined block text-[20px] leading-none transition-colors duration-200"
-                    :class="
+                  <PinovaIcon :name="tab.icon" class="block text-[20px] leading-none transition-colors duration-200" :class="
                       activeTab === tab.key
                         ? 'text-pink-700 dark:text-pink-600'
                         : 'text-neutral-600 dark:text-neutral-500'
-                    "
-                    style="font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 24"
-                    aria-hidden="true"
-                  >{{ tab.icon }}</span>
+                    " aria-hidden="true" />
                   <span
                     class="font-auth-title block max-w-full truncate leading-snug transition-[font-size,color] duration-200"
                     :class="
@@ -744,7 +739,7 @@ async function continueWithGoogleFromLanding() {
               v-else-if="forYouCtx.pins.value.length === 0"
               class="flex flex-col items-center justify-center py-16 text-center"
             >
-              <span class="material-symbols-outlined text-5xl text-neutral-300 dark:text-neutral-600 mb-3">search_off</span>
+              <PinovaIcon name="search_off" class="text-5xl text-neutral-300 dark:text-neutral-600 mb-3" />
               <h2 class="text-lg font-auth-title font-auth-title--black text-neutral-700 dark:text-neutral-200 mb-1">{{ t('home.empty.title') }}</h2>
               <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">{{ t('home.empty.desc') }}</p>
             </div>
@@ -842,7 +837,7 @@ async function continueWithGoogleFromLanding() {
                       </AvatarDisc>
                       <div class="min-w-0">
                         <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate flex items-center gap-1">
-                          <span v-if="s.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>
+                          <PinovaIcon v-if="s.is_pro" name="verified" class="text-amber-500 text-sm" />
                           {{ s.display_name }}
                         </p>
                         <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">@{{ s.username }}</p>
@@ -887,7 +882,7 @@ async function continueWithGoogleFromLanding() {
           v-else-if="forYouCtx.pins.value.length === 0"
           class="flex flex-col items-center justify-center py-20 text-center"
         >
-          <span class="material-symbols-outlined text-6xl text-neutral-300 dark:text-neutral-600 mb-4">search_off</span>
+          <PinovaIcon name="search_off" class="text-6xl text-neutral-300 dark:text-neutral-600 mb-4" />
           <h2 class="text-xl font-auth-title font-auth-title--black text-neutral-700 dark:text-neutral-200 mb-2">{{ t('home.empty.title') }}</h2>
           <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">{{ t('home.empty.desc') }}</p>
         </div>
@@ -968,7 +963,7 @@ async function continueWithGoogleFromLanding() {
         />
       </template>
       <div v-else-if="activePins.length === 0" class="flex flex-col items-center justify-center py-16 sm:py-20 text-center">
-        <span class="material-symbols-outlined text-5xl sm:text-6xl text-neutral-300 dark:text-neutral-600 mb-3 sm:mb-4">search_off</span>
+        <PinovaIcon name="search_off" class="text-5xl sm:text-6xl text-neutral-300 dark:text-neutral-600 mb-3 sm:mb-4" />
         <h2 class="text-lg sm:text-xl font-auth-title font-auth-title--black text-neutral-700 dark:text-neutral-200 mb-2">{{ t('home.empty.title') }}</h2>
         <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">
           {{ t('home.empty.desc') }}
@@ -991,15 +986,15 @@ async function continueWithGoogleFromLanding() {
           </h2>
           <ul class="grid sm:grid-cols-3 gap-3 text-left text-sm text-neutral-600 dark:text-neutral-300">
             <li class="flex gap-2 rounded-xl bg-white/80 dark:bg-neutral-900/60 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3">
-              <span class="material-symbols-outlined text-pink-700 shrink-0 text-[20px]" aria-hidden="true">travel_explore</span>
+              <PinovaIcon name="travel_explore" class="text-pink-700 shrink-0 text-[20px]" aria-hidden="true" />
               <span>{{ t('home.landing.bullet1') }}</span>
             </li>
             <li class="flex gap-2 rounded-xl bg-white/80 dark:bg-neutral-900/60 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3">
-              <span class="material-symbols-outlined text-pink-700 shrink-0 text-[20px]" aria-hidden="true">add_photo_alternate</span>
+              <PinovaIcon name="add_photo_alternate" class="text-pink-700 shrink-0 text-[20px]" aria-hidden="true" />
               <span>{{ t('home.landing.bullet2') }}</span>
             </li>
             <li class="flex gap-2 rounded-xl bg-white/80 dark:bg-neutral-900/60 border border-neutral-100/80 dark:border-neutral-800 px-3 py-3">
-              <span class="material-symbols-outlined text-pink-700 shrink-0 text-[20px]" aria-hidden="true">dashboard</span>
+              <PinovaIcon name="dashboard" class="text-pink-700 shrink-0 text-[20px]" aria-hidden="true" />
               <span>{{ t('home.landing.bullet3') }}</span>
             </li>
           </ul>
@@ -1015,7 +1010,7 @@ async function continueWithGoogleFromLanding() {
               class="inline-flex justify-center items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-pink-700 dark:text-pink-600 hover:underline min-h-[40px]"
             >
               {{ t('home.landing.cta.explore') }}
-              <span class="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
+              <PinovaIcon name="arrow_forward" class="text-base" aria-hidden="true" />
             </router-link>
             <router-link
               to="/premium"

@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
     <div class="w-full max-w-md lg:bg-white lg:dark:bg-neutral-900 lg:p-8 xl:p-10 lg:rounded-[40px] lg:shadow-sm lg:border lg:border-neutral-100 lg:dark:border-neutral-800">
       <div class="text-center mb-10">
         <div class="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span class="material-symbols-outlined text-pink-700 text-3xl">verified_user</span>
+          <PinovaIcon name="verified_user" class="text-pink-700 text-3xl" />
         </div>
         <h2 class="text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('otp.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('otp.subtitle') }} <strong>{{ email }}</strong></p>
@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
 
       <form v-if="!success && !locked" @submit.prevent="handleVerify" class="space-y-6">
         <div v-if="error" class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm">
-          <span class="material-symbols-outlined text-lg">error</span>
+          <PinovaIcon name="error" class="text-lg" />
           {{ error }}
         </div>
 
@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
 
       <div class="mt-8 text-center">
         <router-link to="/login" class="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 text-sm font-medium flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-lg">arrow_back</span>
+          <PinovaIcon name="arrow_back" class="text-lg" />
           {{ t('otp.back') }}
         </router-link>
       </div>

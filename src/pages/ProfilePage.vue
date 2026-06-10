@@ -1477,7 +1477,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           role="img"
           :aria-label="t('profile.proBadgeAria')"
         >
-          <span class="material-symbols-outlined text-base leading-none" aria-hidden="true">verified</span>
+          <PinovaIcon name="verified" class="text-base leading-none" aria-hidden="true" />
         </span>
         {{ profileUser.displayName }}
       </h1>
@@ -1534,7 +1534,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           to="/premium"
           class="text-sm inline-flex items-center gap-1.5 border-amber-300 text-amber-700 dark:text-amber-300"
         >
-          <span class="material-symbols-outlined text-base">workspace_premium</span>
+          <PinovaIcon name="workspace_premium" class="text-base" />
           Plan {{ currentPlanLabel }}
         </PinovaButton>
         <PinovaButton
@@ -1543,7 +1543,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           :aria-label="t('profile.share.profileTitle')"
           @click="handleShareProfile"
         >
-          <span class="material-symbols-outlined">share</span>
+          <PinovaIcon name="share" />
         </PinovaButton>
         <div v-if="currentUser && !isMyProfile && profileUser" ref="profileMoreMenuTriggerRef" class="relative flex items-center">
           <PinovaButton
@@ -1553,7 +1553,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             :aria-label="t('profile.moreAriaLabel')"
             @click.stop="profileMoreMenuOpen = !profileMoreMenuOpen"
           >
-            <span class="material-symbols-outlined text-[22px]">more_horiz</span>
+            <PinovaIcon name="more_horiz" class="text-[22px]" />
           </PinovaButton>
         </div>
       </div>
@@ -1650,7 +1650,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           class="app-card-soft shrink-0 w-56 sm:w-64 snap-start border-2 border-dashed rounded-2xl aspect-[4/3] flex flex-col items-center justify-center gap-2 app-text-muted hover:border-pink-300 hover:text-pink-800 transition"
           @click="showCreateBoard = true"
         >
-          <span class="material-symbols-outlined text-3xl">add</span>
+          <PinovaIcon name="add" class="text-3xl" />
           <span class="text-sm font-medium">{{ t('profile.boards.new') }}</span>
         </button>
         <div
@@ -1677,7 +1677,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               v-else
               class="col-span-2 row-span-2 flex items-center justify-center bg-neutral-100 text-neutral-400"
             >
-              <span class="material-symbols-outlined text-4xl">collections</span>
+              <PinovaIcon name="collections" class="text-4xl" />
             </div>
           </div>
           <div class="absolute inset-0 bg-gradient-to-t from-neutral-900/72 via-neutral-900/12 to-transparent pointer-events-none"></div>
@@ -1700,7 +1700,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               class="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-900/55 dark:bg-neutral-800/75 text-white shadow-md"
               :title="t('board.private')"
             >
-              <span class="material-symbols-outlined text-base">lock</span>
+              <PinovaIcon name="lock" class="text-base" />
             </span>
             <PinovaButton
               variant="secondary"
@@ -1708,7 +1708,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               :aria-label="t('profile.share.boardTitle')"
               @click.stop="shareBoardLink(board)"
             >
-              <span class="material-symbols-outlined text-lg">ios_share</span>
+              <PinovaIcon name="ios_share" class="text-lg" />
             </PinovaButton>
           </div>
           <PinovaButton
@@ -1719,7 +1719,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             :aria-label="t('profile.boards.reorganize')"
             @click.stop="openOrganizeBoard(board.id)"
           >
-            <span class="material-symbols-outlined text-lg">drag_indicator</span>
+            <PinovaIcon name="drag_indicator" class="text-lg" />
           </PinovaButton>
           <PinovaButton
             v-if="isMyProfile && currentPlan !== 'free' && board.isOwner !== false"
@@ -1752,7 +1752,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           :aria-label="t('common.close')"
           @click="closeOrganizeBoard"
         >
-          <span class="material-symbols-outlined text-[22px] leading-none">close</span>
+          <PinovaIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 
@@ -1798,7 +1798,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               @dragstart.stop="onOrganizeDragStart(idx, $event)"
               @dragend="onOrganizeDragEnd"
             >
-              <span class="material-symbols-outlined text-[30px] leading-none" aria-hidden="true">drag_indicator</span>
+              <PinovaIcon name="drag_indicator" class="text-[30px] leading-none" aria-hidden="true" />
             </button>
           </li>
         </ul>
@@ -1948,7 +1948,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           </AvatarDisc>
           <div class="min-w-0">
             <p class="text-sm text-neutral-900 dark:text-neutral-100 truncate flex items-center gap-1">
-              <span v-if="item.is_pro" class="material-symbols-outlined text-amber-500 text-sm">verified</span>
+              <PinovaIcon v-if="item.is_pro" name="verified" class="text-amber-500 text-sm" />
               {{ item.display_name }}
             </p>
             <p class="text-xs text-neutral-500">@{{ item.username }}</p>
@@ -1993,9 +1993,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     />
 
     <div v-else-if="displayPins.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
-      <span class="material-symbols-outlined text-5xl text-neutral-300 mb-3">
-        {{ activeTab === 'created' ? 'add_photo_alternate' : 'bookmark_border' }}
-      </span>
+      <PinovaIcon :name="activeTab === 'created' ? 'add_photo_alternate' : 'bookmark_border'" class="text-5xl text-neutral-300 mb-3" />
       <h3 class="text-lg font-semibold text-neutral-700 mb-1">
         {{ activeTab === 'created' ? t('profile.empty.created.title') : t('profile.empty.saved.title') }}
       </h3>
@@ -2091,7 +2089,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
   </div>
 
   <div v-else class="w-full min-w-0 max-w-md mx-auto px-6 py-20 text-center space-y-4">
-    <span class="material-symbols-outlined text-6xl text-neutral-300">person_off</span>
+    <PinovaIcon name="person_off" class="text-6xl text-neutral-300" />
     <h1 class="text-xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ profileUnavailableTitle }}</h1>
     <p class="text-sm text-neutral-600 leading-relaxed">{{ profileUnavailableDesc }}</p>
     <div class="flex flex-wrap items-center justify-center gap-3 pt-2">

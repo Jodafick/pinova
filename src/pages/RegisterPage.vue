@@ -198,7 +198,7 @@ async function handleGoogleClick() {
             v-if="error"
             class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm animate-shake"
           >
-            <span class="material-symbols-outlined text-lg">error</span>
+            <PinovaIcon name="error" class="text-lg" />
             {{ error }}
           </div>
 
@@ -235,7 +235,7 @@ async function handleGoogleClick() {
                 type="checkbox"
                 class="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border-2 border-neutral-300 transition-all checked:bg-pink-700 dark:bg-pink-600 checked:border-pink-700 dark:border-pink-600 hover:border-pink-700"
               />
-              <span class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none material-symbols-outlined text-sm font-bold">check</span>
+              <PinovaIcon name="check" class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-sm font-bold" />
             </div>
             <span class="text-sm text-neutral-500 dark:text-neutral-400 font-medium select-none">
               {{ t('register.acceptTerms.before') }}

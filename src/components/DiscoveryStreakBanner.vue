@@ -68,12 +68,7 @@ const displayStreak = computed(() => (isMeaningfulStreak.value ? props.streak : 
     "
   >
     <ConfettiBurst :active="showConfetti" />
-    <span
-      class="material-symbols-outlined text-[20px] shrink-0"
-      :class="milestone ? 'text-amber-600' : displayStreak.at_risk ? 'text-orange-600' : 'text-pink-700'"
-    >
-      {{ milestone ? 'emoji_events' : displayStreak.at_risk ? 'local_fire_department' : 'explore' }}
-    </span>
+    <PinovaIcon :name="milestone ? 'emoji_events' : displayStreak.at_risk ? 'local_fire_department' : 'explore'" class="text-[20px] shrink-0" :class="milestone ? 'text-amber-600' : displayStreak.at_risk ? 'text-orange-600' : 'text-pink-700'" />
     <div class="min-w-0 flex-1">
       <p
         class="text-sm font-extrabold"

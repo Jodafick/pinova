@@ -154,9 +154,7 @@ onMounted(async () => {
         class="group mb-8 hidden text-sm lg:inline-flex"
         @click="router.push('/settings')"
       >
-        <span class="material-symbols-outlined text-[1.125rem]">
-          arrow_back
-        </span>
+        <PinovaIcon name="arrow_back" class="text-[1.125rem]" />
         {{ t('billing.backSettings') }}
       </PinovaButton>
 
@@ -177,7 +175,7 @@ onMounted(async () => {
               class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-700 dark:from-pink-600 to-pink-700 dark:to-pink-600 text-white shadow-md shadow-pink-700/25"
               aria-hidden="true"
             >
-              <span class="material-symbols-outlined text-[1.5rem]">receipt_long</span>
+              <PinovaIcon name="receipt_long" class="text-[1.5rem]" />
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-pink-700">
@@ -214,7 +212,7 @@ onMounted(async () => {
             class="mb-4 flex items-start gap-2 rounded-2xl border border-rose-100 bg-rose-50/90 px-4 py-3 text-sm text-rose-800"
             role="alert"
           >
-            <span class="material-symbols-outlined mt-0.5 text-[1.125rem] text-rose-500">error</span>
+            <PinovaIcon name="error" class="mt-0.5 text-[1.125rem] text-rose-500" />
             <span>{{ receiptError }}</span>
           </p>
 
@@ -222,12 +220,7 @@ onMounted(async () => {
             v-if="!billingInvoices.length"
             class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-900/50 px-6 py-16 text-center"
           >
-            <span
-              class="material-symbols-outlined mb-4 text-5xl text-neutral-300"
-              aria-hidden="true"
-            >
-              payments
-            </span>
+            <PinovaIcon name="payments" class="mb-4 text-5xl text-neutral-300" aria-hidden="true" />
             <p class="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{{ t('settings.subscription.billingEmpty') }}</p>
             <p class="mt-2 max-w-xs text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
               {{ t('billing.subtitle') }}
@@ -262,7 +255,7 @@ onMounted(async () => {
                   </div>
                   <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
                     <span class="inline-flex items-center gap-1">
-                      <span class="material-symbols-outlined text-[0.95rem] text-neutral-400">schedule</span>
+                      <PinovaIcon name="schedule" class="text-[0.95rem] text-neutral-400" />
                       {{ formatInvoiceWhen(inv.created_at) }}
                     </span>
                   </div>
@@ -281,7 +274,7 @@ onMounted(async () => {
                         :disabled="receiptLoadingId === inv.id"
                         @click="viewReceipt(inv)"
                       >
-                        <span class="material-symbols-outlined text-[1rem]">description</span>
+                        <PinovaIcon name="description" class="text-[1rem]" />
                         {{
                           receiptLoadingId === inv.id
                             ? t('billing.fetchReceiptBusy')
@@ -300,7 +293,7 @@ onMounted(async () => {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <span class="material-symbols-outlined text-[1rem]">open_in_new</span>
+                      <PinovaIcon name="open_in_new" class="text-[1rem]" />
                       {{ t('settings.subscription.openCheckout') }}
                     </PinovaButton>
                   </div>

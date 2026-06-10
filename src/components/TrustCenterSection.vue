@@ -18,28 +18,28 @@ defineProps<{ compact?: boolean }>()
     </div>
     <ul class="space-y-3">
       <li class="flex gap-3">
-        <span class="material-symbols-outlined text-pink-600 text-xl shrink-0">verified_user</span>
+        <PinovaIcon name="verified_user" class="text-pink-600 text-xl shrink-0" />
         <div>
           <p class="text-sm font-bold">{{ t('premium.trust.planLimits') }}</p>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('premium.trust.planLimits.desc') }}</p>
         </div>
       </li>
       <li class="flex gap-3">
-        <span class="material-symbols-outlined text-pink-600 text-xl shrink-0">shield</span>
+        <PinovaIcon name="shield" class="text-pink-600 text-xl shrink-0" />
         <div>
           <p class="text-sm font-bold">{{ t('premium.trust.noTracking') }}</p>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('premium.trust.noTracking.desc') }}</p>
         </div>
       </li>
       <li class="flex gap-3">
-        <span class="material-symbols-outlined text-pink-600 text-xl shrink-0">block</span>
+        <PinovaIcon name="block" class="text-pink-600 text-xl shrink-0" />
         <div>
           <p class="text-sm font-bold">{{ t('premium.trust.noAds') }}</p>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('premium.trust.noAds.desc') }}</p>
         </div>
       </li>
       <li class="flex gap-3">
-        <span class="material-symbols-outlined text-pink-600 text-xl shrink-0">groups</span>
+        <PinovaIcon name="groups" class="text-pink-600 text-xl shrink-0" />
         <div>
           <p class="text-sm font-bold">{{ t('premium.trust.creators') }}</p>
           <p class="text-xs text-neutral-500 mt-0.5">{{ t('premium.trust.creators.desc') }}</p>

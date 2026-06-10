@@ -313,7 +313,7 @@ async function apply() {
       class="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
     >
       <button type="button" class="story-editor-icon-btn" :aria-label="t('common.cancel')" @click="emit('cancel')">
-        <span class="material-symbols-outlined text-xl">close</span>
+        <PinovaIcon name="close" class="text-xl" />
       </button>
       <p class="text-sm font-black tracking-tight">{{ t('story.editor.videoTitle') }}</p>
       <button type="button" class="story-editor-text-btn" :disabled="busy" @click="apply">
@@ -354,9 +354,7 @@ async function apply() {
               @click="togglePlay"
             >
               <span class="grid h-16 w-16 place-items-center rounded-full bg-black/55 ring-1 ring-white/20 backdrop-blur-md">
-                <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1">
-                  {{ isPlaying ? 'pause' : 'play_arrow' }}
-                </span>
+                <PinovaIcon :name="isPlaying ? 'pause' : 'play_arrow'" class="text-4xl" />
               </span>
             </button>
           </div>
@@ -421,7 +419,7 @@ async function apply() {
             :aria-label="t('story.editor.rotateLeft')"
             @click="setRotation(-90)"
           >
-            <span class="material-symbols-outlined text-xl">rotate_left</span>
+            <PinovaIcon name="rotate_left" class="text-xl" />
             <span class="text-[10px] font-bold tracking-wide">−90°</span>
           </button>
           <button
@@ -430,7 +428,7 @@ async function apply() {
             :aria-label="t('story.editor.rotateRight')"
             @click="setRotation(90)"
           >
-            <span class="material-symbols-outlined text-xl">rotate_right</span>
+            <PinovaIcon name="rotate_right" class="text-xl" />
             <span class="text-[10px] font-bold tracking-wide">+90°</span>
           </button>
           <button
@@ -440,7 +438,7 @@ async function apply() {
             :aria-label="t('story.editor.flipHorizontal')"
             @click="mirrorH = !mirrorH"
           >
-            <span class="material-symbols-outlined text-xl">flip</span>
+            <PinovaIcon name="flip" class="text-xl" />
             <span class="text-[10px] font-bold tracking-wide">{{ t('story.editor.flipHorizontal') }}</span>
           </button>
           <button
@@ -450,7 +448,7 @@ async function apply() {
             :aria-label="t('story.editor.flipVertical')"
             @click="mirrorV = !mirrorV"
           >
-            <span class="material-symbols-outlined text-xl rotate-90">flip</span>
+            <PinovaIcon name="flip" class="text-xl rotate-90" />
             <span class="text-[10px] font-bold tracking-wide">{{ t('story.editor.flipVertical') }}</span>
           </button>
         </div>
@@ -465,7 +463,7 @@ async function apply() {
           :class="{ 'story-editor-toggle--active': mutedExport }"
           @click="mutedExport = !mutedExport"
         >
-          <span class="material-symbols-outlined text-lg">{{ mutedExport ? 'volume_off' : 'volume_up' }}</span>
+          <PinovaIcon :name="mutedExport ? 'volume_off' : 'volume_up'" class="text-lg" />
           {{ t('story.editor.mute') }}
         </button>
         <p class="text-[11px] leading-5 text-white/38">{{ t('story.editor.videoHint') }}</p>

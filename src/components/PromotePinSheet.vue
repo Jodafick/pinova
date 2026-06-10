@@ -176,7 +176,7 @@ async function startCampaign() {
               :aria-label="t('common.close')"
               @click="emit('close')"
             >
-              <span class="material-symbols-outlined text-xl">close</span>
+              <PinovaIcon name="close" class="text-xl" />
             </button>
           </div>
 

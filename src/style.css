@@ -2,24 +2,11 @@
 /* Tokens canoniques 1:1 avec `Pinova-Mobile/src/theme/tokens.ts` — préfixe `--pn-*`. */
 @import "./theme/tokens.css";
 
-/* Material Symbols — fallback si le subset Google charge avec délai. */
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined', sans-serif;
-  font-weight: normal;
-  font-style: normal;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
+/* Font Awesome via PinovaIcon — taille héritée du contexte texte. */
+.pinova-icon {
   display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-smoothing: antialiased;
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 400,
-    'GRAD' 0,
-    'opsz' 24;
+  line-height: 1;
+  vertical-align: -0.125em;
 }
 
 /** Thème sombre : classe `dark` sur `<html>` (paramètres Pinova). */
@@ -614,7 +601,7 @@
     text-shadow: 0 18px 50px rgb(0 0 0 / 0.55);
   }
 
-  .pin-detail-heart-burst .material-symbols-outlined {
+  .pin-detail-heart-burst .pinova-icon {
     font-size: clamp(7rem, 34vw, 15rem);
     line-height: 1;
     animation: pin-detail-heart-pop 0.88s cubic-bezier(0.2, 0.88, 0.34, 1.02) forwards;
@@ -1195,7 +1182,7 @@
     backdrop-filter: blur(12px);
   }
 
-  .pin-detail-back .material-symbols-outlined {
+  .pin-detail-back .pinova-icon {
     font-size: 1.25rem;
   }
 
@@ -2696,7 +2683,7 @@ html[data-pinova-quality="low"] .pinova-settings-page .app-card {
 }
 /* Coupe les keyframes décoratives (heart pop, shimmer, pulse) en low. */
 html[data-pinova-quality="low"] .pinova-soft-ripple.is-rippling::after,
-html[data-pinova-quality="low"] .pin-detail-heart-burst .material-symbols-outlined,
+html[data-pinova-quality="low"] .pin-detail-heart-burst .pinova-icon,
 html[data-pinova-quality="low"] .pinova-skel::after,
 html[data-pinova-quality="low"] html.pinova-micro-feedback-pulse::after {
   animation: none !important;

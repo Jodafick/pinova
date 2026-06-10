@@ -85,7 +85,7 @@ function variantStyles(): string {
           class="flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ring-inset shrink-0 shadow-inner"
           :class="variantStyles()"
         >
-          <span class="material-symbols-outlined text-[28px]">{{ variantIcon() }}</span>
+          <PinovaIcon :name="variantIcon()" class="text-[28px]" />
         </div>
         <h2
           v-if="title"

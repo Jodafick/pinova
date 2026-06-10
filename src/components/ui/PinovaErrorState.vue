@@ -14,7 +14,7 @@ withDefaults(
     <div
       class="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400"
     >
-      <span class="material-symbols-outlined text-3xl">{{ icon }}</span>
+      <PinovaIcon :name="icon" class="text-3xl" />
     </div>
     <h3 class="text-base font-extrabold text-neutral-900 dark:text-neutral-50">{{ title }}</h3>
     <p v-if="description" class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed">

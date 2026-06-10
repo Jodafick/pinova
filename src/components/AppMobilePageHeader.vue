@@ -53,7 +53,7 @@ const resolvedBackAria = computed(() => props.backAriaLabel || t('common.back'))
             :aria-label="resolvedBackAria"
             @click="emit('back')"
           >
-            <span class="material-symbols-outlined text-[22px] leading-none">arrow_back_ios_new</span>
+            <PinovaIcon name="arrow_back_ios_new" class="text-[22px] leading-none" />
           </button>
         </slot>
       </div>
