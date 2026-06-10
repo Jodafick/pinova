@@ -61,8 +61,8 @@ function onTap() {
 }
 
 .pinova-layer-backdrop--blur {
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
 }
 
 @keyframes pinova-backdrop-in {

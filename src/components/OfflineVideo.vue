@@ -15,6 +15,9 @@ const emit = defineEmits<{
 }>()
 
 const displaySrc = ref('')
+const videoEl = ref<HTMLVideoElement | null>(null)
+
+defineExpose({ videoEl })
 let blobRevoke: string | null = null
 
 function revokeBlob() {
@@ -74,6 +77,7 @@ watch(
 
 <template>
   <video
+    ref="videoEl"
     v-bind="$attrs"
     :src="displaySrc"
     @loadedmetadata="emit('loadedmetadata', $event)"

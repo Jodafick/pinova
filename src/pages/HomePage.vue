@@ -102,13 +102,6 @@ const tabs = computed(() => [
 
 const activeTabIndex = computed(() => Math.max(0, TAB_ORDER.indexOf(activeTab.value)))
 
-/** Transform du track 300 % : position de base de l'onglet actif + décalage de drag. */
-const mobileTabTrackTransform = computed(() => {
-  const pctPerTab = 100 / TAB_ORDER.length
-  const base = -activeTabIndex.value * pctPerTab
-  return `translate3d(calc(${base.toFixed(4)}% + ${dragOffsetPx.value.toFixed(2)}px), 0, 0)`
-})
-
 /** Position X (px) de la pilule : centrée sur le bouton onglet mesuré + correction de swipe. */
 const indicatorBarTranslateX = computed(() => {
   const i = activeTabIndex.value
@@ -305,12 +298,28 @@ async function loadFollowSuggestions() {
 
 let homeTabSwitchCount = 0
 
+const tabScrollTops = ref<Record<TabKey, number>>({ forYou: 0, explorer: 0, following: 0 })
+
+function saveActiveTabScroll() {
+  if (typeof document === 'undefined') return
+  tabScrollTops.value[activeTab.value] = getAppScrollRoot().scrollTop
+}
+
+function restoreTabScroll(tab: TabKey) {
+  void nextTick(() => {
+    const y = tabScrollTops.value[tab] ?? 0
+    getAppScrollRoot().scrollTo({ top: y, behavior: 'auto' })
+  })
+}
+
 async function setTab(tab: TabKey) {
   if (activeTab.value === tab) return
+  saveActiveTabScroll()
   activeTab.value = tab
   homeTabSwitchCount += 1
   if (homeTabSwitchCount >= 2) recordEngagementMoment('feed_engaged')
   await ensureLoaded(tab)
+  restoreTabScroll(tab)
   void nextTick(() => connectHomeLoadMoreObserver())
 }
 
@@ -715,17 +724,8 @@ async function continueWithGoogleFromLanding() {
         @pointerup="onSwipePointerUp"
         @pointercancel="onSwipePointerCancel"
       >
-        <div
-          class="home-tab-track flex w-[300%] motion-reduce:transition-none will-change-transform"
-          :style="{
-            transform: mobileTabTrackTransform,
-            transition: dragging
-              ? 'none'
-              : 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-          }"
-        >
-          <!-- Pour toi -->
-          <div class="home-tab-panel w-1/3 min-w-0 shrink-0 px-0 pt-3">
+        <!-- Un seul onglet monté : réduit mémoire DOM (3 feeds → 1). -->
+        <div v-if="activeTab === 'forYou'" class="home-tab-panel w-full min-w-0 px-0 pt-3">
             <TopicScroller :topics="activeTopics" :active-topic="activeTopic" @select="selectTopic" />
             <template
               v-if="forYouCtx.pins.value.length > 0 || (forYouCtx.loading.value && forYouCtx.pins.value.length === 0) || (forYouCtx.isFetchingNextPage.value && forYouCtx.pins.value.length > 0)"
@@ -754,10 +754,9 @@ async function continueWithGoogleFromLanding() {
               class="h-8 w-full shrink-0"
               aria-hidden="true"
             />
-          </div>
+        </div>
 
-          <!-- Explorer : même bloc que /explore (catégories + tableaux + fil). -->
-          <div class="home-tab-panel w-1/3 min-w-0 shrink-0 px-0 pt-3">
+        <div v-else-if="activeTab === 'explorer'" class="home-tab-panel w-full min-w-0 px-0 pt-3">
             <DiscoveryStreakBanner :streak="discoveryStreak" />
             <ExploreDiscoverSections
               v-model:selected-topic="exploreSelectedTopic"
@@ -777,10 +776,9 @@ async function continueWithGoogleFromLanding() {
               class="h-8 w-full shrink-0"
               aria-hidden="true"
             />
-          </div>
+        </div>
 
-          <!-- Suivis -->
-          <div class="home-tab-panel w-1/3 min-w-0 shrink-0 px-0 pt-3">
+        <div v-else-if="activeTab === 'following'" class="home-tab-panel w-full min-w-0 px-0 pt-3">
             <template
               v-if="followingCtx.pins.value.length > 0 || (followingCtx.loading.value && followingCtx.pins.value.length === 0) || (followingCtx.isFetchingNextPage.value && followingCtx.pins.value.length > 0)"
             >
@@ -867,7 +865,6 @@ async function continueWithGoogleFromLanding() {
               class="h-8 w-full shrink-0"
               aria-hidden="true"
             />
-          </div>
         </div>
       </div>
 

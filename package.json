@@ -18,7 +18,8 @@
     "generate:locales:mobile": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/run-locales.ps1 --mobile",
     "generate:locales:all": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate-all-locales.ps1",
     "generate:locales:all:force": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate-all-locales.ps1 -Force",
-    "generate:geo": "node ./scripts/generate-reference-geo.mjs"
+    "generate:geo": "node ./scripts/generate-reference-geo.mjs",
+    "generate:material-icons": "node ./scripts/collect-material-icons.mjs"
   },
   "dependencies": {
     "@floating-ui/vue": "^1.1.11",

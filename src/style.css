@@ -2,6 +2,26 @@
 /* Tokens canoniques 1:1 avec `Pinova-Mobile/src/theme/tokens.ts` — préfixe `--pn-*`. */
 @import "./theme/tokens.css";
 
+/* Material Symbols — fallback si le subset Google charge avec délai. */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
 /** Thème sombre : classe `dark` sur `<html>` (paramètres Pinova). */
 @variant dark (.dark &);
 
@@ -666,8 +686,8 @@
     @apply fixed w-[min(240px,calc(100vw-1rem))] rounded-2xl py-1.5;
     /* 20px → 12px : dropdown ne couvre qu'une petite zone, le coût GPU
        continu se justifie peu. */
-    backdrop-filter: blur(12px) saturate(1.1);
-    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+    backdrop-filter: blur(8px) saturate(1.08);
+    -webkit-backdrop-filter: blur(8px) saturate(1.08);
     background: rgb(255 255 255 / 0.94);
     border: 1px solid rgb(255 255 255 / 0.75);
     box-shadow:
@@ -680,7 +700,7 @@
     background:
       radial-gradient(circle at 50% -20%, rgb(251 207 232 / 0.2), transparent 45%),
       rgb(12 12 17 / 0.58);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
   }
 
   .lux-modal-panel {
@@ -2221,8 +2241,9 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
   --glass-shadow-lg: var(--glass-shadow-lg-light);
   --glass-scrim: var(--glass-scrim-default-light);
   --glass-scrim-strong: var(--glass-scrim-strong-light);
-  --glass-blur: saturate(180%) blur(20px);
-  --glass-blur-strong: saturate(200%) blur(28px);
+  /* Blur réduit par défaut — premium conservé via data-pinova-quality="high". */
+  --glass-blur: saturate(160%) blur(10px);
+  --glass-blur-strong: saturate(170%) blur(14px);
 
   /* Tokens accent rose (CTA, .pinova-glass-rose) — les modales PinovaModal utilisent `--glass-fill` neutre. */
   --pinova-rose-500: #e0245e;
@@ -2241,8 +2262,8 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
   --glass-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.78), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   --glass-scrim: rgba(0, 0, 0, 0.66);
   --glass-scrim-strong: rgba(0, 0, 0, 0.82);
-  --glass-blur: saturate(200%) blur(26px);
-  --glass-blur-strong: saturate(210%) blur(34px);
+  --glass-blur: saturate(170%) blur(12px);
+  --glass-blur-strong: saturate(180%) blur(16px);
 }
 
 /*
@@ -2628,12 +2649,17 @@ html.pinova-motion-saver .pinova-settings-page .app-card {
  */
 
 /* ── medium : compromis fluidité / esthétique ── */
+html[data-pinova-quality="high"] {
+  --glass-blur: saturate(180%) blur(16px);
+  --glass-blur-strong: saturate(190%) blur(20px);
+}
+
 html[data-pinova-quality="medium"] {
   --pinova-dur-fast: 140ms;
   --pinova-dur-medium: 200ms;
   --pinova-dur-slow: 280ms;
-  --glass-blur: saturate(160%) blur(12px);
-  --glass-blur-strong: saturate(160%) blur(14px);
+  --glass-blur: saturate(150%) blur(6px);
+  --glass-blur-strong: saturate(155%) blur(8px);
   --pinova-glow-rose-soft: 0 0 18px rgba(255, 95, 145, 0.10);
   --pinova-glow-rose-medium: 0 0 28px rgba(224, 36, 94, 0.16);
   --pinova-glow-rose-strong: 0 0 40px rgba(224, 36, 94, 0.22);
@@ -3301,4 +3327,15 @@ html[data-pinova-motion="material"] .pinova-glass-rose {
   transform: translate(-50%, 0);
   outline: 2px solid #fff;
   outline-offset: 2px;
+}
+
+/* Flou contenu sensible — allégé vs blur-2xl Tailwind */
+.pin-sensitive-blur {
+  filter: blur(18px);
+}
+html[data-pinova-quality="medium"] .pin-sensitive-blur {
+  filter: blur(12px);
+}
+html[data-pinova-quality="low"] .pin-sensitive-blur {
+  filter: blur(8px);
 }

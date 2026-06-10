@@ -19,6 +19,7 @@ export function setSentryRequestId(requestId: string | null | undefined): void {
   Sentry.setTag('request_id', requestId)
 }
 
+/** Init minimal au boot (tracing seulement). Replay différé. */
 export function initSentry(app: App, router: Router): void {
   if (initialized || !DSN) return
   initialized = true
@@ -28,13 +29,8 @@ export function initSentry(app: App, router: Router): void {
     dsn: DSN,
     environment: import.meta.env.MODE,
     release: RELEASE,
-    integrations: [
-      Sentry.browserTracingIntegration({ router }),
-      Sentry.replayIntegration({ maskAllText: true, blockAllMedia: true }),
-    ],
+    integrations: [Sentry.browserTracingIntegration({ router })],
     tracesSampleRate: import.meta.env.PROD ? 0.1 : 1,
-    replaysSessionSampleRate: import.meta.env.PROD ? 0.05 : 0,
-    replaysOnErrorSampleRate: import.meta.env.PROD ? 1 : 0,
     beforeSend(event) {
       return scrubSentryEvent(event)
     },
@@ -48,6 +44,23 @@ export function initSentry(app: App, router: Router): void {
       data: { duration_ms: Math.round(durationMs) },
     })
   })
+}
+
+/** Session Replay après idle — n'impacte pas le first paint. */
+export function initSentryDeferred(app: App, router: Router): void {
+  if (!DSN) return
+  if (!initialized) {
+    initSentry(app, router)
+    return
+  }
+  try {
+    const client = Sentry.getClient()
+    if (!client) return
+    const replay = Sentry.replayIntegration({ maskAllText: true, blockAllMedia: true })
+    client.addIntegration(replay)
+  } catch {
+    /* Replay non critique */
+  }
 }
 
 export function setSentryUser(user: { id: number; username?: string } | null): void {

@@ -4,6 +4,14 @@ export type Pin = {
   title: string
   description: string
   imageUrl: string
+  /** Variante légère pour la grille (carré / feed). */
+  feedImageUrl?: string
+  /** Largeur native du média (API) — améliore le masonry. */
+  mediaWidth?: number
+  /** Hauteur native du média (API). */
+  mediaHeight?: number
+  /** width / height (dérivé). */
+  mediaAspectRatio?: number
   /** Vidéo story (MP4/WebM/MOV) */
   storyVideoUrl?: string
   user: string

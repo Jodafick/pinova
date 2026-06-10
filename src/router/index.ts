@@ -291,7 +291,7 @@ const router = createRouter({
       component: () => import('../pages/BillingHistoryPage.vue'),
       meta: {
         requiresAuth: true,
-        keepAlive: true,
+        keepAlive: false,
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
@@ -303,7 +303,7 @@ const router = createRouter({
       component: () => import('../pages/PremiumPage.vue'),
       meta: {
         requiresAuth: false,
-        keepAlive: true,
+        keepAlive: false,
         preferAppRedirect: true,
         presentation: 'page',
         gestureDismiss: true,
@@ -317,7 +317,7 @@ const router = createRouter({
       component: () => import('../pages/LegalPage.vue'),
       meta: {
         requiresAuth: false,
-        keepAlive: true,
+        keepAlive: false,
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
@@ -329,7 +329,7 @@ const router = createRouter({
       component: () => import('../pages/ContactPage.vue'),
       meta: {
         requiresAuth: false,
-        keepAlive: true,
+        keepAlive: false,
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
@@ -341,7 +341,7 @@ const router = createRouter({
       component: () => import('../pages/FaqPage.vue'),
       meta: {
         requiresAuth: false,
-        keepAlive: true,
+        keepAlive: false,
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
@@ -367,7 +367,7 @@ const router = createRouter({
       component: () => import('../pages/ContestLivePage.vue'),
       meta: {
         requiresAuth: false,
-        keepAlive: true,
+        keepAlive: false,
         preferAppRedirect: true,
         presentation: 'page',
         gestureDismiss: true,
@@ -382,7 +382,7 @@ const router = createRouter({
       component: () => import('../pages/ContestHistoryPage.vue'),
       meta: {
         requiresAuth: true,
-        keepAlive: true,
+        keepAlive: false,
         preferAppRedirect: true,
         presentation: 'page',
         gestureDismiss: true,
@@ -396,7 +396,7 @@ const router = createRouter({
       component: () => import('../pages/ReferralContestLivePage.vue'),
       meta: {
         requiresAuth: false,
-        keepAlive: true,
+        keepAlive: false,
         preferAppRedirect: true,
         presentation: 'page',
         gestureDismiss: true,
@@ -411,7 +411,7 @@ const router = createRouter({
       component: () => import('../pages/ReferralInvitePage.vue'),
       meta: {
         requiresAuth: true,
-        keepAlive: true,
+        keepAlive: false,
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
@@ -425,7 +425,7 @@ const router = createRouter({
       component: () => import('../pages/ReferralHistoryPage.vue'),
       meta: {
         requiresAuth: true,
-        keepAlive: true,
+        keepAlive: false,
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',
@@ -437,7 +437,7 @@ const router = createRouter({
       component: () => import('../pages/ReferralNotificationsPage.vue'),
       meta: {
         requiresAuth: true,
-        keepAlive: true,
+        keepAlive: false,
         presentation: 'page',
         gestureDismiss: true,
         statusBar: 'auto',

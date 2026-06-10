@@ -24,6 +24,7 @@ import SheetPresenter from './presenters/SheetPresenter.vue'
 import FloatingCardPresenter from './presenters/FloatingCardPresenter.vue'
 import TransparentOverlayPresenter from './presenters/TransparentOverlayPresenter.vue'
 import { getLayerLifecycleState } from '../../core/layerLifecycle'
+import { getQualityMode } from '../../core/performanceEngine'
 
 const stack = layerManager.stack
 const topLayer = layerManager.topLayer
@@ -44,16 +45,28 @@ const presenterByPresentation = {
 const backgroundTransform = computed(() => {
   const top = topLayer.value
   if (!top) return null
+  const quality = getQualityMode()
+  const allowShellBlur = quality === 'high'
   /* On n'applique l'effet que pour page / fullscreen / modal. Sheets et overlays restent neutres. */
   if (top.presentation === 'transparentOverlay' || top.presentation === 'floatingCard') return null
   if (top.presentation === 'sheet') {
-    return { scale: 0.98, brightness: 0.92, blur: 0 }
+    return { scale: 0.98, brightness: 0.94, blur: 0, opacity: 1 }
   }
   if (top.presentation === 'modal') {
-    return { scale: 0.985, brightness: 0.88, blur: 4 }
+    return {
+      scale: 0.99,
+      brightness: 0.9,
+      blur: allowShellBlur ? 2 : 0,
+      opacity: allowShellBlur ? 1 : 0.92,
+    }
   }
-  /* page / fullscreen : effet profond. */
-  return { scale: 0.94, brightness: 0.82, blur: 6 }
+  /* page / fullscreen : scale léger ; blur shell uniquement en qualité high. */
+  return {
+    scale: 0.97,
+    brightness: 0.88,
+    blur: allowShellBlur ? 3 : 0,
+    opacity: allowShellBlur ? 1 : 0.94,
+  }
 })
 
 /* Applique l'effet de profondeur sur l'élément root `#app-shell`. */
@@ -65,11 +78,19 @@ function applyBackgroundEffect() {
   if (!t) {
     shell.style.transform = ''
     shell.style.filter = ''
+    shell.style.opacity = ''
+    shell.style.willChange = ''
     shell.style.transition = 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1), filter 360ms cubic-bezier(0.22, 1, 0.36, 1)'
     return
   }
   shell.style.transform = `scale(${t.scale})`
-  shell.style.filter = t.blur > 0 ? `brightness(${t.brightness}) blur(${t.blur}px)` : `brightness(${t.brightness})`
+  shell.style.opacity = t.opacity != null && t.opacity < 1 ? String(t.opacity) : ''
+  shell.style.filter =
+    t.blur > 0
+      ? `brightness(${t.brightness}) blur(${t.blur}px)`
+      : t.brightness < 1
+        ? `brightness(${t.brightness})`
+        : ''
   shell.style.transition = 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1), filter 360ms cubic-bezier(0.22, 1, 0.36, 1)'
   shell.style.transformOrigin = 'center top'
   shell.style.willChange = 'transform, filter'

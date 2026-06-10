@@ -324,12 +324,14 @@ export function initPerformanceEngine(): void {
   enablePerfMonitor()
   ensureReclaimer()
 
-  /* Quality initiale conditionnée par le device tier détecté. */
+  /* Quality initiale conservatrice : high uniquement si tier high explicite (Chrome desktop). */
   const tier = motionDeviceTier.value
   if (tier === 'low') {
-    applyQuality('medium', 'init:tier=low')
+    applyQuality('low', 'init:tier=low')
+  } else if (tier === 'high') {
+    applyQuality('high', 'init:tier=high')
   } else {
-    applyQuality('high', `init:tier=${tier}`)
+    applyQuality('medium', 'init:tier=mid')
   }
 
   /* prefers-reduced-motion → floor à medium (a11y avant performances). */

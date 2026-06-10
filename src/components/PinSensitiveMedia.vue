@@ -95,7 +95,7 @@ watch(() => props.mediaUrl, () => {
   <div class="relative overflow-hidden w-full" :class="props.wrapperClass">
     <div
       class="transition-[filter,transform] duration-300 w-full"
-      :class="showOverlay ? 'blur-2xl scale-[1.05]' : ''"
+      :class="showOverlay ? 'pin-sensitive-blur scale-[1.03]' : ''"
     >
       <slot />
     </div>

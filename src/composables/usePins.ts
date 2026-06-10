@@ -112,12 +112,15 @@ export function mapDjangoPinToFrontend(djangoPin: any): Pin {
     : mainImageRaw
       ? getFullMediaUrl(mainImageRaw)
       : ''
+  const feedRaw = djangoPin.feed_image_url ? String(djangoPin.feed_image_url).trim() : ''
+  const feedImageUrl = feedRaw ? getFullMediaUrl(feedRaw) : imageUrl || undefined
   return {
     id: djangoPin.id,
     slug: djangoPin.slug,
     title: djangoPin.title,
     description: djangoPin.description,
     imageUrl,
+    feedImageUrl,
     storyVideoUrl: djangoPin.story_video_url ? getFullMediaUrl(djangoPin.story_video_url) : '',
     user: author.display_name || author.username || 'Inconnu',
     username: author.username || 'inconnu',

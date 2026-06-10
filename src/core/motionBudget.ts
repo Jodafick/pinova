@@ -124,6 +124,25 @@ export function snapshotMotion(): Record<MotionCategory, { active: number; soft:
  * Conservateur : on suppose `mid` par défaut, on remonte vers `high` seulement
  * si on a des indicateurs explicites.
  */
+function isIosSafari(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent || ''
+  const isAppleMobile = /iPhone|iPad|iPod/i.test(ua)
+  const isTouchMac = /Macintosh/i.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document
+  return isAppleMobile || isTouchMac
+}
+
+/** iPhone ≤ 11 / SE : 2–4 cœurs effectifs côté Safari. */
+function isLegacyIosDevice(): boolean {
+  if (!isIosSafari() || typeof window === 'undefined') return false
+  const w = Math.min(window.screen.width, window.screen.height)
+  const h = Math.max(window.screen.width, window.screen.height)
+  if (w <= 320 && h <= 568) return true /* SE 1 */
+  if (w <= 375 && h <= 667) return true /* 6/7/8 */
+  if (w <= 414 && h <= 736) return true /* Plus pré–X */
+  return false
+}
+
 export function detectDeviceTier(): 'low' | 'mid' | 'high' {
   if (typeof navigator === 'undefined') return 'mid'
   const nav = navigator as Navigator & {
@@ -132,16 +151,24 @@ export function detectDeviceTier(): 'low' | 'mid' | 'high' {
   }
   const memory = nav.deviceMemory
   const cores = nav.hardwareConcurrency
+
+  if (isLegacyIosDevice()) return 'low'
+
   if (memory != null) {
     if (memory <= 2) return 'low'
     if (memory <= 4) return 'mid'
     return 'high'
   }
-  /* Safari ne supporte pas `deviceMemory`. On tombe sur hardwareConcurrency :
-     iPhone modernes = 6, iPhone < 11 = 4–6, low-end = 2–4. */
+
+  /* Safari iOS : pas de deviceMemory — rester conservateur (jamais high par défaut). */
+  if (isIosSafari()) {
+    if (typeof cores === 'number' && cores <= 4) return 'low'
+    return 'mid'
+  }
+
   if (typeof cores === 'number') {
     if (cores <= 4) return 'mid'
-    if (cores >= 6) return 'high'
+    if (cores >= 8) return 'high'
   }
   return 'mid'
 }

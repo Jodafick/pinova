@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { FeedItem, Pin, SponsoredAd } from '../types'
-import { isFeedPin, isSponsoredAd } from '../types'
+import { isFeedPin } from '../types'
 import SponsoredContentCard from './SponsoredContentCard.vue'
 import NetworkAdBanner from './NetworkAdBanner.vue'
 import { useNetworkAds } from '../composables/useNetworkAds'
@@ -26,6 +26,17 @@ import OfflineImg from './OfflineImg.vue'
 import OfflineVideo from './OfflineVideo.vue'
 import PromotePinSheet from './PromotePinSheet.vue'
 import { prefetchPinsMediaForOffline } from '../media/offlineCache'
+import PinVirtualGrid from './PinVirtualGrid.vue'
+import {
+  buildFeedMasonryCells,
+  layoutMasonryShortestColumn,
+  MASONRY_GAP_PX,
+  MASONRY_GAP_PX_SM,
+} from '../utils/masonryLayout'
+import { pinGridImageSrc, pinGridImageSrcSet } from '../utils/pinMediaUrls'
+
+/** Au-delà de ce seuil, on bascule sur la grille virtualisée (DOM stable). */
+const VIRTUAL_THRESHOLD = 24
 
 const { isPinSavePending, toggleLike, deletePin } = usePins()
 const { isAuthenticated, currentUser, fetchCurrentUser } = useAuth()
@@ -104,33 +115,29 @@ const skeletonPlaceholders = computed(() => {
   return 0
 })
 
+const measuredHeights = ref(new Map<number, number>())
+
+const masonryCells = computed(() =>
+  buildFeedMasonryCells(props.pins, {
+    showFeedAds: showFeedAds.value,
+    feedEveryN: feedEveryN.value,
+    skeletonCount: skeletonPlaceholders.value,
+  }),
+)
+
+const useVirtualGrid = computed(() => masonryCells.value.length >= VIRTUAL_THRESHOLD)
+
 const columns = computed(() => {
-  const n = columnCount.value
-  const cells: GridCell[] = []
-  let pinCount = 0
-  props.pins.forEach((item) => {
-    if (isSponsoredAd(item)) {
-      cells.push({ kind: 'sponsored', ad: item })
-      return
-    }
-    if (isFeedPin(item)) {
-      cells.push({ kind: 'pin', pin: item })
-      pinCount += 1
-      if (showFeedAds.value && pinCount % feedEveryN.value === 0) {
-        cells.push({ kind: 'network_ad', key: `network-ad-${pinCount}` })
-      }
-    }
-  })
-  const sk = skeletonPlaceholders.value
-  for (let i = 0; i < sk; i++) {
-    cells.push({ kind: 'skeleton', key: `pin-skeleton-${i}` })
-  }
-  const cols = Array.from({ length: n }, () => [] as GridCell[])
-  cells.forEach((cell, index) => {
-    const col = cols[index % n]
-    if (col) col.push(cell)
-  })
-  return cols
+  const gap = columnCount.value >= 3 ? MASONRY_GAP_PX_SM : MASONRY_GAP_PX
+  const width =
+    typeof window !== 'undefined' ? Math.max(280, window.innerWidth - 24) : 360
+  return layoutMasonryShortestColumn(
+    masonryCells.value,
+    columnCount.value,
+    width,
+    gap,
+    measuredHeights.value,
+  ).columns as GridCell[][]
 })
 
 const gridBusy = computed(
@@ -329,7 +336,23 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="pin-grid-scope app-skeleton-wave w-full min-w-0 max-w-full overflow-x-hidden" aria-labelledby="pin-feed-grid-heading" :aria-busy="gridBusy || undefined">
+  <PinVirtualGrid
+    v-if="useVirtualGrid"
+    class="pin-grid-scope w-full min-w-0 max-w-full overflow-x-hidden"
+    :pins="pins"
+    :loading-initial="loadingInitial"
+    :loading-more="loadingMore"
+    @toggle-save="(slug) => emit('toggle-save', slug)"
+    @open-pin="(slug) => emit('open-pin', slug)"
+    @open-sponsored="(item) => emit('open-sponsored', item)"
+    @pin-deleted="(slug) => emit('pin-deleted', slug)"
+  />
+  <section
+    v-else
+    class="pin-grid-scope app-skeleton-wave w-full min-w-0 max-w-full overflow-x-hidden"
+    aria-labelledby="pin-feed-grid-heading"
+    :aria-busy="gridBusy || undefined"
+  >
     <h2 id="pin-feed-grid-heading" class="sr-only">{{ t('feed.pinsGridHeading') }}</h2>
     <div class="flex w-full min-w-0 gap-2.5 sm:gap-4 items-start">
     <div
@@ -394,7 +417,8 @@ onUnmounted(() => {
             wrapper-class="w-full"
           >
             <OfflineImg
-              :src="cell.pin.imageUrl"
+              :src="pinGridImageSrc(cell.pin)"
+              :srcset="pinGridImageSrcSet(cell.pin)"
               :alt="cell.pin.title ? `${cell.pin.title} — ${cell.pin.user}` : t('feed.pinImageFallback', { user: cell.pin.user })"
               :sizes="gridImageSizes"
               :fetchpriority="gridImageFetchPriority"

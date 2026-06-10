@@ -54,6 +54,9 @@ const CookieConsentBanner = defineAsyncComponent(() => import('./components/Cook
 const NotificationEnablePrompt = defineAsyncComponent(() => import('./components/NotificationEnablePrompt.vue'))
 const ActivationExperienceHost = defineAsyncComponent(() => import('./components/activation/ActivationExperienceHost.vue'))
 const GuestAuthSheet = defineAsyncComponent(() => import('./components/GuestAuthSheet.vue'))
+const DevPerfHud = import.meta.env.DEV
+  ? defineAsyncComponent(() => import('./components/dev/DevPerfHud.vue'))
+  : null
 
 /** Réf. du bouton ⋮ board : assignée dans le template ; `void` évite TS6133 (usage non vu par vue-tsc côté script). */
 void mobileBoardMoreButtonRef
@@ -633,7 +636,7 @@ const pageTransitionName = computed(() => {
       -->
       <router-view v-slot="{ Component, route: r }">
         <transition :name="pageTransitionName" appear>
-          <KeepAlive v-if="r.meta.keepAlive">
+          <KeepAlive v-if="r.meta.keepAlive" :max="4">
             <component
               :is="Component"
               :key="r.path"
@@ -825,6 +828,8 @@ const pageTransitionName = computed(() => {
       </span>
     </div>
   </Teleport>
+
+  <component :is="DevPerfHud" v-if="DevPerfHud" />
 </template>
 
 <style>
