@@ -733,6 +733,7 @@ export const ca: Record<string, string> = {
   'mobile.redirecting.desc': 'Espereu mentre us redirigim a l\'aplicació.',
   'mobile.redirecting.title': 'S\'està redirigint...',
   'mobile.title': 'Inici de sessió de Google',
+  'modal.cancel': 'Cancel·lar',
   'modal.confirm.ok': 'Confirmeu',
   'modal.errorTitle': 'Error',
   'modal.prompt.hint': 'Entra per confirmar · Esc o fes clic fora per ignorar',

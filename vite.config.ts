@@ -157,8 +157,12 @@ export default defineConfig(({ mode }) => {
         prefer_related_applications: false
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,vue}'],
-        globIgnores: ['**/assets/group*-shard*.js', '**/assets/vendor-tfjs*.js'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globIgnores: [
+          '**/assets/group*-shard*.js',
+          '**/assets/vendor-tfjs*.js',
+          '**/assets/vendor-icons*.css',
+        ],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
@@ -174,8 +178,8 @@ export default defineConfig(({ mode }) => {
             options: {
               cacheName: 'pinova-api-media',
               expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 7 * 24 * 3600,
+                maxEntries: 72,
+                maxAgeSeconds: 3 * 24 * 3600,
               },
               cacheableResponse: { statuses: [0, 200] },
             },
@@ -187,8 +191,8 @@ export default defineConfig(({ mode }) => {
             options: {
               cacheName: 'pinova-images',
               expiration: {
-                maxEntries: 240,
-                maxAgeSeconds: 30 * 24 * 3600
+                maxEntries: 80,
+                maxAgeSeconds: 14 * 24 * 3600
               },
               cacheableResponse: { statuses: [0, 200] }
             }

@@ -13,7 +13,8 @@ import AppMobileTabBar from './components/AppMobileTabBar.vue'
 import { useGuestAuthGate } from './composables/useGuestAuthGate'
 import { usePendingIntentReplay } from './composables/usePendingIntentReplay'
 import { initPwaTheme } from './composables/usePwaTheme'
-import { initPwaContext } from './composables/usePwaContext'
+import { initPwaContext, usePwaContext } from './composables/usePwaContext'
+import { useDataSaver } from './composables/useDataSaver'
 import { useEdgeSwipeBack } from './composables/useEdgeSwipeBack'
 import { useIsLgDown } from './composables/useIsLgDown'
 import { devLog } from './lib/devLog'
@@ -87,6 +88,8 @@ setLang(currentLang.value)
 /* PWA bootstrap : capture beforeinstallprompt + theme-color dynamique. */
 initPwaContext()
 initPwaTheme()
+const { isStandalone: pwaStandalone } = usePwaContext()
+const { isLowDataMode } = useDataSaver()
 
 /* Immersive media viewer singleton — ouvert via `openImmersiveViewer({...})` partout. */
 const immersiveViewer = useImmersiveViewer()
@@ -242,6 +245,10 @@ watch(
 )
 
 const isMobileFullscreenRoute = computed(() => typeof route.query.pin === 'string' && route.query.pin.trim().length > 0)
+
+const ambientGlowDisabled = computed(
+  () => isMobileFullscreenRoute.value || pwaStandalone.value || isLowDataMode.value,
+)
 
 /** Routes `meta.presentation === 'fullscreen'` : pas de padding chrome du `<main>`. */
 const isFullscreenPresentationRoute = computed(
@@ -608,7 +615,7 @@ const pageTransitionName = computed(() => {
     }"
   >
     <!-- Wash rose ambient (fixed, behind content). Désactivé sur routes fullscreen media. -->
-    <AmbientGlow :disabled="isMobileFullscreenRoute" />
+    <AmbientGlow :disabled="ambientGlowDisabled" />
 
     <ReferralRouteCapture />
 

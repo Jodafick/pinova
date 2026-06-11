@@ -16,8 +16,16 @@
  *  car offline-first ne doit JAMAIS faire planter une vue.
  */
 
+import {
+  isPwaLightPerfMode,
+  isPwaStandalone,
+  navigatorSaveDataEnabled,
+} from '../utils/pwaPerformance'
+
 const RUNTIME_CACHE = 'pinova-media-v1'
-const MAX_RUNTIME_ENTRIES = 480
+const MAX_RUNTIME_ENTRIES = isPwaStandalone() ? 96 : 200
+const PREFETCH_MAX_PINS = isPwaStandalone() ? 4 : 14
+const PREFETCH_MAX_URLS = isPwaStandalone() ? 8 : 28
 
 const fallbackThumbnails = new Map<string, string>()
 const stalePosters = new Map<string, string>()
@@ -170,16 +178,24 @@ export type OfflineMediaPinLike = {
  */
 export function prefetchPinsMediaForOffline(pins: readonly OfflineMediaPinLike[]): void {
   if (typeof window === 'undefined' || !pins.length) return
+  if (navigatorSaveDataEnabled()) return
+  const lightPwa = isPwaLightPerfMode()
+  if (lightPwa && typeof navigator !== 'undefined' && !navigator.onLine) return
+
+  const slice = pins.slice(0, PREFETCH_MAX_PINS)
   const seen = new Set<string>()
+  let queued = 0
   const push = (u: string | undefined) => {
+    if (queued >= PREFETCH_MAX_URLS) return
     const s = (u || '').trim()
     if (!s || seen.has(s)) return
     seen.add(s)
+    queued += 1
     void cacheMediaForOffline(s)
   }
-  for (const p of pins) {
+  for (const p of slice) {
     push(p.imageUrl)
-    push(p.userAvatarUrl)
-    push(p.storyVideoUrl)
+    if (!lightPwa) push(p.userAvatarUrl)
+    if (!lightPwa) push(p.storyVideoUrl)
   }
 }

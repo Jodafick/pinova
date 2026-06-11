@@ -1,4 +1,5 @@
 import { ref, computed, watch, onMounted } from 'vue'
+import { isPwaLightPerfMode, navigatorSaveDataEnabled } from '../utils/pwaPerformance'
 
 const STORAGE_OVERRIDE = 'pinova_low_data_override'
 
@@ -18,6 +19,8 @@ function saveOverride(v: DataSaverOverride) {
 
 function detectHeuristicLowData(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false
+  if (isPwaLightPerfMode()) return true
+  if (navigatorSaveDataEnabled()) return true
   const conn = (navigator as Navigator & { connection?: NetworkInformation }).connection
   if (conn?.saveData === true) return true
   const et = conn?.effectiveType

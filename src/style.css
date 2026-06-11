@@ -2576,6 +2576,19 @@ html.pinova-micro-feedback-pulse::after {
     box-shadow: 0 28px 55px -8px rgba(0, 0, 0, 0.62);
   }
 
+  /* iOS : pas de carte 3D — le tiroir slide seul (évite écran noir / fixed cassés). */
+  html[data-pinova-motion="ios"] .pinova-profile-shell--open {
+    transform: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    pointer-events: none;
+  }
+  html.dark[data-pinova-motion="ios"] .pinova-profile-shell--open {
+    background: transparent;
+    box-shadow: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .pinova-profile-shell--open {
       transform: none !important;

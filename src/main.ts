@@ -18,7 +18,6 @@ import { initPwaStandaloneTopInset } from './utils/pwaSafeTopInset'
 import { initInputAbstraction } from './navigation/inputAbstraction'
 import { scheduleDeferredBoot } from './core/bootDeferred'
 import { markBootPhase } from './core/bootMarks'
-import '@fortawesome/fontawesome-free/css/all.min.css'
 import PinovaIcon from './components/ui/PinovaIcon.vue'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import { queryClient, installQueryPersister } from './data'
@@ -37,7 +36,15 @@ initMotionBudget()
 initAdaptiveNavigator()
 initPwaStandaloneTopInset()
 initLayerLifecycle()
-registerSW({ immediate: true })
+function registerServiceWorkerDeferred() {
+  const run = () => registerSW({ immediate: true })
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(run, { timeout: 5000 })
+  } else {
+    setTimeout(run, 2500)
+  }
+}
+registerServiceWorkerDeferred()
 
 const app = createApp(App)
 
@@ -79,12 +86,12 @@ void proactiveRefreshIfStale().catch((err) =>
   console.warn('[Pinova] proactiveRefreshIfStale', err),
 )
 
+function deferNonCriticalAssets() {
+  void import('@fortawesome/fontawesome-free/css/all.min.css')
+  void import('./pages/HomePage.vue')
+}
 if (typeof requestIdleCallback === 'function') {
-  requestIdleCallback(() => {
-    void import('./pages/HomePage.vue')
-  })
+  requestIdleCallback(deferNonCriticalAssets, { timeout: 3000 })
 } else {
-  setTimeout(() => {
-    void import('./pages/HomePage.vue')
-  }, 120)
+  setTimeout(deferNonCriticalAssets, 400)
 }

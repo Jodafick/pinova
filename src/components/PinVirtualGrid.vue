@@ -134,7 +134,7 @@ watch(
     prefetchDebounce = setTimeout(() => {
       prefetchPinsMediaForOffline(pins.filter(isFeedPin))
       prefetchDebounce = null
-    }, 450)
+    }, 1100)
   },
   { deep: true },
 )

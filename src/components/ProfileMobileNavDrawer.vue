@@ -102,9 +102,8 @@ onUnmounted(() => {
 
 <template>
   <!--
-    Off-canvas type Codepen demo 3 (eisenfox) : perspective sur le parent (ProfilePage),
-    menu en fixed qui slide (left), contenu avec translate3d + rotateY — sans calque plein
-    écran z-199 ni fixed sur toute la page (cassait le scroll / layout dans #app-shell).
+    Tiroir profil mobile : menu fixe qui slide depuis la gauche.
+    Sur iOS, le contenu derrière ne subit plus de transformation 3D (voir style.css).
   -->
   <button
     v-if="modelValue"
