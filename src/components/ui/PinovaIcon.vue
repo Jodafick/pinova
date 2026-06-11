@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue'
-import { resolveFaIcon } from '../../utils/appIcons'
+import { resolveMaterialIcon } from '../../utils/appIcons'
 
 const props = withDefaults(
   defineProps<{
-    /** Clé icône (Material legacy ou nom FA sans préfixe). */
+    /** Nom Material Symbols (`favorite`, `home`, …). */
     name?: string | null
     filled?: boolean
     spin?: boolean
@@ -21,23 +21,26 @@ defineOptions({ inheritAttrs: false })
 const attrs = useAttrs()
 
 const meta = computed(() =>
-  resolveFaIcon(props.name, { filled: props.filled, spin: props.spin }),
+  resolveMaterialIcon(props.name, { filled: props.filled, spin: props.spin }),
 )
+
+const variationStyle = computed(() => ({
+  fontVariationSettings: `'FILL' ${meta.value.filled ? 1 : 0}, 'wght' ${
+    meta.value.filled ? 600 : 400
+  }, 'GRAD' 0, 'opsz' 24`,
+}))
 </script>
 
 <template>
-  <i
+  <span
     :class="[
-      meta.family,
-      meta.icon,
-      meta.spin ? 'fa-spin' : '',
+      'material-symbols-outlined',
       'pinova-icon',
-      'not-italic',
-      'leading-none',
+      meta.spin ? 'pinova-icon--spin' : '',
       attrs.class,
     ]"
-    :style="attrs.style"
+    :style="[variationStyle, attrs.style]"
     :aria-hidden="attrs['aria-hidden'] === 'false' ? false : true"
     :aria-label="attrs['aria-label'] as string | undefined"
-  />
+  >{{ meta.glyph }}</span>
 </template>

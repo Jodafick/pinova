@@ -1,9 +1,18 @@
-/** Font Awesome chargé globalement dans `main.ts`. Conservé pour compatibilité éventuelle. */
+/** Font Awesome — chargé à la demande (creator, concours, parrainage). */
+
+let loaded = false
+let loading: Promise<void> | null = null
 
 export function ensureFontAwesomeLoaded(): Promise<void> {
-  return Promise.resolve()
+  if (loaded) return Promise.resolve()
+  if (!loading) {
+    loading = import('@fortawesome/fontawesome-free/css/all.min.css').then(() => {
+      loaded = true
+    })
+  }
+  return loading
 }
 
 export function preloadFontAwesome(): void {
-  /* no-op */
+  void ensureFontAwesomeLoaded()
 }

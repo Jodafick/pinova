@@ -5,6 +5,7 @@ import { userNeedsOnboarding } from '../utils/onboarding'
 import { devLog } from '../lib/devLog'
 import { maybeRedirectWebToApp } from '../utils/appDeepLink'
 import { isValidSettingsSectionId } from '../data/settingsHubConfig'
+import { ensureFontAwesomeLoaded } from '../utils/loadFontAwesome'
 /*
  * Routes & meta layer system (iOS-first immersif).
  *
@@ -604,6 +605,9 @@ router.beforeEach(async (to, from) => {
     await fetchCurrentUser({ silent: true })
   }
 
+  if (to.meta.loadFontAwesome) {
+    await ensureFontAwesomeLoaded()
+  }
   if (to.meta.preloadNsfwScanner) {
     void import('../composables/nsfwScanner').then((m) => m.preloadNsfwScanner())
   }

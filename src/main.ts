@@ -19,6 +19,7 @@ import { initInputAbstraction } from './navigation/inputAbstraction'
 import { scheduleDeferredBoot } from './core/bootDeferred'
 import { markBootPhase } from './core/bootMarks'
 import PinovaIcon from './components/ui/PinovaIcon.vue'
+import { ensureMaterialSymbolsLoaded } from './utils/loadMaterialSymbols'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import { queryClient, installQueryPersister } from './data'
 import { applyStoredCookieConsent } from './lib/cookieConsent'
@@ -36,6 +37,7 @@ initMotionBudget()
 initAdaptiveNavigator()
 initPwaStandaloneTopInset()
 initLayerLifecycle()
+void ensureMaterialSymbolsLoaded()
 function registerServiceWorkerDeferred() {
   const run = () => registerSW({ immediate: true })
   if (typeof requestIdleCallback === 'function') {
@@ -87,7 +89,6 @@ void proactiveRefreshIfStale().catch((err) =>
 )
 
 function deferNonCriticalAssets() {
-  void import('@fortawesome/fontawesome-free/css/all.min.css')
   void import('./pages/HomePage.vue')
 }
 if (typeof requestIdleCallback === 'function') {
