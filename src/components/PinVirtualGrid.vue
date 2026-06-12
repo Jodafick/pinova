@@ -213,6 +213,7 @@ async function doubleTapLike(pin: Pin) {
     promptGuest('like', { resourceId: pin.slug })
     return
   }
+  if (pin.liked) return
   await toggleLike(pin.slug)
 }
 

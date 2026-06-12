@@ -313,8 +313,7 @@ function endGesture(x: number, y: number) {
     }
 
     const pin = current.value
-    if (!pin || !isAuthenticated.value) return
-    if (isOwnerViewingStory.value) return
+    if (!pin || isOwnerViewingStory.value) return
     const now = Date.now()
     if (
       now - lastTap < 340 &&
@@ -322,6 +321,10 @@ function endGesture(x: number, y: number) {
       Math.abs(y - lastTapY) < 34
     ) {
       lastTap = 0
+      if (!isAuthenticated.value) {
+        promptGuest('like', { resourceId: pin.slug })
+        return
+      }
       const slug = pin.slug
       const likedStored = storyLikedBySlug.value[slug]
       const alreadyLiked =

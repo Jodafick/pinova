@@ -225,11 +225,19 @@ function burstAndLike() {
 }
 
 function handleLikePress() {
+  if (!props.isAuthenticated) {
+    emit('like')
+    return
+  }
   if (!props.pin.liked) burstAndLike()
   emit('like')
 }
 
 function handleDoubleTapLike() {
+  if (!props.isAuthenticated) {
+    emit('double-like')
+    return
+  }
   burstAndLike()
   emit('double-like')
 }

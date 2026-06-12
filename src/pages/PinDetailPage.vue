@@ -267,13 +267,13 @@ onBeforeUnmount(() => {
 })
 
 const handleMediaDoubleLike = () => {
-  triggerPinHeartBurst()
   const p = pin.value
   if (!p) return
   if (!isAuthenticated.value) {
     promptGuest('like', { resourceId: p.slug })
     return
   }
+  triggerPinHeartBurst()
   if (p.liked) return
   void handleLike()
 }

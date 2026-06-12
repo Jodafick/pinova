@@ -227,6 +227,7 @@ async function doubleTapLike(pin: Pin) {
     promptGuest('like', { resourceId: pin.slug })
     return
   }
+  if (pin.liked) return
   if (pin.isStory && usernamesMatch(currentUser.value?.username, pin.username)) return
   await toggleLike(pin.slug)
 }
