@@ -666,7 +666,7 @@ onUnmounted(() => {
           variant="primary"
           block
           size="lg"
-          class="w-full min-h-[3.25rem] text-base sm:text-[1.0625rem]"
+          class="min-h-[3.25rem] text-base sm:text-[1.0625rem]"
           :loading="checkoutPendingPlan === 'plus'"
           :disabled="pricingLoading || !recommendedPlusCycle || recommendedPlan.tierLocked || checkoutPendingPlan === 'plus' || isSeatMember"
           @click="handleRecommendedCheckout"

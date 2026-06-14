@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue'
+import { useReducedMotion } from '../composables/useReducedMotion'
 
 const props = defineProps<{ active?: boolean }>()
+const { prefersReducedMotion } = useReducedMotion()
 
 const pieces = Array.from({ length: 28 }, (_, i) => ({
   id: i,
@@ -13,11 +15,6 @@ const pieces = Array.from({ length: 28 }, (_, i) => ({
 const show = ref(false)
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
 function clearHideTimer() {
   if (hideTimer) {
     clearTimeout(hideTimer)
@@ -27,7 +24,7 @@ function clearHideTimer() {
 
 function triggerBurst() {
   clearHideTimer()
-  if (!props.active || prefersReducedMotion()) {
+  if (!props.active || prefersReducedMotion.value) {
     show.value = false
     return
   }

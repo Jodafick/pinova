@@ -54,6 +54,7 @@ export const MATERIAL_ICON_SUBSET: readonly string[] = [
   "emoji_events",
   "error",
   "error_outline",
+  "expand_less",
   "expand_more",
   "explore",
   "explore_off",
@@ -71,6 +72,7 @@ export const MATERIAL_ICON_SUBSET: readonly string[] = [
   "groups",
   "help",
   "home",
+  "hourglass_top",
   "icon",
   "image",
   "imagesmode",
@@ -84,6 +86,7 @@ export const MATERIAL_ICON_SUBSET: readonly string[] = [
   "language",
   "light_mode",
   "link",
+  "local_fire_department",
   "lock",
   "lock_reset",
   "login",
@@ -154,6 +157,7 @@ export const MATERIAL_ICON_SUBSET: readonly string[] = [
   "volume_off",
   "volume_up",
   "warning",
+  "wifi",
   "wifi_off",
   "workspace_premium"
 ] as const

@@ -68,9 +68,42 @@ const EXTRA_ICONS = [
 
 const RE_TEXT = /material-symbols-outlined[^>]*>\s*([a-z0-9_]+)\s*</gi
 const RE_PINOVA_ICON = /<PinovaIcon[^>]*\bname=["']([a-z0-9_]+)["']/gi
-const RE_PINOVA_DYNAMIC = /:name="[^"]*'([a-z][a-z0-9_]*)'/gi
+const RE_HAS_PINOVA_ICON = /<PinovaIcon[\s/>]/
+/** Branches ternaires dans `<PinovaIcon :name="… ? 'glyph' : 'glyph'" />` — pas les opérandes `=== 'state'`. */
+const RE_PINOVA_DYNAMIC_ATTR = /<PinovaIcon[^>]*:name="([^"]*)"/gi
+const RE_TERNARY_ICON = /\?\s*'([a-z][a-z0-9_]*)'|\:\s*'([a-z][a-z0-9_]*)'/gi
+const RE_ICON_HELPER_ANCHOR =
+  /(?:function\s+(?:\w*[Ii]con\w*|iconFor)\s*\([^)]*\)[^{]*|(?:\w*[Ii]con\w*)\s*=\s*computed\s*\(\s*\(\)\s*=>\s*)/gi
+const RE_RETURN_ICON = /return\s+'([a-z][a-z0-9_]*)'/g
 const RE_ICON_PROP = /icon:\s*['"]([a-z0-9_]+)['"]/gi
 const RE_TEMPLATE_ICON = /icon\s*===\s*['"]([a-z0-9_]+)['"]/gi
+
+function addIconToken(icons, name) {
+  const token = name?.trim()
+  if (token && /^[a-z][a-z0-9_]*$/.test(token)) icons.add(token)
+}
+
+function collectIconHelperReturns(text, icons) {
+  RE_ICON_HELPER_ANCHOR.lastIndex = 0
+  let anchor
+  while ((anchor = RE_ICON_HELPER_ANCHOR.exec(text))) {
+    const openBrace = text.indexOf('{', anchor.index)
+    if (openBrace === -1) continue
+    let depth = 1
+    let i = openBrace + 1
+    while (i < text.length && depth > 0) {
+      if (text[i] === '{') depth++
+      else if (text[i] === '}') depth--
+      i++
+    }
+    const block = text.slice(openBrace + 1, i - 1)
+    RE_RETURN_ICON.lastIndex = 0
+    let m
+    while ((m = RE_RETURN_ICON.exec(block))) {
+      addIconToken(icons, m[1])
+    }
+  }
+}
 
 function walk(dir, files = []) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -93,17 +126,18 @@ for (const file of walk(srcDir)) {
     re.lastIndex = 0
     let m
     while ((m = re.exec(text))) {
-      const name = m[1]?.trim()
-      if (name && /^[a-z][a-z0-9_]*$/.test(name)) icons.add(name)
+      addIconToken(icons, m[1])
     }
   }
-  /* Noms dans expressions dynamiques `:name="… ? 'check_circle' : 'cancel'"`. */
-  if (text.includes('PinovaIcon')) {
-    RE_PINOVA_DYNAMIC.lastIndex = 0
-    let m
-    while ((m = RE_PINOVA_DYNAMIC.exec(text))) {
-      const name = m[1]?.trim()
-      if (name && /^[a-z][a-z0-9_]*$/.test(name)) icons.add(name)
+  collectIconHelperReturns(text, icons)
+
+  if (!RE_HAS_PINOVA_ICON.test(text)) continue
+
+  RE_PINOVA_DYNAMIC_ATTR.lastIndex = 0
+  for (const attr of text.matchAll(RE_PINOVA_DYNAMIC_ATTR)) {
+    RE_TERNARY_ICON.lastIndex = 0
+    for (const branch of attr[1].matchAll(RE_TERNARY_ICON)) {
+      addIconToken(icons, branch[1] ?? branch[2])
     }
   }
 }
