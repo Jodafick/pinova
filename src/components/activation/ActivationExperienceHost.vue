@@ -12,10 +12,15 @@ import CreatorSuggestionsSheet from './CreatorSuggestionsSheet.vue'
 const router = useRouter()
 const { celebrationOpen, suggestionsOpen, pendingPublishedPin } = useActivationMoments()
 
-watch([celebrationOpen, suggestionsOpen], async ([celebrating, suggesting]) => {
-  if (celebrating || suggesting) return
+/** Fermeture de la modale sans « Continuer » : même destination que le bouton principal. */
+watch(celebrationOpen, async (open) => {
+  if (open) return
   const pending = pendingPublishedPin.value
-  if (!pending?.slug) return
+  if (!pending?.slug) {
+    clearPendingPublishedPin()
+    await router.push('/')
+    return
+  }
   const slug = pending.slug
   const username = pending.username
   clearPendingPublishedPin()

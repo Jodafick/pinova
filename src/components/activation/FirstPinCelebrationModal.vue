@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import ConfettiBurst from '../ConfettiBurst.vue'
 import PinovaModal from '../ui/PinovaModal.vue'
 import PinovaButton from '../ui/PinovaButton.vue'
 import { useI18n } from '../../i18n'
 import { useActivationFunnel } from '../../composables/useActivationFunnel'
 import { trackEvent, trackOnce } from '../../lib/analytics'
-import { openCreatorSuggestionsAfterCelebration } from '../../composables/useActivationMoments'
+import {
+  clearPendingPublishedPin,
+  useActivationMoments,
+} from '../../composables/useActivationMoments'
+import { navigateToPublishedPin } from '../../utils/postPublishNavigation'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ 'update:open': [boolean] }>()
 
+const router = useRouter()
 const { t } = useI18n()
 const { creatorProgress, markFirstPinCelebrationSeen } = useActivationFunnel()
+const { pendingPublishedPin } = useActivationMoments()
 
 const progressLabel = computed(() =>
   t('activation.celebration.progress', { done: 1, total: creatorProgress.value.total }),
@@ -45,8 +52,18 @@ watch(
 
 async function onContinue() {
   await markFirstPinCelebrationSeen(['first_pin_published'])
+  const pending = pendingPublishedPin.value
+  clearPendingPublishedPin()
   emit('update:open', false)
-  openCreatorSuggestionsAfterCelebration()
+  if (pending?.slug) {
+    await navigateToPublishedPin(router, {
+      slug: pending.slug,
+      username: pending.username ?? null,
+      pin: null,
+    })
+    return
+  }
+  await router.push('/')
 }
 </script>
 

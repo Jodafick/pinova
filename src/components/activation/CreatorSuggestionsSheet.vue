@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../../api/index'
 import AvatarDisc from '../AvatarDisc.vue'
 import PinovaModal from '../ui/PinovaModal.vue'
@@ -23,6 +24,7 @@ type CreatorRow = {
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ 'update:open': [boolean] }>()
 
+const router = useRouter()
 const { t } = useI18n()
 const { currentUser } = useAuth()
 const { addMilestones } = useActivationFunnel()
@@ -85,17 +87,21 @@ async function followRow(row: CreatorRow) {
   }
 }
 
-function skip() {
+async function leaveToHome() {
   emit('update:open', false)
   closeCreatorSuggestions()
+  await router.push('/')
+}
+
+function skip() {
+  void leaveToHome()
 }
 
 async function done() {
   if (followedCount.value > 0) {
     await addMilestones('creator_discovery_done')
   }
-  emit('update:open', false)
-  closeCreatorSuggestions()
+  await leaveToHome()
 }
 </script>
 
