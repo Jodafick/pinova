@@ -61,11 +61,14 @@ const EXTRA_ICONS = [
   'close',
   'edit',
   'delete',
+  'cancel',
+  'replay',
+  'military_tech',
 ]
 
 const RE_TEXT = /material-symbols-outlined[^>]*>\s*([a-z0-9_]+)\s*</gi
 const RE_PINOVA_ICON = /<PinovaIcon[^>]*\bname=["']([a-z0-9_]+)["']/gi
-const RE_PINOVA_ICON_QUOTED = /['"]([a-z][a-z0-9_]{1,48})['"]/gi
+const RE_PINOVA_DYNAMIC = /:name="[^"]*'([a-z][a-z0-9_]*)'/gi
 const RE_ICON_PROP = /icon:\s*['"]([a-z0-9_]+)['"]/gi
 const RE_TEMPLATE_ICON = /icon\s*===\s*['"]([a-z0-9_]+)['"]/gi
 
@@ -94,13 +97,13 @@ for (const file of walk(srcDir)) {
       if (name && /^[a-z][a-z0-9_]*$/.test(name)) icons.add(name)
     }
   }
-  /* Noms dans expressions ternaires `:name="… ? 'visibility' : 'visibility_off'"`. */
+  /* Noms dans expressions dynamiques `:name="… ? 'check_circle' : 'cancel'"`. */
   if (text.includes('PinovaIcon')) {
-    RE_PINOVA_ICON_QUOTED.lastIndex = 0
+    RE_PINOVA_DYNAMIC.lastIndex = 0
     let m
-    while ((m = RE_PINOVA_ICON_QUOTED.exec(text))) {
+    while ((m = RE_PINOVA_DYNAMIC.exec(text))) {
       const name = m[1]?.trim()
-      if (name && /^[a-z][a-z0-9_]*$/.test(name) && name.includes('_')) icons.add(name)
+      if (name && /^[a-z][a-z0-9_]*$/.test(name)) icons.add(name)
     }
   }
 }

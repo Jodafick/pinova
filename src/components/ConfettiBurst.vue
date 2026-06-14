@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps<{ active?: boolean }>()
 
@@ -11,13 +11,47 @@ const pieces = Array.from({ length: 28 }, (_, i) => ({
 }))
 
 const show = ref(false)
+let hideTimer: ReturnType<typeof setTimeout> | null = null
 
-onMounted(() => {
-  if (!props.active) return
-  show.value = true
-  setTimeout(() => {
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function clearHideTimer() {
+  if (hideTimer) {
+    clearTimeout(hideTimer)
+    hideTimer = null
+  }
+}
+
+function triggerBurst() {
+  clearHideTimer()
+  if (!props.active || prefersReducedMotion()) {
     show.value = false
+    return
+  }
+  show.value = true
+  hideTimer = setTimeout(() => {
+    show.value = false
+    hideTimer = null
   }, 2800)
+}
+
+watch(
+  () => props.active,
+  (active) => {
+    if (active) triggerBurst()
+    else {
+      clearHideTimer()
+      show.value = false
+    }
+  },
+  { immediate: true },
+)
+
+onUnmounted(() => {
+  clearHideTimer()
 })
 </script>
 

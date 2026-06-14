@@ -203,7 +203,13 @@ watch(currentLang, load, { immediate: true })
               :aria-expanded="openId === row.id"
               @click="toggle(row.id)"
             >
-              <PinovaIcon :name="row.question" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-700/10 dark:bg-pink-600/10 dark:bg-pink-600/20 text-pink-700 dark:text-pink-600 transition-colors" aria-hidden="true" />
+              <span
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-700/10 text-pink-700 transition-colors dark:bg-pink-600/20 dark:text-pink-600"
+                aria-hidden="true"
+              >
+                <PinovaIcon name="quiz" class="text-[20px]" />
+              </span>
+              <span class="flex-1 min-w-0 text-sm font-semibold text-neutral-900 dark:text-neutral-100">{{ row.question }}</span>
               <PinovaIcon name="expand_more" class="text-neutral-400 dark:text-neutral-500 shrink-0 transition-all duration-200" :class="{ 'rotate-180 text-pink-700 dark:text-pink-600': openId === row.id }" />
             </button>
             <Transition

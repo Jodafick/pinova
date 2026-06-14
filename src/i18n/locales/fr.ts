@@ -1074,7 +1074,7 @@ export const fr: Record<string, string> = {
   'premium.funnel.compareSub': 'Cycle de facturation, forfait de groupe et niveaux Gratuit ou Pro.',
   'premium.funnel.compareTitle': 'Tous les forfaits',
   'premium.funnel.hideCompare': 'Masquer la comparaison',
-  'premium.funnel.paymentHint': 'Secure checkout next.',
+  'premium.funnel.paymentHint': 'Étape suivante : paiement sécurisé via FedaPay.',
   'premium.funnel.recommendedFor': 'Plus · Mensuel · Solo',
   'premium.funnel.recommendedKicker': 'Offre recommandée',
   'premium.payment.activating': 'Activation de votre abonnement…',

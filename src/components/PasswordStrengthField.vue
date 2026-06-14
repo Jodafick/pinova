@@ -124,7 +124,12 @@ function ruleLabel(id: PasswordRuleId): string {
           class="flex items-start gap-2 text-xs"
           :class="rules[ruleId] ? 'text-green-700 dark:text-green-400' : 'text-neutral-500 dark:text-neutral-400'"
         >
-          <span class="font-bold shrink-0">{{ rules[ruleId] ? '[v]' : '[x]' }}</span>
+          <PinovaIcon
+            :name="rules[ruleId] ? 'check_circle' : 'cancel'"
+            class="text-sm shrink-0 mt-0.5"
+            :class="rules[ruleId] ? 'text-green-600 dark:text-green-400' : 'text-neutral-400 dark:text-neutral-500'"
+            aria-hidden="true"
+          />
           <span>{{ ruleLabel(ruleId) }}</span>
         </li>
       </ul>

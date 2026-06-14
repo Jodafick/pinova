@@ -7,6 +7,7 @@ import api from '../api/index'
 import { devLog } from '../lib/devLog'
 import { safeHttpUrl } from '../utils/safeHttpUrl'
 import TrustCenterSection from '../components/TrustCenterSection.vue'
+import CheckoutTrustBadges from '../components/CheckoutTrustBadges.vue'
 import { openCheckoutFlow, PENDING_SUBSCRIPTION_TX_KEY } from '../utils/checkoutFlow'
 import { trackEvent } from '../lib/analytics'
 import PinovaButton from '../components/ui/PinovaButton.vue'
@@ -665,12 +666,14 @@ onUnmounted(() => {
           variant="primary"
           block
           size="lg"
+          class="w-full min-h-[3.25rem] text-base sm:text-[1.0625rem]"
           :loading="checkoutPendingPlan === 'plus'"
           :disabled="pricingLoading || !recommendedPlusCycle || recommendedPlan.tierLocked || checkoutPendingPlan === 'plus' || isSeatMember"
           @click="handleRecommendedCheckout"
         >
           {{ recommendedPlan.cta }}
         </PinovaButton>
+        <CheckoutTrustBadges class="mt-4" />
         <p class="text-[11px] text-neutral-400 dark:text-neutral-500 text-center mt-3">
           {{ t('premium.funnel.paymentHint') }}
         </p>
@@ -692,16 +695,18 @@ onUnmounted(() => {
         >
           <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trial.title') }}</p>
           <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{{ t('premium.trial.sub') }}</p>
-          <PinovaButton
-            variant="secondary"
-            size="sm"
-            block
-            class="mt-3 sm:w-auto sm:inline-flex"
-            :loading="trialPending"
-            @click="handleStartTrial"
-          >
-            {{ trialPending ? t('premium.trial.busy') : t('premium.trial.cta') }}
-          </PinovaButton>
+          <div class="mt-3 flex w-full justify-stretch sm:justify-start">
+            <PinovaButton
+              variant="secondary"
+              size="sm"
+              block
+              class="sm:w-auto sm:min-w-[12rem]"
+              :loading="trialPending"
+              @click="handleStartTrial"
+            >
+              {{ trialPending ? t('premium.trial.busy') : t('premium.trial.cta') }}
+            </PinovaButton>
+          </div>
         </div>
       </div>
     </section>

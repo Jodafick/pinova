@@ -73,7 +73,10 @@ async function onContinue() {
           {{ t('activation.celebration.subtitle') }}
         </p>
       </div>
-      <PinovaIcon :name="t('activation.celebration.badge')" class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 px-3 py-1 text-xs font-bold ring-1 ring-amber-300/60" />
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900 ring-1 ring-amber-300/60 dark:bg-amber-950/50 dark:text-amber-200">
+        <PinovaIcon name="military_tech" class="text-base shrink-0" aria-hidden="true" />
+        {{ t('activation.celebration.badge') }}
+      </span>
       <div class="text-left space-y-1.5 px-1">
         <div class="flex items-center justify-between text-[11px] font-semibold text-neutral-600 dark:text-neutral-400">
           <span>{{ t('activation.progress.level1') }}</span>

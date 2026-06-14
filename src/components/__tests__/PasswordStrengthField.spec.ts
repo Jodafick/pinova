@@ -27,7 +27,8 @@ describe('PasswordStrengthField', () => {
     })
 
     expect(wrapper.text()).toContain('Votre mot de passe doit :')
-    expect(wrapper.text()).toContain('[v]')
+    expect(wrapper.text()).not.toContain('[v]')
+    expect(wrapper.find('.material-symbols-outlined').exists()).toBe(true)
     expect(wrapper.text()).toContain('Au moins 8 caractères.')
     expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('Exemple valide : Pinova2026')
     expect(wrapper.html()).toMatchSnapshot()
@@ -43,7 +44,7 @@ describe('PasswordStrengthField', () => {
 
     await wrapper.find('input').setValue('abc')
 
-    expect(wrapper.text()).toContain('[x]')
+    expect(wrapper.text()).not.toContain('[x]')
     expect(wrapper.text()).toContain('Au moins 8 caractères.')
     expect(wrapper.text()).toContain('Au moins un chiffre.')
     expect(wrapper.emitted('update:valid')?.at(-1)?.[0]).toBe(false)

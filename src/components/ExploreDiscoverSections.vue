@@ -459,7 +459,10 @@ function onOpenSponsored(item: SponsoredAd) {
     <section v-if="!selectedTopic">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('explore.trending') }}</h2>
-        <PinovaIcon :name="t('explore.popular')" class="flex items-center gap-1 text-sm text-pink-700 font-medium" />
+        <span class="inline-flex items-center gap-1 text-sm text-pink-700 font-medium">
+          <PinovaIcon name="trending_up" class="text-base shrink-0" aria-hidden="true" />
+          {{ t('explore.popular') }}
+        </span>
       </div>
 
       <PinGrid
