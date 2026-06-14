@@ -1414,11 +1414,13 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     v-else-if="profileUser"
     :class="['relative w-full min-w-0', profileNavOffcanvasRootClass, profileNavDrawerViewportClass]"
   >
-    <ProfileMobileNavDrawer
-      v-if="currentUser && isMyProfile"
-      v-model="profileNavDrawerOpen"
-      @share-profile="handleShareProfile"
-    />
+    <Teleport to="body">
+      <ProfileMobileNavDrawer
+        v-if="currentUser && isMyProfile"
+        v-model="profileNavDrawerOpen"
+        @share-profile="handleShareProfile"
+      />
+    </Teleport>
 
     <div
       :class="['relative w-full min-w-0', profileNavShellSurfaceClass]"

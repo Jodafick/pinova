@@ -2567,6 +2567,9 @@ html.pinova-micro-feedback-pulse::after {
  * noir sur iOS / Android réels : le shell restait plein écran (fond sombre
  * z-40) au-dessus du menu, et `perspective` recalait les `position:fixed`
  * du tiroir. L'émulateur desktop ne reproduisait pas ce bug.
+ *
+ * Le tiroir (`ProfileMobileNavDrawer`, Teleport body) utilise z-[45] :
+ * il doit rester au-dessus de ce shell (z-40) pour rester visible et cliquable.
  */
 .pinova-profile-shell {
   position: relative;

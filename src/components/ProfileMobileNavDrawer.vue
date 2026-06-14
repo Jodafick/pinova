@@ -108,19 +108,19 @@ onUnmounted(() => {
   <button
     v-if="modelValue"
     type="button"
-    class="appearance-none pointer-events-auto fixed inset-0 z-[8] m-0 cursor-default border-0 bg-[linear-gradient(180deg,#e11d77_0%,#be185d_50%,#e11d77_75%,#be185d_100%)] p-0 dark:bg-[linear-gradient(180deg,#1a0508_0%,#3d0a1a_38%,#5b1230_62%,#2d0612_100%)] lg:hidden"
+    class="appearance-none pointer-events-auto fixed inset-0 z-[41] m-0 cursor-default border-0 bg-[linear-gradient(180deg,#e11d77_0%,#be185d_50%,#e11d77_75%,#be185d_100%)] p-0 dark:bg-[linear-gradient(180deg,#1a0508_0%,#3d0a1a_38%,#5b1230_62%,#2d0612_100%)] lg:hidden"
     :aria-label="t('common.close')"
     @click="close"
   />
   <div
     v-if="modelValue"
-    class="pointer-events-none fixed inset-0 z-[9] bg-[#be185d]/30 dark:bg-black/25 lg:hidden"
+    class="pointer-events-none fixed inset-0 z-[42] bg-[#be185d]/30 dark:bg-black/25 lg:hidden"
     aria-hidden="true"
   />
 
   <aside
     key="profile-nav-aside"
-    class="fixed top-0 bottom-0 z-[25] flex w-full max-w-none flex-col border-0 bg-[linear-gradient(180deg,#e11d77_0%,#be185d_50%,#e11d77_75%,#be185d_100%)] text-white shadow-[4px_0_24px_rgba(0,0,0,0.12)] transition-[left,opacity,visibility] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)] will-change-[left] dark:bg-[linear-gradient(180deg,#1a0508_0%,#3d0a1a_38%,#5b1230_62%,#2d0612_100%)] lg:hidden"
+    class="fixed top-0 bottom-0 z-[45] flex w-full max-w-none flex-col border-0 bg-[linear-gradient(180deg,#e11d77_0%,#be185d_50%,#e11d77_75%,#be185d_100%)] text-white shadow-[4px_0_24px_rgba(0,0,0,0.12)] transition-[left,opacity,visibility] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)] will-change-[left] dark:bg-[linear-gradient(180deg,#1a0508_0%,#3d0a1a_38%,#5b1230_62%,#2d0612_100%)] lg:hidden"
     :class="
       modelValue
         ? 'left-0 opacity-100 visible'
