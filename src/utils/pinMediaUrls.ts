@@ -1,15 +1,15 @@
 import type { Pin } from '../types'
 
-/** URL optimisée grille feed (thumbnail carré si dispo). */
+/** URL principale grille feed — même source que le détail (fiabilité). */
 export function pinGridImageSrc(pin: Pin): string {
-  return pin.feedImageUrl?.trim() || pin.imageUrl
+  return pin.imageUrl?.trim() || pin.feedImageUrl?.trim() || ''
 }
 
-/** srcset feed : thumbnail → image principale. */
+/** srcset feed : thumbnail léger en complément, image principale en fallback. */
 export function pinGridImageSrcSet(pin: Pin): string | undefined {
-  const thumb = pin.feedImageUrl?.trim()
   const full = pin.imageUrl?.trim()
-  if (!thumb || !full || thumb === full) return undefined
+  const thumb = pin.feedImageUrl?.trim()
+  if (!full || !thumb || thumb === full) return undefined
   return `${thumb} 400w, ${full} 1200w`
 }
 

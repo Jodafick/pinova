@@ -9,7 +9,10 @@ const props = defineProps<{
   src: string | null | undefined
 }>()
 
-const emit = defineEmits<(e: 'load', ev: Event) => void>()
+const emit = defineEmits<{
+  (e: 'load', ev: Event): void
+  (e: 'error', ev: Event): void
+}>()
 
 const displaySrc = ref('')
 let blobRevoke: string | null = null
@@ -70,5 +73,5 @@ watch(
 </script>
 
 <template>
-  <img v-bind="$attrs" :src="displaySrc" @load="emit('load', $event)" />
+  <img v-bind="$attrs" :src="displaySrc" @load="emit('load', $event)" @error="emit('error', $event)" />
 </template>

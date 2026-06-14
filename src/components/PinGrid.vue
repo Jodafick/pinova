@@ -193,6 +193,22 @@ const markMediaLoaded = (pinId: number) => {
   loadedImages.value[pinId] = true
 }
 
+const gridImageSrcOverrides = ref<Record<number, string>>({})
+
+function effectiveGridImageSrc(pin: Pin): string {
+  return gridImageSrcOverrides.value[pin.id] || pinGridImageSrc(pin)
+}
+
+function onPinGridImageError(pin: Pin) {
+  const fallback = pin.imageUrl?.trim()
+  const current = effectiveGridImageSrc(pin)
+  if (fallback && fallback !== current) {
+    gridImageSrcOverrides.value = { ...gridImageSrcOverrides.value, [pin.id]: fallback }
+    return
+  }
+  markMediaLoaded(pin.id)
+}
+
 const isMediaLoaded = (pinId: number) => !!loadedImages.value[pinId]
 const isSavePending = (slug: string) => isPinSavePending(slug)
 
@@ -408,17 +424,17 @@ onUnmounted(() => {
             class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200 dark:from-neutral-800 dark:via-neutral-700 dark:to-neutral-800"
           ></div>
           <PinSensitiveMedia
-            v-if="cell.pin.imageUrl"
+            v-if="cell.pin.imageUrl || cell.pin.feedImageUrl"
             :sensitive="!!cell.pin.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
             :blur-by-default="blurSensitiveByDefault"
             :enable-client-scan="false"
-            :media-url="cell.pin.imageUrl"
+            :media-url="cell.pin.imageUrl || cell.pin.feedImageUrl || ''"
             media-type="image"
             wrapper-class="w-full"
           >
             <OfflineImg
-              :src="pinGridImageSrc(cell.pin)"
+              :src="effectiveGridImageSrc(cell.pin)"
               :srcset="pinGridImageSrcSet(cell.pin)"
               :alt="cell.pin.title ? `${cell.pin.title} — ${cell.pin.user}` : t('feed.pinImageFallback', { user: cell.pin.user })"
               :sizes="gridImageSizes"
@@ -431,6 +447,7 @@ onUnmounted(() => {
               ]"
               loading="lazy"
               @load="markMediaLoaded(cell.pin.id)"
+              @error="onPinGridImageError(cell.pin)"
               v-bind="pinMediaAntiLeakImgBindings()"
             />
           </PinSensitiveMedia>

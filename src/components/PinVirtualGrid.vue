@@ -338,12 +338,12 @@ onBeforeUnmount(() => {
             {{ t('feed.pinBoosted') }}
           </span>
           <PinSensitiveMedia
-            v-if="vi.cell.pin.imageUrl"
+            v-if="vi.cell.pin.imageUrl || vi.cell.pin.feedImageUrl"
             :sensitive="!!vi.cell.pin.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
             :blur-by-default="blurSensitiveByDefault"
             :enable-client-scan="false"
-            :media-url="vi.cell.pin.imageUrl"
+            :media-url="vi.cell.pin.imageUrl || vi.cell.pin.feedImageUrl || ''"
             media-type="image"
             wrapper-class="w-full"
           >
