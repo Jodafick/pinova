@@ -148,9 +148,9 @@ async function togglePause(id: number, status: string) {
 </script>
 
 <template>
-  <div class="min-h-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] sm:pb-16">
+  <div class="min-h-0 flex-1 w-full min-w-0 overflow-x-hidden pb-[calc(4rem+env(safe-area-inset-bottom,0px))] sm:pb-16">
     <div class="relative overflow-hidden rounded-b-[2rem] bg-gradient-to-br from-pink-600 via-pink-700 to-amber-600 text-white px-4 sm:px-8 pt-8 pb-10">
-      <div class="max-w-4xl mx-auto relative z-[1]">
+      <div class="max-w-4xl mx-auto relative z-[1] w-full min-w-0">
         <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">{{ t('promote.hub.kicker') }}</p>
         <h1 class="text-2xl sm:text-3xl font-black mt-1">{{ t('promote.hub.title') }}</h1>
         <p class="text-sm text-white/85 mt-2 max-w-lg">{{ t('promote.hub.subtitle') }}</p>
@@ -158,13 +158,13 @@ async function togglePause(id: number, status: string) {
       <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 -mt-6 relative z-[2] space-y-6">
-      <div class="flex gap-2 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 -mt-6 relative z-[2] space-y-6 w-full min-w-0">
+      <div class="flex gap-1 sm:gap-2 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 w-full min-w-0">
         <button
           v-for="id in (['boost', 'campaigns', 'stats'] as const)"
           :key="id"
           type="button"
-          class="flex-1 rounded-lg py-2.5 text-xs font-bold capitalize transition"
+          class="flex-1 min-w-0 rounded-lg py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-bold capitalize transition truncate"
           :class="tab === id ? 'bg-white dark:bg-neutral-800 shadow text-pink-700' : 'text-neutral-500'"
           @click="tab = id"
         >
@@ -172,7 +172,7 @@ async function togglePause(id: number, status: string) {
         </button>
       </div>
 
-      <section v-if="tab === 'boost'" class="app-card rounded-2xl p-4 sm:p-6 shadow-lg">
+      <section v-if="tab === 'boost'" class="app-card rounded-2xl p-4 sm:p-6 shadow-lg w-full min-w-0 overflow-hidden">
         <BoostWizardPanel
           :packs="boostPacks"
           :my-pins="myPins"
@@ -192,7 +192,7 @@ async function togglePause(id: number, status: string) {
         />
       </section>
 
-      <section v-else-if="tab === 'campaigns'" class="app-card rounded-2xl p-4 sm:p-6 shadow-lg max-w-xl mx-auto lg:max-w-2xl">
+      <section v-else-if="tab === 'campaigns'" class="app-card rounded-2xl p-4 sm:p-6 shadow-lg w-full min-w-0 overflow-hidden">
         <CampaignComposer
           :packs="campaignPacks"
           :headline="headline"
@@ -217,8 +217,8 @@ async function togglePause(id: number, status: string) {
         />
       </section>
 
-      <section v-else class="grid sm:grid-cols-2 gap-3">
-        <div v-for="c in campaigns" :key="c.id" class="app-card p-4 space-y-3">
+      <section v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
+        <div v-for="c in campaigns" :key="c.id" class="app-card p-4 space-y-3 min-w-0">
           <div class="flex justify-between gap-2">
             <div class="min-w-0">
               <p class="font-semibold text-sm truncate">{{ c.headline || c.pin_title }}</p>
@@ -233,7 +233,7 @@ async function togglePause(id: number, status: string) {
               {{ c.status === 'active' ? t('promote.campaigns.pause') : t('promote.campaigns.resume') }}
             </button>
           </div>
-          <div class="grid grid-cols-4 gap-1.5 text-center text-xs">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-center text-xs">
             <div class="rounded-lg bg-pink-50 dark:bg-pink-950/40 p-2"><p class="font-bold">{{ c.impressions }}</p><p class="text-[9px] opacity-70">{{ t('promote.campaigns.impressions') }}</p></div>
             <div class="rounded-lg bg-pink-50 dark:bg-pink-950/40 p-2"><p class="font-bold">{{ c.clicks }}</p><p class="text-[9px] opacity-70">{{ t('promote.campaigns.clicks') }}</p></div>
             <div class="rounded-lg bg-pink-50 dark:bg-pink-950/40 p-2"><p class="font-bold">{{ c.pin_views }}</p><p class="text-[9px] opacity-70">{{ t('promote.campaigns.views') }}</p></div>

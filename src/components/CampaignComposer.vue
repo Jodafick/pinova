@@ -85,7 +85,7 @@ function applyPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
 </script>
 
 <template>
-  <div class="campaign-composer space-y-5">
+  <div class="campaign-composer space-y-5 w-full min-w-0 overflow-hidden">
     <div class="rounded-2xl overflow-hidden border app-divider-subtle">
       <div class="h-1.5 bg-neutral-100 dark:bg-neutral-800">
         <div class="h-full bg-gradient-to-r from-pink-500 to-amber-400 transition-all duration-500" :style="{ width: `${progress}%` }" />
@@ -194,9 +194,11 @@ function applyPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
       </div>
     </div>
 
-    <div v-if="campaignPreview" class="space-y-2">
+    <div v-if="campaignPreview" class="space-y-2 w-full min-w-0 overflow-hidden">
       <p class="text-xs font-semibold text-neutral-500">{{ t('promote.campaigns.preview') }}</p>
-      <SponsoredContentCard :item="campaignPreview" variant="feed" />
+      <div class="w-full min-w-0 max-w-full overflow-hidden">
+        <SponsoredContentCard :item="campaignPreview" variant="feed" />
+      </div>
     </div>
 
     <button

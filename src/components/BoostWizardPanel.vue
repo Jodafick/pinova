@@ -98,22 +98,22 @@ function socialProofText(pack: BoostPack) {
 </script>
 
 <template>
-  <div class="boost-wizard space-y-5">
-    <div class="flex items-center gap-1">
+  <div class="boost-wizard space-y-5 w-full min-w-0 overflow-hidden">
+    <div class="flex items-center gap-0.5 sm:gap-1 w-full min-w-0">
       <template v-for="(label, i) in steps" :key="label">
         <div class="flex flex-col items-center flex-1 min-w-0">
           <div
-            class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition"
+            class="h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition shrink-0"
             :class="i <= step ? 'bg-pink-600 text-white shadow-md shadow-pink-500/30' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'"
           >
             <PinovaIcon v-if="i < step" name="check" class="text-base" />
             <span v-else>{{ i + 1 }}</span>
           </div>
-          <p class="text-[9px] font-semibold mt-1 truncate w-full text-center" :class="i === step ? 'text-pink-700' : 'text-neutral-400'">
+          <p class="hidden sm:block text-[9px] font-semibold mt-1 truncate w-full text-center" :class="i === step ? 'text-pink-700' : 'text-neutral-400'">
             {{ label }}
           </p>
         </div>
-        <div v-if="i < steps.length - 1" class="h-0.5 flex-1 mb-4 rounded-full" :class="i < step ? 'bg-pink-400' : 'bg-neutral-200 dark:bg-neutral-700'" />
+        <div v-if="i < steps.length - 1" class="h-0.5 flex-1 mb-0 sm:mb-4 rounded-full min-w-[0.25rem]" :class="i < step ? 'bg-pink-400' : 'bg-neutral-200 dark:bg-neutral-700'" />
       </template>
     </div>
 
@@ -192,10 +192,10 @@ function socialProofText(pack: BoostPack) {
             : 'border-neutral-200 dark:border-neutral-700 hover:border-pink-300'"
           @click="pickPack(p.slug)"
         >
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <div class="flex items-center gap-2 flex-wrap">
-                <p class="font-bold">{{ p.label }}</p>
+          <div class="flex items-center justify-between gap-2 sm:gap-3 min-w-0">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap min-w-0">
+                <p class="font-bold truncate">{{ p.label }}</p>
                 <span
                   v-if="socialProofText(p)"
                   class="text-[9px] uppercase font-bold text-pink-600 bg-pink-100 dark:bg-pink-900/50 px-1.5 py-0.5 rounded"
@@ -203,17 +203,17 @@ function socialProofText(pack: BoostPack) {
               </div>
               <p class="text-xs text-neutral-500 mt-0.5">{{ formatDuration(p.duration_hours, t) }}</p>
             </div>
-            <p class="text-xl font-black text-pink-700">{{ formatMoney(p.amount, p.currency_iso) }}</p>
+            <p class="text-lg sm:text-xl font-black text-pink-700 shrink-0">{{ formatMoney(p.amount, p.currency_iso) }}</p>
           </div>
         </button>
       </div>
     </div>
 
-    <div class="flex gap-2">
+    <div class="flex flex-col-reverse sm:flex-row gap-2 w-full min-w-0">
       <button
         v-if="step > 0"
         type="button"
-        class="rounded-xl border app-divider-subtle px-4 py-3 text-sm font-semibold"
+        class="rounded-xl border app-divider-subtle px-4 py-3 text-sm font-semibold sm:w-auto w-full"
         @click="back"
       >
         {{ t('common.back') }}
