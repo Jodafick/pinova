@@ -1565,6 +1565,13 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Réserve l’espace sous la tab bar fixe (pages Home / Profil, etc.). */
+@media (max-width: 1023px) {
+  .pinova-mobile-tab-bar-scroll-pad {
+    padding-bottom: calc(var(--pinova-mobile-tab-bar-h, 4.25rem) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /*
   GPU-friendly base : à composer sur un élément animé pour forcer la
   composition GPU sans surcharge de `will-change` permanent.

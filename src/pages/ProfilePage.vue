@@ -804,6 +804,13 @@ const profileNavShellSurfaceClass = computed(() => {
 
 const profileNavShellInnerClass = computed(() => '')
 
+/** Espace sous la tab bar mobile (profil connecté / route /profile sans username). */
+const profileMobileTabBarPadClass = computed(() => {
+  const username = String(route.params.username || '').trim()
+  if (!username || isMyProfile.value) return 'pinova-mobile-tab-bar-scroll-pad'
+  return ''
+})
+
 /** Ferme le menu mobile en tapant la « carte » profil (hors contrôles interactifs). */
 function onProfileDrawerSurfaceClick(ev: MouseEvent) {
   if (!profileNavDrawerOpen.value || !currentUser.value || !isMyProfile.value) return
@@ -1380,7 +1387,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 <template>
   <div
     v-if="loading"
-    class="app-skeleton-wave w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12"
+    :class="['pinova-route-natural-height app-skeleton-wave w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12', profileMobileTabBarPadClass]"
   >
     <ProfileHeaderSkeleton />
 
@@ -1412,7 +1419,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
   <div
     v-else-if="profileUser"
-    :class="['relative w-full min-w-0', profileNavOffcanvasRootClass, profileNavDrawerViewportClass]"
+    :class="['pinova-route-natural-height relative w-full min-w-0', profileNavOffcanvasRootClass, profileNavDrawerViewportClass]"
   >
     <Teleport to="body">
       <ProfileMobileNavDrawer
@@ -1426,8 +1433,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       :class="['relative w-full min-w-0', profileNavShellSurfaceClass]"
     >
       <div
-        class="relative z-0 w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 max-lg:pb-4"
-        :class="profileNavShellInnerClass"
+        :class="['relative z-0 w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12', profileNavShellInnerClass, profileMobileTabBarPadClass]"
         @click="onProfileDrawerSurfaceClick"
       >
     <!-- Profile header -->

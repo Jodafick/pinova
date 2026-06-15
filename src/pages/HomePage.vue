@@ -589,7 +589,7 @@ async function continueWithGoogleFromLanding() {
 
 <template>
   <div
-    class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 pb-4 sm:pb-6 max-lg:pb-2"
+    class="pinova-route-natural-height pinova-mobile-tab-bar-scroll-pad w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 max-lg:pb-0 lg:pb-6"
     :class="isAuthenticated ? 'pt-0 lg:pt-6' : 'pt-2 sm:pt-3 lg:pt-4'"
   >
     <div class="min-w-0 max-w-6xl max-lg:max-w-none mx-auto max-lg:mx-0 xl:max-w-none xl:mx-0">

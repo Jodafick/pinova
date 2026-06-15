@@ -284,10 +284,16 @@ const isOtherUserProfileRoute = computed(() => {
   return username.toLowerCase() !== me.toLowerCase()
 })
 
+/** Home / profil : le padding bas est géré sur la page (`pinova-mobile-tab-bar-scroll-pad`). */
+const pageOwnsMobileTabBarBottomInset = computed(() =>
+  route.name === 'home' || route.name === 'profile',
+)
+
 /** Padding bas #main-content : réserve la tab bar fixe quand elle est visible. */
 const mainMobileBottomPadClass = computed(() => {
   if (suppressAppChrome.value || suppressMobileMainBottomInset.value) return ''
   if (suppressMobileChromeForProfileDrawer.value) return ''
+  if (pageOwnsMobileTabBarBottomInset.value) return ''
   if (showMobileTabBar.value) {
     return 'max-lg:pb-[calc(var(--pinova-mobile-tab-bar-h,4.25rem)+env(safe-area-inset-bottom,0px))] lg:pb-0'
   }
