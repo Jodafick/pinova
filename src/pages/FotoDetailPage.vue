@@ -70,7 +70,7 @@ const {
   reportComment,
   deleteFoto,
 } = useFotos()
-const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
+const { currentUser, toggleSaveFoto, isAuthenticated } = useAuth()
 const { promptGuest } = useGuestAuthGate()
 
 const viewerCanRevealSensitive = computed(() =>

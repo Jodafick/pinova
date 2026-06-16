@@ -75,7 +75,7 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
-const { currentUser, isAuthenticated, toggleSavePin, fetchCurrentUser } = useAuth()
+const { currentUser, isAuthenticated, toggleSaveFoto, fetchCurrentUser } = useAuth()
 const { promptGuest } = useGuestAuthGate()
 /**
  * Plusieurs pages utilisent KeepAlive et embarquent chacune un FotoDetailOverlayHost.

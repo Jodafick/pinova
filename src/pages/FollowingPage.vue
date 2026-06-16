@@ -14,7 +14,7 @@ import api from '../api/index'
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const { toggleSavePin, toggleFollow } = useAuth()
+const { toggleSaveFoto, toggleFollow } = useAuth()
 const { fotos, loading, isFetchingNextPage, fetchFollowingFotos, toggleSave } = useFotos()
 const followingPins = ref<any[]>([])
 const suggestionsLoading = ref(false)

@@ -71,7 +71,7 @@ const router = useRouter()
 const route = useRoute()
 const {
   currentUser,
-  toggleSavePin,
+  toggleSaveFoto,
   fetchUserProfile,
   fetchCurrentUser,
   toggleFollow: apiToggleFollow,

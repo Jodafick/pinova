@@ -14,7 +14,7 @@ const route = useRoute()
 const router = useRouter()
 const { currentLang } = useI18n()
 const { fotos, loading, fetchDiscoverFotos, toggleSave, hasNextPage, isFetchingNextPage } = useFotos()
-const { toggleSavePin } = useAuth()
+const { toggleSaveFoto } = useAuth()
 
 const displayPins = computed(() => fotos.value)
 

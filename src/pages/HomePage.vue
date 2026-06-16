@@ -31,7 +31,7 @@ type TabKey = 'forYou' | 'explorer' | 'following'
 const { t, currentLang } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const { currentUser, isAuthenticated, toggleSavePin, toggleFollow, socialLogin } = useAuth()
+const { currentUser, isAuthenticated, toggleSaveFoto, toggleFollow, socialLogin } = useAuth()
 const { showAlert } = useAppModal()
 
 /** KeepAlive : vider le Teleport du header quand une autre route est au-dessus. */

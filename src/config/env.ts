@@ -1,4 +1,4 @@
-const DEFAULT_PROD_API = 'https://fotoce-backend-8mlq.onrender.com'
+const DEFAULT_PROD_API = 'https://pinova-backend-8mlq.onrender.com'
 
 /** En e2e Playwright : requêtes same-origin `/api/` proxifiées par Vite. */
 export const API_BASE_URL =
@@ -8,7 +8,7 @@ export const API_BASE_URL =
 export const API_URL = API_BASE_URL ? `${API_BASE_URL.replace(/\/$/, '')}/api/` : '/api/'
 
 /** E-mail affiché sur la page Contact (surcharge `VITE_CONTACT_EMAIL`). */
-export const CONTACT_EMAIL = (import.meta.env.VITE_CONTACT_EMAIL as string | undefined)?.trim() || 'contact@fotoce.app'
+export const CONTACT_EMAIL = (import.meta.env.VITE_CONTACT_EMAIL as string | undefined)?.trim() || 'contact@pinova.app'
 
 /** Client OAuth public Google — surcharger avec `VITE_GOOGLE_CLIENT_ID` en prod. */
 export const GOOGLE_CLIENT_ID =

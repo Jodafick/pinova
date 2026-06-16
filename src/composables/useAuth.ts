@@ -958,7 +958,7 @@ export function useAuth() {
     forgotPassword,
     resetPassword,
     socialLogin,
-    toggleSavePin,
+    toggleSaveFoto,
     toggleFollow,
     fetchCurrentUser,
     fetchUserProfile,
