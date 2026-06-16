@@ -437,11 +437,11 @@ function onOpenSponsored(item: SponsoredAd) {
       </div>
 
       <FotoGrid
-        v-if="pins.length > 0 || (loading && fotos.length === 0) || (isFetchingNextPage && fotos.length > 0)"
+        v-if="pins.length > 0 || (loading && pins.length === 0) || (isFetchingNextPage && pins.length > 0)"
         class="w-full"
-        :pins="fotos"
-        :loading-initial="loading && fotos.length === 0"
-        :loading-more="isFetchingNextPage && fotos.length > 0"
+        :pins="pins"
+        :loading-initial="loading && pins.length === 0"
+        :loading-more="isFetchingNextPage && pins.length > 0"
         @toggle-save="onToggleSave"
         @open-pin="onOpenPin"
         @open-sponsored="onOpenSponsored"
@@ -466,11 +466,11 @@ function onOpenSponsored(item: SponsoredAd) {
       </div>
 
       <FotoGrid
-        v-if="pins.length > 0 || (loading && fotos.length === 0) || (isFetchingNextPage && fotos.length > 0)"
+        v-if="pins.length > 0 || (loading && pins.length === 0) || (isFetchingNextPage && pins.length > 0)"
         class="w-full"
-        :pins="fotos"
-        :loading-initial="loading && fotos.length === 0"
-        :loading-more="isFetchingNextPage && fotos.length > 0"
+        :pins="pins"
+        :loading-initial="loading && pins.length === 0"
+        :loading-more="isFetchingNextPage && pins.length > 0"
         @toggle-save="onToggleSave"
         @open-pin="onOpenPin"
         @open-sponsored="onOpenSponsored"

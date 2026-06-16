@@ -12,6 +12,7 @@ import {
   type NotificationLivePayload,
 } from '../lib/notificationRefresh'
 import { useRouter } from 'vue-router'
+import { readAccessToken as readStoredAccessToken } from '../utils/authStorage'
 
 const WS_BASE = `${API_BASE_URL.replace(/^http/i, 'ws').replace(/\/$/, '')}/api/notifications/ws`
 const WS_AUTH_SUBPROTOCOL_PREFIX = 'fotoce.bearer.'
@@ -22,8 +23,7 @@ const SESSION_CURSOR_KEY = 'fotoce_notif_live_cursor'
 const SESSION_TOAST_SEEN_KEY = 'fotoce_notif_toast_seen'
 
 function readAccessToken(): string {
-  if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem('fotoce_token') || ''
+  return readStoredAccessToken() || ''
 }
 
 function wsReconnectDelayMs(attempt: number): number {

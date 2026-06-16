@@ -356,7 +356,7 @@ onUnmounted(() => {
   <FotoVirtualGrid
     v-if="useVirtualGrid"
     class="pin-grid-scope w-full min-w-0 max-w-full overflow-x-hidden"
-    :pins="fotos"
+    :pins="pins"
     :loading-initial="loadingInitial"
     :loading-more="loadingMore"
     @toggle-save="(slug) => emit('toggle-save', slug)"

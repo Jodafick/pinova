@@ -6,6 +6,7 @@ import { devLog } from '../lib/devLog'
 import { maybeRedirectWebToApp } from '../utils/appDeepLink'
 import { isValidSettingsSectionId } from '../data/settingsHubConfig'
 import { ensureFontAwesomeLoaded } from '../utils/loadFontAwesome'
+import { readAccessToken } from '../utils/authStorage'
 /*
  * Routes & meta layer system (iOS-first immersif).
  *
@@ -576,7 +577,7 @@ router.beforeEach(async (to, from) => {
   const { isAuthenticated, fetchCurrentUser, currentUser } = useAuth()
 
   const hasStoredToken =
-    typeof window !== 'undefined' && !!window.localStorage.getItem('fotoce_token')
+    typeof window !== 'undefined' && !!readAccessToken()
 
   // JWT stocké mais profil pas encore hydraté (ex. retour sur l’accueil après Google).
   // Routes publiques : ne pas bloquer le 1er paint sur `GET me/` (Render cold start).

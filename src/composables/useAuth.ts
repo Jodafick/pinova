@@ -11,6 +11,7 @@ import {
   setCachedProfileUser,
 } from '../lib/cache/entityClientCache'
 import { devLog } from '../lib/devLog'
+import { clearAccessTokens, readAccessToken, writeAccessToken } from '../utils/authStorage'
 import { API_BASE_URL } from '../config/env'
 import { extractMeHydrationFromApiPayload } from '../utils/mePayload'
 import {
@@ -77,7 +78,7 @@ const isAuthenticated = computed(() => currentUser.value !== null)
 /** Plus utilisé pour bloquer l’UI ; conservé pour compat éventuelle (toujours false). */
 const isInitializing = ref(false)
 const inMemoryAccessToken = ref<string | null>(
-  typeof window !== 'undefined' ? window.localStorage.getItem('fotoce_token') : null,
+  typeof window !== 'undefined' ? readAccessToken() : null,
 )
 let hasAuthInvalidationListener = false
 const CURRENT_USER_CACHE_TTL_MS = 30 * 60 * 1000
@@ -456,7 +457,7 @@ export function useAuth() {
     inMemoryAccessToken.value = null
     delete api.defaults.headers.common.Authorization
     if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('fotoce_token')
+      clearAccessTokens()
       clearStoredRefreshToken()
       clearMePayloadCache()
     }
@@ -471,12 +472,12 @@ export function useAuth() {
     if (token) {
       api.defaults.headers.common.Authorization = `Bearer ${token}`
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem('fotoce_token', token)
+        writeAccessToken(token)
       }
     } else {
       delete api.defaults.headers.common.Authorization
       if (typeof window !== 'undefined') {
-        window.localStorage.removeItem('fotoce_token')
+        clearAccessTokens()
       }
     }
   }

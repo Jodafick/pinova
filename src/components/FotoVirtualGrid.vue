@@ -286,7 +286,7 @@ onBeforeUnmount(() => {
     ref="gridRef"
     class="pin-virtual-grid pin-grid-scope app-skeleton-wave w-full min-w-0 max-w-full overflow-x-hidden"
     aria-labelledby="pin-virtual-grid-heading"
-    :aria-busy="(loadingInitial && fotos.length === 0) || loadingMore || undefined"
+    :aria-busy="(loadingInitial && pins.length === 0) || loadingMore || undefined"
     :style="{ height: `${totalHeight}px`, position: 'relative' }"
   >
     <h2 id="pin-virtual-grid-heading" class="sr-only">{{ t('feed.pinsGridHeading') }}</h2>

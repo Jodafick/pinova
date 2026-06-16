@@ -3,6 +3,16 @@ import { API_URL } from '../config/env';
 import { getCurrentWebLang } from '../i18n';
 import { ensureDeviceBindingId } from '../utils/deviceBinding';
 import {
+  API_DEVICE_BINDING_HEADER,
+  API_LANG_HEADER,
+  API_UNREAD_NOTIFICATIONS_HEADER,
+} from '../constants/apiHeaders';
+import {
+  clearAccessTokens,
+  readAccessToken,
+  writeRefreshToken,
+} from '../utils/authStorage';
+import {
   buildRefreshRequestBody,
   canAttemptCookieRefresh,
   clearStoredRefreshToken,
@@ -45,12 +55,12 @@ function readUnreadCountHeader(headers: unknown): string | undefined {
     ) => unknown
     const v =
       g(UNREAD_NOTIFICATION_RESPONSE_HEADER) ??
-      g('X-Fotoce-Unread-Notifications')
+      g(API_UNREAD_NOTIFICATIONS_HEADER)
     return typeof v === 'string' ? v : undefined
   }
   const h = headers as Record<string, string>
   return (
-    h[UNREAD_NOTIFICATION_RESPONSE_HEADER] ?? h['X-Fotoce-Unread-Notifications'] ?? undefined
+    h[UNREAD_NOTIFICATION_RESPONSE_HEADER] ?? h[API_UNREAD_NOTIFICATIONS_HEADER] ?? undefined
   )
 }
 
@@ -68,7 +78,7 @@ const api = axios.create({
 
 function clearStoredTokens() {
   if (typeof window === 'undefined') return
-  window.localStorage.removeItem('fotoce_token')
+  clearAccessTokens()
   clearStoredRefreshToken()
   delete api.defaults.headers.common.Authorization
   window.dispatchEvent(new Event(AUTH_INVALIDATED_EVENT))
@@ -102,9 +112,9 @@ async function refreshAccessWithSingleFlight(refreshToken: string | null): Promi
     try {
       const deviceId = typeof window !== 'undefined' ? ensureDeviceBindingId() : ''
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (deviceId) headers['X-Fotoce-Device-Binding'] = deviceId
+      if (deviceId) headers[API_DEVICE_BINDING_HEADER] = deviceId
       const lc = getCurrentWebLang()
-      headers['X-Fotoce-Lang'] = lc
+      headers[API_LANG_HEADER] = lc
       headers['Accept-Language'] =
         lc === 'en' ? 'en, fr;q=0.82' : lc === 'fon' ? 'fon, fr;q=0.92' : 'fr, en;q=0.6'
       headers[REQUEST_ID_HEADER] = createRequestId()
@@ -125,7 +135,7 @@ async function refreshAccessWithSingleFlight(refreshToken: string | null): Promi
         return null
       }
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem('fotoce_token', newAccess)
+        writeAccessToken(newAccess)
         if (newRefresh && shouldPersistRotatedRefresh()) {
           storeRefreshToken(newRefresh)
         }
@@ -153,7 +163,7 @@ export async function proactiveRefreshIfStale(): Promise<void> {
   const refresh = readStoredRefreshToken()
   if (!refresh && !canAttemptCookieRefresh()) return
 
-  const access = window.localStorage.getItem('fotoce_token')
+  const access = readAccessToken()
   const now = Math.floor(Date.now() / 1000)
   const exp = access ? decodeJwtExp(access) : null
   if (access && exp !== null && exp > now + REFRESH_LEEWAY_SEC) return
@@ -165,7 +175,7 @@ api.interceptors.request.use((config) => {
   const lc = getCurrentWebLang()
   config.headers = config.headers ?? {}
   const hdr = config.headers as Record<string, string>
-  hdr['X-Fotoce-Lang'] = lc
+  hdr[API_LANG_HEADER] = lc
   hdr['Accept-Language'] =
     lc === 'en' ? 'en, fr;q=0.82' : lc === 'fon' ? 'fon, fr;q=0.92' : 'fr, en;q=0.6'
 
@@ -196,7 +206,7 @@ api.interceptors.request.use((config) => {
   const existingAuth = config.headers?.Authorization
   if (existingAuth) return config
 
-  let token = typeof window !== 'undefined' ? window.localStorage.getItem('fotoce_token') : null
+  let token = typeof window !== 'undefined' ? readAccessToken() : null
   if (token) {
     const exp = decodeJwtExp(token)
     const now = Math.floor(Date.now() / 1000)
@@ -205,7 +215,7 @@ api.interceptors.request.use((config) => {
       const refresh = readStoredRefreshToken()
       if (!refresh && !canAttemptCookieRefresh()) {
         if (typeof window !== 'undefined') {
-          window.localStorage.removeItem('fotoce_token')
+          clearAccessTokens()
         }
         token = null
       }
@@ -216,7 +226,7 @@ api.interceptors.request.use((config) => {
   }
   const deviceId = typeof window !== 'undefined' ? ensureDeviceBindingId() : ''
   if (deviceId) {
-    config.headers['X-Fotoce-Device-Binding'] = deviceId
+    config.headers[API_DEVICE_BINDING_HEADER] = deviceId
   }
   return config
 })
