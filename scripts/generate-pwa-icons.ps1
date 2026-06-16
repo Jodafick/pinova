@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
-# Dossier PINOVA-FRONTEND (parent de scripts/)
+# Dossier FOTOCE-FRONTEND (parent de scripts/)
 $root = Split-Path $PSScriptRoot -Parent
 $src = Join-Path $root 'src\assets\logo.png'
 $pub = Join-Path $root 'public'
@@ -21,7 +21,7 @@ function Export-Square {
   )
   $g = New-Object System.Drawing.Bitmap $Size, $Size
   $gr = [System.Drawing.Graphics]::FromImage($g)
-  $gr.Clear([System.Drawing.Color]::FromArgb(255, 0, 0, 0))
+  $gr.Clear([System.Drawing.Color]::FromArgb(255, 255, 245, 251))
   $scale = [Math]::Min($Size / $Source.Width, $Size / $Source.Height)
   $w = [int]([Math]::Round($Source.Width * $scale))
   $h = [int]([Math]::Round($Source.Height * $scale))

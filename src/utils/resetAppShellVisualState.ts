@@ -4,7 +4,7 @@
  * Sur mobile réel (PWA / WebKit), plusieurs sous-systèmes posent des styles inline
  * sur `#app-shell` (blur, scale, translate) ou verrouillent le scroll :
  *   - LayerHost (couches fullscreen/modal)
- *   - PinovaModal (depth effect)
+ *   - FotoceModal (depth effect)
  *   - useEdgeSwipeBack (translate3d pendant le geste retour)
  *
  * Si une couche ou une modale ne se démonte pas proprement (race navigation,
@@ -15,7 +15,7 @@
 import { profileNavMobileDrawerOpen } from '../composables/mobileHeaderContext'
 import { clearProfileDrawerPwaTheme } from '../composables/usePwaTheme'
 import { getAppScrollRoot } from './appScrollRoot'
-import { resetPinovaBodyScrollLock } from './pinovaModalBodyLock'
+import { resetFotoceBodyScrollLock } from './fotoceModalBodyLock'
 
 export interface ResetAppShellVisualStateOptions {
   /** Force le thème PWA du tiroir profil à se réinitialiser même si le flag global dit ouvert. */
@@ -38,9 +38,9 @@ export function resetAppShellVisualState(options: ResetAppShellVisualStateOption
     shell.style.transformOrigin = ''
   }
 
-  document.documentElement.classList.remove('pinova-layer-scroll-lock')
-  document.body.classList.remove('pinova-modal-scroll-lock', 'pinova-splash-locked')
-  resetPinovaBodyScrollLock()
+  document.documentElement.classList.remove('fotoce-layer-scroll-lock')
+  document.body.classList.remove('fotoce-modal-scroll-lock', 'fotoce-splash-locked')
+  resetFotoceBodyScrollLock()
 
   const drawerOpen = profileNavMobileDrawerOpen.value
   if (options.forceClearDrawerTheme || !drawerOpen) {

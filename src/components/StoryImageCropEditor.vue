@@ -7,8 +7,8 @@ type AspectKey = 'free' | '1:1' | '4:5' | '9:16' | '16:9'
 const props = withDefaults(
   defineProps<{
     file: File
-    /** Sortie story 9:16 plein cadre ; pin conserve le ratio du rognage. */
-    exportProfile?: 'story' | 'pin'
+    /** Sortie story 9:16 plein cadre ; foto conserve le ratio du rognage. */
+    exportProfile?: 'story' | 'foto'
   }>(),
   { exportProfile: 'story' },
 )
@@ -20,7 +20,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const cropHeading = computed(() =>
-  props.exportProfile === 'pin' ? t('create.pinMobile.cropTitle') : t('story.editor.cropTitle'),
+  props.exportProfile === 'foto' ? t('create.fotoMobile.cropTitle') : t('story.editor.cropTitle'),
 )
 const previewUrl = ref('')
 const imageEl = ref<HTMLImageElement | null>(null)
@@ -34,7 +34,7 @@ const busy = ref(false)
 
 const imgBox = ref({ x: 0, y: 0, w: 1, h: 1 })
 const crop = ref({ x: 0, y: 0, w: 100, h: 100 })
-const aspectKey = ref<AspectKey>(props.exportProfile === 'pin' ? 'free' : '9:16')
+const aspectKey = ref<AspectKey>(props.exportProfile === 'foto' ? 'free' : '9:16')
 
 const MIN = 44
 
@@ -428,13 +428,13 @@ async function applyCrop() {
 
 <template>
   <div
-    class="story-editor-shell flex min-h-0 flex-1 flex-col overflow-hidden bg-[#060408] text-white pinova-min-vh-fill"
+    class="story-editor-shell flex min-h-0 flex-1 flex-col overflow-hidden bg-[#060408] text-white fotoce-min-vh-fill"
   >
     <header
       class="flex shrink-0 items-center justify-between border-b border-white/10 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
     >
       <button type="button" class="story-editor-icon-btn" @click="emit('cancel')">
-        <PinovaIcon name="close" class="text-xl" />
+        <FotoceIcon name="close" class="text-xl" />
       </button>
       <p class="text-sm font-black">{{ cropHeading }}</p>
       <button type="button" class="story-editor-text-btn" :disabled="busy" @click="applyCrop">
@@ -550,7 +550,7 @@ async function applyCrop() {
           "
           @click.stop="aspectKey = a.key"
         >
-          <PinovaIcon :name="a.icon" class="shrink-0 text-[18px] leading-none sm:text-[20px]" />
+          <FotoceIcon :name="a.icon" class="shrink-0 text-[18px] leading-none sm:text-[20px]" />
           <span class="line-clamp-2 w-full text-center leading-tight">{{ a.label }}</span>
         </button>
         </div>
@@ -558,19 +558,19 @@ async function applyCrop() {
         <section class="mx-auto mt-3 max-w-md space-y-3 rounded-[1.25rem] border border-white/10 bg-white/[0.055] p-3 backdrop-blur sm:p-4">
         <div class="grid grid-cols-4 gap-2">
           <button type="button" class="story-editor-tool-btn" @click.stop="rotation = (rotation + 270) % 360">
-            <PinovaIcon name="rotate_left" class="text-xl sm:text-2xl" />
+            <FotoceIcon name="rotate_left" class="text-xl sm:text-2xl" />
             <span class="story-editor-tool-caption">{{ t('story.editor.rotateLeft') }}</span>
           </button>
           <button type="button" class="story-editor-tool-btn" @click.stop="rotation = (rotation + 90) % 360">
-            <PinovaIcon name="rotate_right" class="text-xl sm:text-2xl" />
+            <FotoceIcon name="rotate_right" class="text-xl sm:text-2xl" />
             <span class="story-editor-tool-caption">{{ t('story.editor.rotateRight') }}</span>
           </button>
           <button type="button" class="story-editor-tool-btn" :class="{ 'story-editor-tool-btn--active': flipH }" @click.stop="flipH = !flipH">
-            <PinovaIcon name="flip" class="text-xl sm:text-2xl" />
+            <FotoceIcon name="flip" class="text-xl sm:text-2xl" />
             <span class="story-editor-tool-caption">{{ t('story.editor.flipHorizontal') }}</span>
           </button>
           <button type="button" class="story-editor-tool-btn" :class="{ 'story-editor-tool-btn--active': flipV }" @click.stop="flipV = !flipV">
-            <PinovaIcon name="swap_vert" class="text-xl sm:text-2xl" />
+            <FotoceIcon name="swap_vert" class="text-xl sm:text-2xl" />
             <span class="story-editor-tool-caption">{{ t('story.editor.flipVertical') }}</span>
           </button>
         </div>

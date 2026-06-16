@@ -102,7 +102,7 @@ provide(LAYER_CONTEXT_KEY, {
 <template>
   <div
     ref="rootRef"
-    class="pinova-layer-page"
+    class="fotoce-layer-page"
     role="dialog"
     aria-modal="true"
     :style="{
@@ -115,8 +115,8 @@ provide(LAYER_CONTEXT_KEY, {
   >
     <div
       ref="surfaceRef"
-      class="pinova-layer-page__surface"
-      :class="{ 'pinova-no-transition': gesture.isDragging.value }"
+      class="fotoce-layer-page__surface"
+      :class="{ 'fotoce-no-transition': gesture.isDragging.value }"
     >
       <component :is="layer.component" v-bind="layer.componentProps" />
     </div>
@@ -124,21 +124,21 @@ provide(LAYER_CONTEXT_KEY, {
 </template>
 
 <style>
-.pinova-layer-page {
+.fotoce-layer-page {
   position: absolute;
   inset: 0;
-  background: var(--pinova-page-bg, rgb(250 247 249));
+  background: var(--fotoce-page-bg, rgb(250 247 249));
   overflow: hidden;
   /* Slide-in à l'entrée. */
-  animation: pinova-page-in 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: fotoce-page-in 380ms cubic-bezier(0.22, 1, 0.36, 1);
   transform: translate3d(0, 0, 0);
 }
 
-html.dark .pinova-layer-page {
-  background: var(--pinova-page-bg-dark, rgb(7 5 6));
+html.dark .fotoce-layer-page {
+  background: var(--fotoce-page-bg-dark, rgb(7 5 6));
 }
 
-.pinova-layer-page__surface {
+.fotoce-layer-page__surface {
   position: absolute;
   inset: 0;
   overflow: auto;
@@ -150,13 +150,13 @@ html.dark .pinova-layer-page {
   -webkit-backface-visibility: hidden;
 }
 
-@keyframes pinova-page-in {
+@keyframes fotoce-page-in {
   from { transform: translate3d(100%, 0, 0); }
   to   { transform: translate3d(0, 0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinova-layer-page {
+  .fotoce-layer-page {
     animation-duration: 0.01ms !important;
   }
 }

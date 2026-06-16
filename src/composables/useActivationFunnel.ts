@@ -4,12 +4,12 @@ import {
   parseActivationFunnelState,
   type ActivationFunnelState,
   type CreatorMilestoneId,
-} from '@pinova/shared'
+} from '@fotoce/shared'
 import { computed } from 'vue'
 import api from '../api/index'
 import { useAuth } from './useAuth'
 
-const LOCAL_KEY = 'pinova:activation:funnel:v1'
+const LOCAL_KEY = 'fotoce:activation:funnel:v1'
 
 function readLocalFunnel(): ActivationFunnelState {
   if (typeof localStorage === 'undefined') return {}
@@ -56,7 +56,7 @@ export function useActivationFunnel() {
     await patchFunnel({ welcomeCreateTutorial: status })
   }
 
-  async function markFirstPinCelebrationSeen(milestones: CreatorMilestoneId[] = ['first_pin_published']) {
+  async function markFirstPinCelebrationSeen(milestones: CreatorMilestoneId[] = ['first_foto_published']) {
     await patchFunnel({
       firstPinCelebrationSeen: true,
       milestones,

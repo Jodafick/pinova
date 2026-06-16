@@ -1,7 +1,7 @@
 /**
  * UX Orchestrator — couche d'orchestration globale (App feeling final layer).
  *
- *  Rôle : harmoniser, sans dupliquer, l'ensemble des sous-systèmes Pinova
+ *  Rôle : harmoniser, sans dupliquer, l'ensemble des sous-systèmes Fotoce
  *  pour donner une expérience cohérente « app native premium » :
  *
  *    - navigation       : router + layerManager (transitions, retour Android)
@@ -219,7 +219,7 @@ export async function paintThen(fn: () => void): Promise<void> {
  * Cohérent avec le snapshot scroll fait par `layerManager` et
  * `useScrollPreservation`.
  */
-const CONTINUITY_PREFIX = 'pinova.ux.'
+const CONTINUITY_PREFIX = 'fotoce.ux.'
 
 export function saveAppSnapshot<T>(key: string, data: T): void {
   if (typeof sessionStorage === 'undefined') return
@@ -313,7 +313,7 @@ function wireRouter(router: Router): void {
   router.beforeEach((to, from) => {
     if (!from.name) return /* navigation initiale, on ne broadcast pas. */
     const dir: 'forward' | 'back' = isPop ? 'back' : 'forward'
-    /* Note : `data-pinova-nav-dir` n'est plus posé (View Transitions
+    /* Note : `data-fotoce-nav-dir` n'est plus posé (View Transitions
        désactivées — la navigation est classique sans animation). */
     emit('nav:start', { from: from.fullPath, to: to.fullPath, direction: dir })
     if (dir === 'back') emit('nav:back', { to: to.fullPath })

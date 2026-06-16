@@ -139,26 +139,26 @@ provide(LAYER_CONTEXT_KEY, {
 
 <template>
   <div
-    class="pinova-layer-sheet"
+    class="fotoce-layer-sheet"
     :style="{ zIndex: layer.zIndex }"
   >
     <LayerBackdrop :layer="layer" :opacity="0.5" tint="neutral" />
     <div
       ref="surfaceRef"
-      class="pinova-layer-sheet__surface"
-      :class="{ 'pinova-no-transition': surfaceGesture.isDragging.value }"
+      class="fotoce-layer-sheet__surface"
+      :class="{ 'fotoce-no-transition': surfaceGesture.isDragging.value }"
       role="dialog"
       aria-modal="true"
       :style="{ paddingBottom: Math.max(safeBottom, 8) + 'px' }"
     >
       <div
         ref="handleRef"
-        class="pinova-layer-sheet__handle-wrap"
+        class="fotoce-layer-sheet__handle-wrap"
         aria-hidden="true"
       >
-        <div class="pinova-layer-sheet__handle" />
+        <div class="fotoce-layer-sheet__handle" />
       </div>
-      <div class="pinova-layer-sheet__content">
+      <div class="fotoce-layer-sheet__content">
         <component :is="layer.component" v-bind="layer.componentProps" />
       </div>
     </div>
@@ -166,7 +166,7 @@ provide(LAYER_CONTEXT_KEY, {
 </template>
 
 <style>
-.pinova-layer-sheet {
+.fotoce-layer-sheet {
   position: absolute;
   inset: 0;
   display: flex;
@@ -174,7 +174,7 @@ provide(LAYER_CONTEXT_KEY, {
   justify-content: center;
 }
 
-.pinova-layer-sheet__surface {
+.fotoce-layer-sheet__surface {
   position: relative;
   z-index: 1;
   width: 100%;
@@ -182,8 +182,8 @@ provide(LAYER_CONTEXT_KEY, {
   max-height: 92dvh;
   border-top-left-radius: 28px;
   border-top-right-radius: 28px;
-  background: var(--pinova-bg-surface, #ffffff);
-  border-top: 1px solid var(--pinova-border-soft, rgb(234 221 229));
+  background: var(--fotoce-bg-surface, #ffffff);
+  border-top: 1px solid var(--fotoce-border-soft, rgb(234 221 229));
   /* Petit dépassement esthétique derrière la safe area iOS. */
   margin-bottom: -2px;
   padding-bottom: 8px;
@@ -191,7 +191,7 @@ provide(LAYER_CONTEXT_KEY, {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: pinova-sheet-in 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: fotoce-sheet-in 360ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
   transform: translate3d(0, 0, 0);
   touch-action: pan-y;
@@ -199,13 +199,13 @@ provide(LAYER_CONTEXT_KEY, {
   -webkit-backface-visibility: hidden;
 }
 
-html.dark .pinova-layer-sheet__surface {
-  background: var(--pinova-bg-surface-dark, rgb(18 16 20));
-  border-top-color: var(--pinova-border-dark, rgb(45 38 43));
+html.dark .fotoce-layer-sheet__surface {
+  background: var(--fotoce-bg-surface-dark, rgb(18 16 20));
+  border-top-color: var(--fotoce-border-dark, rgb(45 38 43));
   box-shadow: 0 -28px 64px -20px rgba(0, 0, 0, 0.58);
 }
 
-.pinova-layer-sheet__handle-wrap {
+.fotoce-layer-sheet__handle-wrap {
   display: grid;
   place-items: center;
   padding: 10px 0 6px;
@@ -213,30 +213,30 @@ html.dark .pinova-layer-sheet__surface {
   cursor: grab;
 }
 
-.pinova-layer-sheet__handle {
+.fotoce-layer-sheet__handle {
   width: 44px;
   height: 5px;
   border-radius: 999px;
   background: rgba(120, 113, 117, 0.5);
 }
 
-html.dark .pinova-layer-sheet__handle {
+html.dark .fotoce-layer-sheet__handle {
   background: rgba(255, 255, 255, 0.28);
 }
 
-.pinova-layer-sheet__content {
+.fotoce-layer-sheet__content {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
 }
 
-@keyframes pinova-sheet-in {
+@keyframes fotoce-sheet-in {
   from { transform: translate3d(0, 100%, 0); }
   to   { transform: translate3d(0, 0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinova-layer-sheet__surface {
+  .fotoce-layer-sheet__surface {
     animation-duration: 0.01ms !important;
   }
 }

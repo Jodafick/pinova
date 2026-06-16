@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePins } from '../composables/usePins'
-import { isFeedPin, type Pin, type SponsoredAd } from '../types'
+import { useFotos } from '../composables/useFotos'
+import { isFeedFoto, type Foto, type SponsoredAd } from '../types'
 import { pushFeedItemOverlay } from '../utils/feedOverlayNavigation'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
-import PinGrid from '../components/PinGrid.vue'
-import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
+import FotoGrid from '../components/FotoGrid.vue'
+import FotoDetailOverlayHost from '../components/FotoDetailOverlayHost.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { useI18n } from '../i18n'
 import api from '../api/index'
@@ -15,7 +15,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const { toggleSavePin, toggleFollow } = useAuth()
-const { pins, loading, isFetchingNextPage, fetchFollowingPins, toggleSave } = usePins()
+const { fotos, loading, isFetchingNextPage, fetchFollowingFotos, toggleSave } = useFotos()
 const followingPins = ref<any[]>([])
 const suggestionsLoading = ref(false)
 const suggestions = ref<Array<{ username: string; display_name: string; avatar_color: string; avatar?: string | null; is_pro?: boolean; reason?: string }>>([])
@@ -23,8 +23,8 @@ const suggestions = ref<Array<{ username: string; display_name: string; avatar_c
 const displayPins = computed(() => followingPins.value)
 
 const loadFollowingFeed = async () => {
-  await fetchFollowingPins(true)
-  followingPins.value = [...pins.value]
+  await fetchFollowingFotos(true)
+  followingPins.value = [...fotos.value]
   if (followingPins.value.length === 0) {
     suggestionsLoading.value = true
     try {
@@ -41,17 +41,17 @@ const loadFollowingFeed = async () => {
 }
 
 const handleToggleSave = async (slug: string) => {
-  const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
-  if (pin) toggleSavePin(pin.id)
+  const foto = fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === slug)
+  if (foto) toggleSaveFoto(pin.id)
   try {
     await toggleSave(slug)
   } catch (err) {
-    if (pin) toggleSavePin(pin.id)
+    if (foto) toggleSaveFoto(pin.id)
   }
 }
 
 const openPin = (slug: string) => {
-  router.push({ path: route.path, query: { ...route.query, pin: slug } })
+  router.push({ path: route.path, query: { ...route.query, foto: slug } })
 }
 
 const openSponsored = (item: SponsoredAd) => {
@@ -83,7 +83,7 @@ const followSuggestedUser = async (username: string) => {
       <p class="text-base text-neutral-500 dark:text-neutral-400 max-w-lg">{{ t('following.subtitle') }}</p>
     </section>
 
-    <PinGrid
+    <FotoGrid
       v-if="displayPins.length > 0 || (loading && displayPins.length === 0) || (isFetchingNextPage && displayPins.length > 0)"
       class="w-full"
       :pins="displayPins"
@@ -137,20 +137,20 @@ const followSuggestedUser = async (username: string) => {
               </AvatarDisc>
               <div class="min-w-0">
                 <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate flex items-center gap-1">
-                  <PinovaIcon name="verified" class="text-amber-500 text-sm" />
+                  <FotoceIcon name="verified" class="text-amber-500 text-sm" />
                   {{ suggestion.display_name }}
                 </p>
                 <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">@{{ suggestion.username }}</p>
               </div>
             </button>
             <button class="px-3 py-1.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-xs font-semibold hover:bg-pink-800 dark:hover:opacity-90" @click="followSuggestedUser(suggestion.username)">
-              {{ t('pin.follow') }}
+              {{ t('foto.follow') }}
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <PinDetailOverlayHost :feed-items="displayPins" />
+    <FotoDetailOverlayHost :feed-items="displayPins" />
   </div>
 </template>

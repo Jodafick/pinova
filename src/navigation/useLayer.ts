@@ -19,7 +19,7 @@ export interface LayerContext {
   close: (result?: unknown) => void
 }
 
-export const LAYER_CONTEXT_KEY: InjectionKey<LayerContext> = Symbol('PinovaLayerContext')
+export const LAYER_CONTEXT_KEY: InjectionKey<LayerContext> = Symbol('FotoceLayerContext')
 
 export interface UseLayerReturn extends LayerContext {
   /** La couche est-elle au sommet du stack ? */

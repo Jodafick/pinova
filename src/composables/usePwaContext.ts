@@ -138,7 +138,7 @@ function ensureInit() {
   displayMode.value = detectDisplayMode()
   bindStateListeners()
   /*
-   * Pose une classe `pinova-platform-{ios|android|…}` sur `<html>` pour
+   * Pose une classe `fotoce-platform-{ios|android|…}` sur `<html>` pour
    * permettre du CSS plateforme-spécifique (ex. simplifier l'off-canvas
    * profil sur Android où les transformations 3D sont moins fiables, tout
    * en gardant l'effet 3D « wow » sur iOS / desktop).
@@ -146,8 +146,8 @@ function ensureInit() {
   if (typeof document !== 'undefined') {
     const html = document.documentElement
     const all = ['ios', 'android', 'macos', 'windows', 'linux', 'other'] as const
-    all.forEach((p) => html.classList.remove(`pinova-platform-${p}`))
-    html.classList.add(`pinova-platform-${platform.value}`)
+    all.forEach((p) => html.classList.remove(`fotoce-platform-${p}`))
+    html.classList.add(`fotoce-platform-${platform.value}`)
   }
 }
 

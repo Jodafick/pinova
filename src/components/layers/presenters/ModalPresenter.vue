@@ -82,7 +82,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="pinova-layer-modal"
+    class="fotoce-layer-modal"
     :style="{
       zIndex: layer.zIndex,
       paddingTop: Math.max(safeTop, 16) + 'px',
@@ -92,7 +92,7 @@ onBeforeUnmount(() => {
     <LayerBackdrop :layer="layer" :opacity="0.55" blur tint="rose" />
     <div
       ref="cardRef"
-      class="pinova-layer-modal__card"
+      class="fotoce-layer-modal__card"
       role="dialog"
       aria-modal="true"
       tabindex="-1"
@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-.pinova-layer-modal {
+.fotoce-layer-modal {
   position: absolute;
   inset: 0;
   display: flex;
@@ -112,38 +112,38 @@ onBeforeUnmount(() => {
   padding-inline: 16px;
 }
 
-.pinova-layer-modal__card {
+.fotoce-layer-modal__card {
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: min(100%, 420px);
   max-height: calc(100dvh - 32px);
   border-radius: 26px;
-  background: var(--pinova-bg-surface, #ffffff);
-  border: 1px solid var(--pinova-pink-border, rgba(219, 39, 119, 0.22));
+  background: var(--fotoce-bg-surface, #ffffff);
+  border: 1px solid var(--fotoce-pink-border, rgba(219, 39, 119, 0.22));
   box-shadow:
     0 0 0 1px rgba(15, 23, 42, 0.04) inset,
     0 40px 80px -24px rgba(15, 23, 42, 0.35),
     0 20px 40px -16px rgba(190, 24, 93, 0.12);
   overflow: hidden;
   /* Spring-like cubic-bezier (équivalent FadeInDown.springify damping 22 stiffness 180). */
-  animation: pinova-modal-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: fotoce-modal-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
   /* GPU. */
   transform: translate3d(0, 0, 0);
   will-change: transform, opacity;
   outline: none;
 }
 
-html.dark .pinova-layer-modal__card {
-  background: var(--pinova-bg-surface-dark, rgb(18 16 20));
-  border-color: var(--pinova-pink-border-dark, rgba(219, 39, 119, 0.35));
+html.dark .fotoce-layer-modal__card {
+  background: var(--fotoce-bg-surface-dark, rgb(18 16 20));
+  border-color: var(--fotoce-pink-border-dark, rgba(219, 39, 119, 0.35));
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
     0 44px 84px -28px rgba(0, 0, 0, 0.58),
     0 20px 44px -16px rgba(190, 24, 93, 0.18);
 }
 
-@keyframes pinova-modal-in {
+@keyframes fotoce-modal-in {
   from {
     transform: translate3d(0, 18px, 0) scale(0.96);
     opacity: 0;
@@ -155,7 +155,7 @@ html.dark .pinova-layer-modal__card {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinova-layer-modal__card {
+  .fotoce-layer-modal__card {
     animation-duration: 0.01ms !important;
   }
 }

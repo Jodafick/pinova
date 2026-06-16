@@ -11,7 +11,7 @@ import {
   parseCheckoutMeta,
   type CheckoutFlow,
   type CheckoutMeta,
-} from '@pinova/shared'
+} from '@fotoce/shared'
 
 export {
   PENDING_SUBSCRIPTION_TX_KEY,

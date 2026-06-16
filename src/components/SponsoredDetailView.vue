@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { SponsoredAd } from '../types'
-import { isPartnerAd, isPinPromo } from '../types'
+import { isPartnerAd, isFotoPromo } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api/index'
 import OfflineImg from './OfflineImg.vue'
@@ -21,17 +21,17 @@ const emit = defineEmits<{ (e: 'cta'): void }>()
 const { t } = useI18n()
 
 const badge = computed(() =>
-  isPinPromo(props.item) ? t('feed.pinPromo.badge') : t('feed.partnerAd.badge'),
+  isFotoPromo(props.item) ? t('feed.fotoPromo.badge') : t('feed.partnerAd.badge'),
 )
 
 const ctaLabel = computed(() =>
-  isPinPromo(props.item)
-    ? props.item.ctaLabel || t('feed.pinPromo.ctaDefault')
+  isFotoPromo(props.item)
+    ? props.item.ctaLabel || t('feed.fotoPromo.ctaDefault')
     : props.item.ctaLabel || t('feed.partnerAd.ctaDefault'),
 )
 
 const heroUrl = computed(() => {
-  if (isPinPromo(props.item) && props.item.mediaUrl) return props.item.mediaUrl
+  if (isFotoPromo(props.item) && props.item.mediaUrl) return props.item.mediaUrl
   return props.item.imageUrl
 })
 
@@ -46,9 +46,9 @@ async function onCta() {
     emit('cta')
     return
   }
-  if (isPinPromo(props.item)) {
+  if (isFotoPromo(props.item)) {
     try {
-      await api.post(`monetization/pin-promo-campaigns/${props.item.campaignId}/click/`)
+      await api.post(`monetization/foto-promo-campaigns/${props.item.campaignId}/click/`)
     } catch {
       /* ignore */
     }
@@ -65,12 +65,12 @@ async function onCta() {
     :class="tone === 'dark' ? 'text-white' : 'text-neutral-900 dark:text-neutral-100'"
   >
     <div
-      v-if="heroUrl || (isPinPromo(item) && item.mediaType === 'video' && item.mediaUrl)"
+      v-if="heroUrl || (isFotoPromo(item) && item.mediaType === 'video' && item.mediaUrl)"
       class="relative w-full shrink-0 overflow-hidden bg-neutral-900"
       :class="layout === 'desktop' ? 'max-h-[min(52vh,520px)] aspect-[16/10]' : 'aspect-[4/5] max-h-[58vh]'"
     >
       <OfflineVideo
-        v-if="isPinPromo(item) && item.mediaType === 'video' && item.mediaUrl"
+        v-if="isFotoPromo(item) && item.mediaType === 'video' && item.mediaUrl"
         :src="item.mediaUrl"
         class="h-full w-full object-cover"
         muted

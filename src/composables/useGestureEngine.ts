@@ -267,7 +267,7 @@ export function useGestureEngine(
      * laisser le clic remonter naturellement au bouton/lien cible. La capture
      * détourne `pointerup` vers l'élément capturant et casse les boutons
      * placés dans la zone de geste (ex. Annuler / fermer dans le header
-     * `data-pinova-swipe-dismiss-handle`). On capture seulement quand le
+     * `data-fotoce-swipe-dismiss-handle`). On capture seulement quand le
      * drag est confirmé dans `onPointerMove`.
      */
   }

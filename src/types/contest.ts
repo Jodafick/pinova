@@ -4,15 +4,15 @@ export type ContestSettingsDto = {
   end_at: string
   timezone: string
   max_winners: number
-  /** Nombre de lignes classement (meilleur pin / créateur) affichées côté live. */
+  /** Nombre de lignes classement (meilleur foto / créateur) affichées côté live. */
   leaderboard_display_pins: number
   refresh_interval: number
   now: string
 }
 
-export type ContestPinRow = {
-  pin_id: number
-  pin_slug: string
+export type ContestFotoRow = {
+  foto_id: number
+  foto_slug: string
   pin_title: string
   pin_image_url?: string
   creator_id: number
@@ -34,7 +34,7 @@ export type ContestViewerDto = {
   ranked: boolean
   rank: number | null
   in_displayed_top: boolean
-  pin: ContestPinRow | null
+  foto: ContestFotoRow | null
 }
 
 export type ContestCreatorRow = {
@@ -48,7 +48,7 @@ export type ContestCreatorRow = {
 export type ContestLeaderboardEvent = {
   sequence: number
   event_type: string
-  entity_type: 'pin' | 'creator'
+  entity_type: 'foto' | 'creator'
   entity_id: number
   payload: Record<string, unknown>
   created_at: string

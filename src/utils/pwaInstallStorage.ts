@@ -1,5 +1,5 @@
 /** Clé partagée avec `PwaInstallExperience.vue` — ne pas dupliquer. */
-export const PWA_INSTALL_SNOOZE_KEY = 'pinova:pwa:install:snoozedUntil'
+export const PWA_INSTALL_SNOOZE_KEY = 'fotoce:pwa:install:snoozedUntil'
 
 export function getPwaInstallSnoozeUntilMs(): number {
   if (typeof localStorage === 'undefined') return 0

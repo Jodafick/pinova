@@ -1,24 +1,24 @@
 <script setup lang="ts">
 /**
- * PinovaButton — bouton premium platform-aware (iOS / Android / Desktop).
+ * FotoceButton — bouton premium platform-aware (iOS / Android / Desktop).
  *
  * Variants  : primary, secondary, ghost, floating, danger
  * Sizes     : sm, md (default), lg, icon
  * Density   : auto (suit le profil adaptatif) | dense | comfortable | airy
- * Platform  : auto (default — suit `data-pinova-motion`) | ios | material | desktop
+ * Platform  : auto (default — suit `data-fotoce-motion`) | ios | material | desktop
  *
  * Press feedback iOS : scale + filter brightness via classes CSS `pds-btn`,
- * pilotées par `--pinova-press-scale` / `--pinova-press-brightness` qui
- * varient selon `html[data-pinova-motion="..."]`. Donc même composant,
+ * pilotées par `--fotoce-press-scale` / `--fotoce-press-brightness` qui
+ * varient selon `html[data-fotoce-motion="..."]`. Donc même composant,
  * même API, rendu adapté.
  *
  * Le ripple Material et le hover glow Desktop sont gérés en CSS pur
  * (cf. `style.css` § « Component Adaptation Layer »).
  *
- *   <PinovaButton variant="primary" @click="install">
- *     <PinovaIcon name="install_mobile" />
+ *   <FotoceButton variant="primary" @click="install">
+ *     <FotoceIcon name="install_mobile" />
  *     Installer
- *   </PinovaButton>
+ *   </FotoceButton>
  */
 import { computed, type Component } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -89,8 +89,8 @@ const attrs = computed(() => {
   <component
     :is="tag"
     :class="classes"
-    :data-pinova-platform-variant="resolvedMode"
-    :data-pinova-density="density === 'auto' ? undefined : density"
+    :data-fotoce-platform-variant="resolvedMode"
+    :data-fotoce-density="density === 'auto' ? undefined : density"
     :disabled="disabled || loading"
     :aria-label="ariaLabel"
     :aria-busy="loading || undefined"

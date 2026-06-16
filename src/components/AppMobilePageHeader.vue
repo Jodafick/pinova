@@ -39,10 +39,10 @@ const resolvedBackAria = computed(() => props.backAriaLabel || t('common.back'))
         ? 'shadow-[0_12px_28px_-14px_rgba(0,0,0,0.22)] dark:shadow-[0_14px_32px_-18px_rgba(0,0,0,0.62)]'
         : ''
     "
-    data-pinova-no-edge-back
+    data-fotoce-no-edge-back
   >
     <div
-      class="pinova-app-chrome-safe-pt pinova-app-chrome-safe-inner-min-h flex items-center gap-2 px-2 sm:px-3 pb-1.5 pointer-events-none"
+      class="fotoce-app-chrome-safe-pt fotoce-app-chrome-safe-inner-min-h flex items-center gap-2 px-2 sm:px-3 pb-1.5 pointer-events-none"
     >
       <div class="pointer-events-auto flex w-10 shrink-0 items-center justify-start">
         <slot name="leading">
@@ -53,7 +53,7 @@ const resolvedBackAria = computed(() => props.backAriaLabel || t('common.back'))
             :aria-label="resolvedBackAria"
             @click="emit('back')"
           >
-            <PinovaIcon name="arrow_back_ios_new" class="text-[22px] leading-none" />
+            <FotoceIcon name="arrow_back_ios_new" class="text-[22px] leading-none" />
           </button>
         </slot>
       </div>

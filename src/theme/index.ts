@@ -1,5 +1,5 @@
 /**
- * Theme — système de design Pinova unifié.
+ * Theme — système de design Fotoce unifié.
  *
  * Export public unique. Tous les composants importent depuis ici :
  *

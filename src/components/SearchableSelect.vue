@@ -90,7 +90,7 @@ function clearSelection() {
       <span :class="selectedLabel ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-400 dark:text-neutral-500'">
         {{ selectedLabel || placeholder }}
       </span>
-      <PinovaIcon :name="open ? 'expand_less' : 'expand_more'" class="text-[20px] text-neutral-400 dark:text-neutral-500 shrink-0" />
+      <FotoceIcon :name="open ? 'expand_less' : 'expand_more'" class="text-[20px] text-neutral-400 dark:text-neutral-500 shrink-0" />
     </button>
 
     <div

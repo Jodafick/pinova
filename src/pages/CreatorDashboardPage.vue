@@ -5,7 +5,7 @@ import CreatorDashboardSkeleton from '../components/CreatorDashboardSkeleton.vue
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { displayInitials } from '../utils/displayInitials'
 import { useAuth } from '../composables/useAuth'
-import { usePins } from '../composables/usePins'
+import { useFotos } from '../composables/useFotos'
 import { useI18n } from '../i18n'
 
 const { t, currentLang } = useI18n()
@@ -15,11 +15,11 @@ const {
   fetchCreatorStats,
   fetchCreatorWeeklyStats,
   fetchCreatorEngagement,
-  fetchCreatorRecentPins,
+  fetchCreatorRecentFotos,
   fetchCreatorCommentInbox,
   downloadCreatorStatsCsv,
-  moderatePinComment,
-} = usePins()
+  moderateFotoComment,
+} = useFotos()
 
 const loading = ref(true)
 const errorMsg = ref('')
@@ -69,7 +69,7 @@ const INBOX_LIMIT = 15
 const periodDays = ref<7 | 14 | 28>(7)
 const AUDIENCE_PERIOD_DAYS = 30
 
-type RecentPinRow = {
+type RecentFotoRow = {
   id: number
   slug: string
   title: string
@@ -78,12 +78,12 @@ type RecentPinRow = {
   comments_policy: string
   created_at: string
 }
-const recentPins = ref<RecentPinRow[]>([])
+const recentPins = ref<RecentFotoRow[]>([])
 const hubLoading = ref(false)
 
 type InboxCommentRow = {
   id: number
-  pin_slug: string
+  foto_slug: string
   pin_title: string
   author_username: string
   author_display_name: string
@@ -137,7 +137,7 @@ const audiencePayload = ref<{
   top_actors: AudienceActor[]
 } | null>(null)
 
-type TotalKey = 'pins' | 'views' | 'saves' | 'likes' | 'comments'
+type TotalKey = 'fotos' | 'views' | 'saves' | 'likes' | 'comments'
 
 type KpiSpec = {
   key: TotalKey
@@ -156,8 +156,8 @@ type KpiSpec = {
 
 const kpiSpecs: readonly KpiSpec[] = [
   {
-    key: 'pins',
-    labelKey: 'creator.kpiPins',
+    key: 'fotos',
+    labelKey: 'creator.kpiFotos',
     fa: 'fa-thumbtack',
     ring: 'ring-violet-500/20',
     border: 'border-violet-200/90',
@@ -325,7 +325,7 @@ async function loadHubExtras() {
   inboxOffset.value = 0
   try {
     const [recent, inbox] = await Promise.all([
-      fetchCreatorRecentPins({ page: 1, page_size: RECENT_PAGE_SIZE }),
+      fetchCreatorRecentFotos({ page: 1, page_size: RECENT_PAGE_SIZE }),
       fetchCreatorCommentInbox({ limit: INBOX_LIMIT, offset: 0 }),
     ])
     recentPins.value = Array.isArray(recent?.pins) ? recent.pins : []
@@ -380,7 +380,7 @@ async function exportCsvWeb() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'pinova-creator-stats.csv'
+    a.download = 'fotoce-creator-stats.csv'
     a.rel = 'noopener'
     document.body.appendChild(a)
     a.click()
@@ -395,7 +395,7 @@ async function moderateFromInbox(row: InboxCommentRow, hidden: boolean) {
   if (row.moderation_hidden) return
   inboxModeratingId.value = row.id
   try {
-    await moderatePinComment(row.pin_slug, row.id, hidden)
+    await moderateFotoComment(row.foto_slug, row.id, hidden)
     const i = inboxComments.value.findIndex((c) => c.id === row.id)
     if (i >= 0) {
       inboxComments.value[i] = { ...inboxComments.value[i]!, hidden_by_owner: hidden }
@@ -414,7 +414,7 @@ function setPeriodDaysChoice(d: 7 | 14 | 28) {
 }
 
 async function openAudiencePanel(key: TotalKey) {
-  if (key === 'pins') {
+  if (key === 'fotos') {
     const u = currentUser.value?.username
     if (u) await router.push({ path: `/profile/${encodeURIComponent(u)}` })
     return
@@ -780,7 +780,7 @@ watch(isPro, (pro) => {
 
               <!-- Pins → link to profile -->
               <router-link
-                v-if="item.key === 'pins' && currentUser?.username"
+                v-if="item.key === 'fotos' && currentUser?.username"
                 :to="{ path: `/profile/${encodeURIComponent(currentUser.username)}` }"
                 class="creator-kpi-card group relative flex min-h-[8.75rem] flex-col items-center gap-3 rounded-[1.2rem] border bg-gradient-to-b px-3 pb-4 pt-5 text-center no-underline text-inherit shadow-[0_14px_42px_-28px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.03] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_-24px_rgba(15,23,42,0.42)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 dark:shadow-black/40 dark:ring-white/[0.05] dark:hover:shadow-black/55 sm:min-h-[11rem] sm:gap-5 sm:rounded-[1.35rem] sm:px-5 sm:pb-6 sm:pt-7"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
@@ -805,7 +805,7 @@ watch(isPro, (pro) => {
 
               <!-- Pins → no username (disabled) -->
               <button
-                v-else-if="item.key === 'pins'"
+                v-else-if="item.key === 'fotos'"
                 type="button"
                 class="creator-kpi-card relative flex min-h-[8.75rem] cursor-not-allowed flex-col items-center gap-3 rounded-[1.2rem] border bg-gradient-to-b px-3 pb-4 pt-5 text-center text-inherit opacity-55 ring-1 ring-black/[0.03] dark:ring-white/[0.05] sm:min-h-[11rem] sm:gap-5 sm:rounded-[1.35rem] sm:px-5 sm:pb-6 sm:pt-7"
                 :class="[item.border, item.darkBorder, item.ring, item.subtle, item.darkSubtle]"
@@ -899,7 +899,7 @@ watch(isPro, (pro) => {
                 {{ t('creator.settingsTips') }}
               </router-link>
               <router-link
-                :to="{ name: 'pin-promo-campaigns' }"
+                :to="{ name: 'foto-promo-campaigns' }"
                 class="inline-flex items-center justify-center gap-3 rounded-full border border-pink-200/90 bg-gradient-to-r from-pink-50 to-rose-50/80 px-4 py-2.5 text-sm font-semibold text-pink-950 shadow-sm backdrop-blur-sm transition hover:border-pink-300 dark:border-pink-500/30 dark:from-pink-950/40 dark:to-rose-950/30 dark:text-pink-100"
               >
                 <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/80 ring-1 ring-pink-200/80 dark:bg-neutral-900/60 dark:ring-pink-500/40">
@@ -959,7 +959,7 @@ watch(isPro, (pro) => {
                   class="snap-start shrink-0 w-[10.5rem] rounded-2xl border border-neutral-200 dark:border-neutral-700
                          bg-neutral-50/80 dark:bg-neutral-800/40 overflow-hidden flex flex-col"
                 >
-                  <router-link :to="`/pin/${rp.slug}`" class="block relative aspect-square bg-neutral-200 dark:bg-neutral-700">
+                  <router-link :to="`/foto/${rp.slug}`" class="block relative aspect-square bg-neutral-200 dark:bg-neutral-700">
                     <img
                       v-if="rp.thumbnail_url"
                       :src="rp.thumbnail_url"
@@ -974,22 +974,22 @@ watch(isPro, (pro) => {
                   </router-link>
                   <div class="p-2.5 flex flex-col gap-1 min-h-[4.25rem]">
                     <router-link
-                      :to="`/pin/${rp.slug}`"
+                      :to="`/foto/${rp.slug}`"
                       class="text-xs font-bold text-neutral-900 dark:text-neutral-100 line-clamp-2 hover:text-pink-800 dark:hover:text-pink-800"
                     >
                       {{ rp.title }}
                     </router-link>
                     <router-link
-                      :to="`/pin/${rp.slug}/edit`"
+                      :to="`/foto/${rp.slug}/edit`"
                       class="text-[11px] font-semibold text-pink-700 dark:text-pink-600"
                     >
                       {{ t('creator.editPin') }} →
                     </router-link>
                     <router-link
-                      :to="{ name: 'boost-promote', query: { pin: rp.slug } }"
+                      :to="{ name: 'boost-promote', query: { foto: rp.slug } }"
                       class="text-[11px] font-semibold text-amber-700 dark:text-amber-400"
                     >
-                      {{ t('pin.boost.cta') }} →
+                      {{ t('foto.boost.cta') }} →
                     </router-link>
                   </div>
                 </li>
@@ -1018,7 +1018,7 @@ watch(isPro, (pro) => {
                   <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
                     <div class="min-w-0">
                       <router-link
-                        :to="`/pin/${row.pin_slug}`"
+                        :to="`/foto/${row.foto_slug}`"
                         class="text-sm font-bold text-neutral-900 dark:text-neutral-100 hover:text-pink-800 dark:hover:text-pink-800 line-clamp-1"
                       >
                         {{ row.pin_title }}
@@ -1072,7 +1072,7 @@ watch(isPro, (pro) => {
           </div>
         </section>
 
-        <!-- ── Weekly pins ─────────────────────────────────────── -->
+        <!-- ── Weekly fotos ─────────────────────────────────────── -->
         <section
           id="fenetre"
           class="creator-glass-panel mb-11 sm:mb-14 scroll-mt-28 overflow-hidden rounded-[1.65rem] border border-neutral-200/75 bg-white/92 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.38)] backdrop-blur-2xl backdrop-saturate-150 ring-1 ring-black/[0.02] dark:border-white/[0.07] dark:bg-neutral-950/88 dark:shadow-black/55 dark:ring-white/[0.04] sm:bg-white/78 sm:dark:bg-neutral-900/55"
@@ -1168,7 +1168,7 @@ watch(isPro, (pro) => {
 
                 <!-- Thumbnail -->
                 <router-link
-                  :to="`/pin/${p.slug}`"
+                  :to="`/foto/${p.slug}`"
                   class="my-4 shrink-0 w-[4.75rem] h-[4.75rem] sm:my-5 sm:h-[5.25rem] sm:w-[5.25rem]
                          rounded-xl overflow-hidden
                          bg-neutral-200 dark:bg-neutral-700
@@ -1193,7 +1193,7 @@ watch(isPro, (pro) => {
                 <!-- Content -->
                 <div class="min-w-0 flex-1 pe-5 py-5 flex flex-col justify-center gap-2.5">
                   <router-link
-                    :to="`/pin/${p.slug}`"
+                    :to="`/foto/${p.slug}`"
                     class="font-bold text-neutral-950 dark:text-neutral-100
                            hover:text-pink-800 dark:hover:text-pink-800
                            line-clamp-2 text-[15px] sm:text-base leading-snug transition-colors"
@@ -1290,7 +1290,7 @@ watch(isPro, (pro) => {
           </div>
         </section>
 
-        <!-- ── Top all-time pins ────────────────────────────────── -->
+        <!-- ── Top all-time fotos ────────────────────────────────── -->
         <section
           v-if="topAllTime.length"
           id="top-classement"
@@ -1332,7 +1332,7 @@ watch(isPro, (pro) => {
                   aria-hidden="true"
                 >{{ idx + 1 }}</span>
                 <router-link
-                  :to="`/pin/${p.slug}`"
+                  :to="`/foto/${p.slug}`"
                   class="font-semibold
                          text-neutral-900 dark:text-neutral-100
                          hover:text-pink-800 dark:hover:text-pink-800

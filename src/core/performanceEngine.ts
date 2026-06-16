@@ -1,5 +1,5 @@
 /**
- * Performance Engine — façade unifiée pour la santé runtime Pinova.
+ * Performance Engine — façade unifiée pour la santé runtime Fotoce.
  *
  *  Objectif : un seul point d'entrée pour mesurer & piloter les performances,
  *  pendant que les sous-systèmes (perfMonitor, motionBudget, memoryManager,
@@ -11,7 +11,7 @@
  *    - memory leaks (observers oubliés) → observerRegistry
  *    - tab reload crash → memoryManager (pagehide / freeze)
  *    - jank scroll → renderScheduler (throttleRaf, batchWrite)
- *    - GPU overload → quality mode adaptatif (data-pinova-quality)
+ *    - GPU overload → quality mode adaptatif (data-fotoce-quality)
  *
  *  Adaptive Quality Mode :
  *    - `high`   : full effects, blur libre, springs heavy, preload agressif
@@ -24,7 +24,7 @@
  *    - Device tier initial (low = floor à 'medium', jamais 'high' par défaut)
  *    - prefers-reduced-motion : floor à 'medium' (jamais blur lourd)
  *
- *  Côté CSS, l'attribut `data-pinova-quality` est posé sur `<html>` et
+ *  Côté CSS, l'attribut `data-fotoce-quality` est posé sur `<html>` et
  *  consommé dans `style.css` pour neutraliser blur / box-shadow / glow.
  */
 
@@ -70,7 +70,7 @@ const DEGRADE_REQUIRED_HITS = 2 /* 2 secondes consécutives de jank */
 
 function syncQualityToDocument(mode: QualityMode): void {
   if (typeof document === 'undefined') return
-  document.documentElement.dataset.pinovaQuality = mode
+  document.documentElement.dataset.fotoceQuality = mode
   /* Bascule du saver pour les composants qui n'écoutent que ça. */
   if (mode === 'low' && !motionSaver.value) {
     setMotionSaver(true)

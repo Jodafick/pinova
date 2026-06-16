@@ -13,7 +13,7 @@ import type { Component } from 'vue'
  *
  * - `page` : pile iOS classique (slide horizontal droite→gauche, conserve le fond figé)
  * - `modal` : modale centrée premium (fade + scale + blur de fond)
- * - `fullscreen` : full-screen immersif (slide vertical bas→haut, ex: PinDetail)
+ * - `fullscreen` : full-screen immersif (slide vertical bas→haut, ex: FotoDetail)
  * - `sheet` : bottom-sheet (drag-to-dismiss, safe-area)
  * - `floatingCard` : carte flottante centrée (≤ 420px, légère)
  * - `transparentOverlay` : overlay temporaire transparent (toasts, contextual menus)
@@ -42,7 +42,7 @@ export type LayerDismissStrategy = {
   swipeDown: boolean
   /**
    * Si true, le swipe vertical ne démarre que lorsque le `pointerdown` vient
-   * d’un descendant de `[data-pinova-swipe-dismiss-handle]` (ex. barre du haut).
+   * d’un descendant de `[data-fotoce-swipe-dismiss-handle]` (ex. barre du haut).
    */
   swipeFromHeaderOnly: boolean
   /** Swipe-right depuis le bord gauche ferme (page iOS). */
@@ -148,7 +148,7 @@ export interface LayerRouteMeta {
    * Geste de dismiss vertical (fullscreen / sheet).
    * - `true` : toute la surface
    * - `false` : désactivé
-   * - `'header'` : uniquement depuis une zone marquée `data-pinova-swipe-dismiss-handle`
+   * - `'header'` : uniquement depuis une zone marquée `data-fotoce-swipe-dismiss-handle`
    */
   gestureDismiss?: boolean | 'header'
   /** Conserver l'arrière-plan vivant. Par défaut `true`. */

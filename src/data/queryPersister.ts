@@ -16,7 +16,7 @@ import { persistQueryClient } from '@tanstack/query-persist-client-core'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import { queryClient } from './queryClient'
 
-const STORAGE_KEY = 'pinova-query-cache-v1'
+const STORAGE_KEY = 'fotoce-query-cache-v1'
 const MAX_AGE_MS  = 7 * 24 * 60 * 60 * 1000 /* 7 jours */
 const THROTTLE_MS = 1500
 
@@ -26,7 +26,7 @@ let installed = false
 function canUseLocalStorage(): boolean {
   if (typeof window === 'undefined') return false
   try {
-    const k = '__pinova_probe__'
+    const k = '__fotoce_probe__'
     window.localStorage.setItem(k, '1')
     window.localStorage.removeItem(k)
     return true
@@ -62,7 +62,7 @@ export function installQueryPersister(): boolean {
     persister,
     maxAge: MAX_AGE_MS,
     /* Buster : changer cette string force un purge complet du cache persisté. */
-    buster: 'pinova.v1',
+    buster: 'fotoce.v1',
     dehydrateOptions: {
       shouldDehydrateQuery: (query) => query.state.status === 'success',
       shouldDehydrateMutation: () => false,

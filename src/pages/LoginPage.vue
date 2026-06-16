@@ -7,8 +7,8 @@ import { GOOGLE_SIGN_IN_SCOPES } from '../config/env'
 import { useI18n } from '../i18n'
 import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
-import PinovaButton from '../components/ui/PinovaButton.vue'
-import PinovaInput from '../components/ui/PinovaInput.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
+import FotoceInput from '../components/ui/FotoceInput.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -95,7 +95,7 @@ async function handleGoogleClick() {
 </script>
 
 <template>
-  <div class="pinova-route-natural-height pinova-auth-page-shell min-h-0 flex flex-1 flex-col bg-transparent dark:bg-transparent lg:min-h-screen">
+  <div class="fotoce-route-natural-height fotoce-auth-page-shell fotoce-auth-page-shell--tab-bar fotoce-mobile-tab-bar-scroll-pad min-h-0 flex flex-1 flex-col bg-transparent dark:bg-transparent lg:min-h-screen">
     <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-br from-pink-700/90 dark:from-pink-600/90 via-pink-700/80 dark:via-pink-600/80 to-pink-700/90 dark:to-pink-600/90 z-10"></div>
       <img
@@ -108,7 +108,7 @@ async function handleGoogleClick() {
           <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden">
             <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          <span class="text-3xl font-auth-title">Pinova</span>
+          <span class="text-3xl font-auth-title">Fotoce</span>
         </div>
         <h1 class="text-[3.35rem] font-auth-title font-auth-title--black leading-tight mb-4">
           {{ t('login.hero.title') }}
@@ -125,7 +125,7 @@ async function handleGoogleClick() {
           <div class="w-10 h-10 rounded-full bg-pink-700 dark:bg-pink-600 flex items-center justify-center overflow-hidden shadow-sm">
             <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          <span class="text-2xl font-auth-title text-neutral-900 dark:text-neutral-100">Pinova</span>
+          <span class="text-2xl font-auth-title text-neutral-900 dark:text-neutral-100">Fotoce</span>
         </div>
 
         <div class="text-center mb-10">
@@ -138,11 +138,11 @@ async function handleGoogleClick() {
             v-if="error"
             class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm animate-shake dark:bg-pink-950/30 dark:border-pink-900/40 dark:text-pink-400"
           >
-            <PinovaIcon name="error" class="text-lg" />
+            <FotoceIcon name="error" class="text-lg" />
             {{ error }}
           </div>
 
-          <PinovaInput
+          <FotoceInput
             v-model="email"
             :label="t('login.email')"
             :placeholder="t('login.email.placeholder')"
@@ -157,7 +157,7 @@ async function handleGoogleClick() {
               <label class="text-sm font-bold text-neutral-700 dark:text-neutral-300">{{ t('login.password') }}</label>
               <router-link to="/forgot-password" class="text-xs font-bold text-pink-700 hover:text-pink-800 hover:underline">{{ t('login.forgot') }}</router-link>
             </div>
-            <PinovaInput
+            <FotoceInput
               v-model="password"
               :type="showPassword ? 'text' : 'password'"
               placeholder="••••••••"
@@ -171,15 +171,15 @@ async function handleGoogleClick() {
                   class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
                   @click="showPassword = !showPassword"
                 >
-                  <PinovaIcon :name="showPassword ? 'visibility_off' : 'visibility'" class="text-xl" />
+                  <FotoceIcon :name="showPassword ? 'visibility_off' : 'visibility'" class="text-xl" />
                 </button>
               </template>
-            </PinovaInput>
+            </FotoceInput>
           </div>
 
-          <PinovaButton type="submit" variant="primary" size="lg" block :loading="loading">
+          <FotoceButton type="submit" variant="primary" size="lg" block :loading="loading">
             {{ loading ? t('login.submitting') : t('login.submit') }}
-          </PinovaButton>
+          </FotoceButton>
         </form>
 
         <div class="my-8 flex items-center gap-4 text-neutral-400 dark:text-neutral-500">
@@ -188,10 +188,10 @@ async function handleGoogleClick() {
           <div class="flex-1 h-px bg-neutral-200 dark:bg-neutral-700"></div>
         </div>
 
-        <PinovaButton variant="secondary" block @click="handleGoogleClick">
+        <FotoceButton variant="secondary" block @click="handleGoogleClick">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 shrink-0" alt="" />
           {{ t('login.googleCta') }}
-        </PinovaButton>
+        </FotoceButton>
 
         <p class="mt-10 text-center text-sm text-neutral-500 dark:text-neutral-400 font-medium">
           {{ t('login.noAccount') }}

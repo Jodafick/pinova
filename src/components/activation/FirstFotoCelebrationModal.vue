@@ -2,8 +2,8 @@
 import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ConfettiBurst from '../ConfettiBurst.vue'
-import PinovaModal from '../ui/PinovaModal.vue'
-import PinovaButton from '../ui/PinovaButton.vue'
+import FotoceModal from '../ui/FotoceModal.vue'
+import FotoceButton from '../ui/FotoceButton.vue'
 import { useI18n } from '../../i18n'
 import { useActivationFunnel } from '../../composables/useActivationFunnel'
 import { trackEvent, trackOnce } from '../../lib/analytics'
@@ -34,11 +34,11 @@ watch(
   () => props.open,
   (v) => {
     if (!v) return
-    trackOnce('first_pin_confetti_shown', { surface: 'web' })
+    trackOnce('first_foto_confetti_shown', { surface: 'web' })
     trackEvent('creator_level_progressed', {
       level: 1,
       percent: creatorProgress.value.percent || 33,
-      milestone: 'first_pin_published',
+      milestone: 'first_foto_published',
     })
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
@@ -51,15 +51,15 @@ watch(
 )
 
 async function onContinue() {
-  await markFirstPinCelebrationSeen(['first_pin_published'])
+  await markFirstPinCelebrationSeen(['first_foto_published'])
   const pending = pendingPublishedPin.value
-  clearPendingPublishedPin()
+  clearPendingPublishedFoto()
   emit('update:open', false)
   if (pending?.slug) {
-    await navigateToPublishedPin(router, {
+    await navigateToPublishedFoto(router, {
       slug: pending.slug,
       username: pending.username ?? null,
-      pin: null,
+      foto: null,
     })
     return
   }
@@ -68,7 +68,7 @@ async function onContinue() {
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     :open="open"
     presentation="center"
     :show-header="false"
@@ -80,7 +80,7 @@ async function onContinue() {
         class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-violet-600 text-white shadow-lg"
         aria-hidden="true"
       >
-        <PinovaIcon name="celebration" class="text-4xl" />
+        <FotoceIcon name="celebration" class="text-4xl" />
       </div>
       <div class="space-y-1">
         <h2 class="text-2xl font-black text-neutral-900 dark:text-neutral-50">
@@ -91,7 +91,7 @@ async function onContinue() {
         </p>
       </div>
       <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900 ring-1 ring-amber-300/60 dark:bg-amber-950/50 dark:text-amber-200">
-        <PinovaIcon name="military_tech" class="text-base shrink-0" aria-hidden="true" />
+        <FotoceIcon name="military_tech" class="text-base shrink-0" aria-hidden="true" />
         {{ t('activation.celebration.badge') }}
       </span>
       <div class="text-left space-y-1.5 px-1">
@@ -106,9 +106,9 @@ async function onContinue() {
           />
         </div>
       </div>
-      <PinovaButton variant="primary" block class="min-h-[48px]" @click="onContinue">
+      <FotoceButton variant="primary" block class="min-h-[48px]" @click="onContinue">
         {{ t('activation.celebration.continue') }}
-      </PinovaButton>
+      </FotoceButton>
     </div>
-  </PinovaModal>
+  </FotoceModal>
 </template>

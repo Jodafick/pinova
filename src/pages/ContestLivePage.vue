@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import ContestCountdown from '../components/contest/ContestCountdown.vue'
 import LeaderboardPodiumTopThree from '../components/contest/LeaderboardPodiumTopThree.vue'
-import LeaderboardPinRow from '../components/contest/LeaderboardPinRow.vue'
+import LeaderboardFotoRow from '../components/contest/LeaderboardFotoRow.vue'
 import { useContestLive } from '../composables/useContestLive'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
@@ -38,7 +38,7 @@ const viewer = computed(() => contestState.viewer)
 const viewerPin = computed(() => (viewer.value?.ranked ? viewer.value?.pin ?? null : null))
 
 /**
- * Hors du bloc affiché (top N configuré serveur via `leaderboard_display_pins`) : bandeau fixe avec rang + pin.
+ * Hors du bloc affiché (top N configuré serveur via `leaderboard_display_pins`) : bandeau fixe avec rang + foto.
  */
 const showMyRankDock = computed(
   () =>
@@ -233,7 +233,7 @@ const myRankDockRankIsNumeric = computed(() => {
             <p
               class="text-[11px] sm:text-[11.5px] text-pink-100/82 dark:text-pink-100/72 font-medium leading-snug max-w-2xl border-l-[3px] border-white/28 pl-3.5 py-0.5 rounded-r-md bg-white/[0.06]"
             >
-              {{ t('contest.live.rankedPinsHint', { count: displayPins }) }}
+              {{ t('contest.live.rankedFotosHint', { count: displayPins }) }}
             </p>
           </div>
           <div
@@ -275,7 +275,7 @@ const myRankDockRankIsNumeric = computed(() => {
               aria-hidden="true"
             />
             <div class="min-w-0 flex-1">
-              <p class="text-[11px] uppercase tracking-wide text-pink-100/78 dark:text-pink-100/65 line-clamp-2">{{ t('contest.stats.rankedPins') }}</p>
+              <p class="text-[11px] uppercase tracking-wide text-pink-100/78 dark:text-pink-100/65 line-clamp-2">{{ t('contest.stats.rankedFotos') }}</p>
               <p class="text-xl font-black mt-0.5 tabular-nums">{{ topPins.length }}</p>
             </div>
           </div>
@@ -321,7 +321,7 @@ const myRankDockRankIsNumeric = computed(() => {
       </div>
 
       <LeaderboardPodiumTopThree
-        variant="pin"
+        variant="foto"
         :rank2="podiumRank2"
         :rank1="podiumRank1"
         :rank3="podiumRank3"
@@ -333,9 +333,9 @@ const myRankDockRankIsNumeric = computed(() => {
       </p>
 
       <div class="grid gap-3 w-full min-w-0 max-w-full overflow-x-hidden">
-        <LeaderboardPinRow
+        <LeaderboardFotoRow
           v-for="(row, idx) in pinsAfterPodium"
-          :key="row.pin_id"
+          :key="row.foto_id"
           :row="row"
           :index="idx + 3"
           :is-you="showYouHighlightForRow(row)"
@@ -350,7 +350,7 @@ const myRankDockRankIsNumeric = computed(() => {
     >
       <div class="w-full min-w-0 max-w-6xl mx-auto pointer-events-auto">
         <router-link
-          :to="`/pin/${encodeURIComponent(viewerPin.pin_slug)}`"
+          :to="`/foto/${encodeURIComponent(viewerPin.foto_slug)}`"
           class="flex items-center gap-3 rounded-2xl border border-fuchsia-300 dark:border-fuchsia-600 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-[0_-8px_30px_-10px_rgba(168,85,247,0.55)] px-4 py-3 min-h-[4.75rem]"
         >
           <div class="w-14 h-14 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 shrink-0 border border-fuchsia-200/60">

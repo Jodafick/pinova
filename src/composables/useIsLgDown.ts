@@ -5,7 +5,7 @@ const QUERY = `(max-width: ${LG_MAX_PX}px)`
 
 /**
  * true quand la largeur viewport est celle des layouts « mobile / tablette » (<lg Tailwind),
- * pour aligner le flux création pin sur l’app native et le shell story web.
+ * pour aligner le flux création foto sur l’app native et le shell story web.
  */
 export function useIsLgDown() {
   const isLgDown = ref(

@@ -1,7 +1,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { isPwaLightPerfMode, navigatorSaveDataEnabled } from '../utils/pwaPerformance'
 
-const STORAGE_OVERRIDE = 'pinova_low_data_override'
+const STORAGE_OVERRIDE = 'fotoce_low_data_override'
 
 export type DataSaverOverride = 'auto' | 'on' | 'off'
 

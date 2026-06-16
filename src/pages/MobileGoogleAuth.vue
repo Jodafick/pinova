@@ -25,7 +25,7 @@ function normalizeMobileCallbackPath(pathname: string): string {
 }
 
 function nativeCallbackRoute(url: URL): string {
-  if (url.protocol === 'pinova:') {
+  if (url.protocol === 'fotoce:') {
     const host = url.hostname ? `${url.hostname}` : ''
     const path = url.pathname || ''
     return normalizeMobileCallbackPath(`${host}${path}`)
@@ -37,7 +37,7 @@ function nativeCallbackRoute(url: URL): string {
 }
 
 function isNativeMobileCallback(url: URL): boolean {
-  if (url.protocol !== 'pinova:' && url.protocol !== 'exp:') return false
+  if (url.protocol !== 'fotoce:' && url.protocol !== 'exp:') return false
   return nativeCallbackRoute(url) === MOBILE_GOOGLE_CALLBACK_ROUTE
 }
 
@@ -51,8 +51,8 @@ function mobileRedirectWithCode(mobileCode: string, mobileState: string) {
   const encodedCode = encodeURIComponent(mobileCode)
   const encodedState = encodeURIComponent(mobileState)
   const fallbackRedirect = import.meta.env.PROD
-    ? `pinova://${MOBILE_GOOGLE_CALLBACK_ROUTE}?auth_code=${encodedCode}&mobile_state=${encodedState}`
-    : `pinova://login-success?auth_code=${encodedCode}&mobile_state=${encodedState}`
+    ? `fotoce://${MOBILE_GOOGLE_CALLBACK_ROUTE}?auth_code=${encodedCode}&mobile_state=${encodedState}`
+    : `fotoce://login-success?auth_code=${encodedCode}&mobile_state=${encodedState}`
 
   return savedRedirectUrl
     ? `${savedRedirectUrl}${separator}auth_code=${encodedCode}&mobile_state=${encodedState}`
@@ -84,8 +84,8 @@ function normalizeMobileDeviceBinding(rawValue: string | null): string {
 
 function clearWebSessionForMobileBridge() {
   if (typeof window === 'undefined') return
-  window.localStorage.removeItem('pinova_token')
-  window.localStorage.removeItem('pinova_refresh_token')
+  window.localStorage.removeItem('fotoce_token')
+  window.localStorage.removeItem('fotoce_refresh_token')
   delete api.defaults.headers.common.Authorization
 }
 
@@ -247,7 +247,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
-    <!-- Logo Pinova -->
+    <!-- Logo Fotoce -->
     <div class="mb-10 flex flex-col items-center">
       <div class="w-20 h-20 rounded-full bg-pink-700 dark:bg-pink-600 flex items-center justify-center overflow-hidden shadow-lg mb-4">
         <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />

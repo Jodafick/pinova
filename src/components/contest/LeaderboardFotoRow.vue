@@ -3,10 +3,10 @@ import { computed } from 'vue'
 
 import ContestPinMetrics from './ContestPinMetrics.vue'
 import { useI18n } from '../../i18n'
-import type { ContestPinRow } from '../../types/contest'
+import type { ContestFotoRow } from '../../types/contest'
 
 const { t } = useI18n()
-const props = defineProps<{ row: ContestPinRow; index: number; isYou?: boolean }>()
+const props = defineProps<{ row: ContestFotoRow; index: number; isYou?: boolean }>()
 
 const trend = computed(() => {
   const prev = props.row.previous_rank
@@ -58,7 +58,7 @@ const cardClass = computed(() => {
 
 <template>
   <router-link
-    :to="`/pin/${encodeURIComponent(row.pin_slug)}`"
+    :to="`/foto/${encodeURIComponent(row.foto_slug)}`"
     class="group rounded-2xl border p-3 sm:p-4 flex items-center gap-2 sm:gap-3 transition hover:shadow-xl hover:-translate-y-0.5 relative w-full max-w-[min(100%,calc(100vw-1.5rem))] sm:max-w-full mx-auto min-w-0 box-border overflow-hidden"
     :class="cardClass"
     @contextmenu.prevent

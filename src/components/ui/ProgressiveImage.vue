@@ -26,7 +26,7 @@
  *     :src="pin.imageUrl"
  *     :blurhash="pin.blurhash"
  *     :aspect-ratio="pin.aspectRatio"
- *     alt="Pin de l'utilisateur"
+ *     alt="Foto de l'utilisateur"
  *     priority="high"
  *   />
  */
@@ -109,7 +109,7 @@ const placeholderDataUrl = computed(() => {
 const placeholderBackground = computed<string>(() => {
   if (placeholderDataUrl.value) return `url(${placeholderDataUrl.value}) center/cover no-repeat`
   if (props.fallbackColor) return props.fallbackColor
-  return 'var(--pinova-skel-base, #f1f0f2)'
+  return 'var(--fotoce-skel-base, #f1f0f2)'
 })
 
 const aspectRatioStyle = computed(() => {
@@ -234,7 +234,7 @@ const antiLeakAttrs = computed(() => {
 
     <!-- Error state minimal. -->
     <div v-if="hasError" class="progressive-image__error" aria-live="polite">
-      <PinovaIcon name="broken_image" />
+      <FotoceIcon name="broken_image" />
     </div>
   </div>
 </template>
@@ -286,12 +286,12 @@ const antiLeakAttrs = computed(() => {
   inset: 0;
   display: grid;
   place-items: center;
-  color: var(--pinova-text-tertiary, #75717a);
+  color: var(--fotoce-text-tertiary, #75717a);
   z-index: 3;
-  background: var(--pinova-skel-base, #f1f0f2);
+  background: var(--fotoce-skel-base, #f1f0f2);
 }
 
-.progressive-image__error .pinova-icon {
+.progressive-image__error .fotoce-icon {
   font-size: 38px;
   opacity: 0.5;
 }

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>PINOVA Lighthouse auth</title>
+  <title>FOTOCE Lighthouse auth</title>
 </head>
 <body>
 <script>
@@ -11,7 +11,7 @@
   var token = params.get('token');
   var redirect = params.get('redirect') || '/settings';
   if (token) {
-    try { localStorage.setItem('pinova_token', token); } catch (e) {}
+    try { localStorage.setItem('fotoce_token', token); } catch (e) {}
   }
   window.location.replace(redirect);
 })();

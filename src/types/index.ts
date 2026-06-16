@@ -1,4 +1,4 @@
-export type Pin = {
+export type Foto = {
   id: number
   slug: string
   title: string
@@ -54,13 +54,13 @@ export type Pin = {
   scheduledPublishAt?: string | null
   /** Story 24h (badge filtre actif / archivé pour l'auteur) */
   isStory?: boolean
-  /** Plus/Pro : story publiée via standalone ; supprimée en base après 24 h (pas d'archive pin). */
+  /** Plus/Pro : story publiée via standalone ; supprimée en base après 24 h (pas d'archive foto). */
   storyEphemeral?: boolean
   storyExpiresAt?: string
   createdAt: string
-  /** Pin publié avec politique « contenu sensible » (flou par défaut pour les adultes). */
+  /** Foto publié avec politique « contenu sensible » (flou par défaut pour les adultes). */
   mediaSensitiveBlur?: boolean
-  /** Le visiteur connecté a déjà signalé ce pin (API `viewer_has_reported`). */
+  /** Le visiteur connecté a déjà signalé ce foto (API `viewer_has_reported`). */
   viewerHasReported?: boolean
   isBoosted?: boolean
 }
@@ -77,12 +77,12 @@ export type PartnerAd = {
   ctaUrl: string
 }
 
-export type PinPromo = {
-  feedType: 'pin_promo'
+export type FotoPromo = {
+  feedType: 'foto_promo'
   id: string
   campaignId: number
-  pinSlug?: string
-  pinId?: number
+  fotoSlug?: string
+  fotoId?: number
   title: string
   body: string
   sponsorName: string
@@ -95,35 +95,35 @@ export type PinPromo = {
   topic?: string
 }
 
-export type SponsoredAd = PartnerAd | PinPromo
+export type SponsoredAd = PartnerAd | FotoPromo
 
-export type FeedItem = Pin | SponsoredAd
+export type FeedItem = Foto | SponsoredAd
 
 export function isPartnerAd(item: FeedItem): item is PartnerAd {
   return (item as PartnerAd).feedType === 'partner_ad'
 }
 
-export function isPinPromo(item: FeedItem): item is PinPromo {
-  return (item as PinPromo).feedType === 'pin_promo'
+export function isFotoPromo(item: FeedItem): item is FotoPromo {
+  return (item as FotoPromo).feedType === 'foto_promo'
 }
 
 export function isSponsoredAd(item: FeedItem): item is SponsoredAd {
-  return isPartnerAd(item) || isPinPromo(item)
+  return isPartnerAd(item) || isFotoPromo(item)
 }
 
-export function isFeedPin(item: FeedItem): item is Pin {
+export function isFeedFoto(item: FeedItem): item is Foto {
   return !isSponsoredAd(item)
 }
 
-/** Première page renvoyée par `GET me/` (`me_created_pins_page` / `me_saved_pins_page`). */
-export type MeHydrationPinsPage = {
+/** Première page renvoyée par `GET me/` (`me_created_fotos_page` / `me_saved_fotos_page`). */
+export type MeHydrationFotosPage = {
   count: number
   next: string | null
   previous: string | null
-  results: Pin[]
+  results: Foto[]
 }
 
-export type PinLikerEntry = {
+export type FotoLikerEntry = {
   username: string
   display_name: string
   avatar_url: string
@@ -131,12 +131,12 @@ export type PinLikerEntry = {
   liked_at: string
 }
 
-export type PinLikersResponse = {
+export type FotoLikersResponse = {
   count: number
-  likers: PinLikerEntry[]
+  likers: FotoLikerEntry[]
 }
 
-import type { ActivationFunnelState } from '@pinova/shared'
+import type { ActivationFunnelState } from '@fotoce/shared'
 import type { UserProfileExtended } from './profileExtended'
 
 export type User = UserProfileExtended & {
@@ -163,7 +163,7 @@ export type User = UserProfileExtended & {
   followers: number
   following: number
   isFollowing?: boolean
-  savedPins: number[]
+  savedFotos: number[]
   /** Jeton profil privé (?share=) — réservé au propriétaire */
   profileShareToken?: string | null
   subscription?: {
@@ -193,13 +193,13 @@ export type User = UserProfileExtended & {
     hasBillingHistory?: boolean
     /** Plus/Pro — flouter les médias marqués sensibles par défaut (client) */
     sensitiveMediaBlurByDefault?: boolean
-    /** Majeur vérifié — masquer totalement les pins sensibles d'autrui */
+    /** Majeur vérifié — masquer totalement les fotos sensibles d'autrui */
     hideSensitivePins?: boolean
   }
   boards?: {
     id: number
     name: string
-    pinCount: number
+    fotoCount: number
     isPrivate: boolean
     /** Propriétaire du tableau (pour ouvrir la bonne URL quand tableau partagé). */
     ownerUsername?: string
@@ -209,13 +209,13 @@ export type User = UserProfileExtended & {
     previewImages?: string[]
     shareToken?: string | null
   }[]
-  /** Hydratation `GET me/` — suite via `pins/?author=…&page=2` comme aujourd’hui. */
+  /** Hydratation `GET me/` — suite via `fotos/?author=…&page=2` comme aujourd’hui. */
   meCreatedPinsPage?: MeHydrationPinsPage
-  /** Hydratation `GET me/` — suite via `pins/?saved_by_me=1&page=2`. */
+  /** Hydratation `GET me/` — suite via `fotos/?saved_by_me=1&page=2`. */
   meSavedPinsPage?: MeHydrationPinsPage
   /** ISO YYYY-MM-DD — réservé au propriétaire ; obligatoire pour publier du média */
   birthDate?: string | null
-  /** Nombre de pins créés visibles pour le visiteur (API `pins_count`). */
+  /** Nombre de fotos créés visibles pour le visiteur (API `fotos_count`). */
   pinsCount?: number
   /** Comptes que j’ai bloqués (API `blocked_usernames`). */
   blockedUsernames?: string[]

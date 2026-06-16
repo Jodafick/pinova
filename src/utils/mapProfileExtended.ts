@@ -6,4 +6,4 @@ export {
   type ThemeMode,
   type PresenceStatus,
   type SocialLinks,
-} from '@pinova/shared'
+} from '@fotoce/shared'

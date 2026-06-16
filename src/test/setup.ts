@@ -1,6 +1,6 @@
 import { config } from '@vue/test-utils'
-import PinovaIcon from '../components/ui/PinovaIcon.vue'
+import FotoceIcon from '../components/ui/FotoceIcon.vue'
 
 config.global.components = {
-  PinovaIcon,
+  FotoceIcon,
 }

@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
     : undefined,
   resolve: {
     alias: {
-      '@pinova/shared': sharedAlias,
+      '@fotoce/shared': sharedAlias,
     },
   },
   plugins: [
@@ -36,8 +36,8 @@ export default defineConfig(({ mode }) => {
     ...(sentryAuthToken && sentryRelease
       ? [
           sentryVitePlugin({
-            org: process.env.SENTRY_ORG || 'pinova',
-            project: process.env.SENTRY_PROJECT_WEB || 'pinova-web',
+            org: process.env.SENTRY_ORG || 'fotoce',
+            project: process.env.SENTRY_PROJECT_WEB || 'fotoce-web',
             authToken: sentryAuthToken,
             release: { name: sentryRelease },
             sourcemaps: {
@@ -64,9 +64,9 @@ export default defineConfig(({ mode }) => {
       ],
       manifest: {
         id: '/',
-        name: 'Pinova',
-        short_name: 'Pinova',
-        description: "Pinova — votre source d'inspiration visuelle",
+        name: 'Fotoce',
+        short_name: 'Fotoce',
+        description: "Fotoce — votre source d'inspiration visuelle",
         lang: 'fr',
         dir: 'ltr',
         start_url: '/?source=pwa',
@@ -110,16 +110,16 @@ export default defineConfig(({ mode }) => {
         /* Raccourcis OS (long-press icône Android, future iOS 17+). */
         shortcuts: [
           {
-            name: 'Créer un pin',
+            name: 'Créer une Foto',
             short_name: 'Créer',
-            description: 'Publier un nouveau contenu sur Pinova',
+            description: 'Publier un nouveau contenu sur Fotoce',
             url: '/create?source=shortcut',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           },
           {
             name: 'Explorer',
             short_name: 'Explorer',
-            description: 'Découvrir de nouveaux pins',
+            description: 'Découvrir de nouvelles Fotos',
             url: '/explore?source=shortcut',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           },
@@ -176,7 +176,7 @@ export default defineConfig(({ mode }) => {
               /\/pins\/.+\/(image|video|thumbnail)/i.test(url.pathname),
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'pinova-api-media',
+              cacheName: 'fotoce-api-media',
               expiration: {
                 maxEntries: 72,
                 maxAgeSeconds: 3 * 24 * 3600,
@@ -184,12 +184,12 @@ export default defineConfig(({ mode }) => {
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          /* Images Pinova : stale-while-revalidate (retour cache instant). */
+          /* Images Fotoce : stale-while-revalidate (retour cache instant). */
           {
             urlPattern: ({ request }) => request.destination === 'image',
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'pinova-images',
+              cacheName: 'fotoce-images',
               expiration: {
                 maxEntries: 80,
                 maxAgeSeconds: 14 * 24 * 3600
@@ -202,7 +202,7 @@ export default defineConfig(({ mode }) => {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'pinova-fonts',
+              cacheName: 'fotoce-fonts',
               expiration: { maxEntries: 30, maxAgeSeconds: 90 * 24 * 3600 },
               cacheableResponse: { statuses: [0, 200] }
             }
@@ -212,7 +212,7 @@ export default defineConfig(({ mode }) => {
             urlPattern: /\/api\/.+\/(topics|trending|public)/i,
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'pinova-public-api',
+              cacheName: 'fotoce-public-api',
               expiration: { maxEntries: 30, maxAgeSeconds: 1 * 3600 },
               cacheableResponse: { statuses: [0, 200] }
             }

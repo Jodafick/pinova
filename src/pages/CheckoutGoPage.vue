@@ -5,7 +5,7 @@ import { useI18n } from '../i18n'
 import CheckoutTrustBadges from '../components/CheckoutTrustBadges.vue'
 import { fetchCheckoutSocialProof } from '../lib/fetchCheckoutSocialProof'
 import { checkoutSuccessPath, readStashedCheckout, type CheckoutFlow } from '../utils/checkoutFlow'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,15 +46,15 @@ function goBack() {
   <div class="min-h-[70vh] flex items-center justify-center px-4">
     <div class="max-w-md w-full rounded-3xl border app-divider-subtle p-8 text-center space-y-4 shadow-lg">
       <template v-if="missingUrl">
-        <PinovaIcon name="error" class="text-5xl text-amber-500" />
+        <FotoceIcon name="error" class="text-5xl text-amber-500" />
         <h1 class="text-xl font-bold">{{ t('checkout.go.errorTitle') }}</h1>
         <p class="text-sm text-neutral-500">{{ t('checkout.go.errorSubtitle') }}</p>
-        <PinovaButton variant="primary" block @click="goBack">
+        <FotoceButton variant="primary" block @click="goBack">
           {{ t('checkout.go.errorBack') }}
-        </PinovaButton>
+        </FotoceButton>
       </template>
       <template v-else>
-        <PinovaIcon name="lock" class="text-5xl text-pink-600" />
+        <FotoceIcon name="lock" class="text-5xl text-pink-600" />
         <h1 class="text-xl font-bold">{{ t('checkout.go.title') }}</h1>
         <p class="text-sm text-neutral-500">{{ t('checkout.go.subtitle') }}</p>
         <p

@@ -1,5 +1,5 @@
 /**
- * Unified Media Engine — point d'entrée unique pour les médias Pinova.
+ * Unified Media Engine — point d'entrée unique pour les médias Fotoce.
  *
  * Combine :
  *  - `imageCache`  : cache LRU décodé global + decode async.

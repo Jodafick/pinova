@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
 import type { BoostPack } from '../composables/usePromoteHub'
-import type { PinPromo } from '../types'
+import type { FotoPromo } from '../types'
 import {
   countTargetingFilters,
   type CampaignTargeting,
@@ -46,10 +46,10 @@ const showAdvanced = ref(false)
 
 const targetingCount = computed(() => countTargetingFilters(props.targeting))
 
-const campaignPreview = computed((): PinPromo | null => {
+const campaignPreview = computed((): FotoPromo | null => {
   if (!props.headline.trim()) return null
   return {
-    feedType: 'pin_promo',
+    feedType: 'foto_promo',
     id: 'preview',
     campaignId: 0,
     title: props.headline.trim(),
@@ -143,7 +143,7 @@ function applyPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
         class="text-xs font-semibold text-pink-700 flex items-center gap-1"
         @click="showAdvanced = !showAdvanced"
       >
-        <PinovaIcon :name="showAdvanced ? 'expand_less' : 'expand_more'" class="text-base" />
+        <FotoceIcon :name="showAdvanced ? 'expand_less' : 'expand_more'" class="text-base" />
         {{ t('promote.campaigns.moreOptions') }}
       </button>
 
@@ -171,7 +171,7 @@ function applyPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
         :class="targetingCount ? 'border-pink-500 bg-pink-50 text-pink-800 dark:bg-pink-950/40' : 'border-neutral-200 dark:border-neutral-700'"
         @click="targetingOpen = true"
       >
-        <PinovaIcon name="target" class="text-base" />
+        <FotoceIcon name="target" class="text-base" />
         {{ t('promote.targeting.open') }}
         <span v-if="targetingCount" class="rounded-full bg-pink-600 text-white text-[9px] px-1.5 py-0.5 min-w-[1.25rem]">{{ targetingCount }}</span>
       </button>
@@ -208,7 +208,7 @@ function applyPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
       @click="emit('submit')"
     >
       <span v-if="busy" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-      <PinovaIcon v-else name="campaign" />
+      <FotoceIcon v-else name="campaign" />
       {{ busy ? t('common.loading') : t('promote.campaigns.publishFun') }}
     </button>
 

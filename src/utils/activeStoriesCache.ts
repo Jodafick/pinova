@@ -1,10 +1,10 @@
 /**
- * Cache léger pour `pins/active-stories` — évite un refetch à chaque navigation /
+ * Cache léger pour `fotos/active-stories` — évite un refetch à chaque navigation /
  * réactivation de page tant que le TTL n’est pas dépassé.
  * Rafraîchissement explicite (bouton ↻) doit passer `force: true`.
  */
 
-import type { Pin } from '../types'
+import type { Foto } from '../types'
 
 const DEFAULT_TTL_MS = 3 * 60 * 1000
 
@@ -17,10 +17,10 @@ export type HomeStoriesGroupsCache = Array<{
   avatar_url: string
   avatar_color: string
   cover_image_url: string
-  pins: Pin[]
+  pins: Foto[]
 }>
 
-const profileStoriesCache = new Map<string, { pins: Pin[]; at: number }>()
+const profileStoriesCache = new Map<string, { pins: Foto[]; at: number }>()
 const homeStripRefreshListeners = new Set<() => void>()
 
 export function subscribeHomeStoriesRefresh(listener: () => void): () => void {
@@ -58,7 +58,7 @@ export function invalidateHomeStoriesCache() {
 export function getCachedProfileActiveStories(
   username: string,
   ttlMs: number = DEFAULT_TTL_MS,
-): Pin[] | null {
+): Foto[] | null {
   const key = normUser(username)
   if (!key) return null
   const e = profileStoriesCache.get(key)
@@ -67,10 +67,10 @@ export function getCachedProfileActiveStories(
   return e.pins
 }
 
-export function setCachedProfileActiveStories(username: string, pins: Pin[]) {
+export function setCachedProfileActiveStories(username: string, pins: Foto[]) {
   const key = normUser(username)
   if (!key) return
-  profileStoriesCache.set(key, { pins, at: Date.now() })
+  profileStoriesCache.set(key, { fotos, at: Date.now() })
 }
 
 export function invalidateProfileActiveStories(username?: string) {

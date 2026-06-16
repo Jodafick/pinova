@@ -110,7 +110,7 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-  <section class="sponsored-mobile fixed inset-0 z-[var(--pinova-z-pin-overlay,95)] bg-black text-white lg:hidden">
+  <section class="sponsored-mobile fixed inset-0 z-[var(--fotoce-z-foto-overlay,95)] bg-black text-white lg:hidden">
     <div class="absolute inset-0 bg-black/80" aria-hidden="true" />
     <div class="pin-mobile-surface relative z-[1] h-full w-full overflow-hidden" :style="surfaceStyle">
       <div
@@ -134,7 +134,7 @@ onUnmounted(() => {
         :aria-label="t('common.close')"
         @click="startDismiss"
       >
-        <PinovaIcon name="close" class="text-xl" />
+        <FotoceIcon name="close" class="text-xl" />
       </button>
     </div>
   </section>

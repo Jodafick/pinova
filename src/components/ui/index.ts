@@ -1,4 +1,4 @@
-export { default as PinovaButton } from './PinovaButton.vue'
-export { default as PinovaInput } from './PinovaInput.vue'
-export { default as PinovaEmptyState } from './PinovaEmptyState.vue'
-export { default as PinovaErrorState } from './PinovaErrorState.vue'
+export { default as FotoceButton } from './FotoceButton.vue'
+export { default as FotoceInput } from './FotoceInput.vue'
+export { default as FotoceEmptyState } from './FotoceEmptyState.vue'
+export { default as FotoceErrorState } from './FotoceErrorState.vue'

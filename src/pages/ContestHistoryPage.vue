@@ -10,7 +10,7 @@ type ContestHistoryResult = {
   start_at: string
   end_at: string
   result: {
-    winners: { rank: number; pin_id: number; creator_id: number; score: number }[]
+    winners: { rank: number; foto_id: number; creator_id: number; score: number }[]
     payouts: unknown[]
     finalized_at: string | null
   }
@@ -135,7 +135,7 @@ onMounted(() => {
               t('contest.history.winnerSummary', {
                 rank: winner.rank,
                 creator_id: winner.creator_id,
-                pin_id: winner.pin_id,
+                foto_id: winner.foto_id,
               })
             }}
           </p>

@@ -28,7 +28,7 @@ export function loadAdsenseScript(clientId: string): Promise<void> {
   if (!id) return Promise.reject(new Error('AdSense client id missing'))
   if (scriptPromise && scriptClientId === id) return scriptPromise
 
-  const existing = document.querySelector<HTMLScriptElement>('script[data-pinova-adsense]')
+  const existing = document.querySelector<HTMLScriptElement>('script[data-fotoce-adsense]')
   if (existing) {
     scriptClientId = id
     scriptPromise = Promise.resolve()
@@ -41,7 +41,7 @@ export function loadAdsenseScript(clientId: string): Promise<void> {
     script.async = true
     script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(id)}`
     script.crossOrigin = 'anonymous'
-    script.dataset.pinovaAdsense = '1'
+    script.dataset.fotoceAdsense = '1'
     script.onload = () => resolve()
     script.onerror = () => {
       scriptPromise = null
@@ -58,8 +58,8 @@ export function loadAdsenseScript(clientId: string): Promise<void> {
  * Idempotent : ignore si le slot est déjà servi ou déjà en file.
  */
 export function queueAdsenseFill(ins: HTMLElement, clientId: string): void {
-  if (!ins || isInsFilled(ins) || ins.dataset.pinovaAdQueued === '1') return
-  ins.dataset.pinovaAdQueued = '1'
+  if (!ins || isInsFilled(ins) || ins.dataset.fotoceAdQueued === '1') return
+  ins.dataset.fotoceAdQueued = '1'
 
   void loadAdsenseScript(clientId)
     .then(() => {
@@ -71,12 +71,12 @@ export function queueAdsenseFill(ins: HTMLElement, clientId: string): void {
           w.adsbygoogle = w.adsbygoogle || []
           w.adsbygoogle.push({})
         } catch {
-          delete ins.dataset.pinovaAdQueued
+          delete ins.dataset.fotoceAdQueued
         }
       })
       return drainFillQueue()
     })
     .catch(() => {
-      delete ins.dataset.pinovaAdQueued
+      delete ins.dataset.fotoceAdQueued
     })
 }

@@ -44,7 +44,7 @@ import CreatorStatsSkeleton from './CreatorStatsSkeleton.vue'
       <CreatorStatsSkeleton />
     </section>
 
-    <!-- Weekly pins section -->
+    <!-- Weekly fotos section -->
     <section>
       <!-- Section header -->
       <div class="rounded-t-[1.5rem] sm:rounded-t-[1.85rem] border border-b-0 border-neutral-200/80 dark:border-neutral-700/80 bg-white/92 dark:bg-neutral-900/92 px-5 py-5 sm:px-7 sm:py-7">

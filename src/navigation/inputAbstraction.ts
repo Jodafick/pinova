@@ -13,7 +13,7 @@
 import type { Router } from 'vue-router'
 import { navigateOrOpenLayer } from './routerLayerBridge'
 
-const FEED_SCROLL_EVENT = 'pinova-feed-keyboard-scroll'
+const FEED_SCROLL_EVENT = 'fotoce-feed-keyboard-scroll'
 
 let routerRef: Router | null = null
 let bound = false
@@ -61,7 +61,7 @@ function onDocumentClickCapture(e: MouseEvent) {
     const path = `${url.pathname}${url.search}${url.hash}`
     const resolved = router.resolve(path)
     const presentation = (resolved.meta as { presentation?: string }).presentation ?? 'page'
-    if (presentation === 'page' || resolved.name === 'pin-detail') return
+    if (presentation === 'page' || resolved.name === 'foto-detail') return
     e.preventDefault()
     e.stopPropagation()
     void navigateOrOpenLayer(router, path)
@@ -79,4 +79,4 @@ export function initInputAbstraction(router: Router): void {
 }
 
 /** Nom d'évent pour que les grilles virtualisées écoutent le scroll clavier. */
-export const PINOVA_FEED_KEYBOARD_SCROLL = FEED_SCROLL_EVENT
+export const FOTOCE_FEED_KEYBOARD_SCROLL = FEED_SCROLL_EVENT

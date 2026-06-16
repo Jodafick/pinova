@@ -6,7 +6,7 @@ import { isPwaInstallSnoozed } from '../utils/pwaInstallStorage'
 import { onEngagementMoment, type EngagementMoment } from '../utils/engagementMoments'
 import { canShowPromptAfter, isNotificationPromptOpen, markPromptShown } from '../utils/promptCoordinator'
 
-const SESSION_AUTO_PROMPT_KEY = 'pinova:pwa:auto-prompt:shown-session'
+const SESSION_AUTO_PROMPT_KEY = 'fotoce:pwa:auto-prompt:shown-session'
 
 /** Après publication ou exploration : laisser l’utilisateur voir le résultat avant la proposition PWA. */
 const MOMENT_DELAY_MS = 8000
@@ -87,7 +87,7 @@ export function usePwaInstallPrompt() {
   }
 
   function onEngagement(moment: EngagementMoment) {
-    if (moment === 'pin_saved' || moment === 'user_followed') return
+    if (moment === 'foto_saved' || moment === 'user_followed') return
     const delay = moment === 'pin_published' ? MOMENT_DELAY_MS : 6000
     schedulePrompt(delay)
   }

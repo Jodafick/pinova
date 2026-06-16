@@ -3,10 +3,10 @@ import { computed } from 'vue'
 
 import ContestPinMetrics from './ContestPinMetrics.vue'
 import { useI18n } from '../../i18n'
-import type { ContestPinRow } from '../../types/contest'
+import type { ContestFotoRow } from '../../types/contest'
 
 const { t } = useI18n()
-const props = defineProps<{ row: ContestPinRow; isYou?: boolean }>()
+const props = defineProps<{ row: ContestFotoRow; isYou?: boolean }>()
 
 const trend = computed(() => {
   const prev = props.row.previous_rank
@@ -46,7 +46,7 @@ const medalClass = computed(() => {
 
 <template>
   <router-link
-    :to="`/pin/${encodeURIComponent(row.pin_slug)}`"
+    :to="`/foto/${encodeURIComponent(row.foto_slug)}`"
     class="group h-full min-h-0 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden flex flex-col transition hover:shadow-lg hover:-translate-y-0.5 relative w-full max-w-[min(100%,calc(100vw-1.5rem))] sm:max-w-none mx-auto min-w-0 box-border"
     :class="
       isYou

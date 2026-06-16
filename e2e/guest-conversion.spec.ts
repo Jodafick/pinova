@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
 const PIN_SLUG = 'e2e-test-pin'
-const TEST_EMAIL = 'guest.e2e@pinova.test'
-const TEST_PASSWORD = 'Pinova42'
+const TEST_EMAIL = 'guest.e2e@fotoce.test'
+const TEST_PASSWORD = 'Fotoce42'
 const TEST_OTP = '123456'
 
 test.describe('conversion invité → register → OTP → like restauré', () => {
@@ -23,7 +23,7 @@ test.describe('conversion invité → register → OTP → like restauré', () =
         })
         return
       }
-      if (url.includes(`pins/${PIN_SLUG}/`) && method === 'GET') {
+      if (url.includes(`fotos/${PIN_SLUG}/`) && method === 'GET') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -37,7 +37,7 @@ test.describe('conversion invité → register → OTP → like restauré', () =
         })
         return
       }
-      if (url.includes(`pins/${PIN_SLUG}/like/`) && method === 'POST') {
+      if (url.includes(`fotos/${PIN_SLUG}/like/`) && method === 'POST') {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
         return
       }
@@ -59,12 +59,12 @@ test.describe('conversion invité → register → OTP → like restauré', () =
 
     await page.addInitScript((slug) => {
       sessionStorage.setItem(
-        'pinova-pending-intent',
+        'fotoce-pending-intent',
         JSON.stringify({
           id: 'e2e-intent',
           type: 'like',
           resourceId: slug,
-          metadata: { pinSlug: slug, returnPath: `/pin/${slug}` },
+          metadata: { fotoSlug: slug, returnPath: `/foto/${slug}` },
           createdAt: Date.now(),
         }),
       )

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * PinContextualMenu — menu contextuel iOS-style (haptic touch / 3D touch).
+ * FotoContextualMenu — menu contextuel iOS-style (haptic touch / 3D touch).
  *
  * Apparaît à la position du tap long-press avec :
  *  - backdrop blur (saturate + blur)
@@ -10,12 +10,12 @@
  *  - position auto-ajustée pour rester dans le viewport
  *
  * Le composant est un singleton à monter UNE FOIS au niveau App.vue, et
- * exposer via une store réactive (`pinContextualMenu`) ouvert/fermé.
+ * exposer via une store réactive (`fotoContextualMenu`) ouvert/fermé.
  *
  * Usage minimal :
  *
- *   <PinContextualMenu />            (singleton dans App.vue)
- *   openPinContextualMenu({
+ *   <FotoContextualMenu />            (singleton dans App.vue)
+ *   openFotoContextualMenu({
  *     point: { x, y },
  *     items: [
  *       { id: 'save',   label: 'Enregistrer', icon: 'bookmark_add' },
@@ -27,10 +27,10 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import {
-  closePinContextualMenu,
+  closeFotoContextualMenu,
   pinContextualMenuState as state,
-  type PinContextualMenuItem,
-} from '../composables/usePinContextualMenu'
+  type FotoContextualMenuItem,
+} from '../composables/useFotoContextualMenu'
 
 /* ───────────────────── Component ───────────────────── */
 
@@ -59,29 +59,29 @@ const positionStyles = computed(() => {
   }
 })
 
-function handleSelect(item: PinContextualMenuItem) {
+function handleSelect(item: FotoContextualMenuItem) {
   if (item.disabled) return
   const req = state.value
   if (!req) return
   /* Capture avant fermeture pour éviter race. */
   const cb = req.onSelect
-  closePinContextualMenu()
-  try { cb(item.id) } catch (e) { console.warn('[PinContextualMenu] onSelect error', e) }
+  closeFotoContextualMenu()
+  try { cb(item.id) } catch (e) { console.warn('[FotoContextualMenu] onSelect error', e) }
 }
 
 function onBackdropClick(e: MouseEvent) {
   /* Tap hors menu → ferme. */
   if (!menuRef.value) return
   const target = e.target as Node
-  if (!menuRef.value.contains(target)) closePinContextualMenu()
+  if (!menuRef.value.contains(target)) closeFotoContextualMenu()
 }
 
 function onKey(e: KeyboardEvent) {
-  if (e.key === 'Escape') closePinContextualMenu()
+  if (e.key === 'Escape') closeFotoContextualMenu()
 }
 
 function onScrollOrResize() {
-  closePinContextualMenu()
+  closeFotoContextualMenu()
 }
 
 watch(isOpen, (open) => {
@@ -110,7 +110,7 @@ onBeforeUnmount(() => {
         v-if="state"
         class="pin-ctx-menu__backdrop"
         @click="onBackdropClick"
-        @pointerdown.self="closePinContextualMenu"
+        @pointerdown.self="closeFotoContextualMenu"
         @contextmenu.prevent
       >
         <div
@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
             :disabled="item.disabled"
             @click="handleSelect(item)"
           >
-            <PinovaIcon :name="item.icon" class="pin-ctx-menu__icon" />
+            <FotoceIcon v-if="item.icon" :name="item.icon" class="pin-ctx-menu__icon" />
             <span class="pin-ctx-menu__label">{{ item.label }}</span>
           </button>
         </div>
@@ -167,7 +167,7 @@ onBeforeUnmount(() => {
     0 -1px 0 rgba(0, 0, 0, 0.04) inset;
   border: 1px solid rgba(255, 255, 255, 0.4);
   transform-origin: top left;
-  animation: pin-ctx-menu-pop var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1));
+  animation: pin-ctx-menu-pop var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1));
   overflow: hidden;
 }
 
@@ -236,7 +236,7 @@ onBeforeUnmount(() => {
 
 .ctx-menu-enter-active,
 .ctx-menu-leave-active {
-  transition: opacity var(--pinova-dur-fast, 180ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+  transition: opacity var(--fotoce-dur-fast, 180ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .ctx-menu-enter-from,

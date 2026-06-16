@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { usePins } from '../composables/usePins'
+import { useFotos } from '../composables/useFotos'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
 import { pushToast } from '../composables/useToast'
 import BirthDateRequiredModal from './BirthDateRequiredModal.vue'
 import StoryImageCropEditor from './StoryImageCropEditor.vue'
-import { appendQuickPinFormData, resolveQuickPinTitle } from '../composables/pinCreateShared'
+import { appendQuickPinFormData, resolveQuickPinTitle } from '../composables/fotoCreateShared'
 import { navigateToPublishedPin } from '../utils/postPublishNavigation'
 import { useTopicSuggestions } from '../composables/useTopicSuggestions'
 import {
@@ -26,7 +26,7 @@ const emit = defineEmits<{ cancel: [] }>()
 const { t, currentLang } = useI18n()
 const router = useRouter()
 const { showAlert } = useAppModal()
-const { addPin } = usePins()
+const { addFoto } = useFotos()
 const { currentUser, isAuthenticated, fetchCurrentUser } = useAuth()
 const { isLgDown } = useIsLgDown()
 const { layer, close: closeLayer, popAll } = useLayer()
@@ -135,7 +135,7 @@ async function commitImage(file: File) {
 async function setMediaFile(file: File) {
   if (!(await ensureBirthDateBeforeMedia())) return
   if (file.type.startsWith('video/')) {
-    void showAlert(t('create.pinMobile.videoNotAllowed'), { variant: 'warning' })
+    void showAlert(t('create.fotoMobile.videoNotAllowed'), { variant: 'warning' })
     return
   }
   if (!file.type.startsWith('image/')) {
@@ -208,15 +208,15 @@ async function publish() {
       mediaSensitiveBlur:
         pendingSensitiveBlur.value && isVerifiedAdultFromBirthDate(currentUser.value.birthDate),
     })
-    const result = await addPin(formData)
+    const result = await addFoto(formData)
     pushToast({ message: t('create.quick.published'), kind: 'success' })
     const slug = result?.slug
     if (slug) {
       if (layer.value) popAll()
-      await navigateToPublishedPin(router, {
+      await navigateToPublishedFoto(router, {
         slug,
         username: currentUser.value.username,
-        pin: result ?? null,
+        foto: result ?? null,
       })
     } else if (layer.value) closeLayer()
     else emit('cancel')
@@ -247,7 +247,7 @@ onMounted(() => {
 
     <!-- Étape rognage (mobile) -->
     <div v-if="step === 'edit' && pendingImage" class="relative z-[80] flex min-h-0 flex-1 flex-col">
-      <StoryImageCropEditor export-profile="pin" :file="pendingImage" @cancel="onCropCancel" @apply="onCropped" />
+      <StoryImageCropEditor export-profile="foto" :file="pendingImage" @cancel="onCropCancel" @apply="onCropped" />
     </div>
 
     <!-- Étape choix média -->
@@ -262,7 +262,7 @@ onMounted(() => {
           :aria-label="t('common.cancel')"
           @click="emit('cancel')"
         >
-          <PinovaIcon name="close" class="text-xl" />
+          <FotoceIcon name="close" class="text-xl" />
         </button>
         <p class="text-sm font-black tracking-tight">{{ t('create.mobile.quickTitle') }}</p>
         <span class="h-9 w-9" />
@@ -286,10 +286,10 @@ onMounted(() => {
           @click="fileInput?.click()"
         >
           <span class="absolute right-5 top-5 grid h-14 w-14 place-items-center rounded-full bg-white/15">
-            <PinovaIcon name="imagesmode" class="text-3xl" />
+            <FotoceIcon name="imagesmode" class="text-3xl" />
           </span>
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/60">{{ t('create.pinMobile.galleryLabel') }}</span>
-          <span class="text-xl font-black">{{ t('create.pinMobile.chooseFile') }}</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/60">{{ t('create.fotoMobile.galleryLabel') }}</span>
+          <span class="text-xl font-black">{{ t('create.fotoMobile.chooseFile') }}</span>
         </button>
         <button
           type="button"
@@ -297,10 +297,10 @@ onMounted(() => {
           @click="openCameraCapture()"
         >
           <span class="absolute right-5 top-5 grid h-14 w-14 place-items-center rounded-full bg-white/5 text-pink-500">
-            <PinovaIcon name="photo_camera" class="text-3xl" />
+            <FotoceIcon name="photo_camera" class="text-3xl" />
           </span>
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/35">{{ t('create.pinMobile.cameraLabel') }}</span>
-          <span class="text-lg font-black">{{ t('create.pinMobile.capturePin') }}</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/35">{{ t('create.fotoMobile.cameraLabel') }}</span>
+          <span class="text-lg font-black">{{ t('create.fotoMobile.captureFoto') }}</span>
         </button>
         <div
           class="hidden min-h-[8rem] cursor-pointer flex-col items-center justify-center gap-2 rounded-[1.75rem] border-2 border-dashed border-white/20 px-6 py-8 text-center transition hover:border-pink-500/50 lg:flex"
@@ -310,7 +310,7 @@ onMounted(() => {
           @drop="onDrop"
           @click="fileInput?.click()"
         >
-          <PinovaIcon name="cloud_upload" class="text-4xl text-white/40" />
+          <FotoceIcon name="cloud_upload" class="text-4xl text-white/40" />
           <p class="text-sm font-semibold text-white/70">{{ t('create.upload.title') }}</p>
         </div>
       </section>
@@ -329,15 +329,15 @@ onMounted(() => {
           :aria-label="t('common.back')"
           @click="clearImage()"
         >
-          <PinovaIcon name="chevron_left" class="text-xl" />
+          <FotoceIcon name="chevron_left" class="text-xl" />
         </button>
         <button
           type="button"
           class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3 py-2 text-xs font-bold text-white/80"
           @click="fileInput?.click()"
         >
-          <PinovaIcon name="imagesmode" class="text-base" />
-          {{ t('create.pinMobile.changeMedia') }}
+          <FotoceIcon name="imagesmode" class="text-base" />
+          {{ t('create.fotoMobile.changeMedia') }}
         </button>
       </header>
 
@@ -401,7 +401,7 @@ onMounted(() => {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <PinovaIcon v-else name="rocket_launch" class="text-xl" />
+            <FotoceIcon v-else name="rocket_launch" class="text-xl" />
             {{
               saving
                 ? t('create.publishing')

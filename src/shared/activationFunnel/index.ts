@@ -1,7 +1,7 @@
 /** État funnel d'activation créateur (tutoriel, jalons, célébrations). */
 
 export const CREATOR_MILESTONE_IDS = [
-  'first_pin_published',
+  'first_foto_published',
   'first_follow_obtained',
   'first_story_published',
   'first_comment_posted',
@@ -32,7 +32,7 @@ const ALLOWED_TUTORIAL = new Set<string>(['completed', 'dismissed'])
 
 /** Jalons comptés pour le niveau créateur 1 (barre de progression onboarding). */
 export const CREATOR_LEVEL_1_MILESTONES: readonly CreatorMilestoneId[] = [
-  'first_pin_published',
+  'first_foto_published',
   'first_follow_obtained',
   'creator_discovery_done',
 ]
@@ -132,7 +132,7 @@ export function shouldShowWelcomeCreateTutorial(
   return false
 }
 
-export function shouldCelebrateFirstPin(
+export function shouldCelebrateFirstFoto(
   state: ActivationFunnelState,
   pinsBeforePublish: number,
   isStory: boolean,

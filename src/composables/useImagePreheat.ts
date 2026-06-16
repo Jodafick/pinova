@@ -4,7 +4,7 @@
  * NOTE : depuis le Unified Media System (Prompt 13), la logique de cache
  * LRU + decode async vit dans `@/media` (`mediaEngine` + `imageCache`). Ce
  * composable est conservé comme thin wrapper pour ne PAS casser les
- * usages existants (PinGrid, PinVirtualGrid, etc.) — il délègue maintenant
+ * usages existants (FotoGrid, FotoVirtualGrid, etc.) — il délègue maintenant
  * tout au moteur global et garde la sémantique « unmount → cancel local ».
  *
  * Différences clés vs avant :

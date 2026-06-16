@@ -1,5 +1,5 @@
 /**
- * Virtualisation scroll pour grille masonry — utilise le scroll root Pinova
+ * Virtualisation scroll pour grille masonry — utilise le scroll root Fotoce
  * (`#main-content` mobile, document desktop).
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'

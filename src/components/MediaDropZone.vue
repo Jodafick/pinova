@@ -77,7 +77,7 @@ function clear() {
         :aria-label="t('common.close')"
         @click="clear"
       >
-        <PinovaIcon name="close" class="text-lg" />
+        <FotoceIcon name="close" class="text-lg" />
       </button>
       <p v-if="fileName" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2 text-[10px] text-white truncate">
         {{ fileName }}
@@ -104,7 +104,7 @@ function clear() {
         class="sr-only"
         @change="onInput"
       />
-      <PinovaIcon :name="dragging ? 'download' : 'perm_media'" class="text-4xl text-pink-500/80 mb-2 block" />
+      <FotoceIcon :name="dragging ? 'download' : 'perm_media'" class="text-4xl text-pink-500/80 mb-2 block" />
       <p class="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
         {{ dragging ? t('promote.media.dropNow') : t('promote.media.dropTitle') }}
       </p>
@@ -114,7 +114,7 @@ function clear() {
         class="mt-3 inline-flex items-center gap-1 rounded-full bg-pink-700 text-white text-xs font-bold px-4 py-2"
         @click.stop="inputRef?.click()"
       >
-        <PinovaIcon name="upload" class="text-base" />
+        <FotoceIcon name="upload" class="text-base" />
         {{ t('promote.media.browse') }}
       </button>
     </div>

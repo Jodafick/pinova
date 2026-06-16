@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { CSSProperties, PropType } from 'vue'
-import type { Pin, User } from '../types'
+import type { Foto, User } from '../types'
 import type { PinOverlayOriginRect } from '../utils/pinOverlayOrigin'
 import { useI18n } from '../i18n'
-import PinSensitiveMedia from './PinSensitiveMedia.vue'
+import FotoSensitiveMedia from './FotoSensitiveMedia.vue'
 import AvatarDisc from './AvatarDisc.vue'
 import CommentThread from './CommentThread.vue'
 import RichCommentInput from './RichCommentInput.vue'
 import { displayInitials } from '../utils/displayInitials'
-import PinovaModal from './ui/PinovaModal.vue'
+import FotoceModal from './ui/FotoceModal.vue'
 import {
   PIN_MEDIA_ANTI_LEAK_CLASS,
   pinMediaAntiLeakImgBindings,
@@ -28,9 +28,9 @@ type CommentSubmitPayload = {
 }
 
 const props = defineProps({
-  pin: { type: Object as PropType<Pin>, required: true },
-  previousPin: { type: Object as PropType<Pin | null>, default: null },
-  nextPin: { type: Object as PropType<Pin | null>, default: null },
+  foto: { type: Object as PropType<Foto>, required: true },
+  previousPin: { type: Object as PropType<Foto | null>, default: null },
+  nextPin: { type: Object as PropType<Foto | null>, default: null },
   canNavigatePrevious: { type: Boolean, default: false },
   canNavigateNext: { type: Boolean, default: false },
   openingOriginRect: { type: Object as PropType<PinOverlayOriginRect | null>, default: null },
@@ -142,9 +142,9 @@ const shareCount = computed(() => {
   return props.pin.stats.shares || 0
 })
 const mediaSlides = computed(() => [
-  { key: props.previousPin?.slug ?? 'empty-prev', pin: props.previousPin, active: false },
-  { key: props.pin.slug, pin: props.pin, active: true },
-  { key: props.nextPin?.slug ?? 'empty-next', pin: props.nextPin, active: false },
+  { key: props.previousPin?.slug ?? 'empty-prev', foto: props.previousPin, active: false },
+  { key: props.pin.slug, foto: props.pin, active: true },
+  { key: props.nextPin?.slug ?? 'empty-next', foto: props.nextPin, active: false },
 ])
 /** Drag vertical : appliqué sur `.pin-mobile-surface` (pas la racine) pour ne pas créer un
  * containing block `transform` + `overflow:hidden` qui casse les `fixed` et les `<transition>` des feuilles. */
@@ -172,11 +172,11 @@ const openingOriginStyle = computed<CSSProperties>(() => {
   const viewportWidth = window.innerWidth || 1
   const viewportHeight = window.innerHeight || 1
   return {
-    '--pin-open-left': `${rect.left}px`,
-    '--pin-open-top': `${rect.top}px`,
-    '--pin-open-scale-x': `${Math.max(0.04, rect.width / viewportWidth)}`,
-    '--pin-open-scale-y': `${Math.max(0.04, rect.height / viewportHeight)}`,
-    '--pin-open-radius': '1.5rem',
+    '--foto-open-left': `${rect.left}px`,
+    '--foto-open-top': `${rect.top}px`,
+    '--foto-open-scale-x': `${Math.max(0.04, rect.width / viewportWidth)}`,
+    '--foto-open-scale-y': `${Math.max(0.04, rect.height / viewportHeight)}`,
+    '--foto-open-radius': '1.5rem',
   } as CSSProperties
 })
 const rootStyle = computed(() => ({
@@ -526,7 +526,7 @@ onUnmounted(() => {
       :aria-label="t('common.close')"
       @click="startDismissClose"
     >
-      <PinovaIcon name="close" filled class="text-2xl" />
+      <FotoceIcon name="close" filled class="text-2xl" />
     </button>
 
     <div
@@ -548,7 +548,7 @@ onUnmounted(() => {
           :key="slide.key"
           class="pin-mobile-panel relative flex h-full w-screen shrink-0 items-center justify-center bg-black"
         >
-          <PinSensitiveMedia
+          <FotoSensitiveMedia
             v-if="slide.pin?.imageUrl"
             :sensitive="!!slide.pin.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
@@ -567,9 +567,9 @@ onUnmounted(() => {
               @load="slide.active ? onImageLoad($event) : undefined"
               v-bind="pinMediaAntiLeakImgBindings()"
             />
-          </PinSensitiveMedia>
+          </FotoSensitiveMedia>
 
-          <PinSensitiveMedia
+          <FotoSensitiveMedia
             v-else-if="slide.pin?.storyVideoUrl"
             :sensitive="!!slide.pin.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
@@ -587,9 +587,9 @@ onUnmounted(() => {
               @loadedmetadata="slide.active ? onVideoMetadata($event) : undefined"
               v-bind="pinMediaAntiLeakVideoBindings(true)"
             />
-          </PinSensitiveMedia>
+          </FotoSensitiveMedia>
           <div v-else class="grid h-full w-full place-items-center bg-black text-white/30">
-            <PinovaIcon name="more_horiz" filled class="text-5xl" />
+            <FotoceIcon name="more_horiz" filled class="text-5xl" />
           </div>
 
           <template v-if="slide.pin">
@@ -630,15 +630,15 @@ onUnmounted(() => {
                   type="button"
                   class="pin-mobile-follow-badge"
                   :class="[
-                    `pin-mobile-follow-badge--${followBadgeState}`,
+                    `foto-mobile-follow-badge--${followBadgeState}`,
                     { 'pin-mobile-follow-badge--busy': followingAuthor },
                   ]"
                   :disabled="followingAuthor || followBadgeState === 'done'"
-                  :aria-label="pin.isFollowing ? t('pin.following') : t('pin.follow')"
+                  :aria-label="pin.isFollowing ? t('foto.following') : t('foto.follow')"
                   @click.stop="handleFollowClick"
                 >
                   <span v-if="followingAuthor" class="h-2 w-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <PinovaIcon v-else :name="followBadgeState === 'checking' ? 'check' : 'add'" filled class="text-[13px] leading-none text-white" />
+                  <FotoceIcon v-else :name="followBadgeState === 'checking' ? 'check' : 'add'" filled class="text-[13px] leading-none text-white" />
                 </button>
               </div>
 
@@ -646,13 +646,13 @@ onUnmounted(() => {
                 v-if="slide.active && !isOwnStory"
                 type="button"
                 class="pin-mobile-rail-btn"
-                :class="{ 'pin-mobile-rail-btn--active': pin.liked }"
+                :class="{ 'pin-mobile-rail-btn--active': foto.liked }"
                 :disabled="likingPin"
                 :aria-pressed="pin.liked"
-                :aria-label="pin.liked ? t('pin.a11y.unlike') : t('pin.a11y.like')"
+                :aria-label="pin.liked ? t('foto.a11y.unlike') : t('foto.a11y.like')"
                 @click="handleLikePress"
               >
-                <PinovaIcon name="favorite" filled class="text-[31px]" />
+                <FotoceIcon name="favorite" filled class="text-[31px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(pin.stats.reactions || 0) }}</span>
               </button>
 
@@ -660,10 +660,10 @@ onUnmounted(() => {
                 v-else-if="slide.active"
                 type="button"
                 class="pin-mobile-rail-btn pin-mobile-rail-btn--active"
-                :aria-label="t('story.likers.openListAria', { count: pin.stats.reactions })"
+                :aria-label="t('story.likers.openListAria', { count: foto.stats.reactions })"
                 @click="emit('open-likers')"
               >
-                <PinovaIcon name="favorite" filled class="text-[31px]" />
+                <FotoceIcon name="favorite" filled class="text-[31px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(pin.stats.reactions || 0) }}</span>
               </button>
 
@@ -672,7 +672,7 @@ onUnmounted(() => {
                 class="pin-mobile-rail-btn"
                 :class="{ 'pin-mobile-rail-btn--active': slide.pin.liked }"
               >
-                <PinovaIcon name="favorite" filled class="text-[31px]" />
+                <FotoceIcon name="favorite" filled class="text-[31px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(slide.pin.stats.reactions || 0) }}</span>
               </div>
 
@@ -681,14 +681,14 @@ onUnmounted(() => {
                 type="button"
                 class="pin-mobile-rail-btn"
                 :class="{ 'pin-mobile-rail-btn--active': commentsOpen }"
-                :aria-label="t('pin.comments')"
+                :aria-label="t('foto.comments')"
                 @click="commentsOpen = true"
               >
-                <PinovaIcon name="chat_bubble" filled class="text-[29px]" />
+                <FotoceIcon name="chat_bubble" filled class="text-[29px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(commentsTotalCount) }}</span>
               </button>
               <div v-else class="pin-mobile-rail-btn">
-                <PinovaIcon name="chat_bubble" filled class="text-[29px]" />
+                <FotoceIcon name="chat_bubble" filled class="text-[29px]" />
                 <span class="pin-mobile-rail-label">0</span>
               </div>
 
@@ -696,14 +696,14 @@ onUnmounted(() => {
                 v-if="slide.active"
                 type="button"
                 class="pin-mobile-rail-btn"
-                :class="{ 'pin-mobile-rail-btn--active': pin.saved }"
+                :class="{ 'pin-mobile-rail-btn--active': foto.saved }"
                 :disabled="savingPin"
                 :aria-pressed="pin.saved"
-                :aria-label="pin.saved ? t('pin.a11y.saved') : t('pin.a11y.save')"
+                :aria-label="pin.saved ? t('foto.a11y.saved') : t('foto.a11y.save')"
                 @click="emit('save')"
               >
                 <span v-if="savingPin" class="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <PinovaIcon v-else name="bookmark" filled class="text-[29px]" />
+                <FotoceIcon v-else name="bookmark" filled class="text-[29px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(pin.stats.saves || 0) }}</span>
               </button>
               <div
@@ -711,7 +711,7 @@ onUnmounted(() => {
                 class="pin-mobile-rail-btn"
                 :class="{ 'pin-mobile-rail-btn--active': slide.pin.saved }"
               >
-                <PinovaIcon name="bookmark" filled class="text-[29px]" />
+                <FotoceIcon name="bookmark" filled class="text-[29px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(slide.pin.stats.saves || 0) }}</span>
               </div>
 
@@ -719,14 +719,14 @@ onUnmounted(() => {
                 v-if="slide.active"
                 type="button"
                 class="pin-mobile-rail-btn"
-                :aria-label="t('pin.a11y.share')"
+                :aria-label="t('foto.a11y.share')"
                 @click="emit('share')"
               >
-                <PinovaIcon name="share" filled class="text-[28px]" />
+                <FotoceIcon name="share" filled class="text-[28px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(shareCount) }}</span>
               </button>
               <div v-else class="pin-mobile-rail-btn">
-                <PinovaIcon name="share" filled class="text-[28px]" />
+                <FotoceIcon name="share" filled class="text-[28px]" />
                 <span class="pin-mobile-rail-label">{{ formatCount(slide.pin.stats.shares || 0) }}</span>
               </div>
             </aside>
@@ -749,7 +749,7 @@ onUnmounted(() => {
               </router-link>
 
               <h1
-                :id="slide.active ? 'pin-detail-title' : undefined"
+                :id="slide.active ? 'foto-detail-title' : undefined"
                 class="max-w-[calc(100%-3rem)] text-lg font-black leading-snug tracking-tight drop-shadow"
               >
                 {{ slide.pin.title }}
@@ -758,7 +758,7 @@ onUnmounted(() => {
                 v-if="slide.pin.isBoosted"
                 class="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-white"
               >
-                <PinovaIcon name="rocket_launch" class="text-[12px]" />
+                <FotoceIcon name="rocket_launch" class="text-[12px]" />
                 {{ t('feed.pinBoosted') }}
               </span>
 
@@ -780,7 +780,7 @@ onUnmounted(() => {
                 >
                   <span v-if="translatingDescription" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
                   <template v-else-if="descriptionTranslated">
-                    <PinovaIcon name="language" filled class="text-[14px]" />
+                    <FotoceIcon name="language" filled class="text-[14px]" />
                     <span>{{ t('translate.auto') }}</span>
                   </template>
                   <span v-else>{{ t('comment.translate') }}</span>
@@ -792,7 +792,7 @@ onUnmounted(() => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {{ t('pin.detail.externalLink') }}
+                  {{ t('foto.detail.externalLink') }}
                 </a>
               </div>
 
@@ -810,18 +810,18 @@ onUnmounted(() => {
 
     <transition name="pin-mobile-heart">
       <div v-if="heartBurst" :key="heartBurstKey" class="pin-mobile-heart pointer-events-none">
-        <PinovaIcon name="favorite" filled />
+        <FotoceIcon name="favorite" filled />
         <span class="pin-mobile-heart-particles" aria-hidden="true">
-          <PinovaIcon v-for="n in 7" :key="n" name="favorite" filled class="pin-mobile-heart-particle" />
+          <FotoceIcon v-for="n in 7" :key="n" name="favorite" filled class="pin-mobile-heart-particle" />
         </span>
       </div>
     </transition>
 
-    <PinovaModal
+    <FotoceModal
       v-model:open="commentsOpen"
       presentation="tallSheet"
       :depth-effect="false"
-      :title="`${t('pin.comments')} · ${commentsTotalCount}`"
+      :title="`${t('foto.comments')} · ${commentsTotalCount}`"
     >
       <template #headerEnd>
         <button
@@ -830,7 +830,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="commentsOpen = false"
         >
-          <PinovaIcon name="close" class="text-[22px] leading-none" />
+          <FotoceIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 
@@ -839,7 +839,7 @@ onUnmounted(() => {
           :comments="comments"
           :can-translate="isAuthenticated"
           :highlighted-comment-id="highlightedCommentId"
-          :is-pin-owner="isPinOwner"
+          :is-foto-owner="isPinOwner"
           :viewer-can-comment="viewerCanComment"
           :viewer-username="currentUser?.username ?? null"
           @add="(payload) => emit('comment-add', payload)"
@@ -868,13 +868,13 @@ onUnmounted(() => {
       >
         <RichCommentInput :submitting="submittingComment" @submit="(payload) => emit('comment-add', payload)" />
       </div>
-    </PinovaModal>
+    </FotoceModal>
 
-    <PinovaModal
+    <FotoceModal
       v-model:open="actionsOpen"
       presentation="tallSheet"
       :depth-effect="false"
-      :title="t('pin.actionsTitle')"
+      :title="t('foto.actionsTitle')"
     >
       <template #headerEnd>
         <button
@@ -883,7 +883,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="actionsOpen = false"
         >
-          <PinovaIcon name="close" class="text-[22px] leading-none" />
+          <FotoceIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 
@@ -891,39 +891,39 @@ onUnmounted(() => {
         <button
           type="button"
           class="pin-mobile-action-row"
-          :aria-label="t('pin.a11y.share')"
+          :aria-label="t('foto.a11y.share')"
           @click="closeActionsAnd('share')"
         >
           <span class="pin-mobile-action-icon">
-            <PinovaIcon name="share" filled class="text-[20px]" />
+            <FotoceIcon name="share" filled class="text-[20px]" />
           </span>
-          <span class="min-w-0 flex-1 text-left font-bold">{{ t('pin.shareLink') }}</span>
+          <span class="min-w-0 flex-1 text-left font-bold">{{ t('foto.shareLink') }}</span>
         </button>
 
         <button
-          v-if="isPinOwner && pin.slug"
+          v-if="isPinOwner && foto.slug"
           type="button"
           class="pin-mobile-action-row"
-          :aria-label="t('pin.boost.cta')"
+          :aria-label="t('foto.boost.cta')"
           @click="actionsOpen = false; emit('boost')"
         >
           <span class="pin-mobile-action-icon pin-mobile-action-icon--boost">
-            <PinovaIcon name="rocket_launch" filled class="text-[20px]" />
+            <FotoceIcon name="rocket_launch" filled class="text-[20px]" />
           </span>
-          <span class="min-w-0 flex-1 text-left font-bold">{{ t('pin.boost.cta') }}</span>
+          <span class="min-w-0 flex-1 text-left font-bold">{{ t('foto.boost.cta') }}</span>
         </button>
 
         <button
           type="button"
           class="pin-mobile-action-row"
-          :aria-label="t('pin.a11y.download')"
+          :aria-label="t('foto.a11y.download')"
           @click="actionsOpen = false; emit('download')"
         >
           <span class="pin-mobile-action-icon">
             <span v-if="downloadingPin" class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            <PinovaIcon v-else name="download" filled class="text-[20px]" />
+            <FotoceIcon v-else name="download" filled class="text-[20px]" />
           </span>
-          <span class="min-w-0 flex-1 text-left font-bold">{{ t('pin.a11y.download') }}</span>
+          <span class="min-w-0 flex-1 text-left font-bold">{{ t('foto.a11y.download') }}</span>
         </button>
 
         <button
@@ -935,14 +935,14 @@ onUnmounted(() => {
           @click="closeActionsAnd('report')"
         >
           <span class="pin-mobile-action-icon">
-            <PinovaIcon name="flag" filled class="text-[20px]" />
+            <FotoceIcon name="flag" filled class="text-[20px]" />
           </span>
           <span class="min-w-0 flex-1 text-left font-bold">
-            {{ pin.viewerHasReported ? t('moderation.reportAlready') : t('moderation.report') }}
+            {{ foto.viewerHasReported ? t('moderation.reportAlready') : t('moderation.report') }}
           </span>
         </button>
       </div>
-    </PinovaModal>
+    </FotoceModal>
   </section>
   </Teleport>
 </template>
@@ -1123,7 +1123,7 @@ onUnmounted(() => {
   color: var(--pn-pink-strong);
 }
 
-.pin-mobile-rail-btn--active .pinova-icon {
+.pin-mobile-rail-btn--active .fotoce-icon {
   filter: drop-shadow(0 0 14px rgb(219 39 119 / 0.5));
 }
 
@@ -1154,7 +1154,7 @@ onUnmounted(() => {
   text-shadow: 0 18px 50px rgb(0 0 0 / 0.55);
 }
 
-.pin-mobile-heart .pinova-icon {
+.pin-mobile-heart .fotoce-icon {
   font-size: clamp(4.25rem, 24vw, 9rem);
   animation: pin-mobile-heart-pop 0.88s cubic-bezier(0.2, 0.88, 0.34, 1.02) forwards;
 }
@@ -1384,9 +1384,9 @@ onUnmounted(() => {
 @keyframes pin-mobile-open-from-card {
   0% {
     opacity: 0.92;
-    border-radius: var(--pin-open-radius, 1.5rem);
-    transform: translate3d(var(--pin-open-left, 0), var(--pin-open-top, 0), 0)
-      scale(var(--pin-open-scale-x, 0.2), var(--pin-open-scale-y, 0.2));
+    border-radius: var(--foto-open-radius, 1.5rem);
+    transform: translate3d(var(--foto-open-left, 0), var(--foto-open-top, 0), 0)
+      scale(var(--foto-open-scale-x, 0.2), var(--foto-open-scale-y, 0.2));
   }
   72% {
     opacity: 1;

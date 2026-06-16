@@ -11,12 +11,12 @@ import { ensureFontAwesomeLoaded } from '../utils/loadFontAwesome'
  *
  * `meta.presentation` :
  *   - 'page'       → page classique pleine fenêtre (router-view)
- *   - 'fullscreen' → fullscreen modal au-dessus du contexte (PinDetail, Story)
+ *   - 'fullscreen' → fullscreen modal au-dessus du contexte (FotoDetail, Story)
  *   - 'modal'      → modale centrée
  *   - 'sheet'      → bottom sheet
  *   - 'floatingCard' / 'transparentOverlay'
  *
- * `meta.gestureDismiss`     : swipe plein écran (`true`), désactivé (`false`), ou depuis la barre `data-pinova-swipe-dismiss-handle` (`'header'`).
+ * `meta.gestureDismiss`     : swipe plein écran (`true`), désactivé (`false`), ou depuis la barre `data-fotoce-swipe-dismiss-handle` (`'header'`).
  * `meta.preserveBackground` : conserve le contexte de fond vivant.
  * `meta.statusBar`          : 'light' | 'dark' | 'auto' — couleur status bar.
  * `meta.disableEdgeBack`    : désactive le geste edge-back iOS pour cette route.
@@ -88,9 +88,9 @@ const router = createRouter({
       },
     },
     {
-      path: '/pin/:slug/edit',
-      name: 'edit-pin',
-      component: () => import('../pages/CreatePinPage.vue'),
+      path: '/foto/:slug/edit',
+      name: 'edit-foto',
+      component: () => import('../pages/CreateFotoPage.vue'),
       meta: {
         requiresAuth: true,
         presentation: 'fullscreen',
@@ -104,8 +104,8 @@ const router = createRouter({
       },
     },
     {
-      path: '/pin/:slug',
-      name: 'pin-detail',
+      path: '/foto/:slug',
+      name: 'foto-detail',
       redirect: (to, from) => {
         const slug = String(to.params.slug || '')
         const fromName = from?.name
@@ -118,7 +118,7 @@ const router = createRouter({
           path: keepContext ? from.path : '/',
           query: {
             ...(keepContext ? from.query : to.query),
-            pin: slug,
+            foto: slug,
           },
         }
       },
@@ -126,7 +126,7 @@ const router = createRouter({
         requiresAuth: false,
         keepAlive: true,
         preferAppRedirect: true,
-        /* La fiche pin s'ouvre déjà comme couche via PinDetailOverlayHost (?pin=). */
+        /* La fiche foto s'ouvre déjà comme couche via FotoDetailOverlayHost (?foto=). */
         presentation: 'fullscreen',
         gestureDismiss: true,
         preserveBackground: true,
@@ -136,7 +136,7 @@ const router = createRouter({
     {
       path: '/create',
       name: 'create',
-      component: () => import('../pages/CreatePinPage.vue'),
+      component: () => import('../pages/CreateFotoPage.vue'),
       meta: {
         requiresAuth: true,
         presentation: 'fullscreen',
@@ -273,15 +273,15 @@ const router = createRouter({
       },
     },
     {
-      path: '/promote/pin/:pinSlug',
+      path: '/promote/foto/:fotoSlug',
       redirect: (to) => ({
         name: 'boost-promote',
-        query: { pin: String(to.params.pinSlug || '') },
+        query: { foto: String(to.params.fotoSlug || '') },
       }),
     },
     {
       path: '/promote/campaigns',
-      name: 'pin-promo-campaigns',
+      name: 'foto-promo-campaigns',
       redirect: () => ({ name: 'boost-promote', query: { tab: 'campaigns' } }),
     },
     {
@@ -576,7 +576,7 @@ router.beforeEach(async (to, from) => {
   const { isAuthenticated, fetchCurrentUser, currentUser } = useAuth()
 
   const hasStoredToken =
-    typeof window !== 'undefined' && !!window.localStorage.getItem('pinova_token')
+    typeof window !== 'undefined' && !!window.localStorage.getItem('fotoce_token')
 
   // JWT stocké mais profil pas encore hydraté (ex. retour sur l’accueil après Google).
   // Routes publiques : ne pas bloquer le 1er paint sur `GET me/` (Render cold start).
@@ -601,7 +601,7 @@ router.beforeEach(async (to, from) => {
   }
 
   /* Profil serveur à jour (ex. date de naissance) avant la création — sans écran de chargement global. */
-  if ((to.name === 'create' || to.name === 'edit-pin') && isAuthenticated.value) {
+  if ((to.name === 'create' || to.name === 'edit-foto') && isAuthenticated.value) {
     await fetchCurrentUser({ silent: true })
   }
 

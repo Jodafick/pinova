@@ -290,7 +290,7 @@ defineExpose({ setReply })
         {{ t('comment.replyTo') }} <span class="text-pink-700 font-semibold">@{{ replyingTo }}</span>
       </span>
       <button type="button" class="text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200" @click="cancelReply">
-        <PinovaIcon name="close" class="text-base" />
+        <FotoceIcon name="close" class="text-base" />
       </button>
     </div>
 
@@ -305,7 +305,7 @@ defineExpose({ setReply })
         class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-neutral-900 dark:bg-neutral-700 text-white flex items-center justify-center shadow"
         @click="removeMedia"
       >
-        <PinovaIcon name="close" class="text-sm" />
+        <FotoceIcon name="close" class="text-sm" />
       </button>
     </div>
 
@@ -353,7 +353,7 @@ defineExpose({ setReply })
             :disabled="!canUsePremiumCommentMedia || mediaCompressing"
             @click="triggerMediaFileDialog"
           >
-            <PinovaIcon name="add_photo_alternate" class="text-lg" />
+            <FotoceIcon name="add_photo_alternate" class="text-lg" />
           </button>
           <button
             type="button"
@@ -361,7 +361,7 @@ defineExpose({ setReply })
             :title="t('comment.emoji.nativeHint')"
             @click="focusKeyboardForEmoji"
           >
-            <PinovaIcon name="mood" class="text-lg" />
+            <FotoceIcon name="mood" class="text-lg" />
           </button>
         </div>
 
@@ -371,7 +371,7 @@ defineExpose({ setReply })
           :title="t('comment.emoji.nativeHint')"
           @click="focusKeyboardForEmoji"
         >
-          <PinovaIcon name="mood" class="text-lg" />
+          <FotoceIcon name="mood" class="text-lg" />
         </button>
 
         <button
@@ -380,7 +380,7 @@ defineExpose({ setReply })
           :title="t('comment.mention.title')"
           @click="openMentionPicker"
         >
-          <PinovaIcon name="alternate_email" class="text-lg" />
+          <FotoceIcon name="alternate_email" class="text-lg" />
         </button>
 
         <button
@@ -396,7 +396,7 @@ defineExpose({ setReply })
           :aria-label="canUsePremiumCommentMedia ? t('comment.media.title') : t('comment.media.premiumHint')"
           @click="triggerMediaFileDialog"
         >
-          <PinovaIcon name="add_photo_alternate" class="text-xl" />
+          <FotoceIcon name="add_photo_alternate" class="text-xl" />
         </button>
 
         <button
@@ -409,7 +409,7 @@ defineExpose({ setReply })
             v-if="submitting"
             class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
           />
-          <PinovaIcon v-else name="send" class="text-lg" />
+          <FotoceIcon v-else name="send" class="text-lg" />
         </button>
       </div>
     </div>

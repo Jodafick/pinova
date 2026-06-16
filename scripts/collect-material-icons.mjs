@@ -64,13 +64,18 @@ const EXTRA_ICONS = [
   'cancel',
   'replay',
   'military_tech',
+  /* Topics API / seed (fotoce-backend TOPIC_ICONS) */
+  'self_improvement',
+  'construction',
+  'computer',
+  'payments',
 ]
 
 const RE_TEXT = /material-symbols-outlined[^>]*>\s*([a-z0-9_]+)\s*</gi
-const RE_PINOVA_ICON = /<PinovaIcon[^>]*\bname=["']([a-z0-9_]+)["']/gi
-const RE_HAS_PINOVA_ICON = /<PinovaIcon[\s/>]/
-/** Branches ternaires dans `<PinovaIcon :name="… ? 'glyph' : 'glyph'" />` — pas les opérandes `=== 'state'`. */
-const RE_PINOVA_DYNAMIC_ATTR = /<PinovaIcon[^>]*:name="([^"]*)"/gi
+const RE_FOTOCE_ICON = /<FotoceIcon[^>]*\bname=["']([a-z0-9_]+)["']/gi
+const RE_HAS_FOTOCE_ICON = /<FotoceIcon[\s/>]/
+/** Branches ternaires dans `<FotoceIcon :name="… ? 'glyph' : 'glyph'" />` — pas les opérandes `=== 'state'`. */
+const RE_FOTOCE_DYNAMIC_ATTR = /<FotoceIcon[^>]*:name="([^"]*)"/gi
 const RE_TERNARY_ICON = /\?\s*'([a-z][a-z0-9_]*)'|\:\s*'([a-z][a-z0-9_]*)'/gi
 const RE_ICON_HELPER_ANCHOR =
   /(?:function\s+(?:\w*[Ii]con\w*|iconFor)\s*\([^)]*\)[^{]*|(?:\w*[Ii]con\w*)\s*=\s*computed\s*\(\s*\(\)\s*=>\s*)/gi
@@ -80,7 +85,40 @@ const RE_TEMPLATE_ICON = /icon\s*===\s*['"]([a-z0-9_]+)['"]/gi
 
 function addIconToken(icons, name) {
   const token = name?.trim()
-  if (token && /^[a-z][a-z0-9_]*$/.test(token)) icons.add(token)
+  if (!token || token === 'icon') return
+  if (/^[a-z][a-z0-9_]*$/.test(token)) icons.add(token)
+}
+
+/** Icônes référencées dans les JSON (intérêts, catégories, etc.). */
+function collectIconsFromJsonFile(filePath, icons) {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8')
+    const data = JSON.parse(raw)
+    const visit = (node) => {
+      if (Array.isArray(node)) {
+        for (const item of node) visit(item)
+        return
+      }
+      if (node && typeof node === 'object') {
+        if (typeof node.icon === 'string') addIconToken(icons, node.icon)
+        for (const value of Object.values(node)) {
+          if (value && typeof value === 'object') visit(value)
+        }
+      }
+    }
+    visit(data)
+  } catch {
+    /* ignore invalid json */
+  }
+}
+
+function collectIconsFromJsonTree(dir, icons) {
+  if (!fs.existsSync(dir)) return
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, ent.name)
+    if (ent.isDirectory()) collectIconsFromJsonTree(p, icons)
+    else if (ent.name.endsWith('.json')) collectIconsFromJsonFile(p, icons)
+  }
 }
 
 function collectIconHelperReturns(text, icons) {
@@ -120,9 +158,11 @@ function walk(dir, files = []) {
 
 const icons = new Set(EXTRA_ICONS)
 
+collectIconsFromJsonTree(path.join(srcDir, 'data'), icons)
+
 for (const file of walk(srcDir)) {
   const text = fs.readFileSync(file, 'utf8')
-  for (const re of [RE_TEXT, RE_PINOVA_ICON, RE_ICON_PROP, RE_TEMPLATE_ICON]) {
+  for (const re of [RE_TEXT, RE_FOTOCE_ICON, RE_ICON_PROP, RE_TEMPLATE_ICON]) {
     re.lastIndex = 0
     let m
     while ((m = re.exec(text))) {
@@ -131,10 +171,10 @@ for (const file of walk(srcDir)) {
   }
   collectIconHelperReturns(text, icons)
 
-  if (!RE_HAS_PINOVA_ICON.test(text)) continue
+  if (!RE_HAS_FOTOCE_ICON.test(text)) continue
 
-  RE_PINOVA_DYNAMIC_ATTR.lastIndex = 0
-  for (const attr of text.matchAll(RE_PINOVA_DYNAMIC_ATTR)) {
+  RE_FOTOCE_DYNAMIC_ATTR.lastIndex = 0
+  for (const attr of text.matchAll(RE_FOTOCE_DYNAMIC_ATTR)) {
     RE_TERNARY_ICON.lastIndex = 0
     for (const branch of attr[1].matchAll(RE_TERNARY_ICON)) {
       addIconToken(icons, branch[1] ?? branch[2])

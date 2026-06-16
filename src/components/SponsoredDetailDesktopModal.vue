@@ -49,20 +49,20 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         v-if="hasPrevious"
         type="button"
         class="absolute left-6 top-1/2 z-[2] -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full bg-black/45 text-white backdrop-blur-xl ring-1 ring-white/15 transition hover:bg-black/60"
-        :aria-label="t('pin.overlay.prev')"
+        :aria-label="t('foto.overlay.prev')"
         @click="emit('prev')"
       >
-        <PinovaIcon name="chevron_left" class="text-3xl" />
+        <FotoceIcon name="chevron_left" class="text-3xl" />
       </button>
 
       <button
         v-if="hasNext"
         type="button"
         class="absolute right-6 top-1/2 z-[2] -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full bg-black/45 text-white backdrop-blur-xl ring-1 ring-white/15 transition hover:bg-black/60"
-        :aria-label="t('pin.overlay.next')"
+        :aria-label="t('foto.overlay.next')"
         @click="emit('next')"
       >
-        <PinovaIcon name="chevron_right" class="text-3xl" />
+        <FotoceIcon name="chevron_right" class="text-3xl" />
       </button>
 
       <article
@@ -76,7 +76,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
           :aria-label="t('common.close')"
           @click="emit('close')"
         >
-          <PinovaIcon name="close" class="text-2xl" />
+          <FotoceIcon name="close" class="text-2xl" />
         </button>
         <SponsoredDetailView :item="item" tone="dark" layout="desktop" />
       </article>

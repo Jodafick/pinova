@@ -1,33 +1,33 @@
 /**
- * Cache pour flux (1re page) et détails pin — mémoire + localStorage (lecture hors ligne / après refresh).
+ * Cache pour flux (1re page) et détails foto — mémoire + localStorage (lecture hors ligne / après refresh).
  * Vidé au logout avec les autres caches client.
  */
-import type { FeedItem, Pin } from '../../types'
-import { isFeedPin, isSponsoredAd } from '../../types'
+import type { FeedItem, Foto } from '../../types'
+import { isFeedFoto, isSponsoredAd } from '../../types'
 import { clearEntityClientCaches } from './entityClientCache'
 
 /** Aligné sur la rétention Vue Query / persister : revisite sans refetch réseau dans la session. */
 const PIN_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000 /* 7 jours */
 const FEED_FIRST_PAGE_TTL_MS = 15 * 60 * 1000 /* 15 min — première page des flux */
 
-const PIN_DETAIL_DISK_KEY = 'pinova_disk_pin_detail_blob_v1'
-const FEED_P1_DISK_KEY = 'pinova_disk_feed_p1_blob_v1'
-const PROFILE_CREATION_DISK_PREFIX = 'pinova_disk_profile_created_v1:'
-const SAVED_PINS_DISK_PREFIX = 'pinova_disk_saved_pins_v1:'
+const PIN_DETAIL_DISK_KEY = 'fotoce_disk_foto_detail_blob_v1'
+const FEED_P1_DISK_KEY = 'fotoce_disk_feed_p1_blob_v1'
+const PROFILE_CREATION_DISK_PREFIX = 'fotoce_disk_profile_created_v1:'
+const SAVED_PINS_DISK_PREFIX = 'fotoce_disk_saved_pins_v1:'
 
 const MAX_PIN_DETAIL_DISK_SLUGS = 100
 const MAX_FEED_P1_DISK_KEYS = 18
 
-const pinDetailBySlug = new Map<string, { t: number; pin: Pin }>()
+const pinDetailBySlug = new Map<string, { t: number; foto: Foto }>()
 const feedFirstPage = new Map<
   string,
   { t: number; items: FeedItem[]; hasNextPage: boolean }
 >()
 
-/** Première page « pins créés » par profil (clé username|lang) — évite un refetch à chaque entrée sur la page profil. */
+/** Première page « fotos créés » par profil (clé username|lang) — évite un refetch à chaque entrée sur la page profil. */
 const profileCreatedFirstPageByKey = new Map<
   string,
-  { t: number; pins: Pin[]; hasMore: boolean; nextPage: number }
+  { t: number; pins: Foto[]; hasMore: boolean; nextPage: number }
 >()
 
 function readJsonBlob<T>(lsKey: string): T | null {
@@ -50,15 +50,15 @@ function writeJsonBlob(lsKey: string, value: unknown): void {
   }
 }
 
-type PinDetailDiskBlob = { bySlug: Record<string, { t: number; pin: Pin }> }
+type FotoDetailDiskBlob = { bySlug: Record<string, { t: number; foto: Foto }> }
 
-function readPinDetailDisk(): PinDetailDiskBlob {
-  const parsed = readJsonBlob<PinDetailDiskBlob>(PIN_DETAIL_DISK_KEY)
+function readFotoDetailDisk(): FotoDetailDiskBlob {
+  const parsed = readJsonBlob<FotoDetailDiskBlob>(PIN_DETAIL_DISK_KEY)
   if (parsed?.bySlug && typeof parsed.bySlug === 'object') return parsed
   return { bySlug: {} }
 }
 
-function prunePinDetailDisk(store: PinDetailDiskBlob): void {
+function pruneFotoDetailDisk(store: FotoDetailDiskBlob): void {
   const entries = Object.entries(store.bySlug)
   if (entries.length <= MAX_PIN_DETAIL_DISK_SLUGS) return
   entries.sort((a, b) => a[1].t - b[1].t)
@@ -68,15 +68,15 @@ function prunePinDetailDisk(store: PinDetailDiskBlob): void {
   }
 }
 
-function persistPinDetailDiskSlug(slug: string, t: number, pin: Pin): void {
-  const store = readPinDetailDisk()
-  store.bySlug[slug] = { t, pin: { ...pin } }
-  prunePinDetailDisk(store)
+function persistFotoDetailDiskSlug(slug: string, t: number, foto: Foto): void {
+  const store = readFotoDetailDisk()
+  store.bySlug[slug] = { t, foto: { ...pin } }
+  pruneFotoDetailDisk(store)
   writeJsonBlob(PIN_DETAIL_DISK_KEY, store)
 }
 
-function removePinDetailDiskSlug(slug: string): void {
-  const store = readPinDetailDisk()
+function removeFotoDetailDiskSlug(slug: string): void {
+  const store = readFotoDetailDisk()
   if (!store.bySlug[slug]) return
   delete store.bySlug[slug]
   writeJsonBlob(PIN_DETAIL_DISK_KEY, store)
@@ -123,11 +123,11 @@ function persistFeedP1Disk(
 /** Ancien format disque (pins uniquement, sans pubs). */
 function feedItemsFromDiskEntry(entry: {
   items?: FeedItem[]
-  pins?: Pin[]
+  pins?: Foto[]
 }): FeedItem[] {
   if (Array.isArray(entry.items) && entry.items.length) {
     return entry.items.map((x) =>
-      isSponsoredAd(x as FeedItem) || isFeedPin(x as FeedItem) ? cloneFeedItem(x as FeedItem) : (x as FeedItem),
+      isSponsoredAd(x as FeedItem) || isFeedFoto(x as FeedItem) ? cloneFeedItem(x as FeedItem) : (x as FeedItem),
     )
   }
   if (Array.isArray(entry.pins)) {
@@ -140,7 +140,7 @@ function profileCreatedDiskLsKey(cacheKey: string): string {
   return PROFILE_CREATION_DISK_PREFIX + encodeURIComponent(cacheKey)
 }
 
-function savedPinsDiskLsKey(username: string, lang: string): string {
+function savedFotosDiskLsKey(username: string, lang: string): string {
   const u = String(username || '')
     .trim()
     .toLowerCase()
@@ -181,33 +181,33 @@ export function clearPinClientCaches(): void {
   clearEntityClientCaches()
 }
 
-export function invalidatePinDetailClientCache(slug: string): void {
+export function invalidateFotoDetailClientCache(slug: string): void {
   if (slug) {
     pinDetailBySlug.delete(slug)
-    removePinDetailDiskSlug(slug)
+    removeFotoDetailDiskSlug(slug)
   }
 }
 
-export function getCachedPinDetail(slug: string): Pin | null {
+export function getCachedFotoDetail(slug: string): Foto | null {
   const hit = pinDetailBySlug.get(slug)
   if (hit && Date.now() - hit.t <= PIN_DETAIL_TTL_MS) {
     return { ...hit.pin }
   }
   if (hit) pinDetailBySlug.delete(slug)
 
-  const disk = readPinDetailDisk().bySlug[slug]
+  const disk = readFotoDetailDisk().bySlug[slug]
   if (disk && Date.now() - disk.t <= PIN_DETAIL_TTL_MS) {
-    pinDetailBySlug.set(slug, { t: disk.t, pin: { ...disk.pin } })
+    pinDetailBySlug.set(slug, { t: disk.t, foto: { ...disk.pin } })
     return { ...disk.pin }
   }
-  if (disk) removePinDetailDiskSlug(slug)
+  if (disk) removeFotoDetailDiskSlug(slug)
   return null
 }
 
-export function setCachedPinDetail(slug: string, pin: Pin): void {
+export function setCachedFotoDetail(slug: string, foto: Foto): void {
   const t = Date.now()
-  pinDetailBySlug.set(slug, { t, pin: { ...pin } })
-  persistPinDetailDiskSlug(slug, t, pin)
+  pinDetailBySlug.set(slug, { t, foto: { ...pin } })
+  persistFotoDetailDiskSlug(slug, t, foto)
 }
 
 export function stableFeedCacheExtraKey(
@@ -236,7 +236,7 @@ export function getCachedFeedFirstPage(key: string): { items: FeedItem[]; hasNex
   if (hit) feedFirstPage.delete(key)
 
   const fd = readFeedP1Disk().entries[key] as
-    | { t: number; items?: FeedItem[]; pins?: Pin[]; hasNextPage: boolean }
+    | { t: number; items?: FeedItem[]; pins?: Foto[]; hasNextPage: boolean }
     | undefined
   if (fd && Date.now() - fd.t <= FEED_FIRST_PAGE_TTL_MS) {
     const items = feedItemsFromDiskEntry(fd)
@@ -275,7 +275,7 @@ export function profileCreatedPinsCacheKey(username: string, lang: string): stri
 }
 
 export function getCachedProfileCreatedFirstPage(key: string): {
-  pins: Pin[]
+  pins: Foto[]
   hasMore: boolean
   nextPage: number
 } | null {
@@ -295,7 +295,7 @@ export function getCachedProfileCreatedFirstPage(key: string): {
     if (!raw) return null
     const parsed = JSON.parse(raw) as {
       t?: number
-      pins?: Pin[]
+      pins?: Foto[]
       hasMore?: boolean
       nextPage?: number
     }
@@ -329,7 +329,7 @@ export function getCachedProfileCreatedFirstPage(key: string): {
 
 export function setCachedProfileCreatedFirstPage(
   key: string,
-  pins: Pin[],
+  pins: Foto[],
   hasMore: boolean,
   nextPage: number,
 ): void {
@@ -337,7 +337,7 @@ export function setCachedProfileCreatedFirstPage(
   const t = Date.now()
   profileCreatedFirstPageByKey.set(key, {
     t,
-    pins: pins.map((p) => ({ ...p })),
+    pins: fotos.map((p) => ({ ...p })),
     hasMore,
     nextPage,
   })
@@ -347,7 +347,7 @@ export function setCachedProfileCreatedFirstPage(
         profileCreatedDiskLsKey(key),
         JSON.stringify({
           t,
-          pins: pins.map((p) => ({ ...p })),
+          pins: fotos.map((p) => ({ ...p })),
           hasMore,
           nextPage,
         }),
@@ -358,8 +358,8 @@ export function setCachedProfileCreatedFirstPage(
   }
 }
 
-/** Invalide toutes les entrées de cache « créations » pour un auteur (ex. après création / suppression pin). */
-export function invalidateProfileCreatedPinsCacheForUsername(username: string): void {
+/** Invalide toutes les entrées de cache « créations » pour un auteur (ex. après création / suppression foto). */
+export function invalidateProfileCreatedFotosCacheForUsername(username: string): void {
   const u = String(username || '')
     .trim()
     .toLowerCase()
@@ -391,7 +391,7 @@ export function invalidateProfileCreatedPinsCacheForUsername(username: string): 
 
 export type SavedPinsPageDisk = {
   t: number
-  pins: Pin[]
+  pins: Foto[]
   hasMore: boolean
   nextPage: number
 }
@@ -399,7 +399,7 @@ export type SavedPinsPageDisk = {
 export function getSavedPinsPageFromDisk(username: string, lang: string): SavedPinsPageDisk | null {
   if (typeof window === 'undefined') return null
   try {
-    const raw = window.localStorage.getItem(savedPinsDiskLsKey(username, lang))
+    const raw = window.localStorage.getItem(savedFotosDiskLsKey(username, lang))
     if (!raw) return null
     const parsed = JSON.parse(raw) as SavedPinsPageDisk
     if (
@@ -411,7 +411,7 @@ export function getSavedPinsPageFromDisk(username: string, lang: string): SavedP
       return null
     }
     if (Date.now() - parsed.t > PIN_DETAIL_TTL_MS) {
-      window.localStorage.removeItem(savedPinsDiskLsKey(username, lang))
+      window.localStorage.removeItem(savedFotosDiskLsKey(username, lang))
       return null
     }
     return parsed
@@ -433,7 +433,7 @@ export function setSavedPinsPageToDisk(
       hasMore: data.hasMore,
       nextPage: data.nextPage,
     }
-    window.localStorage.setItem(savedPinsDiskLsKey(username, lang), JSON.stringify(payload))
+    window.localStorage.setItem(savedFotosDiskLsKey(username, lang), JSON.stringify(payload))
   } catch {
     /* quota */
   }
@@ -442,7 +442,7 @@ export function setSavedPinsPageToDisk(
 export function invalidateSavedPinsDiskForUser(username: string, lang: string): void {
   if (typeof window === 'undefined') return
   try {
-    window.localStorage.removeItem(savedPinsDiskLsKey(username, lang))
+    window.localStorage.removeItem(savedFotosDiskLsKey(username, lang))
   } catch {
     /* ignore */
   }

@@ -6,7 +6,8 @@ import { computed, onUnmounted, ref, watch, type ComputedRef, type Ref } from 'v
  * reload ne soit armé (sinon un simple over-scroll en haut déclenchait par
  * accident le rechargement complet de l'app PWA).
  */
-const DEFAULT_THRESHOLD_PX = 110
+/** Seuil aligné sur `readyToRelease` et le message « Relâchez pour actualiser ». */
+const DEFAULT_THRESHOLD_PX = 85
 const MAX_PULL_PX = 140
 /** Tolérance « tout en haut » du scroll racine (#main-content). */
 const TOP_EPS_PX = 2
@@ -42,7 +43,7 @@ function nestedScrollerAwayFromTop(scrollRoot: HTMLElement, fromEl: HTMLElement 
  * comme un navigateur mobile. Ne remplace pas l’installation PWA ; appelle `onRefresh`
  * après un seuil visuel (souvent `reloadPwaApplication()`).
  *
- * Zones / composants où le geste doit être ignoré : `data-pinova-no-pull-refresh`.
+ * Zones / composants où le geste doit être ignoré : `data-fotoce-no-pull-refresh`.
  * Ne s’active que si le `#main-content` est déjà tout en haut ; les écouteurs `touchmove`
  * sont **passifs** (pas de `preventDefault`) pour ne pas gêner le défilement.
  */
@@ -60,6 +61,7 @@ export function useMobilePullToRefresh(options: {
     return {
       pullDistance,
       progress: computed(() => 0),
+      readyToRelease: computed(() => false),
     }
   }
 
@@ -76,7 +78,7 @@ export function useMobilePullToRefresh(options: {
     const el = options.scrollRootRef.value
     if (!el || !isRootAtTop(el)) return
     const target = e.target as HTMLElement | null
-    if (target?.closest('[data-pinova-no-pull-refresh]')) return
+    if (target?.closest('[data-fotoce-no-pull-refresh]')) return
     if (nestedScrollerAwayFromTop(el, target)) return
 
     armed = true
@@ -93,7 +95,7 @@ export function useMobilePullToRefresh(options: {
     }
 
     const target = e.target as HTMLElement | null
-    if (target?.closest('[data-pinova-no-pull-refresh]')) {
+    if (target?.closest('[data-fotoce-no-pull-refresh]')) {
       resetArmHard()
       return
     }
@@ -171,6 +173,7 @@ export function useMobilePullToRefresh(options: {
   onUnmounted(() => detach())
 
   const progress = computed(() => Math.min(1, pullDistance.value / Math.max(1, threshold)))
+  const readyToRelease = computed(() => pullDistance.value >= threshold)
 
-  return { pullDistance, progress }
+  return { pullDistance, progress, readyToRelease }
 }

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
 import type { PropType } from 'vue'
-import type { Pin, User } from '../types'
+import type { Foto, User } from '../types'
 import { useI18n } from '../i18n'
 import { displayInitials } from '../utils/displayInitials'
 import AvatarDisc from './AvatarDisc.vue'
-import PinSensitiveMedia from './PinSensitiveMedia.vue'
+import FotoSensitiveMedia from './FotoSensitiveMedia.vue'
 import CommentThread from './CommentThread.vue'
 import RichCommentInput from './RichCommentInput.vue'
 import {
@@ -27,7 +27,7 @@ type CommentSubmitPayload = {
 }
 
 const props = defineProps({
-  pin: { type: Object as PropType<Pin>, required: true },
+  foto: { type: Object as PropType<Foto>, required: true },
   currentUser: { type: Object as PropType<User | null>, default: null },
   isAuthenticated: { type: Boolean, required: true },
   isPinOwner: { type: Boolean, required: true },
@@ -124,27 +124,27 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         v-if="canNavigatePrevious"
         type="button"
         class="absolute left-6 top-1/2 z-[2] -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full bg-black/45 text-white backdrop-blur-xl ring-1 ring-white/15 transition hover:bg-black/60"
-        :aria-label="t('pin.overlay.prev')"
+        :aria-label="t('foto.overlay.prev')"
         @click="emit('prev-pin')"
       >
-        <PinovaIcon name="chevron_left" filled class="text-3xl" />
+        <FotoceIcon name="chevron_left" filled class="text-3xl" />
       </button>
 
       <button
         v-if="canNavigateNext"
         type="button"
         class="absolute right-6 top-1/2 z-[2] -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full bg-black/45 text-white backdrop-blur-xl ring-1 ring-white/15 transition hover:bg-black/60"
-        :aria-label="t('pin.overlay.next')"
+        :aria-label="t('foto.overlay.next')"
         @click="emit('next-pin')"
       >
-        <PinovaIcon name="chevron_right" filled class="text-3xl" />
+        <FotoceIcon name="chevron_right" filled class="text-3xl" />
       </button>
 
       <article
         class="pin-desktop-modal-card relative z-[1] w-full max-w-6xl overflow-hidden rounded-[2rem] bg-white/80 dark:bg-neutral-950/70 text-neutral-950 dark:text-neutral-50 shadow-[0_32px_100px_rgba(0,0,0,0.45)] ring-1 ring-white/30 dark:ring-white/10 backdrop-blur-2xl backdrop-saturate-150"
         role="dialog"
         aria-modal="true"
-        :aria-labelledby="pin.title ? 'pin-detail-title' : undefined"
+        :aria-labelledby="pin.title ? 'foto-detail-title' : undefined"
       >
         <button
           type="button"
@@ -152,13 +152,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
           :aria-label="t('common.close')"
           @click="emit('close')"
         >
-          <PinovaIcon name="close" filled class="text-2xl" />
+          <FotoceIcon name="close" filled class="text-2xl" />
         </button>
 
-        <div class="pin-detail-mobile-card flex max-h-[86vh] flex-row">
-          <div class="pin-detail-media-pane flex min-h-0 flex-1 basis-0 items-center justify-center overflow-hidden bg-neutral-100/40 dark:bg-neutral-900/40">
+        <div class="foto-detail-mobile-card flex max-h-[86vh] flex-row">
+          <div class="foto-detail-media-pane flex min-h-0 flex-1 basis-0 items-center justify-center overflow-hidden bg-neutral-100/40 dark:bg-neutral-900/40">
             <div class="relative flex h-full w-full items-center justify-center">
-              <PinSensitiveMedia
+              <FotoSensitiveMedia
                 v-if="pin.imageUrl"
                 :sensitive="!!pin.mediaSensitiveBlur"
                 :viewer-can-reveal="viewerCanRevealSensitive"
@@ -169,17 +169,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               >
                 <OfflineImg
                   :src="pin.imageUrl"
-                  :alt="pin.title ? `${pin.title} - ${pin.user}` : t('feed.pinImageFallback', { user: pin.user })"
+                  :alt="pin.title ? `${pin.title} - ${pin.user}` : t('feed.pinImageFallback', { user: foto.user })"
                   :fetchpriority="detailImageFetchPriority"
                   loading="eager"
                   decoding="async"
-                  :class="[PIN_MEDIA_ANTI_LEAK_CLASS, 'pin-detail-media max-h-[86vh] w-full object-contain select-none']"
+                  :class="[PIN_MEDIA_ANTI_LEAK_CLASS, 'foto-detail-media max-h-[86vh] w-full object-contain select-none']"
                   @load="onImageLoad"
                   @dblclick.prevent="emit('double-like')"
                   v-bind="pinMediaAntiLeakImgBindings()"
                 />
-              </PinSensitiveMedia>
-              <PinSensitiveMedia
+              </FotoSensitiveMedia>
+              <FotoSensitiveMedia
                 v-else-if="pin.storyVideoUrl"
                 :sensitive="!!pin.mediaSensitiveBlur"
                 :viewer-can-reveal="viewerCanRevealSensitive"
@@ -193,26 +193,26 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   controls
                   playsinline
                   :preload="detailVideoPreload"
-                  :class="[PIN_MEDIA_ANTI_LEAK_CLASS, 'pin-detail-media max-h-[86vh] w-full object-contain select-none']"
+                  :class="[PIN_MEDIA_ANTI_LEAK_CLASS, 'foto-detail-media max-h-[86vh] w-full object-contain select-none']"
                   @loadedmetadata="onVideoMetadata"
                   @dblclick.prevent="emit('double-like')"
                   v-bind="pinMediaAntiLeakVideoBindings(true)"
                 />
-              </PinSensitiveMedia>
+              </FotoSensitiveMedia>
             </div>
           </div>
 
-          <div class="pin-detail-info-pane flex max-h-[86vh] w-[440px] min-w-[380px] flex-col overflow-y-auto p-8">
-            <div class="pin-detail-actions mb-6 flex items-center justify-between gap-4">
+          <div class="foto-detail-info-pane flex max-h-[86vh] w-[440px] min-w-[380px] flex-col overflow-y-auto p-8">
+            <div class="foto-detail-actions mb-6 flex items-center justify-between gap-4">
               <div class="flex flex-wrap items-center gap-2">
                 <button
-                  v-if="isPinOwner && pin.slug"
+                  v-if="isPinOwner && foto.slug"
                   type="button"
                   class="lux-icon-ring-btn"
-                  :aria-label="t('pin.boost.cta')"
+                  :aria-label="t('foto.boost.cta')"
                   @click="emit('boost')"
                 >
-                  <PinovaIcon name="rocket_launch" filled class="text-amber-600" aria-hidden="true" />
+                  <FotoceIcon name="rocket_launch" filled class="text-amber-600" aria-hidden="true" />
                 </button>
                 <button
                   v-if="!isOwnStory"
@@ -221,33 +221,33 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   :class="pin.liked ? 'bg-gradient-to-br from-pink-50 to-rose-50/80 text-pink-700 border-pink-100' : ''"
                   :disabled="likingPin"
                   :aria-pressed="pin.liked"
-                  :aria-label="pin.liked ? t('pin.a11y.unlike') : t('pin.a11y.like')"
+                  :aria-label="pin.liked ? t('foto.a11y.unlike') : t('foto.a11y.like')"
                   @click="emit('like')"
                 >
                   <span v-if="likingPin" class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
-                  <PinovaIcon v-else name="favorite" filled :class="pin.liked ? 'text-pink-700' : 'text-neutral-700 dark:text-neutral-200'" aria-hidden="true" />
+                  <FotoceIcon v-else name="favorite" filled :class="pin.liked ? 'text-pink-700' : 'text-neutral-700 dark:text-neutral-200'" aria-hidden="true" />
                 </button>
                 <button
                   v-else
                   type="button"
                   class="lux-icon-ring-btn bg-gradient-to-br from-pink-50 to-rose-50/80 text-pink-700 border-pink-100"
-                  :aria-label="t('story.likers.openListAria', { count: pin.stats.reactions })"
+                  :aria-label="t('story.likers.openListAria', { count: foto.stats.reactions })"
                   @click="emit('open-likers')"
                 >
-                  <PinovaIcon name="favorite" filled class="text-pink-700" aria-hidden="true" />
+                  <FotoceIcon name="favorite" filled class="text-pink-700" aria-hidden="true" />
                 </button>
-                <button type="button" class="lux-icon-ring-btn" :aria-label="t('pin.a11y.share')" @click="emit('share')">
-                  <PinovaIcon name="share" filled aria-hidden="true" />
+                <button type="button" class="lux-icon-ring-btn" :aria-label="t('foto.a11y.share')" @click="emit('share')">
+                  <FotoceIcon name="share" filled aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   class="lux-icon-ring-btn disabled:cursor-not-allowed disabled:opacity-40"
                   :disabled="downloadingPin || !pin.imageUrl"
-                  :aria-label="t('pin.a11y.download')"
+                  :aria-label="t('foto.a11y.download')"
                   @click="emit('download')"
                 >
                   <span v-if="downloadingPin" class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
-                  <PinovaIcon v-else name="download" filled aria-hidden="true" />
+                  <FotoceIcon v-else name="download" filled aria-hidden="true" />
                 </button>
                 <button
                   v-if="isAuthenticated && !isPinOwner && !pin.viewerHasReported"
@@ -256,53 +256,53 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   :aria-label="t('moderation.report')"
                   @click="emit('report')"
                 >
-                  <PinovaIcon name="flag" filled class="text-[22px]" aria-hidden="true" />
+                  <FotoceIcon name="flag" filled class="text-[22px]" aria-hidden="true" />
                 </button>
               </div>
               <button
                 type="button"
-                class="pin-detail-save transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+                class="foto-detail-save transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
                 :class="pin.saved ? 'lux-btn-detail-saved' : 'lux-btn-primary lux-btn-pill'"
                 :disabled="savingPin"
                 :aria-pressed="pin.saved"
-                :aria-label="pin.saved ? t('pin.a11y.saved') : t('pin.a11y.save')"
+                :aria-label="pin.saved ? t('foto.a11y.saved') : t('foto.a11y.save')"
                 @click="emit('save')"
               >
                 <span v-if="savingPin" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <PinovaIcon v-else name="bookmark" filled aria-hidden="true" />
-                <span v-if="!savingPin">{{ pin.saved ? t('pin.saved') : t('pin.save') }}</span>
+                <FotoceIcon v-else name="bookmark" filled aria-hidden="true" />
+                <span v-if="!savingPin">{{ foto.saved ? t('foto.saved') : t('foto.save') }}</span>
               </button>
             </div>
 
             <a
               v-if="pin.link"
-              :href="pin.link.startsWith('http') ? pin.link : 'https://' + pin.link"
+              :href="pin.link.startsWith('http') ? foto.link : 'https://' + foto.link"
               target="_blank"
               rel="noopener noreferrer"
               class="mb-4 inline-flex items-center gap-1.5 text-sm text-neutral-800 underline underline-offset-2 hover:text-neutral-950 dark:text-neutral-200 dark:hover:text-white"
             >
-              <PinovaIcon name="open_in_new" class="text-base" />
-              {{ pin.link }}
+              <FotoceIcon name="open_in_new" class="text-base" />
+              {{ foto.link }}
             </a>
 
             <div class="mb-3 flex flex-wrap items-start gap-2">
-              <h1 id="pin-detail-title" class="min-w-[12rem] flex-1 text-2xl font-auth-title font-auth-title--black text-neutral-950 dark:text-neutral-100">{{ pin.title }}</h1>
+              <h1 id="foto-detail-title" class="min-w-[12rem] flex-1 text-2xl font-auth-title font-auth-title--black text-neutral-950 dark:text-neutral-100">{{ foto.title }}</h1>
               <span
                 v-if="pinVisibility !== 'public'"
                 class="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider"
                 :class="pinVisibility === 'private' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'"
               >
-                <PinovaIcon :name="pinVisibility === 'private' ? 'lock' : 'group'" class="text-xs" />
-                {{ pinVisibility === 'private' ? t('pin.visibility.private') : t('pin.visibility.followers') }}
+                <FotoceIcon :name="pinVisibility === 'private' ? 'lock' : 'group'" class="text-xs" />
+                {{ pinVisibility === 'private' ? t('foto.visibility.private') : t('foto.visibility.followers') }}
               </span>
             </div>
 
             <div class="mb-6 space-y-2">
-              <p v-if="descriptionText || pin.description" class="text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
-                {{ descriptionText || pin.description }}
+              <p v-if="descriptionText || foto.description" class="text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
+                {{ descriptionText || foto.description }}
               </p>
               <button
-                v-if="isAuthenticated && (descriptionText || pin.description)"
+                v-if="isAuthenticated && (descriptionText || foto.description)"
                 type="button"
                 class="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-700 hover:text-pink-800"
                 :disabled="translatingDescription"
@@ -313,10 +313,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               </button>
             </div>
 
-            <div v-if="isPinOwner && pin.privateTags?.length" class="mb-6">
-              <p class="mb-2 text-xs font-semibold text-neutral-500">{{ t('pin.privateTags.readonlyTitle') }}</p>
+            <div v-if="isPinOwner && foto.privateTags?.length" class="mb-6">
+              <p class="mb-2 text-xs font-semibold text-neutral-500">{{ t('foto.privateTags.readonlyTitle') }}</p>
               <div class="flex flex-wrap gap-2">
-                <span v-for="tag in pin.privateTags" :key="tag" class="rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white">
+                <span v-for="tag in foto.privateTags" :key="tag" class="rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white">
                   {{ tag }}
                 </span>
               </div>
@@ -337,8 +337,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   <span v-else class="avatar-text">{{ displayInitials(pin.user) }}</span>
                 </AvatarDisc>
                 <div class="min-w-0">
-                  <p class="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ pin.user }}</p>
-                  <p class="text-xs text-neutral-500">{{ t('pin.followers', { count: formatCount(pin.authorFollowersCount ?? 0) }) }}</p>
+                  <p class="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ foto.user }}</p>
+                  <p class="text-xs text-neutral-500">{{ t('foto.followers', { count: formatCount(pin.authorFollowersCount ?? 0) }) }}</p>
                 </div>
               </router-link>
               <button
@@ -350,49 +350,49 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                 @click="emit('follow')"
               >
                 <span v-if="followingAuthor" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <span v-else>{{ pin.isFollowing ? t('pin.following') : t('pin.follow') }}</span>
+                <span v-else>{{ foto.isFollowing ? t('foto.following') : t('foto.follow') }}</span>
               </button>
             </div>
 
             <div class="mb-6 mt-6 flex items-center gap-6 text-sm text-neutral-500">
               <span class="flex items-center gap-1.5">
                 {{ formatCount(pin.stats.saves) }}
-                <PinovaIcon name="bookmark" filled class="text-lg" :class="{ 'text-neutral-600': pin.saved }" />
+                <FotoceIcon name="bookmark" filled class="text-lg" :class="{ 'text-neutral-600': foto.saved }" />
               </span>
               <button
                 v-if="pin.isStory && isPinOwner"
                 type="button"
                 class="-mx-1 flex items-center gap-1.5 rounded-lg px-1 py-0.5 text-sm text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-                :aria-label="t('story.likers.openListAria', { count: pin.stats.reactions })"
+                :aria-label="t('story.likers.openListAria', { count: foto.stats.reactions })"
                 @click="emit('open-likers')"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <PinovaIcon name="favorite" filled class="text-lg text-pink-700" aria-hidden="true" />
+                <FotoceIcon name="favorite" filled class="text-lg text-pink-700" aria-hidden="true" />
               </button>
               <span v-else-if="!pin.isStory" class="flex items-center gap-1.5">
                 {{ formatCount(pin.stats.reactions) }}
-                <PinovaIcon name="favorite" filled class="text-lg" :class="pin.liked ? 'text-pink-700' : 'text-neutral-300'" />
+                <FotoceIcon name="favorite" filled class="text-lg" :class="pin.liked ? 'text-pink-700' : 'text-neutral-300'" />
               </span>
               <span class="flex min-w-0 items-center gap-1.5">
-                <PinovaIcon name="sell" class="text-lg" />
-                <span class="truncate">{{ pin.topicDisplay ?? pin.topic }}</span>
+                <FotoceIcon name="sell" class="text-lg" />
+                <span class="truncate">{{ foto.topicDisplay ?? foto.topic }}</span>
               </span>
             </div>
 
             <div v-if="pin.hashtags?.length" class="mb-5 flex flex-wrap gap-2">
-              <span v-for="tag in pin.hashtags" :key="tag" class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+              <span v-for="tag in foto.hashtags" :key="tag" class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
                 {{ tag }}
               </span>
             </div>
 
             <div v-if="pin.boards?.length" class="mb-5 flex flex-wrap gap-2">
               <router-link
-                v-for="board in pin.boards"
+                v-for="board in foto.boards"
                 :key="board.id"
-                :to="`/profile/${board.ownerUsername || pin.username}/board/${board.id}`"
+                :to="`/profile/${board.ownerUsername || foto.username}/board/${board.id}`"
                 class="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700 transition hover:bg-purple-100 dark:bg-purple-950/35 dark:text-purple-300 dark:hover:bg-purple-900/45"
               >
-                <PinovaIcon name="dashboard" class="text-sm" aria-hidden="true" />
+                <FotoceIcon name="dashboard" class="text-sm" aria-hidden="true" />
                 {{ board.name }}
               </router-link>
             </div>
@@ -406,11 +406,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
             <NetworkAdSlot v-if="!isPinOwner" placement="detail" />
 
-            <div class="pin-detail-comments-pane flex-1">
+            <div class="foto-detail-comments-pane flex-1">
               <div class="mb-4 flex flex-col gap-3">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <h3 class="flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
-                    {{ t('pin.comments') }}
+                    {{ t('foto.comments') }}
                     <span class="text-sm font-normal text-neutral-400">({{ commentsTotalCount }})</span>
                   </h3>
                 </div>
@@ -418,7 +418,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   v-if="isAuthenticated && !viewerCanComment"
                   class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900"
                 >
-                  {{ pin.commentsPolicy === 'closed' ? t('pin.comments.closedBanner') : t('pin.comments.followersOnlyBanner') }}
+                  {{ foto.commentsPolicy === 'closed' ? t('foto.comments.closedBanner') : t('foto.comments.followersOnlyBanner') }}
                 </p>
               </div>
 
@@ -427,7 +427,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                   :comments="comments"
                   :can-translate="isAuthenticated"
                   :highlighted-comment-id="highlightedCommentId"
-                  :is-pin-owner="isPinOwner"
+                  :is-foto-owner="isPinOwner"
                   :viewer-can-comment="viewerCanComment"
                   :viewer-username="currentUser?.username ?? null"
                   @add="(payload) => emit('comment-add', payload)"

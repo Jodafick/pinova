@@ -14,16 +14,16 @@ import {
 import { useRouter } from 'vue-router'
 
 const WS_BASE = `${API_BASE_URL.replace(/^http/i, 'ws').replace(/\/$/, '')}/api/notifications/ws`
-const WS_AUTH_SUBPROTOCOL_PREFIX = 'pinova.bearer.'
+const WS_AUTH_SUBPROTOCOL_PREFIX = 'fotoce.bearer.'
 const HEARTBEAT_INTERVAL_MS = 30_000
 const MAX_RECONNECT_DELAY_MS = 60_000
 const IN_APP_TOAST_BATCH_MS = 900
-const SESSION_CURSOR_KEY = 'pinova_notif_live_cursor'
-const SESSION_TOAST_SEEN_KEY = 'pinova_notif_toast_seen'
+const SESSION_CURSOR_KEY = 'fotoce_notif_live_cursor'
+const SESSION_TOAST_SEEN_KEY = 'fotoce_notif_toast_seen'
 
 function readAccessToken(): string {
   if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem('pinova_token') || ''
+  return window.localStorage.getItem('fotoce_token') || ''
 }
 
 function wsReconnectDelayMs(attempt: number): number {
@@ -118,8 +118,8 @@ export function useNotificationLive() {
             router,
             {
               metadata: payload.metadata ?? null,
-              pin_slug: payload.pin_slug ?? null,
-              pin_id: payload.pin_id ?? null,
+              foto_slug: payload.foto_slug ?? null,
+              foto_id: payload.foto_id ?? null,
               comment_id: payload.comment_id ?? null,
               action_url: payload.action_url ?? null,
               notification_type: payload.notification_type ?? null,

@@ -1,5 +1,5 @@
 {
-  "name": "pinova",
+  "name": "fotoce",
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@10.32.1",
@@ -18,7 +18,9 @@
     "generate:locales:mobile": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/run-locales.ps1 --mobile",
     "generate:locales:all": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate-all-locales.ps1",
     "generate:locales:all:force": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/generate-all-locales.ps1 -Force",
-    "generate:geo": "node ./scripts/generate-reference-geo.mjs"
+    "generate:geo": "node ./scripts/generate-reference-geo.mjs",
+    "generate:icons": "node ./scripts/collect-material-icons.mjs",
+    "prebuild": "pnpm generate:icons"
   },
   "dependencies": {
     "@floating-ui/vue": "^1.1.11",

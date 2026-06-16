@@ -5,7 +5,7 @@ import api from '../api/index'
 import { trackOnce } from '../lib/analytics'
 import { ensureDeviceBindingId } from '../utils/deviceBinding'
 
-const SESSION_CODE_KEY = 'pinova_referral_pending_code'
+const SESSION_CODE_KEY = 'fotoce_referral_pending_code'
 
 function normalizeReferralCode(raw: unknown): string {
   if (raw == null) return ''

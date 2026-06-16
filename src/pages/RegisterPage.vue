@@ -7,14 +7,14 @@ import { GOOGLE_SIGN_IN_SCOPES } from '../config/env'
 import { useI18n } from '../i18n'
 import { EMAIL_DELIVERY_UNAVAILABLE_CODE } from '../constants/authErrors'
 import { clearStoredReferralCode, getStoredReferralCode } from '../composables/useReferralIntent'
-import { buildRegisterAnalyticsProps } from '@pinova/shared'
+import { buildRegisterAnalyticsProps } from '@fotoce/shared'
 import { extractDrfFieldErrors, firstErroredField } from '../utils/apiValidationErrors'
-import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
+import { translateFotoceErrorToken, translateFotoceNonFieldToken } from '../utils/formErrorMessages'
 import { waitForGoogleIdentityServices } from '../composables/waitForGoogleIdentity'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
 import PasswordStrengthField from '../components/PasswordStrengthField.vue'
-import PinovaButton from '../components/ui/PinovaButton.vue'
-import PinovaInput from '../components/ui/PinovaInput.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
+import FotoceInput from '../components/ui/FotoceInput.vue'
 import { allPasswordRulesMet } from '../utils/passwordPolicy'
 import { trackEvent } from '../lib/analytics'
 import { guestConversionProps } from '../lib/guestConversionAnalytics'
@@ -87,14 +87,14 @@ const handleRegister = async () => {
     const maybeRaw = (result as { raw?: unknown }).raw
     const extracted = extractDrfFieldErrors(maybeRaw)
     fieldErrors.value = Object.fromEntries(
-      Object.entries(extracted).map(([k, v]) => [k, translatePinovaErrorToken(v[0] || '', t)]),
+      Object.entries(extracted).map(([k, v]) => [k, translateFotoceErrorToken(v[0] || '', t)]),
     )
     await focusField(firstErroredField(extracted, FIELD_ORDER))
     const body = maybeRaw && typeof maybeRaw === 'object' && !Array.isArray(maybeRaw) ? (maybeRaw as Record<string, unknown>) : null
     const nfe = body?.non_field_errors
     const firstNfe =
       Array.isArray(nfe) && typeof nfe[0] === 'string' && nfe[0].trim() ? nfe[0].trim() : ''
-    const globalFromApi = firstNfe ? translatePinovaNonFieldToken(firstNfe, t) : ''
+    const globalFromApi = firstNfe ? translateFotoceNonFieldToken(firstNfe, t) : ''
     error.value = suggestGoogleForEmail.value
       ? t('auth.emailDeliveryBlocked.message')
       : globalFromApi ||
@@ -146,7 +146,7 @@ async function handleGoogleClick() {
 </script>
 
 <template>
-  <div class="pinova-route-natural-height pinova-auth-page-shell min-h-0 flex flex-1 flex-col bg-transparent dark:bg-transparent lg:min-h-screen">
+  <div class="fotoce-route-natural-height fotoce-auth-page-shell fotoce-auth-page-shell--tab-bar fotoce-mobile-tab-bar-scroll-pad min-h-0 flex flex-1 flex-col bg-transparent dark:bg-transparent lg:min-h-screen">
     <!-- Left side - hero -->
     <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-br from-pink-700/90 dark:from-pink-600/90 via-pink-700/80 dark:via-pink-600/80 to-pink-700/90 dark:to-pink-600/90 z-10"></div>
@@ -160,7 +160,7 @@ async function handleGoogleClick() {
           <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden">
             <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          <span class="text-3xl font-auth-title">Pinova</span>
+          <span class="text-3xl font-auth-title">Fotoce</span>
         </div>
         <h1 class="text-[3.35rem] font-auth-title font-auth-title--black leading-tight mb-4">
           {{ t('register.hero.title') }}
@@ -179,7 +179,7 @@ async function handleGoogleClick() {
           <div class="w-10 h-10 rounded-full bg-pink-700 dark:bg-pink-600 flex items-center justify-center overflow-hidden shadow-sm">
             <img src="../assets/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          <span class="text-2xl font-auth-title text-neutral-900 dark:text-neutral-100">Pinova</span>
+          <span class="text-2xl font-auth-title text-neutral-900 dark:text-neutral-100">Fotoce</span>
         </div>
 
         <div class="text-center mb-10">
@@ -198,11 +198,11 @@ async function handleGoogleClick() {
             v-if="error"
             class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm animate-shake"
           >
-            <PinovaIcon name="error" class="text-lg" />
+            <FotoceIcon name="error" class="text-lg" />
             {{ error }}
           </div>
 
-          <PinovaInput
+          <FotoceInput
             v-model="email"
             :label="t('login.email')"
             :placeholder="t('register.email.placeholder')"
@@ -235,7 +235,7 @@ async function handleGoogleClick() {
                 type="checkbox"
                 class="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border-2 border-neutral-300 transition-all checked:bg-pink-700 dark:bg-pink-600 checked:border-pink-700 dark:border-pink-600 hover:border-pink-700"
               />
-              <PinovaIcon name="check" class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-sm font-bold" />
+              <FotoceIcon name="check" class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-sm font-bold" />
             </div>
             <span class="text-sm text-neutral-500 dark:text-neutral-400 font-medium select-none">
               {{ t('register.acceptTerms.before') }}
@@ -249,7 +249,7 @@ async function handleGoogleClick() {
             </span>
           </label>
 
-          <PinovaButton
+          <FotoceButton
             type="submit"
             data-testid="register-submit"
             variant="primary"
@@ -259,7 +259,7 @@ async function handleGoogleClick() {
             :disabled="loading || !passwordValid || !acceptTerms"
           >
             {{ loading ? t('register.submitting') : t('register.submit') }}
-          </PinovaButton>
+          </FotoceButton>
         </form>
 
         <div class="my-8 flex items-center gap-4 text-neutral-400 dark:text-neutral-500">
@@ -275,7 +275,7 @@ async function handleGoogleClick() {
           {{ t('auth.emailDeliveryBlocked.googleHint') }}
         </p>
 
-        <PinovaButton
+        <FotoceButton
           variant="secondary"
           block
           :class="suggestGoogleForEmail ? 'ring-2 ring-pink-700 dark:ring-pink-600 ring-offset-2' : ''"
@@ -283,7 +283,7 @@ async function handleGoogleClick() {
         >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 shrink-0" alt="" />
           {{ t('login.googleCta') }}
-        </PinovaButton>
+        </FotoceButton>
 
         <p class="mt-10 text-center text-sm text-neutral-500 dark:text-neutral-400 font-medium">
           {{ t('register.haveAccount') }}

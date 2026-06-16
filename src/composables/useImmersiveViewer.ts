@@ -14,9 +14,9 @@
  *
  *   import { openImmersiveViewer } from '@/composables/useImmersiveViewer'
  *   openImmersiveViewer({
- *     items: [{ type: 'image', src: pin.imageUrl, blurhash: pin.blurhash }],
+ *     items: [{ type: 'image', src: foto.imageUrl, blurhash: foto.blurhash }],
  *     initialIndex: 0,
- *     onLike: (item) => savePin(item),
+ *     onLike: (item) => saveFoto(item),
  *     onClose: () => console.log('closed'),
  *   })
  *

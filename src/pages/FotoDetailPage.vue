@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { feedPinsOnly, usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
-import { isFeedPin, type Pin } from '../types'
+import { feedFotosOnly, useFotos, getFullMediaUrl, isAlreadyReportedError } from '../composables/useFotos'
+import { isFeedFoto, type Foto } from '../types'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import api from '../api/index'
 import { displayInitials } from '../utils/displayInitials'
-import PinGrid from '../components/PinGrid.vue'
-import PinDetailSkeleton from '../components/PinDetailSkeleton.vue'
+import FotoGrid from '../components/FotoGrid.vue'
+import FotoDetailSkeleton from '../components/FotoDetailSkeleton.vue'
 import RichCommentInput from '../components/RichCommentInput.vue'
 import CommentThread from '../components/CommentThread.vue'
 import { useI18n } from '../i18n'
@@ -21,11 +21,11 @@ import {
   sensitiveMediaBlurredByDefault,
 } from '../composables/moderationPolicy'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
-import PinSensitiveMedia from '../components/PinSensitiveMedia.vue'
+import FotoSensitiveMedia from '../components/FotoSensitiveMedia.vue'
 import StoryLikersModal from '../components/StoryLikersModal.vue'
 import ReportContentModal from '../components/ReportContentModal.vue'
 import TipDialog from '../components/TipDialog.vue'
-import PromotePinSheet from '../components/PromotePinSheet.vue'
+import PromoteFotoSheet from '../components/PromoteFotoSheet.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import { useDataSaver } from '../composables/useDataSaver'
 import { shareUrlWithFallback } from '../utils/shareFallback'
@@ -38,7 +38,7 @@ import {
   pinMediaAntiLeakVideoBindings,
 } from '../composables/mediaAntiLeak'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 
 const { t } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
@@ -47,14 +47,14 @@ const route = useRoute()
 const router = useRouter()
 
 const {
-  getPin,
+  getFoto,
   toggleSave,
-  pins,
-  fetchPinBySlug,
-  seedPinDetailCacheIntoStore,
-  patchPinCommentsPolicy,
-  moderatePinComment,
-  deletePinComment,
+  fotos,
+  fetchFotoBySlug,
+  seedFotoDetailCacheIntoStore,
+  patchFotoCommentsPolicy,
+  moderateFotoComment,
+  deleteFotoComment,
   formatCount,
   toggleFollow,
   loading: pinsLoading,
@@ -63,13 +63,13 @@ const {
   addComment,
   translateComment,
   toggleCommentLike,
-  translatePinDescription,
-  trackPinView,
-  getPinDownload,
-  reportPin,
+  translateFotoDescription,
+  trackFotoView,
+  getFotoDownload,
+  reportFoto,
   reportComment,
-  deletePin,
-} = usePins()
+  deleteFoto,
+} = useFotos()
 const { currentUser, toggleSavePin, isAuthenticated } = useAuth()
 const { promptGuest } = useGuestAuthGate()
 
@@ -89,25 +89,25 @@ const blurSensitiveByDefault = computed(() =>
 const { detailVideoPreload, isLowDataMode } = useDataSaver()
 const detailImageFetchPriority = computed(() => (isLowDataMode.value ? 'low' : 'high'))
 
-const pinSlug = computed(() => route.params.slug as string)
-const pin = computed(() => getPin(pinSlug.value))
+const fotoSlug = computed(() => route.params.slug as string)
+const foto = computed(() => getFoto(fotoSlug.value))
 
-function initPinDetailLoadingFromCache(): boolean {
+function initFotoDetailLoadingFromCache(): boolean {
   const s = typeof route.params.slug === 'string' ? route.params.slug : ''
   if (!s) return true
-  seedPinDetailCacheIntoStore(s)
-  return !getPin(s)
+  seedFotoDetailCacheIntoStore(s)
+  return !getFoto(s)
 }
 
-const pinDetailLoading = ref(initPinDetailLoadingFromCache())
+const pinDetailLoading = ref(initFotoDetailLoadingFromCache())
 
 function usernamesMatch(a?: string | null, b?: string | null) {
   return (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
 }
 
-const isPinOwner = computed(() => !!(currentUser.value && pin.value && usernamesMatch(currentUser.value.username, pin.value.username)))
+const isPinOwner = computed(() => !!(currentUser.value && foto.value && usernamesMatch(currentUser.value.username, foto.value.username)))
 const viewerCanComment = computed(() => {
-  const p = pin.value
+  const p = foto.value
   if (!p) return false
   return p.canComment !== false
 })
@@ -115,8 +115,8 @@ const targetLang = computed(() => currentUser.value?.preferredLanguage || naviga
 
 const relatedPins = computed(() => {
   if (!pin.value) return []
-  return feedPinsOnly(pins.value).filter(
-    (p) => p.topic === pin.value?.topic && p.slug !== pin.value?.slug,
+  return feedFotosOnly(fotos.value).filter(
+    (p) => p.topic === foto.value?.topic && p.slug !== foto.value?.slug,
   ).slice(0, 8)
 })
 const savingPin = ref(false)
@@ -176,17 +176,17 @@ function onDetailVideoLoadedMetadata(e: Event) {
   detailImageLandscape.value = v.videoWidth >= v.videoHeight
 }
 
-async function resolvePinDetail() {
-  const slug = pinSlug.value
+async function resolveFotoDetail() {
+  const slug = fotoSlug.value
   const generation = ++resolvePinGeneration
-  seedPinDetailCacheIntoStore(slug)
+  seedFotoDetailCacheIntoStore(slug)
   pinDetailLoading.value = !pin.value
   pinDetailNotFound.value = false
   detailImageLandscape.value = null
   richComments.value = []
   commentsTotalCount.value = 0
   try {
-    await fetchPinBySlug(slug)
+    await fetchFotoBySlug(slug)
   } catch {
     if (generation !== resolvePinGeneration) return
     pinDetailNotFound.value = true
@@ -195,29 +195,29 @@ async function resolvePinDetail() {
       pinDetailLoading.value = false
     }
   }
-  if (generation !== resolvePinGeneration || pinSlug.value !== slug) return
-  if (pin.value && pin.value.slug === slug) {
+  if (generation !== resolvePinGeneration || fotoSlug.value !== slug) return
+  if (pin.value && foto.value.slug === slug) {
     pinDetailNotFound.value = false
-    descriptionText.value = pin.value.description
+    descriptionText.value = foto.value.description
     descriptionTranslated.value = false
-    void trackPinView(pin.value.slug)
+    void trackFotoView(pin.value.slug)
     try {
       await loadComments(true)
     } catch (err) {
       console.error('Erreur lors du chargement des commentaires', err)
     }
-  } else if (generation === resolvePinGeneration && pinSlug.value === slug) {
+  } else if (generation === resolvePinGeneration && fotoSlug.value === slug) {
     pinDetailNotFound.value = true
   }
 }
 
 onMounted(async () => {
-  await resolvePinDetail()
+  await resolveFotoDetail()
 })
 
-watch(pinSlug, async () => {
+watch(fotoSlug, async () => {
   pinOwnerMenuOpen.value = false
-  await resolvePinDetail()
+  await resolveFotoDetail()
 })
 
 watch(
@@ -228,7 +228,7 @@ watch(
 )
 
 const handleLike = async () => {
-  const p = pin.value
+  const p = foto.value
   if (!p) return
   if (!isAuthenticated.value) {
     promptGuest('like', { resourceId: p.slug })
@@ -240,13 +240,13 @@ const handleLike = async () => {
   p.stats.reactions = Math.max(0, previousReactions + (p.liked ? 1 : -1))
   likingPin.value = true
   try {
-    const response = await api.post(`pins/${encodeURIComponent(p.slug)}/like/`)
+    const response = await api.post(`fotos/${encodeURIComponent(p.slug)}/like/`)
     p.liked = response.data.status === 'liked'
     p.stats.reactions = response.data.likes_count
   } catch (err) {
     p.liked = previousLiked
     p.stats.reactions = previousReactions
-    console.error('Erreur like pin', err)
+    console.error('Erreur like foto', err)
   } finally {
     likingPin.value = false
   }
@@ -267,7 +267,7 @@ onBeforeUnmount(() => {
 })
 
 const handleMediaDoubleLike = () => {
-  const p = pin.value
+  const p = foto.value
   if (!p) return
   if (!isAuthenticated.value) {
     promptGuest('like', { resourceId: p.slug })
@@ -279,18 +279,18 @@ const handleMediaDoubleLike = () => {
 }
 
 const handleSave = () => {
-  const currentPin = pin.value
+  const currentPin = foto.value
   if (!currentPin) return
   if (!isAuthenticated.value) {
     promptGuest('save', { resourceId: currentPin.slug })
     return
   }
   savingPin.value = true
-  toggleSavePin(currentPin.id)
+  toggleSaveFoto(currentPin.id)
   Promise.resolve(toggleSave(currentPin.slug))
     .catch((err) => {
-      toggleSavePin(currentPin.id)
-      console.error('Erreur sauvegarde pin', err)
+      toggleSaveFoto(currentPin.id)
+      console.error('Erreur sauvegarde foto', err)
     })
     .finally(() => {
       savingPin.value = false
@@ -298,20 +298,20 @@ const handleSave = () => {
 }
 
 const handleFollow = async () => {
-  const username = pin.value?.username?.trim()
+  const username = foto.value?.username?.trim()
   if (!isAuthenticated.value) {
     if (!username) return
     promptGuest('follow', { resourceId: username })
     return
   }
-  if (pin.value && pin.value.username) {
+  if (pin.value && foto.value.username) {
     const previous = !!pin.value.isFollowing
-    pin.value.isFollowing = !previous
+    foto.value.isFollowing = !previous
     followingAuthor.value = true
     try {
       await toggleFollow(pin.value.username)
     } catch (err) {
-      pin.value.isFollowing = previous
+      foto.value.isFollowing = previous
       console.error('Erreur follow auteur', err)
     } finally {
       followingAuthor.value = false
@@ -351,7 +351,7 @@ const commentsLoadingMore = ref(false)
 const descriptionText = ref('')
 const descriptionTranslated = ref(false)
 const commentSort = ref<'recent' | 'relevant'>(
-  typeof window !== 'undefined' && window.localStorage.getItem('pinova_comment_sort') === 'relevant'
+  typeof window !== 'undefined' && window.localStorage.getItem('fotoce_comment_sort') === 'relevant'
     ? 'relevant'
     : 'recent',
 )
@@ -408,7 +408,7 @@ const mapComment = (comment: any): UiComment => {
 }
 
 const loadComments = async (reset = true) => {
-  if (!pinSlug.value) return
+  if (!fotoSlug.value) return
   if (reset) {
     commentsPage.value = 1
     commentsHasNext.value = false
@@ -416,7 +416,7 @@ const loadComments = async (reset = true) => {
   }
   const pageToFetch = commentsPage.value
   const response = await fetchComments(
-    pinSlug.value,
+    fotoSlug.value,
     pageToFetch,
     commentSort.value,
     highlightedCommentId.value,
@@ -439,7 +439,7 @@ const setCommentSort = async (sort: 'recent' | 'relevant') => {
   if (commentSort.value === sort) return
   commentSort.value = sort
   if (typeof window !== 'undefined') {
-    window.localStorage.setItem('pinova_comment_sort', sort)
+    window.localStorage.setItem('fotoce_comment_sort', sort)
   }
   await loadComments(true)
 }
@@ -450,11 +450,11 @@ const handleRichSubmit = async (
   if (!pin.value || !isAuthenticated.value) {
     if (!pin.value) return
     if (payload.mediaFile) {
-      promptGuest('comment', { resourceId: pin.value.slug })
+      promptGuest('comment', { resourceId: foto.value.slug })
       return
     }
     promptGuest('comment', {
-      resourceId: pin.value.slug,
+      resourceId: foto.value.slug,
       metadata: {
         text: payload.text,
         parentId: payload.parentId ?? null,
@@ -465,7 +465,7 @@ const handleRichSubmit = async (
   }
   if (pin.value.canComment === false) {
     await showAlert(
-      pin.value.commentsPolicy === 'closed' ? t('pin.comments.closedBanner') : t('pin.comments.followersOnlyBanner'),
+      foto.value.commentsPolicy === 'closed' ? t('foto.comments.closedBanner') : t('foto.comments.followersOnlyBanner'),
       { variant: 'info' },
     )
     return
@@ -527,7 +527,7 @@ const handleLikeComment = (id: number) => {
   if (!isAuthenticated.value) {
     promptGuest('like', {
       resourceId: String(id),
-      metadata: { scope: 'comment', pinSlug: pin.value?.slug },
+      metadata: { scope: 'comment', fotoSlug: foto.value?.slug },
     })
     return
   }
@@ -564,11 +564,11 @@ const handleLikeComment = (id: number) => {
 
 const handleTranslateComment = async (id: number) => {
   if (!isAuthenticated.value) {
-    const slug = pin.value?.slug
+    const slug = foto.value?.slug
     if (!slug) return
     promptGuest('translate', {
       resourceId: String(id),
-      metadata: { target: 'comment', commentId: id, lang: targetLang.value, pinSlug: slug },
+      metadata: { target: 'comment', commentId: id, lang: targetLang.value, fotoSlug: slug },
     })
     return
   }
@@ -635,21 +635,21 @@ const handleTranslateDescription = async () => {
   if (!pin.value) return
   if (!isAuthenticated.value) {
     promptGuest('translate', {
-      resourceId: pin.value.slug,
-      metadata: { target: 'description', lang: targetLang.value, pinSlug: pin.value.slug },
+      resourceId: foto.value.slug,
+      metadata: { target: 'description', lang: targetLang.value, fotoSlug: foto.value.slug },
     })
     return
   }
   if (descriptionTranslated.value) {
-    descriptionText.value = pin.value.description
+    descriptionText.value = foto.value.description
     descriptionTranslated.value = false
     return
   }
   translatingDescription.value = true
   try {
-    const result = await translatePinDescription(pin.value.slug, targetLang.value)
-    descriptionText.value = result?.translated || pin.value.description
-    descriptionTranslated.value = !!result?.translated && result.translated.trim() !== pin.value.description.trim()
+    const result = await translateFotoDescription(pin.value.slug, targetLang.value)
+    descriptionText.value = result?.translated || foto.value.description
+    descriptionTranslated.value = !!result?.translated && result.translated.trim() !== foto.value.description.trim()
   } finally {
     translatingDescription.value = false
   }
@@ -660,17 +660,17 @@ const handleToggleSaveRelated = async (slug: string) => {
     promptGuest('save', { resourceId: slug })
     return
   }
-  const relatedPin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
+  const relatedPin = fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === slug)
   if (relatedPin) {
-    toggleSavePin(relatedPin.id)
+    toggleSaveFoto(relatedPin.id)
   }
   try {
     await toggleSave(slug)
   } catch (err) {
     if (relatedPin) {
-      toggleSavePin(relatedPin.id)
+      toggleSaveFoto(relatedPin.id)
     }
-    console.error('Erreur sauvegarde pin relié', err)
+    console.error('Erreur sauvegarde foto relié', err)
   }
 }
 
@@ -705,10 +705,10 @@ const handleCommentsPolicyChange = async (ev: Event) => {
   if (!pin.value || !isPinOwner.value) return
   commentsPolicySaving.value = true
   try {
-    await patchPinCommentsPolicy(pin.value.slug, next)
+    await patchFotoCommentsPolicy(pin.value.slug, next)
   } catch {
-    await showAlert(t('pin.comments.policySaveError'), { variant: 'danger', title: t('modal.errorTitle') })
-    sel.value = pin.value.commentsPolicy || 'open'
+    await showAlert(t('foto.comments.policySaveError'), { variant: 'danger', title: t('modal.errorTitle') })
+    sel.value = foto.value.commentsPolicy || 'open'
   } finally {
     commentsPolicySaving.value = false
   }
@@ -717,7 +717,7 @@ const handleCommentsPolicyChange = async (ev: Event) => {
 const handleModerateComment = async (commentId: number, hidden: boolean) => {
   if (!pin.value) return
   try {
-    await moderatePinComment(pin.value.slug, commentId, hidden)
+    await moderateFotoComment(pin.value.slug, commentId, hidden)
     await loadComments(true)
   } catch {
     await showAlert(t('comment.moderation.error'), { variant: 'danger', title: t('modal.errorTitle') })
@@ -725,12 +725,12 @@ const handleModerateComment = async (commentId: number, hidden: boolean) => {
 }
 
 const reportModalOpen = ref(false)
-const reportTarget = ref<'pin' | 'comment'>('pin')
+const reportTarget = ref<'foto' | 'comment'>('foto')
 const reportCommentId = ref<number | null>(null)
 
 const reportModalContextLabel = computed(() => {
   if (!pin.value) return ''
-  if (reportTarget.value === 'pin') return pin.value.title
+  if (reportTarget.value === 'foto') return foto.value.title
   return `Commentaire #${reportCommentId.value ?? ''} · ${pin.value.title}`
 })
 
@@ -747,7 +747,7 @@ const handleReportPin = async () => {
     await showAlert(t('moderation.reportAlready'), { variant: 'info' })
     return
   }
-  reportTarget.value = 'pin'
+  reportTarget.value = 'foto'
   reportCommentId.value = null
   reportModalOpen.value = true
 }
@@ -765,9 +765,9 @@ const handleReportComment = async (commentId: number) => {
 async function handleSubmitReport(payload: { category: string; details: string }) {
   if (!pin.value) return
   try {
-    if (reportTarget.value === 'pin') {
-      await reportPin(pin.value.slug, payload)
-      await fetchPinBySlug(pin.value.slug)
+    if (reportTarget.value === 'foto') {
+      await reportFoto(pin.value.slug, payload)
+      await fetchFotoBySlug(pin.value.slug)
     } else if (reportCommentId.value != null) {
       await reportComment(reportCommentId.value, payload)
       await loadComments(true)
@@ -776,8 +776,8 @@ async function handleSubmitReport(payload: { category: string; details: string }
     await showAlert(t('moderation.reportSent'), { variant: 'success' })
   } catch (e) {
     if (isAlreadyReportedError(e)) {
-      if (reportTarget.value === 'pin') {
-        await fetchPinBySlug(pin.value.slug)
+      if (reportTarget.value === 'foto') {
+        await fetchFotoBySlug(pin.value.slug)
       } else {
         await loadComments(true)
       }
@@ -801,7 +801,7 @@ const handleDeleteComment = async (commentId: number) => {
   })
   if (!ok) return
   try {
-    await deletePinComment(pin.value.slug, commentId)
+    await deleteFotoComment(pin.value.slug, commentId)
     await loadComments(true)
   } catch {
     await showAlert(t('comment.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
@@ -810,9 +810,9 @@ const handleDeleteComment = async (commentId: number) => {
 
 const handleShare = async () => {
   if (!pin.value) return
-  const sharedPin = pin.value
+  const sharedPin = foto.value
   const url = typeof window !== 'undefined' ? window.location.href : ''
-  const title = sharedPin.title || 'Pinova'
+  const title = sharedPin.title || 'Fotoce'
   const text = (sharedPin.description || '').slice(0, 280)
   await shareUrlWithFallback(
     { showAlert, showPrompt },
@@ -820,19 +820,19 @@ const handleShare = async () => {
       url,
       title,
       text,
-      copiedMessage: t('pin.share.copied'),
+      copiedMessage: t('foto.share.copied'),
       copyErrorMessage: t('profile.share.copyError'),
       copyErrorTitle: t('modal.errorTitle'),
-      manualTitle: t('pin.share.manualTitle'),
-      manualBody: t('pin.share.manualBody'),
+      manualTitle: t('foto.share.manualTitle'),
+      manualBody: t('foto.share.manualBody'),
     },
   )
   if (isAuthenticated.value) {
     try {
-      const response = await api.post(`pins/${encodeURIComponent(sharedPin.slug)}/record-share/`)
+      const response = await api.post(`fotos/${encodeURIComponent(sharedPin.slug)}/record-share/`)
       sharedPin.stats.shares = response.data?.shares_count ?? (sharedPin.stats.shares || 0) + 1
     } catch (err) {
-      console.warn('Erreur compteur partage pin', err)
+      console.warn('Erreur compteur partage foto', err)
     }
   }
 }
@@ -853,7 +853,7 @@ const handleDownload = async () => {
   try {
     const plan = currentUser.value?.subscription?.plan || 'free'
     const quality = plan === 'pro' ? 'hd' : 'standard'
-    const result = await getPinDownload(pin.value.slug, quality)
+    const result = await getFotoDownload(pin.value.slug, quality)
     const url = safeHttpUrl(result.download_url)
     if (!url) {
       try {
@@ -861,7 +861,7 @@ const handleDownload = async () => {
       } catch {
         /* ignore */
       }
-      await showAlert(t('pin.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
+      await showAlert(t('foto.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
       return
     }
     if (tab && !tab.closed) {
@@ -882,8 +882,8 @@ const handleDownload = async () => {
     } catch {
       /* ignore */
     }
-    console.error('Erreur téléchargement pin', err)
-    await showAlert(t('pin.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
+    console.error('Erreur téléchargement foto', err)
+    await showAlert(t('foto.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
   } finally {
     downloadingPin.value = false
   }
@@ -894,25 +894,25 @@ const goBack = () => {
 }
 
 const openRelatedPin = (slug: string) => {
-  router.push(`/pin/${slug}`)
+  router.push(`/foto/${slug}`)
 }
 
 const confirmDeletePin = async () => {
-  const p = pin.value
+  const p = foto.value
   if (!p || !isPinOwner.value) return
   const ok = await showConfirm({
-    title: t('pin.delete.confirmTitle'),
-    message: t('pin.delete.confirmBody'),
+    title: t('foto.delete.confirmTitle'),
+    message: t('foto.delete.confirmBody'),
     variant: 'danger',
   })
   if (!ok) return
   const slug = p.slug
   const profile = p.username
   try {
-    await deletePin(slug)
+    await deleteFoto(slug)
     router.push(profile ? `/profile/${profile}` : '/')
   } catch {
-    await showAlert(t('pin.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
+    await showAlert(t('foto.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
   }
 }
 
@@ -922,58 +922,58 @@ function togglePinOwnerMenu() {
 
 function goEditPinFromMenu() {
   pinOwnerMenuOpen.value = false
-  const slug = pin.value?.slug
-  if (slug) router.push(`/pin/${slug}/edit`)
+  const slug = foto.value?.slug
+  if (slug) router.push(`/foto/${slug}/edit`)
 }
 
-async function deletePinFromMenu() {
+async function deleteFotoFromMenu() {
   pinOwnerMenuOpen.value = false
-  await confirmDeletePin()
+  await confirmDeleteFoto()
 }
 </script>
 
 <template>
   <div class="min-h-screen w-full min-w-0">
-    <PinDetailSkeleton v-if="pinDetailLoading" />
+    <FotoDetailSkeleton v-if="pinDetailLoading" />
 
     <!-- Not found -->
     <div
       v-else-if="pinDetailNotFound || !pin"
       class="flex flex-col items-center justify-center py-32 text-center px-6"
     >
-      <PinovaIcon name="broken_image" class="text-7xl text-neutral-300 mb-4" />
-      <h1 class="text-2xl font-auth-title font-auth-title--black text-neutral-800 mb-2">{{ t('pin.notFound.title') }}</h1>
-      <p class="text-neutral-500 mb-6">{{ t('pin.notFound.desc') }}</p>
+      <FotoceIcon name="broken_image" class="text-7xl text-neutral-300 mb-4" />
+      <h1 class="text-2xl font-auth-title font-auth-title--black text-neutral-800 mb-2">{{ t('foto.notFound.title') }}</h1>
+      <p class="text-neutral-500 mb-6">{{ t('foto.notFound.desc') }}</p>
       <router-link to="/" class="lux-btn-primary lux-btn-pill text-sm">
-        {{ t('pin.notFound.cta') }}
+        {{ t('foto.notFound.cta') }}
       </router-link>
     </div>
 
-    <!-- Pin detail -->
+    <!-- Foto detail -->
     <template v-else>
     <main
-      id="main-pin-detail"
+      id="main-foto-detail"
       tabindex="-1"
-      :aria-labelledby="pin.title ? 'pin-detail-title' : undefined"
+      :aria-labelledby="pin.title ? 'foto-detail-title' : undefined"
       class="min-h-screen w-full min-w-0 outline-none"
     >
-      <div class="pin-detail-page-wrap w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div class="foto-detail-page-wrap w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <!-- Back button -->
-        <PinovaButton
+        <FotoceButton
           variant="secondary"
-          class="pin-detail-back group mb-8 hidden text-sm lg:inline-flex"
-          :aria-label="t('pin.a11y.back')"
+          class="foto-detail-back group mb-8 hidden text-sm lg:inline-flex"
+          :aria-label="t('foto.a11y.back')"
           @click="goBack"
         >
-          <PinovaIcon name="arrow_back" class="text-lg" />
+          <FotoceIcon name="arrow_back" class="text-lg" />
           {{ t('common.back') }}
-        </PinovaButton>
+        </FotoceButton>
 
         <!-- Main card -->
-        <div class="pin-detail-mobile-card lux-pin-detail-card flex flex-col lg:flex-row lg:max-h-[80vh]">
+        <div class="foto-detail-mobile-card lux-foto-detail-card flex flex-col lg:flex-row lg:max-h-[80vh]">
           <!-- Image : paysage centré verticalement ; portrait → colonne plus large pour mieux remplir -->
           <div
-            class="pin-detail-media-pane bg-neutral-100 flex flex-col lg:max-h-[80vh] lg:overflow-hidden shrink-0 min-h-[200px] lg:min-h-0"
+            class="foto-detail-media-pane bg-neutral-100 flex flex-col lg:max-h-[80vh] lg:overflow-hidden shrink-0 min-h-[200px] lg:min-h-0"
             :class="
               detailImageLandscape === false
                 ? 'lg:flex-[1.38] lg:basis-0 lg:min-w-0'
@@ -982,10 +982,10 @@ async function deletePinFromMenu() {
             :style="detailImageLandscape === true ? { justifyContent: 'center' } : undefined"
           >
             <div
-              class="pin-detail-media-wrap w-full flex min-h-0"
+              class="foto-detail-media-wrap w-full flex min-h-0"
               :class="detailImageLandscape === true ? 'flex-1 items-center justify-center' : ''"
             >
-              <PinSensitiveMedia
+              <FotoSensitiveMedia
                 v-if="pin.imageUrl"
                 :sensitive="!!pin.mediaSensitiveBlur"
                 :viewer-can-reveal="viewerCanRevealSensitive"
@@ -996,20 +996,20 @@ async function deletePinFromMenu() {
               >
                 <img
                   :src="pin.imageUrl"
-                  :alt="pin.title ? `${pin.title} — ${pin.user}` : t('feed.pinImageFallback', { user: pin.user })"
+                  :alt="pin.title ? `${pin.title} — ${pin.user}` : t('feed.pinImageFallback', { user: foto.user })"
                   :fetchpriority="detailImageFetchPriority"
                   loading="eager"
                   decoding="async"
                   :class="[
                     PIN_MEDIA_ANTI_LEAK_CLASS,
-                    'pin-detail-media w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
+                    'foto-detail-media w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
                   ]"
                   @load="onDetailImageLoad"
                   @dblclick.prevent="handleMediaDoubleLike"
                   v-bind="pinMediaAntiLeakImgBindings()"
                 />
-              </PinSensitiveMedia>
-              <PinSensitiveMedia
+              </FotoSensitiveMedia>
+              <FotoSensitiveMedia
                 v-else-if="pin.storyVideoUrl"
                 :sensitive="!!pin.mediaSensitiveBlur"
                 :viewer-can-reveal="viewerCanRevealSensitive"
@@ -1025,37 +1025,37 @@ async function deletePinFromMenu() {
                   :preload="detailVideoPreload"
                   :class="[
                     PIN_MEDIA_ANTI_LEAK_CLASS,
-                    'pin-detail-media w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
+                    'foto-detail-media w-full h-auto max-h-[min(80vh,900px)] lg:max-h-[80vh] object-contain select-none bg-neutral-100',
                   ]"
                   @loadedmetadata="onDetailVideoLoadedMetadata"
                   @dblclick.prevent="handleMediaDoubleLike"
                   v-bind="pinMediaAntiLeakVideoBindings(true)"
                 />
-              </PinSensitiveMedia>
-              <transition name="pin-detail-heart">
-                <div v-if="pinHeartBurst" :key="pinHeartBurstKey" class="pin-detail-heart-burst pointer-events-none">
-                  <PinovaIcon name="favorite" />
+              </FotoSensitiveMedia>
+              <transition name="foto-detail-heart">
+                <div v-if="pinHeartBurst" :key="pinHeartBurstKey" class="foto-detail-heart-burst pointer-events-none">
+                  <FotoceIcon name="favorite" />
                 </div>
               </transition>
             </div>
           </div>
 
           <!-- Details -->
-          <div class="pin-detail-info-pane lg:flex-1 lg:min-w-0 p-6 sm:p-8 lg:p-10 flex flex-col lg:max-h-[80vh] lg:overflow-y-auto min-h-0">
+          <div class="foto-detail-info-pane lg:flex-1 lg:min-w-0 p-6 sm:p-8 lg:p-10 flex flex-col lg:max-h-[80vh] lg:overflow-y-auto min-h-0">
             <!-- Actions bar -->
-            <div class="pin-detail-actions flex items-center justify-between mb-6">
+            <div class="foto-detail-actions flex items-center justify-between mb-6">
               <div class="flex items-center gap-2 flex-wrap">
-                <div v-if="isPinOwner && pin.slug" class="relative shrink-0">
+                <div v-if="isPinOwner && foto.slug" class="relative shrink-0">
                   <button
                     ref="pinOwnerMenuTriggerRef"
                     type="button"
                     class="lux-icon-ring-btn"
-                    :aria-label="t('pin.ownerMenu.more')"
+                    :aria-label="t('foto.ownerMenu.more')"
                     :aria-expanded="pinOwnerMenuOpen"
                     aria-haspopup="menu"
                     @click.stop.prevent="togglePinOwnerMenu"
                   >
-                    <PinovaIcon name="more_horiz" class="text-[22px] leading-none translate-y-px" aria-hidden="true" />
+                    <FotoceIcon name="more_horiz" class="text-[22px] leading-none translate-y-px" aria-hidden="true" />
                   </button>
                 </div>
                 <button
@@ -1065,29 +1065,29 @@ async function deletePinFromMenu() {
                   :class="pin.liked ? 'bg-gradient-to-br from-pink-50 to-rose-50/80 text-pink-700 border-pink-100' : ''"
                   :disabled="likingPin"
                   :aria-pressed="pin.liked"
-                  :aria-label="pin.liked ? t('pin.a11y.unlike') : t('pin.a11y.like')"
+                  :aria-label="pin.liked ? t('foto.a11y.unlike') : t('foto.a11y.like')"
                   @click="handleLike"
                 >
                   <span v-if="likingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-                  <PinovaIcon v-else name="favorite" :class="pin.liked ? 'text-pink-700' : 'text-neutral-700'" aria-hidden="true" />
+                  <FotoceIcon v-else name="favorite" :class="pin.liked ? 'text-pink-700' : 'text-neutral-700'" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   class="lux-icon-ring-btn"
-                  :aria-label="t('pin.a11y.share')"
+                  :aria-label="t('foto.a11y.share')"
                   @click="handleShare"
                 >
-                  <PinovaIcon name="share" aria-hidden="true" />
+                  <FotoceIcon name="share" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   class="lux-icon-ring-btn disabled:opacity-40 disabled:cursor-not-allowed"
                   :disabled="downloadingPin || !pin.imageUrl"
-                  :aria-label="t('pin.a11y.download')"
+                  :aria-label="t('foto.a11y.download')"
                   @click="handleDownload"
                 >
                   <span v-if="downloadingPin" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-                  <PinovaIcon v-else name="download" aria-hidden="true" />
+                  <FotoceIcon v-else name="download" aria-hidden="true" />
                 </button>
                 <button
                   v-if="isAuthenticated && !isPinOwner && !pin.viewerHasReported"
@@ -1096,52 +1096,52 @@ async function deletePinFromMenu() {
                   :aria-label="t('moderation.report')"
                   @click="handleReportPin"
                 >
-                  <PinovaIcon name="flag" class="text-[22px]" aria-hidden="true" />
+                  <FotoceIcon name="flag" class="text-[22px]" aria-hidden="true" />
                 </button>
               </div>
               <button
                 type="button"
-                class="pin-detail-save transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+                class="foto-detail-save transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
                 :class="pin.saved ? 'lux-btn-detail-saved' : 'lux-btn-primary lux-btn-pill'"
                 :disabled="savingPin"
                 :aria-pressed="pin.saved"
-                :aria-label="pin.saved ? t('pin.a11y.saved') : t('pin.a11y.save')"
+                :aria-label="pin.saved ? t('foto.a11y.saved') : t('foto.a11y.save')"
                 @click="handleSave"
               >
                 <span v-if="savingPin" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                <PinovaIcon v-else name="bookmark" class="pin-detail-save-icon" aria-hidden="true" />
-                <span v-if="!savingPin">{{ pin.saved ? t('pin.saved') : t('pin.save') }}</span>
+                <FotoceIcon v-else name="bookmark" class="foto-detail-save-icon" aria-hidden="true" />
+                <span v-if="!savingPin">{{ foto.saved ? t('foto.saved') : t('foto.save') }}</span>
               </button>
             </div>
 
             <!-- Link -->
             <a
               v-if="pin.link"
-              :href="pin.link.startsWith('http') ? pin.link : 'https://' + pin.link"
+              :href="pin.link.startsWith('http') ? foto.link : 'https://' + foto.link"
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center gap-1.5 text-sm text-neutral-800 hover:text-neutral-950 underline underline-offset-2 mb-4"
             >
-              <PinovaIcon name="open_in_new" class="text-base" />
-              {{ pin.link }}
+              <FotoceIcon name="open_in_new" class="text-base" />
+              {{ foto.link }}
             </a>
 
             <!-- Title & Description -->
             <div class="flex items-start gap-2 mb-3 flex-wrap">
-              <h1 id="pin-detail-title" class="text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-950 dark:text-neutral-100 flex-1 min-w-[12rem]">{{ pin.title }}</h1>
+              <h1 id="foto-detail-title" class="text-2xl sm:text-3xl font-auth-title font-auth-title--black text-neutral-950 dark:text-neutral-100 flex-1 min-w-[12rem]">{{ foto.title }}</h1>
               <span
                 v-if="pinVisibility !== 'public'"
                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0"
                 :class="pinVisibility === 'private' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'"
               >
-                <PinovaIcon :name="pinVisibility === 'private' ? 'lock' : 'group'" class="text-xs" />
-                {{ pinVisibility === 'private' ? t('pin.visibility.private') : t('pin.visibility.followers') }}
+                <FotoceIcon :name="pinVisibility === 'private' ? 'lock' : 'group'" class="text-xs" />
+                {{ pinVisibility === 'private' ? t('foto.visibility.private') : t('foto.visibility.followers') }}
               </span>
             </div>
             <div class="mb-6">
               <div class="space-y-2">
                 <p class="text-sm text-neutral-800 leading-relaxed">
-                  {{ descriptionText || pin.description }}
+                  {{ descriptionText || foto.description }}
                 </p>
                 <button
                   v-if="isAuthenticated"
@@ -1156,11 +1156,11 @@ async function deletePinFromMenu() {
             </div>
 
             <!-- Tags privés (lecture seule — créés à la publication) -->
-            <div v-if="isPinOwner && pin.privateTags?.length" class="mb-6">
-              <p class="text-xs font-semibold text-neutral-500 mb-2">{{ t('pin.privateTags.readonlyTitle') }}</p>
+            <div v-if="isPinOwner && foto.privateTags?.length" class="mb-6">
+              <p class="text-xs font-semibold text-neutral-500 mb-2">{{ t('foto.privateTags.readonlyTitle') }}</p>
               <div class="flex flex-wrap gap-2">
                 <span
-                  v-for="tag in pin.privateTags"
+                  v-for="tag in foto.privateTags"
                   :key="tag"
                   class="px-2.5 py-1 rounded-full bg-neutral-900 text-xs font-medium text-white"
                 >
@@ -1172,7 +1172,7 @@ async function deletePinFromMenu() {
             <!-- Author -->
             <div class="mt-8 flex items-center justify-between">
               <router-link
-                v-if="pin"
+                v-if="foto"
                 :to="`/profile/${pin.username}`"
                 class="flex items-center gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 p-2 rounded-xl transition-colors"
               >
@@ -1192,16 +1192,16 @@ async function deletePinFromMenu() {
                   <span v-else class="avatar-text">{{ displayInitials(pin.user) }}</span>
                 </AvatarDisc>
                 <div>
-                  <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ pin.user }}</p>
-                  <p class="text-xs text-neutral-500">{{ t('pin.followers', { count: formatCount(pin.authorFollowersCount ?? 0) }) }}</p>
+                  <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ foto.user }}</p>
+                  <p class="text-xs text-neutral-500">{{ t('foto.followers', { count: formatCount(pin.authorFollowersCount ?? 0) }) }}</p>
                 </div>
               </router-link>
               <button
-                v-if="currentUser && currentUser.id !== pin.userId"
+                v-if="currentUser && currentUser.id !== foto.userId"
                 type="button"
                 class="text-sm font-bold transition-all rounded-full"
                 :class="
-                  pin.isFollowing
+                  foto.isFollowing
                     ? 'lux-btn-accent-dark py-2.5 px-6'
                     : 'lux-btn-secondary py-2.5 px-6 border-0 shadow-md'
                 "
@@ -1209,15 +1209,15 @@ async function deletePinFromMenu() {
                 @click="handleFollow"
               >
                 <span v-if="followingAuthor" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                <span v-else>{{ pin.isFollowing ? t('pin.following') : t('pin.follow') }}</span>
+                <span v-else>{{ foto.isFollowing ? t('foto.following') : t('foto.follow') }}</span>
               </button>
               <button
-                v-if="pin.authorTipsInternalEnabled && isAuthenticated && currentUser && currentUser.id !== pin.userId"
+                v-if="pin.authorTipsInternalEnabled && isAuthenticated && currentUser && currentUser.id !== foto.userId"
                 type="button"
                 class="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-bold bg-gradient-to-br from-amber-50 to-amber-100/90 text-amber-900 ring-1 ring-amber-200/70 shadow-sm hover:shadow-md hover:from-amber-100 hover:to-amber-50 transition"
                 @click="tipDialogOpen = true"
               >
-                {{ t('pin.tip') }}
+                {{ t('foto.tip') }}
               </button>
             </div>
 
@@ -1225,91 +1225,91 @@ async function deletePinFromMenu() {
             <div class="flex items-center gap-6 mb-6 text-sm text-neutral-500">
               <span class="flex items-center gap-1.5">
                 {{ formatCount(pin.stats.saves) }}
-                <PinovaIcon name="bookmark" class="text-lg" :class="{ 'fill-1 text-neutral-600': pin.saved }" />
+                <FotoceIcon name="bookmark" class="text-lg" :class="{ 'fill-1 text-neutral-600': foto.saved }" />
               </span>
               <button
                 v-if="pin.isStory && isPinOwner"
                 type="button"
                 class="flex items-center gap-1.5 rounded-lg px-1 -mx-1 py-0.5 text-sm text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
-                :aria-label="t('story.likers.openListAria', { count: pin.stats.reactions })"
+                :aria-label="t('story.likers.openListAria', { count: foto.stats.reactions })"
                 @click="storyLikersOpen = true"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <PinovaIcon name="favorite" class="text-lg text-pink-700" aria-hidden="true" />
+                <FotoceIcon name="favorite" class="text-lg text-pink-700" aria-hidden="true" />
               </button>
               <span
                 v-else-if="!pin.isStory"
                 class="flex items-center gap-1.5"
               >
                 {{ formatCount(pin.stats.reactions) }}
-                <PinovaIcon name="favorite" class="text-lg" :class="pin.liked ? 'text-pink-700' : 'text-neutral-300'" />
+                <FotoceIcon name="favorite" class="text-lg" :class="pin.liked ? 'text-pink-700' : 'text-neutral-300'" />
               </span>
               <span class="flex items-center gap-1.5">
-                <PinovaIcon name="sell" class="text-lg" />
-                {{ pin.topicDisplay ?? pin.topic }}
+                <FotoceIcon name="sell" class="text-lg" />
+                {{ foto.topicDisplay ?? foto.topic }}
               </span>
             </div>
 
-            <div v-if="pin.hashtags && pin.hashtags.length" class="mb-5 flex flex-wrap gap-2">
+            <div v-if="pin.hashtags && foto.hashtags.length" class="mb-5 flex flex-wrap gap-2">
               <span
-                v-for="tag in pin.hashtags"
+                v-for="tag in foto.hashtags"
                 :key="tag"
                 class="px-2.5 py-1 rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600"
               >
                 {{ tag }}
               </span>
             </div>
-            <div v-if="pin.boards && pin.boards.length" class="mb-5 flex flex-wrap gap-2">
+            <div v-if="pin.boards && foto.boards.length" class="mb-5 flex flex-wrap gap-2">
               <router-link
-                v-for="board in pin.boards"
+                v-for="board in foto.boards"
                 :key="board.id"
-                :to="`/profile/${board.ownerUsername || pin.username}/board/${board.id}`"
+                :to="`/profile/${board.ownerUsername || foto.username}/board/${board.id}`"
                 class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/35 text-xs font-semibold text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/45 transition"
               >
-                <PinovaIcon name="dashboard" class="text-sm" aria-hidden="true" />
+                <FotoceIcon name="dashboard" class="text-sm" aria-hidden="true" />
                 {{ board.name }}
               </router-link>
             </div>
 
             <!-- Comments section (rich) -->
-            <div class="pin-detail-comments-pane flex-1">
+            <div class="foto-detail-comments-pane flex-1">
               <div class="flex flex-col gap-3 mb-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-                    {{ t('pin.comments') }}
+                    {{ t('foto.comments') }}
                     <span class="text-neutral-400 font-normal text-sm">({{ commentsTotalCount }})</span>
                   </h3>
                   <div class="flex flex-wrap items-center gap-2">
                     <label v-if="isPinOwner" class="flex items-center gap-2 text-xs text-neutral-600">
-                      <span class="whitespace-nowrap">{{ t('pin.comments.policyLabel') }}</span>
+                      <span class="whitespace-nowrap">{{ t('foto.comments.policyLabel') }}</span>
                       <select
                         class="rounded-lg border border-neutral-200 dark:border-neutral-700 px-2 py-1 text-xs font-medium bg-white dark:bg-neutral-900 max-w-[11rem]"
                         :value="pin.commentsPolicy || 'open'"
                         :disabled="commentsPolicySaving"
                         @change="handleCommentsPolicyChange"
                       >
-                        <option value="open">{{ t('pin.comments.policyOpen') }}</option>
-                        <option value="followers_only">{{ t('pin.comments.policyFollowers') }}</option>
-                        <option value="closed">{{ t('pin.comments.policyClosed') }}</option>
+                        <option value="open">{{ t('foto.comments.policyOpen') }}</option>
+                        <option value="followers_only">{{ t('foto.comments.policyFollowers') }}</option>
+                        <option value="closed">{{ t('foto.comments.policyClosed') }}</option>
                       </select>
                     </label>
                     <div class="flex items-center gap-1.5">
-                      <PinovaButton
+                      <FotoceButton
                         size="sm"
                         class="text-xs"
                         :variant="commentSort === 'recent' ? 'primary' : 'secondary'"
                         @click="setCommentSort('recent')"
                       >
-                        {{ t('pin.comments.sortRecent') }}
-                      </PinovaButton>
-                      <PinovaButton
+                        {{ t('foto.comments.sortRecent') }}
+                      </FotoceButton>
+                      <FotoceButton
                         size="sm"
                         class="text-xs"
                         :variant="commentSort === 'relevant' ? 'primary' : 'secondary'"
                         @click="setCommentSort('relevant')"
                       >
-                        {{ t('pin.comments.sortRelevant') }}
-                      </PinovaButton>
+                        {{ t('foto.comments.sortRelevant') }}
+                      </FotoceButton>
                     </div>
                   </div>
                 </div>
@@ -1317,7 +1317,7 @@ async function deletePinFromMenu() {
                   v-if="isAuthenticated && !viewerCanComment"
                   class="text-xs text-amber-900 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2"
                 >
-                  {{ pin.commentsPolicy === 'closed' ? t('pin.comments.closedBanner') : t('pin.comments.followersOnlyBanner') }}
+                  {{ foto.commentsPolicy === 'closed' ? t('foto.comments.closedBanner') : t('foto.comments.followersOnlyBanner') }}
                 </p>
               </div>
 
@@ -1327,7 +1327,7 @@ async function deletePinFromMenu() {
                   :comments="richComments"
                   :can-translate="isAuthenticated"
                   :highlighted-comment-id="highlightedCommentId"
-                  :is-pin-owner="isPinOwner"
+                  :is-foto-owner="isPinOwner"
                   :viewer-can-comment="viewerCanComment"
                   :viewer-username="currentUser?.username ?? null"
                   @add="handleRichSubmit"
@@ -1380,10 +1380,10 @@ async function deletePinFromMenu() {
         </div>
       </div>
 
-      <!-- Related pins -->
+      <!-- Related fotos -->
       <section v-if="relatedPins.length > 0 || pinsLoading" class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 pb-10">
-        <h2 class="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-5">{{ t('pin.related') }}</h2>
-        <PinGrid
+        <h2 class="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-5">{{ t('foto.related') }}</h2>
+        <FotoGrid
           class="w-full"
           :pins="relatedPins"
           :loading-initial="pinsLoading && relatedPins.length === 0"
@@ -1406,7 +1406,7 @@ async function deletePinFromMenu() {
     />
 
     <TipDialog
-      v-if="pin"
+      v-if="foto"
       :open="tipDialogOpen"
       :recipient-username="pin.username"
       :pin-slug="pin.slug"
@@ -1415,7 +1415,7 @@ async function deletePinFromMenu() {
 
     <Teleport to="body">
       <div
-        v-if="pinOwnerMenuOpen && isPinOwner && pin?.slug"
+        v-if="pinOwnerMenuOpen && isPinOwner && foto?.slug"
         ref="pinOwnerMenuPanelRef"
         role="menu"
         class="app-floating-panel rounded-xl overflow-hidden"
@@ -1428,8 +1428,8 @@ async function deletePinFromMenu() {
           class="app-menu-item w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 flex items-center gap-2 transition-colors"
           @click="goEditPinFromMenu"
         >
-          <PinovaIcon name="edit" class="text-lg text-neutral-500" aria-hidden="true" />
-          {{ t('pin.ownerMenu.edit') }}
+          <FotoceIcon name="edit" class="text-lg text-neutral-500" aria-hidden="true" />
+          {{ t('foto.ownerMenu.edit') }}
         </button>
         <button
           type="button"
@@ -1437,23 +1437,23 @@ async function deletePinFromMenu() {
           class="app-menu-item w-full px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 flex items-center gap-2 transition-colors"
           @click="promoteSheetOpen = true; pinOwnerMenuOpen = false"
         >
-          <PinovaIcon name="rocket_launch" class="text-lg text-amber-600" aria-hidden="true" />
-          {{ t('pin.boost.cta') }}
+          <FotoceIcon name="rocket_launch" class="text-lg text-amber-600" aria-hidden="true" />
+          {{ t('foto.boost.cta') }}
         </button>
         <button
           type="button"
           role="menuitem"
           class="app-menu-item w-full px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-300 flex items-center gap-2 transition-colors"
-          @click="deletePinFromMenu"
+          @click="deleteFotoFromMenu"
         >
-          <PinovaIcon name="delete" class="text-lg" aria-hidden="true" />
-          {{ t('pin.ownerMenu.delete') }}
+          <FotoceIcon name="delete" class="text-lg" aria-hidden="true" />
+          {{ t('foto.ownerMenu.delete') }}
         </button>
       </div>
     </Teleport>
 
-    <PromotePinSheet
-      v-if="pin"
+    <PromoteFotoSheet
+      v-if="foto"
       :open="promoteSheetOpen"
       :pin-slug="pin.slug"
       initial-mode="boost"

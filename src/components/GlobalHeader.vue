@@ -2,9 +2,9 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
-import { usePins } from '../composables/usePins'
+import { useFotos } from '../composables/useFotos'
 import { fetchHeaderSearch, type HeaderSearchUser, type HeaderSearchBoard } from '../composables/useHeaderSearch'
-import type { Pin } from '../types'
+import type { Foto } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api/index'
 import { navigateWebNotificationDeepLink } from '../utils/notificationDeepLink'
@@ -20,7 +20,7 @@ const route = useRoute()
 const router = useRouter()
 const { currentUser, isAuthenticated, logout } = useAuth()
 
-const PINOVA_HEADER_H_VAR = '--pinova-global-header-h'
+const FOTOCE_HEADER_H_VAR = '--fotoce-global-header-h'
 
 const headerShellRef = ref<HTMLElement | null>(null)
 const isHomeRouteHeader = computed(() => route.name === 'home' || route.path === '/')
@@ -35,7 +35,7 @@ let headerHeightRo: ResizeObserver | null = null
 
 function clearHeaderHeightCssVar() {
   if (typeof document === 'undefined') return
-  document.documentElement.style.removeProperty(PINOVA_HEADER_H_VAR)
+  document.documentElement.style.removeProperty(FOTOCE_HEADER_H_VAR)
 }
 
 function syncHeaderHeightCssVar() {
@@ -47,9 +47,9 @@ function syncHeaderHeightCssVar() {
     clearHeaderHeightCssVar()
     return
   }
-  document.documentElement.style.setProperty(PINOVA_HEADER_H_VAR, `${Math.ceil(h)}px`)
+  document.documentElement.style.setProperty(FOTOCE_HEADER_H_VAR, `${Math.ceil(h)}px`)
 }
-const { trackSearchInteraction } = usePins()
+const { trackSearchInteraction } = useFotos()
 
 const searchQuery = ref('')
 const showUserMenu = ref(false)
@@ -61,16 +61,16 @@ let searchTrackTimer: ReturnType<typeof setTimeout> | null = null
 window.addEventListener('online', () => (isOffline.value = false))
 window.addEventListener('offline', () => (isOffline.value = true))
 
-const searchPins = ref<Pin[]>([])
+const searchFotos = ref<Foto[]>([])
 const searchUsers = ref<HeaderSearchUser[]>([])
 const searchBoards = ref<HeaderSearchBoard[]>([])
-const searchRecommended = ref<Pin[]>([])
+const searchRecommended = ref<Foto[]>([])
 const searchRemoteLoading = ref(false)
 let headerSearchDebounce: ReturnType<typeof setTimeout> | null = null
 
 const hasSearchAnyResults = computed(
   () =>
-    searchPins.value.length > 0 ||
+    searchFotos.value.length > 0 ||
     searchUsers.value.length > 0 ||
     searchBoards.value.length > 0 ||
     searchRecommended.value.length > 0,
@@ -105,12 +105,12 @@ async function runHeaderSearch() {
   searchRemoteLoading.value = true
   try {
     const r = await fetchHeaderSearch(searchQuery.value, 8)
-    searchPins.value = r.pins
+    searchFotos.value = r.pins
     searchUsers.value = r.users
     searchBoards.value = r.boards
     searchRecommended.value = r.recommendedPins
   } catch {
-    searchPins.value = []
+    searchFotos.value = []
     searchUsers.value = []
     searchBoards.value = []
     searchRecommended.value = []
@@ -339,8 +339,8 @@ const handleNotificationClick = async (notification: any) => {
     router,
     {
       metadata: meta,
-      pin_slug: notification.pin_slug ?? null,
-      pin_id: notification.pin_id ?? null,
+      foto_slug: notification.foto_slug ?? null,
+      foto_id: notification.foto_id ?? null,
       comment_id: notification.comment_id ?? null,
       action_url: notification.action_url ?? null,
       notification_type: notification.notification_type ?? null,
@@ -365,7 +365,7 @@ const handleLogout = async () => {
 
 const handleWorkerMessage = (event: MessageEvent) => {
   const payload = event.data || {}
-  if (payload.type !== 'pinova_push_click') return
+  if (payload.type !== 'fotoce_push_click') return
   const rawMeta = typeof payload.metadata_json === 'string' ? payload.metadata_json.trim() : ''
   let meta: Record<string, unknown> = {}
   if (rawMeta) {
@@ -398,8 +398,8 @@ const handleWorkerMessage = (event: MessageEvent) => {
     router,
     {
       metadata: meta,
-      pin_slug: typeof payload.pin_slug === 'string' ? payload.pin_slug : null,
-      pin_id: null,
+      foto_slug: typeof payload.foto_slug === 'string' ? payload.foto_slug : null,
+      foto_id: null,
       comment_id,
       action_url: typeof payload.action_url === 'string' ? payload.action_url : null,
       notification_type: typeof payload.notification_type === 'string' ? payload.notification_type : null,
@@ -505,7 +505,7 @@ watch(
 <template>
   <header
     ref="headerShellRef"
-    class="app-global-header-shell pinova-app-chrome-safe-pt flex flex-col w-full px-2 sm:px-4 lg:px-5 pb-0 fixed inset-x-0 top-0 z-[40] transition-[background-color,backdrop-filter,border-color,box-shadow] duration-200 ease-out"
+    class="app-global-header-shell fotoce-app-chrome-safe-pt flex flex-col w-full px-2 sm:px-4 lg:px-5 pb-0 fixed inset-x-0 top-0 z-[40] transition-[background-color,backdrop-filter,border-color,box-shadow] duration-200 ease-out"
     :class="[HEADER_SHELL_GLASS, homeHeaderChrome ? 'max-lg:overflow-hidden max-lg:rounded-b-3xl' : '']"
   >
     <div class="flex w-full min-w-0 items-center gap-1.5 sm:gap-3 lg:gap-4 pb-1.5 sm:pb-2">
@@ -513,7 +513,7 @@ watch(
     <router-link
       to="/"
       class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-pink-700 dark:bg-pink-600 text-white hover:bg-pink-800 dark:hover:opacity-90 transition shrink-0 overflow-hidden shadow-md shadow-pink-900/15 dark:shadow-black/40 ring-1 ring-black/[0.06] dark:ring-white/15"
-      aria-label="Accueil Pinova"
+      aria-label="Accueil Fotoce"
     >
       <img
         src="../assets/logo.png"
@@ -547,7 +547,7 @@ watch(
         v-if="isOffline"
         class="ml-3 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1 animate-pulse"
       >
-        <PinovaIcon name="cloud_off" class="text-sm" />
+        <FotoceIcon name="cloud_off" class="text-sm" />
         {{ t('app.offline') }}
       </div>
     </nav>
@@ -576,7 +576,7 @@ watch(
         <summary
           class="list-none cursor-pointer rounded-full px-3 py-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1 [&::-webkit-details-marker]:hidden"
         >
-          <PinovaIcon name="apps" class="text-lg leading-none" />
+          <FotoceIcon name="apps" class="text-lg leading-none" />
           <span class="sr-only lg:not-sr-only">{{ t('header.nav.more') }}</span>
         </summary>
         <div
@@ -599,7 +599,7 @@ watch(
         v-if="isOffline"
         class="ml-2 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center gap-1 animate-pulse"
       >
-        <PinovaIcon name="cloud_off" class="text-sm" />
+        <FotoceIcon name="cloud_off" class="text-sm" />
         {{ t('app.offline') }}
       </div>
     </nav>
@@ -617,7 +617,7 @@ watch(
             : 'focus-within:shadow-lg'
         "
       >
-        <PinovaIcon name="search" class="text-lg text-neutral-400 dark:text-neutral-500" />
+        <FotoceIcon name="search" class="text-lg text-neutral-400 dark:text-neutral-500" />
         <input
           v-model="searchQuery"
           type="text"
@@ -632,7 +632,7 @@ watch(
           class="w-6 h-6 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center justify-center"
           @click="searchQuery = ''"
         >
-          <PinovaIcon name="close" class="text-sm text-neutral-400 dark:text-neutral-500" />
+          <FotoceIcon name="close" class="text-sm text-neutral-400 dark:text-neutral-500" />
         </button>
       </div>
     </div>
@@ -647,7 +647,7 @@ watch(
       class="lg:hidden flex-1 min-w-0 flex items-center gap-2 rounded-full bg-neutral-100/90 dark:bg-neutral-800/90 hover:bg-neutral-200/80 dark:hover:bg-neutral-700/80 px-3 py-2 text-sm text-neutral-500 dark:text-neutral-400 transition-colors"
       :aria-label="t('common.search')"
     >
-      <PinovaIcon name="search" class="text-lg shrink-0" />
+      <FotoceIcon name="search" class="text-lg shrink-0" />
       <span class="flex-1 truncate text-xs sm:text-sm">{{ t('header.search.placeholder') }}</span>
     </router-link>
 
@@ -672,14 +672,14 @@ watch(
               {{ t('header.search.results') }}
             </p>
 
-            <template v-if="searchPins.length">
+            <template v-if="searchFotos.length">
               <p class="px-3 py-1 text-[11px] font-semibold text-neutral-500 uppercase tracking-wide">
                 {{ t('header.search.sectionPins') }}
               </p>
               <router-link
-                v-for="pin in searchPins"
-                :key="'p-' + pin.id"
-                :to="`/pin/${encodeURIComponent(pin.slug)}`"
+                v-for="pin in searchFotos"
+                :key="'p-' + foto.id"
+                :to="`/foto/${encodeURIComponent(pin.slug)}`"
                 class="app-menu-item flex items-center gap-3 px-3 py-2 rounded-xl transition"
                 @click="showSearchResults = false"
               >
@@ -694,12 +694,12 @@ watch(
                     v-else
                     class="w-full h-full flex items-center justify-center text-[10px] font-bold text-neutral-400"
                   >
-                    Pin
+                    Foto
                   </div>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ pin.title }}</p>
-                  <p class="text-xs text-neutral-400 truncate">@{{ pin.username }} · {{ pin.topicDisplay || pin.topic }}</p>
+                  <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ foto.title }}</p>
+                  <p class="text-xs text-neutral-400 truncate">@{{ foto.username }} · {{ foto.topicDisplay || foto.topic }}</p>
                 </div>
               </router-link>
             </template>
@@ -759,7 +759,7 @@ watch(
                 <div class="min-w-0">
                   <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ board.name }}</p>
                   <p class="text-xs text-neutral-400 truncate">
-                    @{{ board.ownerUsername }} · {{ t('header.search.boardPinsCount', { count: board.pinCount }) }}
+                    @{{ board.ownerUsername }} · {{ t('header.search.boardFotosCount', { count: board.fotoCount }) }}
                   </p>
                 </div>
               </router-link>
@@ -771,8 +771,8 @@ watch(
               </p>
               <router-link
                 v-for="pin in searchRecommended"
-                :key="'r-' + pin.id"
-                :to="`/pin/${encodeURIComponent(pin.slug)}`"
+                :key="'r-' + foto.id"
+                :to="`/foto/${encodeURIComponent(pin.slug)}`"
                 class="app-menu-item flex items-center gap-3 px-3 py-2 rounded-xl transition"
                 @click="showSearchResults = false"
               >
@@ -787,11 +787,11 @@ watch(
                     v-else
                     class="w-full h-full flex items-center justify-center text-[10px] font-bold text-neutral-400"
                   >
-                    Pin
+                    Foto
                   </div>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ pin.title }}</p>
+                  <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{{ foto.title }}</p>
                   <p class="text-xs text-pink-700/90">{{ t('header.search.forYouBadge') }}</p>
                 </div>
               </router-link>
@@ -837,7 +837,7 @@ watch(
           "
           :aria-label="t('header.notifications')"
         >
-          <PinovaIcon name="notifications" class="text-[22px] leading-none" />
+          <FotoceIcon name="notifications" class="text-[22px] leading-none" />
           <span
             v-if="unreadCount > 0"
             class="absolute top-1 right-1 w-2.5 h-2.5 bg-pink-700 dark:bg-pink-600 rounded-full border-2 border-white dark:border-neutral-900"
@@ -851,7 +851,7 @@ watch(
             class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 transition relative"
             @click.stop="toggleNotificationsPanel()"
           >
-            <PinovaIcon name="notifications" class="text-xl" />
+            <FotoceIcon name="notifications" class="text-xl" />
             <span
               v-if="unreadCount > 0"
               class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-pink-700 dark:bg-pink-600 rounded-full border-2 border-white dark:border-neutral-900 ring-1 ring-pink-200/70 dark:ring-pink-600/40"
@@ -930,7 +930,7 @@ watch(
             </div>
             <div class="max-h-80 overflow-y-auto">
               <div v-if="notifications.length === 0" class="p-8 text-center text-neutral-400">
-                <PinovaIcon name="notifications_off" class="text-4xl mb-2" />
+                <FotoceIcon name="notifications_off" class="text-4xl mb-2" />
                 <p class="text-sm">{{ t('header.notifications.empty') }}</p>
               </div>
               <div
@@ -1006,7 +1006,7 @@ watch(
               </AvatarDisc>
               <div class="min-w-0 flex-1">
                 <p class="font-semibold text-neutral-900 text-sm flex items-center gap-1.5">
-                  <PinovaIcon name="verified" class="text-amber-500 text-base shrink-0" />
+                  <FotoceIcon name="verified" class="text-amber-500 text-base shrink-0" />
                   <span class="truncate">{{ currentUser?.displayName }}</span>
                 </p>
                 <p class="text-xs text-neutral-500 truncate">@{{ currentUser?.username }}</p>
@@ -1020,7 +1020,7 @@ watch(
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
               >
-                <PinovaIcon name="person" class="text-lg" />
+                <FotoceIcon name="person" class="text-lg" />
                 {{ t('header.user.myProfile') }}
               </router-link>
               <router-link
@@ -1028,7 +1028,7 @@ watch(
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
               >
-                <PinovaIcon name="settings" class="text-lg" />
+                <FotoceIcon name="settings" class="text-lg" />
                 {{ t('nav.settings') }}
               </router-link>
               <router-link
@@ -1037,7 +1037,7 @@ watch(
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 transition text-sm text-neutral-700 dark:text-neutral-200"
                 @click="closeDropdowns"
               >
-                <PinovaIcon name="receipt_long" class="text-lg" />
+                <FotoceIcon name="receipt_long" class="text-lg" />
                 {{ t('nav.billing') }}
               </router-link>
               <router-link
@@ -1045,7 +1045,7 @@ watch(
                 class="flex items-center gap-3 px-4 py-2.5 hover:bg-pink-50 transition text-sm text-pink-700 font-semibold"
                 @click="showUserMenu = false"
               >
-                <PinovaIcon name="workspace_premium" class="text-lg" />
+                <FotoceIcon name="workspace_premium" class="text-lg" />
                 {{ t('nav.premium') }}
                 <span
                   class="ml-auto text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold"
@@ -1068,7 +1068,7 @@ watch(
                 :class="isProfileMenuItemActive(item) ? 'bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : ''"
                 @click="closeDropdowns"
               >
-                <PinovaIcon name="campaign" class="text-lg" />
+                <FotoceIcon name="campaign" class="text-lg" />
                 {{ item.label }}
               </router-link>
             </div>
@@ -1088,7 +1088,7 @@ watch(
                 :class="isProfileMenuItemActive(item) ? 'bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-600' : ''"
                 @click="closeDropdowns"
               >
-                <PinovaIcon :name="item.name === 'contest-live' ? 'emoji_events' : 'card_giftcard'" class="text-lg" />
+                <FotoceIcon :name="item.name === 'contest-live' ? 'emoji_events' : 'card_giftcard'" class="text-lg" />
                 {{ item.label }}
               </router-link>
             </div>
@@ -1099,7 +1099,7 @@ watch(
                 class="app-menu-item flex items-center gap-3 px-4 py-2.5 w-full transition text-sm text-pink-700 dark:text-pink-600"
                 @click="handleLogout"
               >
-                <PinovaIcon name="logout" class="text-lg" />
+                <FotoceIcon name="logout" class="text-lg" />
                 {{ t('nav.logout') }}
               </button>
             </div>
@@ -1132,6 +1132,6 @@ watch(
     </div>
 
     <!-- Home connectée : contenu injecté par `HomePage.vue` (Teleport). -->
-    <div id="pinova-header-home-extension" class="w-full min-w-0 shrink-0" />
+    <div id="fotoce-header-home-extension" class="w-full min-w-0 shrink-0" />
   </header>
 </template>

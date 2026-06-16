@@ -1,5 +1,5 @@
 import api from '../api/index'
-import { buildCheckoutPendingRecapBody, type CheckoutFlow } from '@pinova/shared'
+import { buildCheckoutPendingRecapBody, type CheckoutFlow } from '@fotoce/shared'
 
 let sentForSession = false
 

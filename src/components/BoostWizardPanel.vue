@@ -4,16 +4,16 @@ import { useI18n } from '../i18n'
 import type { BoostPack, BoostHistoryRow } from '../composables/usePromoteHub'
 import { defaultBoostPackSlug } from '../composables/usePromoteHub'
 import { useBoostReachEstimate } from '../composables/useBoostReachEstimate'
-import type { Pin } from '../types'
-import PinPickerField from './PinPickerField.vue'
+import type { Foto } from '../types'
+import FotoPickerField from './FotoPickerField.vue'
 import BoostHistoryCards from './BoostHistoryCards.vue'
 import OfflineImg from './OfflineImg.vue'
 
 const props = defineProps<{
   packs: BoostPack[]
-  myPins: Pin[]
+  myFotos: Foto[]
   selectedSlug: string
-  selectedPin: Pin | null
+  selectedPin: Foto | null
   pinsLoading: boolean
   pinsLoadingMore: boolean
   pinsHasMore: boolean
@@ -53,7 +53,7 @@ const impactStats = computed(() => [
 
 const pinImageMap = computed(() => {
   const m: Record<string, string> = {}
-  for (const p of props.myPins) {
+  for (const p of props.myFotos) {
     if (p.imageUrl) m[p.slug] = p.imageUrl
   }
   return m
@@ -106,7 +106,7 @@ function socialProofText(pack: BoostPack) {
             class="h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition shrink-0"
             :class="i <= step ? 'bg-pink-600 text-white shadow-md shadow-pink-500/30' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'"
           >
-            <PinovaIcon v-if="i < step" name="check" class="text-base" />
+            <FotoceIcon v-if="i < step" name="check" class="text-base" />
             <span v-else>{{ i + 1 }}</span>
           </div>
           <p class="hidden sm:block text-[9px] font-semibold mt-1 truncate w-full text-center" :class="i === step ? 'text-pink-700' : 'text-neutral-400'">
@@ -122,8 +122,8 @@ function socialProofText(pack: BoostPack) {
         <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{{ t('promote.boost.stepPinLead') }}</p>
         <p class="text-xs text-neutral-500 mt-1">{{ t('promote.boost.stepPinSub') }}</p>
       </div>
-      <PinPickerField
-        :pins="myPins"
+      <FotoPickerField
+        :pins="myFotos"
         :selected-slug="selectedSlug"
         :loading="pinsLoading"
         :loading-more="pinsLoadingMore"
@@ -144,7 +144,7 @@ function socialProofText(pack: BoostPack) {
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         <div class="absolute bottom-0 inset-x-0 p-4 text-white">
           <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold mb-2">
-            <PinovaIcon name="rocket_launch" class="text-[12px]" />
+            <FotoceIcon name="rocket_launch" class="text-[12px]" />
             {{ t('promote.boost.previewBadge') }}
           </span>
           <p class="font-bold truncate">{{ selectedPin.title }}</p>
@@ -154,7 +154,7 @@ function socialProofText(pack: BoostPack) {
         v-if="estimate"
         class="flex items-start gap-2.5 rounded-2xl border border-pink-200/80 bg-pink-50/90 px-3.5 py-3 dark:border-pink-900/50 dark:bg-pink-950/30"
       >
-        <PinovaIcon name="insights" class="text-pink-700" />
+        <FotoceIcon name="insights" class="text-pink-700" />
         <div>
           <p class="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
             {{ t('promote.boost.reachEstimate', { min: estimate.estimated_min, max: estimate.estimated_max }) }}
@@ -167,13 +167,13 @@ function socialProofText(pack: BoostPack) {
       <p v-else-if="estimateLoading" class="text-xs text-neutral-500 text-center">{{ t('promote.boost.reachLoading') }}</p>
       <div class="grid grid-cols-3 gap-2">
         <div v-for="s in impactStats" :key="s.icon" class="rounded-xl bg-pink-50 dark:bg-pink-950/30 p-3 text-center">
-          <PinovaIcon :name="s.icon" class="text-pink-600 text-xl" />
+          <FotoceIcon :name="s.icon" class="text-pink-600 text-xl" />
           <p class="text-[10px] font-medium mt-1 leading-tight text-neutral-700 dark:text-neutral-300">{{ s.label }}</p>
         </div>
       </div>
       <ul class="space-y-2 text-sm">
         <li v-for="n in 3" :key="n" class="flex gap-2 text-neutral-600 dark:text-neutral-400">
-          <PinovaIcon name="auto_awesome" class="text-pink-500 text-lg shrink-0" />
+          <FotoceIcon name="auto_awesome" class="text-pink-500 text-lg shrink-0" />
           {{ t(`promote.boost.benefit${n}`) }}
         </li>
       </ul>
@@ -235,8 +235,8 @@ function socialProofText(pack: BoostPack) {
         @click="launch"
       >
         <span v-if="busy" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-        <PinovaIcon v-else name="rocket_launch" />
-        {{ busy ? t('pin.boost.busy') : t('promote.boost.launchCta') }}
+        <FotoceIcon v-else name="rocket_launch" />
+        {{ busy ? t('foto.boost.busy') : t('promote.boost.launchCta') }}
       </button>
     </div>
 

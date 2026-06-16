@@ -66,7 +66,7 @@ function ensureReclaimer(): void {
 ensureReclaimer()
 
 /**
- * Crée un `<video>` configuré pour pinova (iOS-safe defaults).
+ * Crée un `<video>` configuré pour fotoce (iOS-safe defaults).
  */
 function makeVideoElement(): HTMLVideoElement {
   const v = document.createElement('video')

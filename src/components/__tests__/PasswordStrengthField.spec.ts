@@ -21,7 +21,7 @@ describe('PasswordStrengthField', () => {
   it('affiche la checklist et la barre de force', () => {
     const wrapper = mount(PasswordStrengthField, {
       props: {
-        modelValue: 'Pinova2026',
+        modelValue: 'Fotoce2026',
         label: 'Mot de passe',
       },
     })
@@ -29,7 +29,7 @@ describe('PasswordStrengthField', () => {
     expect(wrapper.text()).toContain('Votre mot de passe doit :')
     expect(wrapper.text()).not.toContain('[v]')
     expect(wrapper.text()).toContain('Au moins 8 caractères.')
-    expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('Exemple valide : Pinova2026')
+    expect(wrapper.text().replace(/\u00a0/g, ' ')).toContain('Exemple valide : Fotoce2026')
     expect(wrapper.html()).toMatchSnapshot()
   })
 

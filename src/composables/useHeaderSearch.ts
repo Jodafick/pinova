@@ -1,6 +1,6 @@
 import api from '../api/index'
-import { mapDjangoPinToFrontend, getFullMediaUrl } from './usePins'
-import type { Pin } from '../types'
+import { mapDjangoFotoToFrontend, getFullMediaUrl } from './useFotos'
+import type { Foto } from '../types'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 
 export type HeaderSearchUser = {
@@ -14,17 +14,17 @@ export type HeaderSearchBoard = {
   id: number
   name: string
   description: string
-  pinCount: number
+  fotoCount: number
   ownerUsername: string
   coverImageUrl: string
   previewImages: string[]
 }
 
 export type HeaderSearchResult = {
-  pins: Pin[]
+  pins: Foto[]
   users: HeaderSearchUser[]
   boards: HeaderSearchBoard[]
-  recommendedPins: Pin[]
+  recommendedPins: Foto[]
   query: string
 }
 
@@ -53,14 +53,14 @@ function mapBoard(row: Record<string, unknown>): HeaderSearchBoard {
     id: Number(row.id ?? 0),
     name: String(row.name ?? ''),
     description: String(row.description ?? ''),
-    pinCount: Number(row.pin_count ?? 0),
+    fotoCount: Number(row.pin_count ?? 0),
     ownerUsername: String(row.owner_username ?? ''),
     coverImageUrl: cover,
     previewImages,
   }
 }
 
-/** Recherche unifiée header : pins + utilisateurs + recommandations (API fuzzy côté serveur). */
+/** Recherche unifiée header : fotos + utilisateurs + recommandations (API fuzzy côté serveur). */
 export async function fetchExploreBoardsPage(opts: {
   q?: string
   page?: number
@@ -74,7 +74,7 @@ export async function fetchExploreBoardsPage(opts: {
     next?: string | null
     previous?: string | null
     count?: number
-  }>('pins/explore-boards/', {
+  }>('fotos/explore-boards/', {
     params: {
       q: trimmed || undefined,
       page,
@@ -93,7 +93,7 @@ export async function fetchExploreBoardsPage(opts: {
 
 export async function fetchHeaderSearch(q: string, limit = 8): Promise<HeaderSearchResult> {
   const trimmed = q.trim()
-  const res = await api.get('pins/header-search/', {
+  const res = await api.get('fotos/header-search/', {
     params: { q: trimmed, limit },
   })
   const d = res.data ?? {}
@@ -102,10 +102,10 @@ export async function fetchHeaderSearch(q: string, limit = 8): Promise<HeaderSea
   const boardsRaw = Array.isArray(d.boards) ? d.boards : []
   const recRaw = Array.isArray(d.recommended_pins) ? d.recommended_pins : []
   return {
-    pins: pinsRaw.map((p: Record<string, unknown>) => mapDjangoPinToFrontend(p)),
+    pins: pinsRaw.map((p: Record<string, unknown>) => mapDjangoFotoToFrontend(p)),
     users: usersRaw.map((u: Record<string, unknown>) => mapUser(u)),
     boards: boardsRaw.map((b: Record<string, unknown>) => mapBoard(b)),
-    recommendedPins: recRaw.map((p: Record<string, unknown>) => mapDjangoPinToFrontend(p)),
+    recommendedPins: recRaw.map((p: Record<string, unknown>) => mapDjangoFotoToFrontend(p)),
     query: String(d.query ?? trimmed),
   }
 }

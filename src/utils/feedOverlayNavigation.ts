@@ -1,19 +1,19 @@
 import type { Router } from 'vue-router'
 import type { FeedItem } from '../types'
-import { isFeedPin, isSponsoredAd } from '../types'
-import { mergeRouteQuery, routeSupportsPinOverlay, type PinOverlayRouteContext } from './pinOverlayNavigation'
+import { isFeedFoto, isSponsoredAd } from '../types'
+import { mergeRouteQuery, routeSupportsPinOverlay, type PinOverlayRouteContext } from './fotoOverlayNavigation'
 
 export function feedItemOverlayKey(item: FeedItem): string | null {
-  if (isFeedPin(item)) return item.slug
+  if (isFeedFoto(item)) return item.slug
   if (isSponsoredAd(item)) return item.id
   return null
 }
 
-export function findFeedOverlayIndex(items: FeedItem[], query: { pin?: string; sponsored?: string }): number {
-  const slug = (query.pin || '').trim()
+export function findFeedOverlayIndex(items: FeedItem[], query: { foto?: string; sponsored?: string }): number {
+  const slug = (query.foto || '').trim()
   const sponsoredId = (query.sponsored || '').trim()
   if (slug) {
-    return items.findIndex((row) => isFeedPin(row) && row.slug === slug)
+    return items.findIndex((row) => isFeedFoto(row) && row.slug === slug)
   }
   if (sponsoredId) {
     return items.findIndex((row) => isSponsoredAd(row) && row.id === sponsoredId)
@@ -49,7 +49,7 @@ export function pushFeedItemOverlay(
   }
 
   const patch: Record<string, string> = {}
-  if (isFeedPin(item)) {
+  if (isFeedFoto(item)) {
     patch.pin = item.slug
     patch.sponsored = ''
   } else if (isSponsoredAd(item)) {

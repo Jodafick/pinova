@@ -2,8 +2,8 @@ import { computed, ref } from 'vue'
 import api from '../api/index'
 import { useI18n } from '../i18n'
 import { useAuth } from './useAuth'
-import { mapDjangoPinToFrontend } from './usePins'
-import type { Pin } from '../types'
+import { mapDjangoFotoToFrontend } from './useFotos'
+import type { Foto } from '../types'
 
 export type BoostPack = {
   slug: string
@@ -25,7 +25,7 @@ export function defaultBoostPackSlug(packs: BoostPack[]): string {
 
 export type BoostHistoryRow = {
   id: number
-  pin_slug: string
+  foto_slug: string
   pin_title: string
   package_label: string
   status: string
@@ -35,7 +35,7 @@ export type BoostHistoryRow = {
 
 export type CampaignRow = {
   id: number
-  pin_slug: string
+  foto_slug: string
   pin_title: string
   image_url: string
   headline: string
@@ -66,7 +66,7 @@ export function usePromoteHub() {
   const campaignPacks = ref<BoostPack[]>([])
   const history = ref<BoostHistoryRow[]>([])
   const campaigns = ref<CampaignRow[]>([])
-  const myPins = ref<Pin[]>([])
+  const myFotos = ref<Foto[]>([])
   const selectedSlug = ref('')
   const loading = ref(false)
   const pinsLoading = ref(false)
@@ -74,7 +74,7 @@ export function usePromoteHub() {
   const pinsPage = ref(1)
   const pinsHasMore = ref(false)
 
-  const selectedPin = computed(() => myPins.value.find((p) => p.slug === selectedSlug.value) ?? null)
+  const selectedPin = computed(() => myFotos.value.find((p) => p.slug === selectedSlug.value) ?? null)
 
   async function loadCatalog() {
     loading.value = true
@@ -83,7 +83,7 @@ export function usePromoteHub() {
         api.get<{ results: BoostPack[] }>('monetization/boost-packages/', { params: { kind: 'boost' } }),
         api.get<{ results: BoostPack[] }>('monetization/boost-packages/', { params: { kind: 'campaign' } }),
         api.get<{ results: BoostHistoryRow[] }>('monetization/my-boosts/'),
-        api.get<{ results: CampaignRow[] }>('monetization/pin-promo-campaigns/'),
+        api.get<{ results: CampaignRow[] }>('monetization/foto-promo-campaigns/'),
       ])
       boostPacks.value = boostPackRes.data.results ?? []
       campaignPacks.value = campaignPackRes.data.results ?? []
@@ -100,13 +100,13 @@ export function usePromoteHub() {
     if (reset) {
       pinsLoading.value = true
       pinsPage.value = 1
-      myPins.value = []
+      myFotos.value = []
     } else {
       pinsLoadingMore.value = true
     }
     try {
       const page = reset ? 1 : pinsPage.value + 1
-      const res = await api.get<{ results: unknown[]; next?: string | null }>('pins/', {
+      const res = await api.get<{ results: unknown[]; next?: string | null }>('fotos/', {
         params: {
           author: username,
           page,
@@ -114,14 +114,14 @@ export function usePromoteHub() {
           lang: currentLang.value,
         },
       })
-      const batch = (res.data.results ?? []).map((row) => mapDjangoPinToFrontend(row as Record<string, unknown>))
-      myPins.value = reset ? batch : [...myPins.value, ...batch]
+      const batch = (res.data.results ?? []).map((row) => mapDjangoFotoToFrontend(row as Record<string, unknown>))
+      myFotos.value = reset ? batch : [...myFotos.value, ...batch]
       pinsPage.value = page
       pinsHasMore.value = !!res.data.next
-      if (preferredSlug && myPins.value.some((p) => p.slug === preferredSlug)) {
+      if (preferredSlug && myFotos.value.some((p) => p.slug === preferredSlug)) {
         selectedSlug.value = preferredSlug
-      } else if (reset && !selectedSlug.value && myPins.value[0]) {
-        selectedSlug.value = myPins.value[0].slug
+      } else if (reset && !selectedSlug.value && myFotos.value[0]) {
+        selectedSlug.value = myFotos.value[0].slug
       }
     } finally {
       pinsLoading.value = false
@@ -152,7 +152,7 @@ export function usePromoteHub() {
     campaignPacks,
     history,
     campaigns,
-    myPins,
+    myFotos,
     selectedSlug,
     selectedPin,
     loading,

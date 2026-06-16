@@ -3,7 +3,7 @@
 const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g
 const JWT_RE = /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g
 const BEARER_RE = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi
-const SENSITIVE_KEY = /token|password|secret|authorization|cookie|refresh|access|otp|api[_-]?key|pinova_token/i
+const SENSITIVE_KEY = /token|password|secret|authorization|cookie|refresh|access|otp|api[_-]?key|fotoce_token/i
 
 export const SENTRY_REDACTED = '[Filtered]'
 

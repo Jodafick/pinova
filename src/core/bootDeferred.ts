@@ -22,7 +22,7 @@ export function scheduleDeferredBoot(app: App, router: Router): void {
     markBootPhase('deferred_start')
     initPerfMonitor()
     initPerformanceEngine()
-    void initMediaEngine().catch((err) => console.warn('[Pinova] initMediaEngine', err))
+    void initMediaEngine().catch((err) => console.warn('[Fotoce] initMediaEngine', err))
     initUxOrchestrator(router)
     initSentryDeferred(app, router)
     initAnalytics({ platform: 'web' })

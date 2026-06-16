@@ -1,5 +1,5 @@
 /**
- * Pinova Unified Media System — barrel export.
+ * Fotoce Unified Media System — barrel export.
  *
  *   import { loadImage, preloadImage, playVideo, mediaProfile } from '@/media'
  *
@@ -25,7 +25,7 @@ export {
   getOfflineMediaUrl,
   getStaleVideoPreview,
   offlineMediaStats,
-  prefetchPinsMediaForOffline,
+  prefetchFotosMediaForOffline,
   rememberVideoPoster,
   releaseFallbackThumbnail,
   setFallbackThumbnail,

@@ -103,7 +103,7 @@ export async function activateWebPushNotifications(
     if (!enabled) {
       return { ok: false, error: 'unavailable' }
     }
-    const registration = await navigator.serviceWorker.register('/pinova-push-sw.js', { scope: '/push/' })
+    const registration = await navigator.serviceWorker.register('/fotoce-push-sw.js', { scope: '/push/' })
     const existingSub = await registration.pushManager.getSubscription()
     const subscription =
       existingSub ||

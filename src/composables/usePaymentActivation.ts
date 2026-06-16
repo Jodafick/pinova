@@ -6,7 +6,7 @@ import {
   MAX_ANIMATED_PROGRESS,
   isTerminalPaymentPhase,
   type PaymentActivationPhase,
-} from '@pinova/shared'
+} from '@fotoce/shared'
 import type { CheckoutFlow } from '../utils/checkoutFlow'
 
 export type { PaymentActivationPhase }

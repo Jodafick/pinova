@@ -12,7 +12,7 @@
  *   nativeStack.replace('home')             // remplace la page courante (pas de back)
  *   nativeStack.presentModal('share', {...})// modale fade + scale
  *   nativeStack.presentSheet('comments')    // bottom sheet
- *   nativeStack.presentFullscreen('pin')    // fullscreen immersif
+ *   nativeStack.presentFullscreen('foto')    // fullscreen immersif
  *   nativeStack.dismissModal()              // ferme le sommet (modal/sheet/fullscreen)
  *   nativeStack.dismissAllModals()
  *
@@ -30,7 +30,7 @@
  *    → cohérent : deep-link partageable, page autonome.
  *
  * NB : pour brancher l'interception automatique de navigations Vue Router en
- * couches (ex: clic interne sur `/pin/abc` ouvre fullscreen au-dessus du feed),
+ * couches (ex: clic interne sur `/foto/abc` ouvre fullscreen au-dessus du feed),
  * appeler `installRouterLayerBridge(router)` au boot.
  */
 
@@ -93,7 +93,7 @@ export async function replace(to: RouteLocationRaw): Promise<void> {
  *  - Sinon → `router.back()` (revient à la route précédente).
  *
  * Android : le bouton « retour » système dépile l'historique natif ; les
- * couches synchronisées (`history.state.__pinovaLayer`) sont fermées par
+ * couches synchronisées (`history.state.__fotoceLayer`) sont fermées par
  * `layerManager` sur `popstate` avant/après la navigation.
  *
  * Reflète le geste edge-back iOS et le bouton retour PWA.

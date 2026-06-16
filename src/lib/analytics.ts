@@ -1,4 +1,4 @@
-import { createSyncAnalyticsClient, type AnalyticsEvent, type CheckoutFlow, type SubscriptionPlan } from '@pinova/shared'
+import { createSyncAnalyticsClient, type AnalyticsEvent, type CheckoutFlow, type SubscriptionPlan } from '@fotoce/shared'
 
 export type { AnalyticsEvent, CheckoutFlow, SubscriptionPlan }
 
@@ -34,7 +34,7 @@ export const {
 } = client
 
 if (import.meta.env.DEV && typeof window !== 'undefined') {
-  ;(window as unknown as Record<string, unknown>).__pinovaAnalyticsTest = {
+  ;(window as unknown as Record<string, unknown>).__fotoceAnalyticsTest = {
     trackEvent,
     trackOnce,
     isAnalyticsEnabled,

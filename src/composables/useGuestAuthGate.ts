@@ -34,7 +34,7 @@ export function useGuestAuthGate() {
         metadata: {
           ...payload.metadata,
           ...(returnPath ? { returnPath } : {}),
-          ...(pinScoped && !payload.metadata?.pinSlug ? { pinSlug: resourceId } : {}),
+          ...(pinScoped && !payload.metadata?.fotoSlug ? { fotoSlug: resourceId } : {}),
         },
       })
     }

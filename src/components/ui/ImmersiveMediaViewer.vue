@@ -23,8 +23,8 @@
  *   import { openImmersiveViewer } from '@/components/ui/ImmersiveMediaViewer.vue'
  *   openImmersiveViewer({
  *     items: [
- *       { type: 'image', src: pin.imageUrl, blurhash: pin.blurhash },
- *       { type: 'video', src: pin.storyVideoUrl, poster: pin.imageUrl },
+ *       { type: 'image', src: foto.imageUrl, blurhash: foto.blurhash },
+ *       { type: 'video', src: foto.storyVideoUrl, poster: foto.imageUrl },
  *     ],
  *     initialIndex: 0,
  *     onClose: () => console.log('closed'),

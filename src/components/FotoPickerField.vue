@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { Pin } from '../types'
+import type { Foto } from '../types'
 import { useI18n } from '../i18n'
 import OfflineImg from './OfflineImg.vue'
 
 const props = defineProps<{
-  pins: Pin[]
+  pins: Foto[]
   selectedSlug: string
   loading?: boolean
   loadingMore?: boolean
@@ -73,7 +73,7 @@ const filteredPins = computed(() => {
           </p>
           <p class="text-xs text-neutral-500 truncate">{{ p.slug }}</p>
         </div>
-        <PinovaIcon name="check_circle" class="text-pink-600 text-lg shrink-0" />
+        <FotoceIcon name="check_circle" class="text-pink-600 text-lg shrink-0" />
       </button>
     </div>
 

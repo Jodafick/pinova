@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { SponsoredAd } from '../types'
-import { isPartnerAd, isPinPromo } from '../types'
+import { isPartnerAd, isFotoPromo } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api/index'
 import OfflineImg from './OfflineImg.vue'
@@ -26,17 +26,17 @@ const { t } = useI18n()
 const router = useRouter()
 
 const badge = computed(() =>
-  isPinPromo(props.item) ? t('feed.pinPromo.badge') : t('feed.partnerAd.badge'),
+  isFotoPromo(props.item) ? t('feed.fotoPromo.badge') : t('feed.partnerAd.badge'),
 )
 
 const ctaLabel = computed(() =>
-  isPinPromo(props.item)
-    ? props.item.ctaLabel || t('feed.pinPromo.ctaShort')
+  isFotoPromo(props.item)
+    ? props.item.ctaLabel || t('feed.fotoPromo.ctaShort')
     : props.item.ctaLabel || t('feed.partnerAd.ctaShort'),
 )
 
 const heroUrl = computed(() => {
-  if (isPinPromo(props.item) && props.item.mediaUrl) return props.item.mediaUrl
+  if (isFotoPromo(props.item) && props.item.mediaUrl) return props.item.mediaUrl
   return props.item.imageUrl
 })
 
@@ -50,9 +50,9 @@ async function openExternal() {
     window.open(props.item.ctaUrl, '_blank', 'noopener,noreferrer')
     return
   }
-  if (isPinPromo(props.item)) {
+  if (isFotoPromo(props.item)) {
     try {
-      await api.post(`monetization/pin-promo-campaigns/${props.item.campaignId}/click/`)
+      await api.post(`monetization/foto-promo-campaigns/${props.item.campaignId}/click/`)
     } catch {
       /* ignore */
     }
@@ -61,8 +61,8 @@ async function openExternal() {
       window.open(cta, '_blank', 'noopener,noreferrer')
       return
     }
-    if (props.item.pinSlug) {
-      void router.push({ path: '/', query: { pin: props.item.pinSlug } })
+    if (props.item.fotoSlug) {
+      void router.push({ path: '/', query: { foto: props.item.fotoSlug } })
     }
   }
 }
@@ -84,18 +84,18 @@ function onCtaClick(event: MouseEvent) {
 <template>
   <article
     v-if="variant === 'feed'"
-    class="sponsored-card lux-pin-card group overflow-hidden rounded-3xl border-2 border-pink-300/50 dark:border-pink-500/35 bg-white dark:bg-neutral-900 shadow-[0_12px_40px_-18px_rgba(219,39,119,0.45)] hover:shadow-[0_18px_48px_-16px_rgba(219,39,119,0.5)] transition-shadow cursor-pointer"
+    class="sponsored-card lux-foto-card group overflow-hidden rounded-3xl border-2 border-pink-300/50 dark:border-pink-500/35 bg-white dark:bg-neutral-900 shadow-[0_12px_40px_-18px_rgba(219,39,119,0.45)] hover:shadow-[0_18px_48px_-16px_rgba(219,39,119,0.5)] transition-shadow cursor-pointer"
     role="button"
     tabindex="0"
     @click="onTap"
     @keydown.enter="onTap"
   >
     <div
-      v-if="heroUrl || (isPinPromo(item) && item.mediaType === 'video' && item.mediaUrl)"
+      v-if="heroUrl || (isFotoPromo(item) && item.mediaType === 'video' && item.mediaUrl)"
       class="relative aspect-[3/4] w-full bg-neutral-100 dark:bg-neutral-800"
     >
       <OfflineVideo
-        v-if="isPinPromo(item) && item.mediaType === 'video' && item.mediaUrl"
+        v-if="isFotoPromo(item) && item.mediaType === 'video' && item.mediaUrl"
         :src="item.mediaUrl"
         class="h-full w-full object-cover"
         muted

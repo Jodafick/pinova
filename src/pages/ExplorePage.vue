@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePins } from '../composables/usePins'
-import { isFeedPin, type Pin, type SponsoredAd } from '../types'
+import { useFotos } from '../composables/useFotos'
+import { isFeedFoto, type Foto, type SponsoredAd } from '../types'
 import { pushFeedItemOverlay } from '../utils/feedOverlayNavigation'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
-import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
+import FotoDetailOverlayHost from '../components/FotoDetailOverlayHost.vue'
 import ExploreDiscoverSections from '../components/ExploreDiscoverSections.vue'
 import { getAppScrollRoot } from '../utils/appScrollRoot'
 
 const route = useRoute()
 const router = useRouter()
 const { currentLang } = useI18n()
-const { pins, loading, fetchDiscoverPins, toggleSave, hasNextPage, isFetchingNextPage } = usePins()
+const { fotos, loading, fetchDiscoverFotos, toggleSave, hasNextPage, isFetchingNextPage } = useFotos()
 const { toggleSavePin } = useAuth()
 
-const displayPins = computed(() => pins.value)
+const displayPins = computed(() => fotos.value)
 
 const exploreTextQuery = computed(() => {
   const raw = route.query.q
@@ -35,7 +35,7 @@ const handleScroll = () => {
 
   if (scrollTop + clientHeight >= scrollHeight - 160) {
     if (hasNextPage.value && !isFetchingNextPage.value && !loading.value) {
-      void fetchDiscoverPins(false, selectedCategory.value, exploreTextQuery.value)
+      void fetchDiscoverFotos(false, selectedCategory.value, exploreTextQuery.value)
     }
   }
 }
@@ -64,7 +64,7 @@ function stopPageActivity() {
 
 onMounted(() => {
   startPageActivity()
-  void fetchDiscoverPins(true, null, exploreTextQuery.value)
+  void fetchDiscoverFotos(true, null, exploreTextQuery.value)
 })
 
 onActivated(() => {
@@ -81,36 +81,36 @@ onUnmounted(() => {
 
 watch(selectedCategory, async (topic) => {
   if (!isPageActive.value) return
-  await fetchDiscoverPins(true, topic, exploreTextQuery.value)
+  await fetchDiscoverFotos(true, topic, exploreTextQuery.value)
 })
 
 watch(exploreTextQuery, async () => {
   if (!isPageActive.value) return
-  await fetchDiscoverPins(true, selectedCategory.value, exploreTextQuery.value)
+  await fetchDiscoverFotos(true, selectedCategory.value, exploreTextQuery.value)
 })
 
 watch(currentLang, async () => {
   if (!isPageActive.value) return
-  await fetchDiscoverPins(true, selectedCategory.value, exploreTextQuery.value)
+  await fetchDiscoverFotos(true, selectedCategory.value, exploreTextQuery.value)
 })
 
 const handleToggleSave = async (slug: string) => {
-  const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
-  if (pin) {
-    toggleSavePin(pin.id)
+  const foto = fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === slug)
+  if (foto) {
+    toggleSaveFoto(pin.id)
   }
   try {
     await toggleSave(slug)
   } catch (err) {
-    if (pin) {
-      toggleSavePin(pin.id)
+    if (foto) {
+      toggleSaveFoto(pin.id)
     }
-    console.error('Erreur sauvegarde pin', err)
+    console.error('Erreur sauvegarde foto', err)
   }
 }
 
 const openPin = (slug: string) => {
-  router.push({ path: route.path, query: { ...route.query, pin: slug } })
+  router.push({ path: route.path, query: { ...route.query, foto: slug } })
 }
 
 const openSponsored = (item: SponsoredAd) => {
@@ -123,7 +123,7 @@ function clearExploreSearch() {
 </script>
 
 <template>
-  <div class="pinova-route-natural-height w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8">
+  <div class="fotoce-route-natural-height w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8">
     <ExploreDiscoverSections
       v-model:selected-topic="selectedCategory"
       :text-query="exploreTextQuery"
@@ -136,6 +136,6 @@ function clearExploreSearch() {
       @open-sponsored="openSponsored"
       @clear-search="clearExploreSearch"
     />
-    <PinDetailOverlayHost :feed-items="displayPins" />
+    <FotoDetailOverlayHost :feed-items="displayPins" />
   </div>
 </template>

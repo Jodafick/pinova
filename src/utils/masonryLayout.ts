@@ -4,14 +4,14 @@
  * Évite l'effet cumulatif des images verticales (round-robin index % cols)
  * qui fait diverger les hauteurs de colonnes.
  */
-import type { FeedItem, Pin, SponsoredAd } from '../types'
-import { isFeedPin, isSponsoredAd } from '../types'
+import type { FeedItem, Foto, SponsoredAd } from '../types'
+import { isFeedFoto, isSponsoredAd } from '../types'
 
 export const MASONRY_GAP_PX = 10 /* aligné gap-2.5 Tailwind (~10px) */
 export const MASONRY_GAP_PX_SM = 16 /* sm:gap-4 */
 
 export type MasonryCell =
-  | { kind: 'pin'; pin: Pin }
+  | { kind: 'foto'; foto: Foto }
   | { kind: 'sponsored'; ad: SponsoredAd }
   | { kind: 'network_ad'; key: string }
   | { kind: 'skeleton'; key: string }
@@ -32,11 +32,11 @@ export interface MasonryLayoutResult {
 }
 
 /** Ratio hauteur/largeur du média (ex. 4/3 portrait → 1.33). */
-export function pinMediaHeightRatio(pin: Pin): number {
-  if (pin.mediaAspectRatio && pin.mediaAspectRatio > 0) {
-    return 1 / pin.mediaAspectRatio
+export function pinMediaHeightRatio(foto: Foto): number {
+  if (pin.mediaAspectRatio && foto.mediaAspectRatio > 0) {
+    return 1 / foto.mediaAspectRatio
   }
-  if (pin.storyVideoUrl || pin.isStory) {
+  if (pin.storyVideoUrl || foto.isStory) {
     return 16 / 9
   }
   return 4 / 3
@@ -51,10 +51,10 @@ export function estimateMasonryCellHeight(
   if (cell.kind === 'skeleton') return colWidth * (4 / 3)
   if (cell.kind === 'network_ad') return 220
   if (cell.kind === 'sponsored') return Math.max(260, colWidth * 1.1)
-  if (cell.kind === 'pin') {
-    const ratio = pinMediaHeightRatio(cell.pin)
+  if (cell.kind === 'foto') {
+    const ratio = pinMediaHeightRatio(cell.foto)
     const mediaH = colWidth * ratio
-    if (cell.pin.storyVideoUrl) return Math.min(mediaH, 480)
+    if (cell.foto.storyVideoUrl) return Math.min(mediaH, 480)
     return mediaH
   }
   return colWidth * (4 / 3)
@@ -108,22 +108,22 @@ export function buildFeedMasonryCells(
   },
 ): MasonryCell[] {
   const cells: MasonryCell[] = []
-  let pinCount = 0
-  pins.forEach((item) => {
+  let fotoCount = 0
+  fotos.forEach((item) => {
     if (isSponsoredAd(item)) {
       cells.push({ kind: 'sponsored', ad: item })
       return
     }
-    if (isFeedPin(item)) {
-      cells.push({ kind: 'pin', pin: item })
-      pinCount += 1
-      if (options.showFeedAds && pinCount % options.feedEveryN === 0) {
-        cells.push({ kind: 'network_ad', key: `network-ad-${pinCount}` })
+    if (isFeedFoto(item)) {
+      cells.push({ kind: 'foto', foto: item })
+      fotoCount += 1
+      if (options.showFeedAds && fotoCount % options.feedEveryN === 0) {
+        cells.push({ kind: 'network_ad', key: `network-ad-${fotoCount}` })
       }
     }
   })
   for (let i = 0; i < options.skeletonCount; i++) {
-    cells.push({ kind: 'skeleton', key: `pin-skeleton-${i}` })
+    cells.push({ kind: 'skeleton', key: `foto-skeleton-${i}` })
   }
   return cells
 }

@@ -60,7 +60,7 @@ const addPreset = (tag: string) => {
 <template>
   <div class="border border-amber-200 bg-amber-50/40 rounded-2xl p-4">
     <div class="flex items-center gap-2 mb-3">
-      <PinovaIcon name="lock" filled class="text-amber-600 text-lg" />
+      <FotoceIcon name="lock" filled class="text-amber-600 text-lg" />
       <h4 class="text-sm font-bold text-neutral-900">{{ t('tags.private.title') }}</h4>
       <span class="text-[10px] uppercase tracking-wide bg-amber-200/70 text-amber-800 px-1.5 py-0.5 rounded font-bold">{{ t('tags.private.badge') }}</span>
     </div>
@@ -75,14 +75,14 @@ const addPreset = (tag: string) => {
         :key="tag"
         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-amber-300 rounded-full text-xs font-medium text-neutral-700"
       >
-        <PinovaIcon name="lock" filled class="text-xs text-amber-600" />
+        <FotoceIcon name="lock" filled class="text-xs text-amber-600" />
         {{ tag }}
         <button
           v-if="editable !== false"
           class="text-neutral-400 hover:text-neutral-700"
           @click="removeTag(tag)"
         >
-          <PinovaIcon name="close" class="text-xs" />
+          <FotoceIcon name="close" class="text-xs" />
         </button>
       </span>
       <span
@@ -94,7 +94,7 @@ const addPreset = (tag: string) => {
     <!-- Input -->
     <div v-if="editable !== false" class="flex items-center gap-2 mb-3">
       <div class="flex-1 flex items-center gap-2 bg-white border border-amber-200 rounded-full px-3 py-1.5 focus-within:ring-2 focus-within:ring-amber-400">
-        <PinovaIcon name="add" class="text-sm text-amber-600" />
+        <FotoceIcon name="add" class="text-sm text-amber-600" />
         <input
           v-model="newTag"
           type="text"

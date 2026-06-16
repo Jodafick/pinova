@@ -25,7 +25,7 @@ provide(LAYER_CONTEXT_KEY, {
 
 <template>
   <div
-    class="pinova-layer-transparent"
+    class="fotoce-layer-transparent"
     :style="{ zIndex: layer.zIndex }"
   >
     <component :is="layer.component" v-bind="layer.componentProps" />
@@ -33,13 +33,13 @@ provide(LAYER_CONTEXT_KEY, {
 </template>
 
 <style>
-.pinova-layer-transparent {
+.fotoce-layer-transparent {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.pinova-layer-transparent > * {
+.fotoce-layer-transparent > * {
   pointer-events: auto;
 }
 </style>

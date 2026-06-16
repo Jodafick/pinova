@@ -6,14 +6,14 @@ self.addEventListener('push', (event) => {
     payload = {}
   }
 
-  const title = payload.title || 'PINOVA'
+  const title = payload.title || 'FOTOCE'
   const options = {
     body: payload.body || 'Nouvelle notification',
     icon: '/pwa-192x192.png',
     badge: '/pwa-192x192.png',
     data: {
       action_url: payload.action_url || '/',
-      pin_slug: payload.pin_slug || '',
+      foto_slug: payload.foto_slug || '',
       notification_type: payload.notification_type || '',
       metadata_json: payload.metadata_json || '',
       notification_id: payload.notification_id,
@@ -29,9 +29,9 @@ self.addEventListener('notificationclick', (event) => {
   const raw = (event.notification && event.notification.data) || {}
   const targetPath = raw.action_url || '/'
   const payload = {
-    type: 'pinova_push_click',
+    type: 'fotoce_push_click',
     action_url: targetPath,
-    pin_slug: raw.pin_slug || '',
+    foto_slug: raw.foto_slug || '',
     notification_type: raw.notification_type || '',
     metadata_json: raw.metadata_json || '',
     notification_id: raw.notification_id,

@@ -10,7 +10,7 @@ import { trackEvent } from '../lib/analytics'
 const props = defineProps<{
   open: boolean
   recipientUsername: string
-  pinSlug?: string
+  fotoSlug?: string
 }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
 
@@ -84,7 +84,7 @@ async function submitTip() {
     const res = await api.post('monetization/tips/checkout/', {
       recipient_username: props.recipientUsername,
       amount,
-      pin_slug: props.pinSlug || undefined,
+      foto_slug: props.fotoSlug || undefined,
       message: message.value.trim() || undefined,
     })
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }

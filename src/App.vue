@@ -18,7 +18,7 @@ import { useDataSaver } from './composables/useDataSaver'
 import { useEdgeSwipeBack } from './composables/useEdgeSwipeBack'
 import { useIsLgDown } from './composables/useIsLgDown'
 import { devLog } from './lib/devLog'
-import { resetPinovaBodyScrollLock } from './utils/pinovaModalBodyLock'
+import { resetFotoceBodyScrollLock } from './utils/fotoceModalBodyLock'
 import { resetAppShellVisualState } from './utils/resetAppShellVisualState'
 import { getAppScrollRoot } from './utils/appScrollRoot'
 import { layerManager } from './navigation/layerManager'
@@ -39,7 +39,7 @@ import { useNotificationLive } from './composables/useNotificationLive'
 import { usePwaInstallPrompt } from './composables/usePwaInstallPrompt'
 import { useMobilePullToRefresh } from './composables/useMobilePullToRefresh'
 import { isValidSettingsSectionId, settingsDetailTitleKey } from './data/settingsHubConfig'
-import { triggerAppSoftRefresh } from './utils/appSoftRefresh'
+import { reloadPwaApplication } from './utils/pwaAppReload'
 import { userNeedsOnboarding } from './utils/onboarding'
 
 /** Composants non critiques au 1er paint — chargés après le shell chrome. */
@@ -47,7 +47,7 @@ const MobileCreateChooser = defineAsyncComponent(() => import('./components/Mobi
 const AppAlertModal = defineAsyncComponent(() => import('./components/AppAlertModal.vue'))
 const ReferralRouteCapture = defineAsyncComponent(() => import('./components/referral/ReferralRouteCapture.vue'))
 const LayerHost = defineAsyncComponent(() => import('./components/layers/LayerHost.vue'))
-const PinContextualMenu = defineAsyncComponent(() => import('./components/PinContextualMenu.vue'))
+const FotoContextualMenu = defineAsyncComponent(() => import('./components/FotoContextualMenu.vue'))
 const OfflineExperience = defineAsyncComponent(() => import('./components/pwa/OfflineExperience.vue'))
 const PwaInstallExperience = defineAsyncComponent(() => import('./components/pwa/PwaInstallExperience.vue'))
 const ImmersiveMediaViewer = defineAsyncComponent(() => import('./components/ui/ImmersiveMediaViewer.vue'))
@@ -165,7 +165,7 @@ const appEdgeSwipe = useEdgeSwipeBack(appShellRef, {
   canAcceptPointerDown: (e) => {
     const el = e.target as HTMLElement | null
     if (!el) return true
-    return !el.closest('[data-pinova-no-edge-back]')
+    return !el.closest('[data-fotoce-no-edge-back]')
   },
   onDismiss: () => {
     nativeStackPop()
@@ -203,7 +203,7 @@ function reconcileShellAfterNavigation() {
 }
 
 onMounted(() => {
-  resetPinovaBodyScrollLock()
+  resetFotoceBodyScrollLock()
   resetAppShellVisualState()
   devLog('🚀 App mounted, initializing...')
   /* L’UI ne doit pas attendre `me/` : profil hydraté depuis le cache JWT si dispo. */
@@ -244,7 +244,7 @@ watch(
   },
 )
 
-const isMobileFullscreenRoute = computed(() => typeof route.query.pin === 'string' && route.query.pin.trim().length > 0)
+const isMobileFullscreenRoute = computed(() => typeof route.query.foto === 'string' && route.query.foto.trim().length > 0)
 
 const ambientGlowDisabled = computed(
   () => isMobileFullscreenRoute.value || pwaStandalone.value || isLowDataMode.value,
@@ -284,9 +284,9 @@ const isOtherUserProfileRoute = computed(() => {
   return username.toLowerCase() !== me.toLowerCase()
 })
 
-/** Home / profil : le padding bas est géré sur la page (`pinova-mobile-tab-bar-scroll-pad`). */
+/** Home / profil / auth invité : padding bas géré sur la page. */
 const pageOwnsMobileTabBarBottomInset = computed(() =>
-  route.name === 'home' || route.name === 'profile',
+  ['home', 'profile', 'login', 'register'].includes(String(route.name || '')),
 )
 
 /** Padding bas #main-content : réserve la tab bar fixe quand elle est visible. */
@@ -295,7 +295,7 @@ const mainMobileBottomPadClass = computed(() => {
   if (suppressMobileChromeForProfileDrawer.value) return ''
   if (pageOwnsMobileTabBarBottomInset.value) return ''
   if (showMobileTabBar.value) {
-    return 'max-lg:pb-[calc(var(--pinova-mobile-tab-bar-h,4.25rem)+env(safe-area-inset-bottom,0px))] lg:pb-0'
+    return 'max-lg:pb-[calc(var(--fotoce-mobile-tab-bar-h,4.25rem)+env(safe-area-inset-bottom,0px))] lg:pb-0'
   }
   return 'max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] lg:pb-0'
 })
@@ -328,13 +328,13 @@ const pullToRefreshEnabled = computed(
     !pullRefreshBlockedRoute.value,
 )
 
-const { pullDistance: pullToRefreshPx, progress: pullToRefreshProgress } = useMobilePullToRefresh({
+const {
+  pullDistance: pullToRefreshPx,
+  readyToRelease: pullToRefreshReady,
+} = useMobilePullToRefresh({
   scrollRootRef: mainContentRef,
   enabled: pullToRefreshEnabled,
-  onRefresh: async () => {
-    triggerAppSoftRefresh()
-    await fetchCurrentUser({ force: true, silent: true }).catch(() => undefined)
-  },
+  onRefresh: () => reloadPwaApplication(),
 })
 
 const pullRefreshIndicatorOpacity = computed(() =>
@@ -353,6 +353,16 @@ const showMobileTabBar = computed(
     !immersiveViewer.open.value &&
     ['home', 'explore', 'explore-boards', 'profile', 'login', 'register'].includes(String(route.name || '')) &&
     !isOtherUserProfileRoute.value,
+)
+
+watch(
+  showMobileTabBar,
+  (visible) => {
+    if (typeof document === 'undefined') return
+    if (visible) document.documentElement.setAttribute('data-fotoce-tab-bar-visible', '')
+    else document.documentElement.removeAttribute('data-fotoce-tab-bar-visible')
+  },
+  { immediate: true },
 )
 
 /** FAB création mobile : masqué quand la tab bar est visible (bouton création intégré). */
@@ -477,7 +487,8 @@ const needsMainChromeTopPad = computed(
     !suppressAppChrome.value &&
     !isMobileFullscreenRoute.value &&
     !hideAppChrome.value &&
-    !isFullscreenPresentationRoute.value,
+    !isFullscreenPresentationRoute.value &&
+    !(isLgDown.value && hideAppMobileSubheader.value),
 )
 
 const appMobilePageTitle = computed(() => {
@@ -562,7 +573,7 @@ const pageTransitionName = computed(() => {
  * couche est ouverte. Ici on n'a plus rien à faire — le système est self-driving.
  *
  * Transitions de page : `routerViewTransition` + `getPageTransitionNames` ; les
- * couches (LayerHost), pin détail, visionneuse immersive gardent leurs anims dédiées.
+ * couches (LayerHost), foto détail, visionneuse immersive gardent leurs anims dédiées.
  */
 </script>
 
@@ -575,23 +586,23 @@ const pageTransitionName = computed(() => {
   <!--
     Skip-link a11y : permet aux utilisateurs clavier/lecteur d'écran de
     sauter directement au contenu principal (premier focus dans l'app).
-    Visible uniquement lors d'un focus clavier (cf. .pinova-skip-link).
+    Visible uniquement lors d'un focus clavier (cf. .fotoce-skip-link).
   -->
-  <a href="#main-content" class="pinova-skip-link">
+  <a href="#main-content" class="fotoce-skip-link">
     {{ t('a11y.skipToContent') || 'Aller au contenu' }}
   </a>
 
-  <!-- Mobile : hauteur viewport pilotée par `style.css` (.pinova-chrome-stack) pour le scroll interne #main-content. -->
+  <!-- Mobile : hauteur viewport pilotée par `style.css` (.fotoce-chrome-stack) pour le scroll interne #main-content. -->
   <div
-    class="pinova-chrome-stack relative flex w-full flex-col min-h-screen max-lg:overflow-hidden"
+    class="fotoce-chrome-stack relative flex w-full flex-col min-h-screen max-lg:overflow-hidden"
   >
     <div
-      class="pinova-edge-peek pointer-events-none absolute inset-0 z-0 flex flex-col overflow-hidden bg-neutral-100 dark:bg-[#050506] transition-opacity duration-100"
+      class="fotoce-edge-peek pointer-events-none absolute inset-0 z-0 flex flex-col overflow-hidden bg-neutral-100 dark:bg-[#050506] transition-opacity duration-100"
       :class="edgePeekVisible ? 'opacity-100' : 'opacity-0'"
       aria-hidden="true"
     >
       <div
-        class="flex h-full w-full flex-col px-6 pt-[calc(5.5rem+env(safe-area-inset-top,0px)+var(--pinova-pwa-extra-top-inset,0px))] transition-transform duration-75 will-change-transform"
+        class="flex h-full w-full flex-col px-6 pt-[calc(5.5rem+env(safe-area-inset-top,0px)+var(--fotoce-pwa-extra-top-inset,0px))] transition-transform duration-75 will-change-transform"
         :style="{ transform: `scale(${edgePeekScale})`, transformOrigin: 'left center' }"
       >
         <p class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-neutral-400 dark:text-neutral-500">
@@ -613,11 +624,12 @@ const pageTransitionName = computed(() => {
   <div
     id="app-shell"
     ref="appShellRef"
-    class="relative z-10 flex min-h-screen flex-1 flex-col bg-transparent text-neutral-900 dark:text-neutral-100 transition-colors duration-200 pinova-app-shell max-lg:min-h-0 max-lg:overflow-hidden"
+    class="relative z-10 flex min-h-screen flex-1 flex-col bg-transparent text-neutral-900 dark:text-neutral-100 transition-colors duration-200 fotoce-app-shell max-lg:min-h-0 max-lg:overflow-hidden"
     :class="{
       'app-mobile-fullscreen-route': isMobileFullscreenRoute,
       'app-hide-chrome-route': hideAppChrome,
       'app-immersive-route': isImmersiveMobileRoute,
+      'max-lg:z-[44]': profileNavMobileDrawerOpen && route.name === 'profile',
     }"
   >
     <!-- Wash rose ambient (fixed, behind content). Désactivé sur routes fullscreen media. -->
@@ -638,11 +650,11 @@ const pageTransitionName = computed(() => {
           ? mainMobileBottomPadClass
           : '',
         needsMainChromeTopPad && !suppressMobileChromeForProfileDrawer
-          ? 'pt-[var(--pinova-global-header-h,calc(3.5rem+env(safe-area-inset-top,0px)+var(--pinova-pwa-extra-top-inset,0px)))]'
+          ? 'pt-[var(--fotoce-global-header-h,calc(3.5rem+env(safe-area-inset-top,0px)+var(--fotoce-pwa-extra-top-inset,0px)))]'
           : '',
       ]"
     >
-      <div class="pinova-page-transition-host relative flex min-h-0 flex-1 flex-col w-full">
+      <div class="fotoce-page-transition-host relative flex min-h-0 flex-1 flex-col w-full">
       <!--
         Transitions : pile session (routerViewTransition) → forward / back.
         Clé `r.path` (pas fullPath) : éviter remount feed quand seule la query ?pin change.
@@ -684,7 +696,7 @@ const pageTransitionName = computed(() => {
               class="w-full h-full object-cover contrast-[1.02] dark:brightness-110 dark:contrast-[1.04] dark:saturate-[1.06]"
             />
           </div>
-          <span class="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Pinova</span>
+          <span class="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Fotoce</span>
         </div>
 
         <nav class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-neutral-500 dark:text-neutral-400">
@@ -715,9 +727,9 @@ const pageTransitionName = computed(() => {
 
   <!--
     Menu contextuel singleton (long-press iOS).
-    Ouvert via `openPinContextualMenu()` depuis n'importe où.
+    Ouvert via `openFotoContextualMenu()` depuis n'importe où.
   -->
-  <PinContextualMenu />
+  <FotoContextualMenu />
 
   <!-- PWA : bannière offline + invite installation. -->
   <OfflineExperience />
@@ -762,7 +774,7 @@ const pageTransitionName = computed(() => {
     <button
       v-if="showMobileCreateFab"
       type="button"
-      class="pinova-mobile-create-fab lg:hidden fixed z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-pink-700 dark:bg-pink-600 text-white shadow-lg shadow-pink-700/35 transition hover:bg-pink-800 dark:hover:opacity-90 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
+      class="fotoce-mobile-create-fab lg:hidden fixed z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-pink-700 dark:bg-pink-600 text-white shadow-lg shadow-pink-700/35 transition hover:bg-pink-800 dark:hover:opacity-90 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
       :style="{
         bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
         right: 'calc(1rem + env(safe-area-inset-right, 0px))',
@@ -770,7 +782,7 @@ const pageTransitionName = computed(() => {
       :aria-label="t('nav.create')"
       @click="openMobileCreateChooser()"
     >
-      <PinovaIcon name="add" class="text-[30px] leading-none" />
+      <FotoceIcon name="add" class="text-[30px] leading-none" />
     </button>
   </Teleport>
 
@@ -791,7 +803,7 @@ const pageTransitionName = computed(() => {
           :aria-label="mobileBoardMoreTrailing.ariaLabel"
           @click="mobileBoardMoreTrailing.onClick()"
         >
-          <PinovaIcon name="more_vert" class="text-[22px] leading-none" />
+          <FotoceIcon name="more_vert" class="text-[22px] leading-none" />
         </button>
         <button
           v-else-if="mobileMarkAllReadTrailing"
@@ -800,7 +812,7 @@ const pageTransitionName = computed(() => {
           :aria-label="mobileMarkAllReadTrailing.ariaLabel"
           @click="mobileMarkAllReadTrailing.onClick()"
         >
-          <PinovaIcon name="done_all" class="text-[22px] leading-none" />
+          <FotoceIcon name="done_all" class="text-[22px] leading-none" />
         </button>
         <button
           v-else-if="mobileProfileTrailing"
@@ -809,7 +821,7 @@ const pageTransitionName = computed(() => {
           :aria-label="mobileProfileTrailing.ariaLabel"
           @click="mobileProfileTrailing.onClick()"
         >
-          <PinovaIcon :name="mobileProfileTrailing.icon" class="text-[22px] leading-none" />
+          <FotoceIcon :name="mobileProfileTrailing.icon" class="text-[22px] leading-none" />
         </button>
       </template>
     </AppMobilePageHeader>
@@ -824,17 +836,17 @@ const pageTransitionName = computed(() => {
       aria-hidden="true"
     >
       <div
-        class="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200/70 bg-white/95 shadow-md backdrop-blur-md dark:border-neutral-700/65 dark:bg-neutral-950/94 pinova-ptr-bubble"
+        class="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200/70 bg-white/95 shadow-md backdrop-blur-md dark:border-neutral-700/65 dark:bg-neutral-950/94 fotoce-ptr-bubble"
         :style="{ opacity: pullRefreshIndicatorOpacity }"
       >
-        <PinovaIcon
+        <FotoceIcon
           name="refresh"
           class="text-[25px] text-pink-600 dark:text-pink-400"
           :style="{ transform: `rotate(${pullToRefreshPx * 3.2}deg)` }"
         />
       </div>
       <span
-        v-if="pullToRefreshProgress >= 0.94"
+        v-if="pullToRefreshReady"
         class="max-w-[min(100vw-2rem,20rem)] rounded-full bg-neutral-900/85 px-3 py-1.5 text-center text-[11px] font-semibold text-white backdrop-blur-sm dark:bg-white/90 dark:text-neutral-950"
       >
         {{ t('pwa.pullToRefresh.release') }}
@@ -859,8 +871,8 @@ const pageTransitionName = computed(() => {
   }
 
   /* Onboarding / création : pas de min-height 100svh empilé → vide PWA en bas. */
-  .app-immersive-route .pinova-page-transition-host,
-  .app-immersive-route .pinova-page-transition-host > * {
+  .app-immersive-route .fotoce-page-transition-host,
+  .app-immersive-route .fotoce-page-transition-host > * {
     min-height: 0;
     flex: 1 1 auto;
     height: auto;
@@ -871,7 +883,7 @@ const pageTransitionName = computed(() => {
   App shell : préparé pour l'effet de profondeur appliqué par LayerHost.
   Le transform/filter est posé via JS quand une couche est au-dessus.
 */
-.pinova-app-shell {
+.fotoce-app-shell {
   will-change: auto;
   /* Évite les jaggies pendant le scale. */
   backface-visibility: hidden;
@@ -881,7 +893,7 @@ const pageTransitionName = computed(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinova-ptr-bubble .pinova-icon[style] {
+  .fotoce-ptr-bubble .fotoce-icon[style] {
     transform: none !important;
   }
 }

@@ -1,7 +1,7 @@
 /** Limite alignée avec le backend / UI commentaires (`RichCommentInput`). */
 export const COMMENT_MEDIA_MAX_BYTES = 5 * 1024 * 1024
 
-/** Aligné avec `MAX_COMMENT_JPEG_SIDE` côté serveur (`pins/comment_media.py`). */
+/** Aligné avec `MAX_COMMENT_JPEG_SIDE` côté serveur (`fotos/comment_media.py`). */
 const DEFAULT_MAX_SIDE = 1280
 const MIN_SIDE = 260
 

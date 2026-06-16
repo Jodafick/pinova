@@ -104,10 +104,10 @@ export function installRouterLayerBridge(
     const presentation = meta.presentation ?? 'page'
     if (presentation === 'page') return true
 
-    /* Cas particulier déjà géré ailleurs : /pin/:slug redirige vers /?pin=slug
-       avec PinDetailOverlayHost. Si Vue Router a déjà résolu cette redirection,
+    /* Cas particulier déjà géré ailleurs : /foto/:slug redirige vers /?foto=slug
+       avec FotoDetailOverlayHost. Si Vue Router a déjà résolu cette redirection,
        on laisse passer. */
-    if (to.name === 'pin-detail') return true
+    if (to.name === 'foto-detail') return true
 
     return openRouteAsLayer(router, to, presentation)
   })
@@ -125,7 +125,7 @@ export async function navigateOrOpenLayer(
   const resolved = router.resolve(to)
   const meta = (resolved.meta as LayerRouteMeta) || {}
   const presentation = meta.presentation ?? 'page'
-  if (presentation === 'page' || resolved.name === 'pin-detail') {
+  if (presentation === 'page' || resolved.name === 'foto-detail') {
     await router.push(to)
     return
   }

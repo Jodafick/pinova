@@ -3,13 +3,13 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from '../i18n'
 import type { ReportCategoryCode } from '../constants/reportCategories'
 import { REPORT_CATEGORY_CODES } from '../constants/reportCategories'
-import PinovaModal from './ui/PinovaModal.vue'
-import PinovaButton from './ui/PinovaButton.vue'
+import FotoceModal from './ui/FotoceModal.vue'
+import FotoceButton from './ui/FotoceButton.vue'
 
 const props = withDefaults(
   defineProps<{
     modelValue: boolean
-    /** Sous-titre contextuel (titre du pin, @user, etc.) */
+    /** Sous-titre contextuel (titre du foto, @user, etc.) */
     contextLabel?: string
   }>(),
   { contextLabel: '' },
@@ -63,7 +63,7 @@ function submit() {
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     :open="modelValue"
     presentation="tallSheet"
     presentation-lg="center"
@@ -112,13 +112,13 @@ function submit() {
 
     <template #footer>
       <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px]" @click="close">
+        <FotoceButton variant="secondary" class="w-full sm:w-auto min-h-[44px]" @click="close">
           {{ t('common.cancel') }}
-        </PinovaButton>
-        <PinovaButton variant="primary" class="w-full sm:w-auto min-h-[44px]" @click="submit">
+        </FotoceButton>
+        <FotoceButton variant="primary" class="w-full sm:w-auto min-h-[44px]" @click="submit">
           {{ t('report.submit') }}
-        </PinovaButton>
+        </FotoceButton>
       </div>
     </template>
-  </PinovaModal>
+  </FotoceModal>
 </template>

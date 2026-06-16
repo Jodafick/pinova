@@ -39,19 +39,19 @@ const glowStyleVars = computed(() => ({
 <template>
   <div
     v-if="!disabled"
-    class="pinova-ambient-glow"
+    class="fotoce-ambient-glow"
     :style="glowStyleVars"
     aria-hidden="true"
   >
     <!-- Halo rose top — radial gradient flou GPU. -->
-    <div class="pinova-ambient-glow__top" />
+    <div class="fotoce-ambient-glow__top" />
     <!-- Veil bottom très discret (le dégradé principal est sur `body::before`). -->
-    <div class="pinova-ambient-glow__bottom" />
+    <div class="fotoce-ambient-glow__bottom" />
   </div>
 </template>
 
 <style scoped>
-.pinova-ambient-glow {
+.fotoce-ambient-glow {
   position: fixed;
   inset: 0;
   z-index: -1;
@@ -64,7 +64,7 @@ const glowStyleVars = computed(() => ({
   will-change: transform;
 }
 
-.pinova-ambient-glow__top {
+.fotoce-ambient-glow__top {
   position: absolute;
   /* Le glow déborde volontairement en haut, l'effet de "lumière entrante" iOS. */
   top: -160px;
@@ -86,7 +86,7 @@ const glowStyleVars = computed(() => ({
   transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.pinova-ambient-glow__bottom {
+.fotoce-ambient-glow__bottom {
   position: absolute;
   bottom: -120px;
   left: -20%;
@@ -102,7 +102,7 @@ const glowStyleVars = computed(() => ({
 
 /* Dark mode : on diminue l'intensité (les noirs OLED ne tolèrent pas
    un grand wash sans devenir kitsch). */
-:global(.dark) .pinova-ambient-glow__top {
+:global(.dark) .fotoce-ambient-glow__top {
   background:
     radial-gradient(circle at center,
       rgba(255, 95, 145, 0.18) 0%,
@@ -110,7 +110,7 @@ const glowStyleVars = computed(() => ({
       rgba(155, 18, 60, 0.04) 60%,
       transparent 80%);
 }
-:global(.dark) .pinova-ambient-glow__bottom {
+:global(.dark) .fotoce-ambient-glow__bottom {
   background:
     radial-gradient(ellipse at center,
       rgba(236, 72, 153, 0.035) 0%,

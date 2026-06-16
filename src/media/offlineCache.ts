@@ -1,10 +1,10 @@
 /**
  * Offline Media Cache — best-effort persistence des médias importants.
  *
- *  1. **Cache API** (`caches.open('pinova-media-v1')`) — la PWA enregistrée via
+ *  1. **Cache API** (`caches.open('fotoce-media-v1')`) — la PWA enregistrée via
  *     `virtual:pwa-register` (vite-plugin-pwa) gère déjà les assets statiques.
  *     Ici on ajoute un cache runtime pour les médias **dynamiques** :
- *     - thumbnails de pins (small) → toujours mis en cache si possible
+ *     - thumbnails de fotos (small) → toujours mis en cache si possible
  *     - vidéos → on cache uniquement le **poster** + first chunk (cf. `cacheVideoPoster`)
  *  2. **Fallback thumbnails in-memory** — map `src → dataUrl` pour servir
  *     instantanément un placeholder pendant que le réseau revient.
@@ -22,7 +22,7 @@ import {
   navigatorSaveDataEnabled,
 } from '../utils/pwaPerformance'
 
-const RUNTIME_CACHE = 'pinova-media-v1'
+const RUNTIME_CACHE = 'fotoce-media-v1'
 const MAX_RUNTIME_ENTRIES = isPwaStandalone() ? 96 : 200
 const PREFETCH_MAX_PINS = isPwaStandalone() ? 4 : 14
 const PREFETCH_MAX_URLS = isPwaStandalone() ? 8 : 28
@@ -164,7 +164,7 @@ export function offlineMediaStats(): {
   }
 }
 
-/* ───────────────────────── Prefetch listes de pins (PWA offline) ──────────── */
+/* ───────────────────────── Prefetch listes de fotos (PWA offline) ──────────── */
 
 export type OfflineMediaPinLike = {
   imageUrl?: string
@@ -173,16 +173,16 @@ export type OfflineMediaPinLike = {
 }
 
 /**
- * Télécharge en tâche de fond les médias des pins pour le Cache API (vignettes, avatars, vidéos story).
+ * Télécharge en tâche de fond les médias des fotos pour le Cache API (vignettes, avatars, vidéos story).
  * Best-effort : les fichiers volumineux ne seront mis en cache que si le réseau y parvient.
  */
-export function prefetchPinsMediaForOffline(pins: readonly OfflineMediaPinLike[]): void {
+export function prefetchFotosMediaForOffline(pins: readonly OfflineMediaPinLike[]): void {
   if (typeof window === 'undefined' || !pins.length) return
   if (navigatorSaveDataEnabled()) return
   const lightPwa = isPwaLightPerfMode()
   if (lightPwa && typeof navigator !== 'undefined' && !navigator.onLine) return
 
-  const slice = pins.slice(0, PREFETCH_MAX_PINS)
+  const slice = fotos.slice(0, PREFETCH_MAX_PINS)
   const seen = new Set<string>()
   let queued = 0
   const push = (u: string | undefined) => {

@@ -2,12 +2,12 @@ import type { APIRequestContext, Page } from '@playwright/test'
 
 export const E2E_API_BASE = (process.env.PLAYWRIGHT_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
 export const E2E_API_URL = `${E2E_API_BASE}/api/`
-export const E2E_PASSWORD = 'Pinova2026'
+export const E2E_PASSWORD = 'Fotoce2026'
 
 export const E2E_USERS = {
-  export: 'gdpr.export@pinova.test',
-  delete: 'gdpr.delete@pinova.test',
-  teen: 'gdpr.teen@pinova.test',
+  export: 'gdpr.export@fotoce.test',
+  delete: 'gdpr.delete@fotoce.test',
+  teen: 'gdpr.teen@fotoce.test',
 } as const
 
 export type AuthTokens = { access: string; refresh: string }
@@ -44,27 +44,27 @@ export async function seedAuthInPage(
   }
 
   await page.addInitScript((payload) => {
-    window.localStorage.setItem('pinova_token', payload.access)
-    window.localStorage.setItem('pinova_refresh_token', payload.refresh)
-    window.localStorage.setItem('pinova_cookie_consent_decided', '1')
+    window.localStorage.setItem('fotoce_token', payload.access)
+    window.localStorage.setItem('fotoce_refresh_token', payload.refresh)
+    window.localStorage.setItem('fotoce_cookie_consent_decided', '1')
     window.localStorage.setItem(
-      'pinova_cookie_consent_v1',
+      'fotoce_cookie_consent_v1',
       JSON.stringify({ necessary: true, analytics: false, decidedAt: new Date().toISOString() }),
     )
-    window.localStorage.setItem('pinova_analytics_consent', 'denied')
+    window.localStorage.setItem('fotoce_analytics_consent', 'denied')
     if (payload.me) {
-      window.localStorage.setItem('pinova_me_payload_v1', JSON.stringify(payload.me))
+      window.localStorage.setItem('fotoce_me_payload_v1', JSON.stringify(payload.me))
     }
   }, { ...tokens, me })
 }
 
 export async function resetCookieConsent(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    window.localStorage.removeItem('pinova_cookie_consent_v1')
-    window.localStorage.removeItem('pinova_cookie_consent_decided')
-    window.localStorage.removeItem('pinova_analytics_consent')
-    window.localStorage.removeItem('pinova_analytics_opt_out')
-    window.localStorage.removeItem('pinova_analytics_once_landing_viewed')
+    window.localStorage.removeItem('fotoce_cookie_consent_v1')
+    window.localStorage.removeItem('fotoce_cookie_consent_decided')
+    window.localStorage.removeItem('fotoce_analytics_consent')
+    window.localStorage.removeItem('fotoce_analytics_opt_out')
+    window.localStorage.removeItem('fotoce_analytics_once_landing_viewed')
     if ('serviceWorker' in navigator) {
       void navigator.serviceWorker.getRegistrations().then((regs) => {
         for (const reg of regs) void reg.unregister()
@@ -150,7 +150,7 @@ export async function attemptTeenPinPublish(
       Authorization: `Bearer ${tokens.access}`,
     },
     multipart: {
-      title: 'E2E teen pin',
+      title: 'E2E teen foto',
       description: '',
       topic: 'General',
       visibility: 'public',

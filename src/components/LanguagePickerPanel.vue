@@ -2,7 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import {
   useI18n,
-  PINOVA_LANGUAGES,
+  FOTOCE_LANGUAGES,
   languageSearchHaystack,
   REGION_ORDER,
   REGION_LABELS,
@@ -39,25 +39,25 @@ watch(normalizedQuery, () => {
 
 const filteredLanguages = computed(() => {
   const q = normalizedQuery.value
-  if (!q) return [...PINOVA_LANGUAGES]
-  return PINOVA_LANGUAGES.filter((lang) => languageSearchHaystack(lang).toLowerCase().includes(q))
+  if (!q) return [...FOTOCE_LANGUAGES]
+  return FOTOCE_LANGUAGES.filter((lang) => languageSearchHaystack(lang).toLowerCase().includes(q))
 })
 
 const suggestedLanguages = computed(() => {
   if (!props.showSuggested || normalizedQuery.value) return []
   const codes = new Set<LangCode>()
   const add = (code: LangCode | undefined) => {
-    if (code && PINOVA_LANGUAGES.some((l) => l.code === code)) codes.add(code)
+    if (code && FOTOCE_LANGUAGES.some((l) => l.code === code)) codes.add(code)
   }
   add(props.modelValue)
   add(currentLang.value)
   add(browserLang.value)
-  return PINOVA_LANGUAGES.filter((l) => codes.has(l.code as LangCode))
+  return FOTOCE_LANGUAGES.filter((l) => codes.has(l.code as LangCode))
 })
 
 const groupedLanguages = computed(() => {
   const used = new Set(suggestedLanguages.value.map((l) => l.code))
-  const groups: { region: (typeof REGION_ORDER)[number]; items: typeof PINOVA_LANGUAGES }[] = []
+  const groups: { region: (typeof REGION_ORDER)[number]; items: typeof FOTOCE_LANGUAGES }[] = []
   for (const region of REGION_ORDER) {
     const items = filteredLanguages.value.filter(
       (l) => l.region === region && !used.has(l.code),
@@ -107,7 +107,7 @@ defineExpose({
 
       <label class="relative block">
         <span class="sr-only">{{ t('lang.searchPlaceholder') }}</span>
-        <PinovaIcon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-lg pointer-events-none" />
+        <FotoceIcon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-lg pointer-events-none" />
         <input
           ref="searchRef"
           v-model="query"
@@ -123,14 +123,14 @@ defineExpose({
           :aria-label="t('lang.clearSearch')"
           @click="query = ''"
         >
-          <PinovaIcon name="close" class="text-lg" />
+          <FotoceIcon name="close" class="text-lg" />
         </button>
       </label>
 
       <p v-if="browserLang && showSuggested && !query" class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2">
         {{ t('lang.deviceDefault') }}:
         <span class="font-medium text-neutral-700 dark:text-neutral-300">
-          {{ PINOVA_LANGUAGES.find((l) => l.code === browserLang)?.nativeLabel ?? browserLang }}
+          {{ FOTOCE_LANGUAGES.find((l) => l.code === browserLang)?.nativeLabel ?? browserLang }}
         </span>
       </p>
     </div>
@@ -177,7 +177,7 @@ defineExpose({
                 {{ lang.label }}
               </span>
             </span>
-            <PinovaIcon name="check" class="text-base text-pink-700 shrink-0" />
+            <FotoceIcon name="check" class="text-base text-pink-700 shrink-0" />
           </button>
         </section>
 
@@ -210,7 +210,7 @@ defineExpose({
                   {{ lang.label }}
                 </span>
               </span>
-              <PinovaIcon name="check" class="text-base text-pink-700 shrink-0" />
+              <FotoceIcon name="check" class="text-base text-pink-700 shrink-0" />
             </button>
           </section>
         </template>
@@ -240,7 +240,7 @@ defineExpose({
                 {{ lang.label }}
               </span>
             </span>
-            <PinovaIcon name="check" class="text-base text-pink-700 shrink-0" />
+            <FotoceIcon name="check" class="text-base text-pink-700 shrink-0" />
           </button>
         </template>
       </template>

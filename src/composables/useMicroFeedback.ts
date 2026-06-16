@@ -62,7 +62,7 @@ const INTENT_TO_HAPTIC: Record<FeedbackIntent, HapticPattern> = {
 }
 
 /** Pulse visuel ultra discret sur `<html>` (désactivé si reduced-motion). */
-const PULSE_CLASS = 'pinova-micro-feedback-pulse'
+const PULSE_CLASS = 'fotoce-micro-feedback-pulse'
 let pulseTimer: ReturnType<typeof setTimeout> | null = null
 
 function scheduleVisualPulse() {

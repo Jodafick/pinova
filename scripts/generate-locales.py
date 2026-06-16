@@ -310,9 +310,9 @@ def write_locale_file(out_path: Path, code: str, translated: dict[str, str]) -> 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Génère les locales Pinova via googletrans")
+    parser = argparse.ArgumentParser(description="Génère les locales Fotoce via googletrans")
     parser.add_argument("--lang", help="Une seule langue (ex. es)")
-    parser.add_argument("--mobile", action="store_true", help="Cible Pinova-Mobile")
+    parser.add_argument("--mobile", action="store_true", help="Cible Fotoce-Mobile")
     parser.add_argument("--force", action="store_true", help="Écrase et régénère (ignore checkpoints)")
     parser.add_argument("--dry-run", action="store_true", help="Ne pas écrire les fichiers")
     parser.add_argument(
@@ -326,7 +326,7 @@ def main() -> int:
     workers = max(1, min(args.workers, 32))
 
     locales_dir = (
-        ROOT.parent / "Pinova-Mobile" / "src" / "i18n" / "locales"
+        ROOT.parent / "Fotoce-Mobile" / "src" / "i18n" / "locales"
         if args.mobile
         else ROOT / "src" / "i18n" / "locales"
     )

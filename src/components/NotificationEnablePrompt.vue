@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import PinovaModal from './ui/PinovaModal.vue'
-import PinovaButton from './ui/PinovaButton.vue'
+import FotoceModal from './ui/FotoceModal.vue'
+import FotoceButton from './ui/FotoceButton.vue'
 import { useI18n } from '../i18n'
 import api from '../api/index'
 import {
@@ -71,7 +71,7 @@ function onDecline() {
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     :open="open"
     presentation="bottomSheet"
     presentation-lg="center"
@@ -86,7 +86,7 @@ function onDecline() {
 
     <template #footer>
       <div class="flex w-full flex-col gap-2">
-        <PinovaButton
+        <FotoceButton
           variant="primary"
           block
           class="min-h-[48px] justify-center"
@@ -94,14 +94,14 @@ function onDecline() {
           @click="onEnable"
         >
           {{ loading ? t('settings.notifications.web.activating') : t('notifications.prompt.enable') }}
-        </PinovaButton>
-        <PinovaButton variant="secondary" block class="min-h-[44px] justify-center" @click="onLater">
+        </FotoceButton>
+        <FotoceButton variant="secondary" block class="min-h-[44px] justify-center" @click="onLater">
           {{ t('notifications.prompt.later') }}
-        </PinovaButton>
+        </FotoceButton>
         <button type="button" class="text-xs font-semibold text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 py-2" @click="onDecline">
           {{ t('notifications.prompt.decline') }}
         </button>
       </div>
     </template>
-  </PinovaModal>
+  </FotoceModal>
 </template>

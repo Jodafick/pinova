@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import type { FeedItem, Pin, SponsoredAd } from '../types'
-import { isFeedPin } from '../types'
+import type { FeedItem, Foto, SponsoredAd } from '../types'
+import { isFeedFoto } from '../types'
 import SponsoredContentCard from './SponsoredContentCard.vue'
 import NetworkAdBanner from './NetworkAdBanner.vue'
 import { useNetworkAds } from '../composables/useNetworkAds'
-import { usePins } from '../composables/usePins'
+import { useFotos } from '../composables/useFotos'
 import { useAuth } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
-import PinSensitiveMedia from './PinSensitiveMedia.vue'
+import FotoSensitiveMedia from './FotoSensitiveMedia.vue'
 import { viewerCanRevealSensitiveMedia, sensitiveMediaBlurredByDefault } from '../composables/moderationPolicy'
 import { useDataSaver } from '../composables/useDataSaver'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
@@ -24,9 +24,9 @@ import {
 } from '../composables/mediaAntiLeak'
 import OfflineImg from './OfflineImg.vue'
 import OfflineVideo from './OfflineVideo.vue'
-import PromotePinSheet from './PromotePinSheet.vue'
-import { prefetchPinsMediaForOffline } from '../media/offlineCache'
-import PinVirtualGrid from './PinVirtualGrid.vue'
+import PromoteFotoSheet from './PromoteFotoSheet.vue'
+import { prefetchFotosMediaForOffline } from '../media/offlineCache'
+import FotoVirtualGrid from './FotoVirtualGrid.vue'
 import {
   buildFeedMasonryCells,
   layoutMasonryShortestColumn,
@@ -38,7 +38,7 @@ import { pinGridImageSrc, pinGridImageSrcSet } from '../utils/pinMediaUrls'
 /** Au-delà de ce seuil, on bascule sur la grille virtualisée (DOM stable). */
 const VIRTUAL_THRESHOLD = 24
 
-const { isPinSavePending, toggleLike, deletePin } = usePins()
+const { isFotoSavePending, toggleLike, deleteFoto } = useFotos()
 const { isAuthenticated, currentUser, fetchCurrentUser } = useAuth()
 const router = useRouter()
 const { t } = useI18n()
@@ -63,7 +63,7 @@ const blurSensitiveByDefault = computed(() =>
 )
 
 type GridCell =
-  | { kind: 'pin'; pin: Pin }
+  | { kind: 'foto'; foto: Foto }
   | { kind: 'sponsored'; ad: SponsoredAd }
   | { kind: 'network_ad'; key: string }
   | { kind: 'skeleton'; key: string }
@@ -103,7 +103,7 @@ const updateColumnCount = () => {
   else columnCount.value = 2
 }
 
-/** Même logique de répartition que les pins pour que les skeletons prolongent la grille sans rupture. */
+/** Même logique de répartition que les fotos pour que les skeletons prolongent la grille sans rupture. */
 const skeletonPlaceholders = computed(() => {
   const n = columnCount.value
   if (props.loadingInitial && props.pins.length === 0) {
@@ -152,7 +152,7 @@ watch(
     if (!pins?.length) return
     if (prefetchDebounce) clearTimeout(prefetchDebounce)
     prefetchDebounce = setTimeout(() => {
-      prefetchPinsMediaForOffline(pins.filter(isFeedPin))
+      prefetchFotosMediaForOffline(pins.filter(isFeedFoto))
       prefetchDebounce = null
     }, 1100)
   },
@@ -189,19 +189,19 @@ usePointerOutsideDismiss(() => [
   },
 ])
 
-const markMediaLoaded = (pinId: number) => {
-  loadedImages.value[pinId] = true
+const markMediaLoaded = (fotoId: number) => {
+  loadedImages.value[fotoId] = true
 }
 
 const gridImageSrcOverrides = ref<Record<number, string>>({})
 
-function effectiveGridImageSrc(pin: Pin): string {
-  return gridImageSrcOverrides.value[pin.id] || pinGridImageSrc(pin)
+function effectiveGridImageSrc(foto: Foto): string {
+  return gridImageSrcOverrides.value[pin.id] || pinGridImageSrc(foto)
 }
 
-function onPinGridImageError(pin: Pin) {
-  const fallback = pin.imageUrl?.trim()
-  const current = effectiveGridImageSrc(pin)
+function onFotoGridImageError(foto: Foto) {
+  const fallback = foto.imageUrl?.trim()
+  const current = effectiveGridImageSrc(foto)
   if (fallback && fallback !== current) {
     gridImageSrcOverrides.value = { ...gridImageSrcOverrides.value, [pin.id]: fallback }
     return
@@ -209,23 +209,23 @@ function onPinGridImageError(pin: Pin) {
   markMediaLoaded(pin.id)
 }
 
-const isMediaLoaded = (pinId: number) => !!loadedImages.value[pinId]
-const isSavePending = (slug: string) => isPinSavePending(slug)
+const isMediaLoaded = (fotoId: number) => !!loadedImages.value[fotoId]
+const isSavePending = (slug: string) => isFotoSavePending(slug)
 
-function clearMediaTimer(pinId: number) {
-  const t = mediaTapTimers.get(pinId)
+function clearMediaTimer(fotoId: number) {
+  const t = mediaTapTimers.get(fotoId)
   if (t) clearTimeout(t)
-  mediaTapTimers.delete(pinId)
+  mediaTapTimers.delete(fotoId)
 }
 
 function pinOpenOriginFromEvent(e: Event): ReturnType<typeof elementToPinOverlayOriginRect> {
   const target = e.currentTarget instanceof Element ? e.currentTarget : null
-  return elementToPinOverlayOriginRect(target?.closest('.lux-pin-card') ?? target)
+  return elementToPinOverlayOriginRect(target?.closest('.lux-foto-card') ?? target)
 }
 
-function emitOpenPin(pin: Pin, originRect: ReturnType<typeof elementToPinOverlayOriginRect>) {
+function emitOpenFoto(foto: Foto, originRect: ReturnType<typeof elementToPinOverlayOriginRect>) {
   setPinOverlayOrigin(pin.slug, originRect)
-  emit('open-pin', pin.slug)
+  emit('open-pin', foto.slug)
 }
 
 const { promptGuest } = useGuestAuthGate()
@@ -238,50 +238,50 @@ function onSavePinClick(slug: string) {
   emit('toggle-save', slug)
 }
 
-async function doubleTapLike(pin: Pin) {
+async function doubleTapLike(foto: Foto) {
   if (!isAuthenticated.value) {
-    promptGuest('like', { resourceId: pin.slug })
+    promptGuest('like', { resourceId: foto.slug })
     return
   }
   if (pin.liked) return
-  if (pin.isStory && usernamesMatch(currentUser.value?.username, pin.username)) return
+  if (pin.isStory && usernamesMatch(currentUser.value?.username, foto.username)) return
   await toggleLike(pin.slug)
 }
 
-function onPinMediaTap(pin: Pin, e: MouseEvent) {
+function onPinMediaTap(foto: Foto, e: MouseEvent) {
   const originRect = pinOpenOriginFromEvent(e)
   const existing = mediaTapTimers.get(pin.id)
   if (existing) {
     clearMediaTimer(pin.id)
-    void doubleTapLike(pin)
+    void doubleTapLike(foto)
     return
   }
   const t = setTimeout(() => {
     mediaTapTimers.delete(pin.id)
-    emitOpenPin(pin, originRect)
+    emitOpenFoto(pin, originRect)
   }, 320)
   mediaTapTimers.set(pin.id, t)
 }
 
-function onPinMediaDblClick(pin: Pin) {
+function onPinMediaDblClick(foto: Foto) {
   clearMediaTimer(pin.id)
-  void doubleTapLike(pin)
+  void doubleTapLike(foto)
 }
 
-function onArticleClick(pin: Pin, e: MouseEvent) {
+function onArticleClick(foto: Foto, e: MouseEvent) {
   const el = e.target as HTMLElement | null
-  if (el?.closest('[data-pin-media]')) return
-  emitOpenPin(pin, pinOpenOriginFromEvent(e))
+  if (el?.closest('[data-foto-media]')) return
+  emitOpenFoto(pin, pinOpenOriginFromEvent(e))
 }
 
-function pinCardLabel(pin: Pin) {
-  return t('pin.cardAriaLabel', { title: pin.title || pin.slug, user: pin.user })
+function pinCardLabel(foto: Foto) {
+  return t('foto.cardAriaLabel', { title: foto.title || foto.slug, user: foto.user })
 }
 
-function onCardKeydown(pin: Pin, ev: KeyboardEvent) {
+function onCardKeydown(foto: Foto, ev: KeyboardEvent) {
   if (ev.key === 'Enter' || ev.key === ' ') {
     ev.preventDefault()
-    emitOpenPin(pin, null)
+    emitOpenFoto(pin, null)
   }
 }
 
@@ -289,26 +289,26 @@ function usernamesMatch(a?: string | null, b?: string | null) {
   return (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
 }
 
-function viewerOwnsPin(pin: Pin): boolean {
-  return isAuthenticated.value && usernamesMatch(currentUser.value?.username, pin.username)
+function viewerOwnsFoto(foto: Foto): boolean {
+  return isAuthenticated.value && usernamesMatch(currentUser.value?.username, foto.username)
 }
 
-function toggleGridOwnerMenu(pin: Pin, ev: MouseEvent) {
-  if (!viewerOwnsPin(pin)) return
+function toggleGridOwnerMenu(foto: Foto, ev: MouseEvent) {
+  if (!viewerOwnsFoto(foto)) return
   ev.stopPropagation()
   const target = ev.currentTarget instanceof HTMLElement ? ev.currentTarget : null
   if (!target) return
-  if (gridOwnerMenuSlug.value === pin.slug) {
+  if (gridOwnerMenuSlug.value === foto.slug) {
     closeGridOwnerMenu()
     return
   }
   gridOwnerMenuAnchorRef.value = target
-  gridOwnerMenuSlug.value = pin.slug
+  gridOwnerMenuSlug.value = foto.slug
 }
 
 function goGridOwnerEdit(slug: string) {
   closeGridOwnerMenu()
-  router.push(`/pin/${slug}/edit`)
+  router.push(`/foto/${slug}/edit`)
 }
 
 const promoteSheetOpen = ref(false)
@@ -322,21 +322,21 @@ function openPromoteSheet(slug: string, mode: 'boost' | 'campaign' = 'boost') {
   promoteSheetOpen.value = true
 }
 
-async function confirmDeleteGridOwnedPin(slug: string) {
+async function confirmDeleteGridOwnedFoto(slug: string) {
   closeGridOwnerMenu()
   const ok = await showConfirm({
-    title: t('pin.delete.confirmTitle'),
-    message: t('pin.delete.confirmBody'),
+    title: t('foto.delete.confirmTitle'),
+    message: t('foto.delete.confirmBody'),
     variant: 'danger',
   })
   if (!ok) return
   try {
-    await deletePin(slug)
+    await deleteFoto(slug)
     /* Compteurs /me (pins_count) doivent décroître immédiatement → refresh forcé + localStorage. */
     void fetchCurrentUser({ force: true, silent: true })
     emit('pin-deleted', slug)
   } catch {
-    await showAlert(t('pin.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
+    await showAlert(t('foto.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
   }
 }
 
@@ -353,10 +353,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <PinVirtualGrid
+  <FotoVirtualGrid
     v-if="useVirtualGrid"
     class="pin-grid-scope w-full min-w-0 max-w-full overflow-x-hidden"
-    :pins="pins"
+    :pins="fotos"
     :loading-initial="loadingInitial"
     :loading-more="loadingMore"
     @toggle-save="(slug) => emit('toggle-save', slug)"
@@ -380,7 +380,7 @@ onUnmounted(() => {
     >
       <template
         v-for="cell in column"
-        :key="cell.kind === 'pin' ? cell.pin.id : cell.kind === 'sponsored' ? cell.ad.id : cell.key"
+        :key="cell.kind === 'foto' ? cell.foto.id : cell.kind === 'sponsored' ? cell.ad.id : cell.key"
       >
       <SponsoredContentCard
         v-if="cell.kind === 'sponsored'"
@@ -397,103 +397,103 @@ onUnmounted(() => {
         variant="feed"
       />
       <article
-        v-else-if="cell.kind === 'pin'"
+        v-else-if="cell.kind === 'foto'"
         tabindex="0"
         role="article"
-        :aria-label="pinCardLabel(cell.pin)"
-        class="group lux-pin-card focus-visible:outline-none max-w-full box-border"
-        :class="cell.pin.isBoosted ? 'border-2 border-amber-400/70 dark:border-amber-500/50 shadow-[0_0_24px_rgba(245,158,11,0.25)]' : ''"
+        :aria-label="pinCardLabel(cell.foto)"
+        class="group lux-foto-card focus-visible:outline-none max-w-full box-border"
+        :class="cell.foto.isBoosted ? 'border-2 border-amber-400/70 dark:border-amber-500/50 shadow-[0_0_24px_rgba(245,158,11,0.25)]' : ''"
         @click="onArticleClick(cell.pin, $event)"
         @keydown="onCardKeydown(cell.pin, $event)"
       >
         <!-- Image container : hauteur naturelle après chargement -->
         <div
-          data-pin-media
+          data-foto-media
           class="relative overflow-hidden rounded-3xl bg-neutral-100/90 dark:bg-neutral-800"
           @click.stop="onPinMediaTap(cell.pin, $event)"
-          @dblclick.stop.prevent="onPinMediaDblClick(cell.pin)"
+          @dblclick.stop.prevent="onPinMediaDblClick(cell.foto)"
         >
           <span
-            v-if="cell.pin.isBoosted"
+            v-if="cell.foto.isBoosted"
             class="absolute top-2 left-2 z-10 rounded-full bg-amber-500/90 text-white text-[10px] font-bold px-2 py-0.5"
           >
             {{ t('feed.pinBoosted') }}
           </span>
           <div
-            v-if="!isMediaLoaded(cell.pin.id)"
+            v-if="!isMediaLoaded(cell.foto.id)"
             class="aspect-[3/4] w-full animate-pulse bg-gradient-to-b from-neutral-200 via-neutral-100 to-neutral-200 dark:from-neutral-800 dark:via-neutral-700 dark:to-neutral-800"
           ></div>
-          <PinSensitiveMedia
-            v-if="cell.pin.imageUrl || cell.pin.feedImageUrl"
-            :sensitive="!!cell.pin.mediaSensitiveBlur"
+          <FotoSensitiveMedia
+            v-if="cell.foto.imageUrl || cell.foto.feedImageUrl"
+            :sensitive="!!cell.foto.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
             :blur-by-default="blurSensitiveByDefault"
             :enable-client-scan="false"
-            :media-url="cell.pin.imageUrl || cell.pin.feedImageUrl || ''"
+            :media-url="cell.foto.imageUrl || cell.foto.feedImageUrl || ''"
             media-type="image"
             wrapper-class="w-full"
           >
             <OfflineImg
-              :src="effectiveGridImageSrc(cell.pin)"
-              :srcset="pinGridImageSrcSet(cell.pin)"
-              :alt="cell.pin.title ? `${cell.pin.title} — ${cell.pin.user}` : t('feed.pinImageFallback', { user: cell.pin.user })"
+              :src="effectiveGridImageSrc(cell.foto)"
+              :srcset="pinGridImageSrcSet(cell.foto)"
+              :alt="cell.foto.title ? `${cell.foto.title} — ${cell.foto.user}` : t('feed.pinImageFallback', { user: cell.foto.user })"
               :sizes="gridImageSizes"
               :fetchpriority="gridImageFetchPriority"
               decoding="async"
               :class="[
                 PIN_MEDIA_ANTI_LEAK_CLASS,
                 'w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none',
-                isMediaLoaded(cell.pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover',
+                isMediaLoaded(cell.foto.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover',
               ]"
               loading="lazy"
-              @load="markMediaLoaded(cell.pin.id)"
-              @error="onPinGridImageError(cell.pin)"
+              @load="markMediaLoaded(cell.foto.id)"
+              @error="onFotoGridImageError(cell.foto)"
               v-bind="pinMediaAntiLeakImgBindings()"
             />
-          </PinSensitiveMedia>
-          <PinSensitiveMedia
-            v-else-if="cell.pin.storyVideoUrl"
-            :sensitive="!!cell.pin.mediaSensitiveBlur"
+          </FotoSensitiveMedia>
+          <FotoSensitiveMedia
+            v-else-if="cell.foto.storyVideoUrl"
+            :sensitive="!!cell.foto.mediaSensitiveBlur"
             :viewer-can-reveal="viewerCanRevealSensitive"
             :blur-by-default="blurSensitiveByDefault"
             :enable-client-scan="false"
-            :media-url="cell.pin.storyVideoUrl"
+            :media-url="cell.foto.storyVideoUrl"
             media-type="video"
             wrapper-class="w-full"
           >
             <OfflineVideo
-              :src="cell.pin.storyVideoUrl"
+              :src="cell.foto.storyVideoUrl"
               muted
               playsinline
               :preload="storyVideoPreload"
               :class="[
                 PIN_MEDIA_ANTI_LEAK_CLASS,
                 'w-full h-auto block object-cover group-hover:scale-[1.02] transition-transform duration-500 select-none max-h-[480px]',
-                isMediaLoaded(cell.pin.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover',
+                isMediaLoaded(cell.foto.id) ? 'opacity-100 relative z-[1]' : 'opacity-0 absolute inset-0 w-full h-full object-cover',
               ]"
-              @loadedmetadata="markMediaLoaded(cell.pin.id)"
-              @error="markMediaLoaded(cell.pin.id)"
+              @loadedmetadata="markMediaLoaded(cell.foto.id)"
+              @error="markMediaLoaded(cell.foto.id)"
               v-bind="pinMediaAntiLeakVideoBindings(false)"
             />
-          </PinSensitiveMedia>
+          </FotoSensitiveMedia>
 
           <div
-            v-if="cell.pin.scheduledPublishAt"
+            v-if="cell.foto.scheduledPublishAt"
             class="absolute top-2 left-2 z-10 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-600 to-amber-500 text-white text-[10px] font-bold tracking-wide shadow-lg shadow-amber-900/25 ring-1 ring-white/20"
           >
-            {{ t('pin.scheduledBadge') }}
+            {{ t('foto.scheduledBadge') }}
           </div>
           <button
-            v-if="viewerOwnsPin(cell.pin)"
+            v-if="viewerOwnsFoto(cell.foto)"
             type="button"
-            class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/35 text-white shadow-lg backdrop-blur-md border border-white/15 transition-opacity duration-200 hover:bg-black/55 opacity-100 pinova-focus-ring"
-            :class="cell.pin.scheduledPublishAt ? 'top-10 left-3' : 'top-3 left-3'"
-            :aria-expanded="gridOwnerMenuSlug === cell.pin.slug"
+            class="absolute z-[16] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/35 text-white shadow-lg backdrop-blur-md border border-white/15 transition-opacity duration-200 hover:bg-black/55 opacity-100 fotoce-focus-ring"
+            :class="cell.foto.scheduledPublishAt ? 'top-10 left-3' : 'top-3 left-3'"
+            :aria-expanded="gridOwnerMenuSlug === cell.foto.slug"
             aria-haspopup="menu"
-            :aria-label="t('pin.ownerMenu.more')"
+            :aria-label="t('foto.ownerMenu.more')"
             @click="toggleGridOwnerMenu(cell.pin, $event)"
           >
-            <PinovaIcon name="more_horiz" class="text-[22px] leading-none translate-y-px pointer-events-none" />
+            <FotoceIcon name="more_horiz" class="text-[22px] leading-none translate-y-px pointer-events-none" />
           </button>
 
           <!-- Dark overlay on hover (sous les boutons, au-dessus du média) -->
@@ -503,29 +503,29 @@ onUnmounted(() => {
           <button
             v-if="isAuthenticated"
             type="button"
-            :aria-pressed="cell.pin.saved"
-            :aria-label="cell.pin.saved ? t('pin.a11y.saved') : t('pin.a11y.save')"
-            class="z-10 lux-btn-pin-save pinova-focus-ring"
-            :class="cell.pin.saved ? 'lux-btn-pin-save-saved opacity-100 translate-y-0' : ''"
-            :disabled="isSavePending(cell.pin.slug)"
-            @click.stop="onSavePinClick(cell.pin.slug)"
+            :aria-pressed="cell.foto.saved"
+            :aria-label="cell.foto.saved ? t('foto.a11y.saved') : t('foto.a11y.save')"
+            class="z-10 lux-btn-foto-save fotoce-focus-ring"
+            :class="cell.foto.saved ? 'lux-btn-foto-save-saved opacity-100 translate-y-0' : ''"
+            :disabled="isSavePending(cell.foto.slug)"
+            @click.stop="onSavePinClick(cell.foto.slug)"
           >
-            <span v-if="isSavePending(cell.pin.slug)" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-            <span v-else>{{ cell.pin.saved ? t('pin.saved') : t('pin.save') }}</span>
+            <span v-if="isSavePending(cell.foto.slug)" class="w-4 h-4 inline-block border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+            <span v-else>{{ cell.foto.saved ? t('foto.saved') : t('foto.save') }}</span>
           </button>
 
           <!-- Bottom actions on hover -->
           <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
             <!-- Link badge -->
             <a
-              v-if="cell.pin.link"
-              :href="cell.pin.link.startsWith('http') ? cell.pin.link : 'https://' + cell.pin.link"
+              v-if="cell.foto.link"
+              :href="cell.foto.link.startsWith('http') ? cell.foto.link : 'https://' + cell.foto.link"
               target="_blank"
               class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/92 dark:bg-neutral-900/92 backdrop-blur-md text-xs font-semibold text-neutral-800 dark:text-neutral-100 shadow-xl shadow-black/10 ring-1 ring-white/60 dark:ring-neutral-700/80 hover:bg-white dark:hover:bg-neutral-800 max-w-[60%] truncate transition"
               @click.stop
             >
-              <PinovaIcon name="link" class="text-sm" />
-              <span class="truncate">{{ cell.pin.link }}</span>
+              <FotoceIcon name="link" class="text-sm" />
+              <span class="truncate">{{ cell.foto.link }}</span>
             </a>
             <div v-else></div>
           </div>
@@ -537,7 +537,7 @@ onUnmounted(() => {
       <!-- Placeholder masonry : même shell que les cartes pour suivre les colonnes. -->
       <div
         v-else
-        class="lux-pin-skeleton-card"
+        class="lux-foto-skeleton-card"
         aria-hidden="true"
       >
         <div class="relative overflow-hidden rounded-3xl bg-neutral-100 dark:bg-neutral-900/80">
@@ -563,8 +563,8 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="gridOwnerMenuSlug ? goGridOwnerEdit(gridOwnerMenuSlug) : null"
         >
-          <PinovaIcon name="edit" class="text-lg text-neutral-500 dark:text-neutral-400" />
-          {{ t('pin.ownerMenu.edit') }}
+          <FotoceIcon name="edit" class="text-lg text-neutral-500 dark:text-neutral-400" />
+          {{ t('foto.ownerMenu.edit') }}
         </button>
         <button
           type="button"
@@ -572,22 +572,22 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="gridOwnerMenuSlug ? openPromoteSheet(gridOwnerMenuSlug, 'boost') : null"
         >
-          <PinovaIcon name="rocket_launch" class="text-lg text-amber-600" />
-          {{ t('pin.boost.cta') }}
+          <FotoceIcon name="rocket_launch" class="text-lg text-amber-600" />
+          {{ t('foto.boost.cta') }}
         </button>
         <button
           type="button"
           role="menuitem"
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-red-700 dark:text-red-400 hover:bg-red-50/90 dark:hover:bg-red-950/35 transition-colors"
-          @click="gridOwnerMenuSlug ? confirmDeleteGridOwnedPin(gridOwnerMenuSlug) : null"
+          @click="gridOwnerMenuSlug ? confirmDeleteGridOwnedFoto(gridOwnerMenuSlug) : null"
         >
-          <PinovaIcon name="delete" class="text-lg" />
-          {{ t('pin.ownerMenu.delete') }}
+          <FotoceIcon name="delete" class="text-lg" />
+          {{ t('foto.ownerMenu.delete') }}
         </button>
       </div>
     </Teleport>
 
-    <PromotePinSheet
+    <PromoteFotoSheet
       :open="promoteSheetOpen"
       :pin-slug="promoteSheetSlug"
       :initial-mode="promoteSheetMode"

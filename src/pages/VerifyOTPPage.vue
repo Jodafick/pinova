@@ -8,7 +8,7 @@ import { useAppModal } from '../composables/useAppModal'
 import { useAuth } from '../composables/useAuth'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
 import { trackEvent } from '../lib/analytics'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 
 type OtpApiMeta = {
   attempts_remaining?: number
@@ -70,7 +70,7 @@ function startCountdowns(initialLockout = 0, initialResend = RESEND_COOLDOWN_DEF
 function applyVerifyError(body: unknown, fallback: string) {
   const meta = parseOtpMeta(body)
   const code = readApiErrorCode(body) || meta.code
-  if (code === 'pinova_otp_locked' && meta.retry_after_seconds) {
+  if (code === 'fotoce_otp_locked' && meta.retry_after_seconds) {
     applyLockout(meta.retry_after_seconds)
   } else if (typeof meta.attempts_remaining === 'number') {
     attemptsRemaining.value = meta.attempts_remaining
@@ -131,7 +131,7 @@ const handleResend = async () => {
     const body = err.response?.data
     const code = readApiErrorCode(body)
     suggestGoogleForEmail.value = code === EMAIL_DELIVERY_UNAVAILABLE_CODE
-    if (code === 'pinova_otp_resend_cooldown' && body?.retry_after_seconds) {
+    if (code === 'fotoce_otp_resend_cooldown' && body?.retry_after_seconds) {
       resendSeconds.value = Number(body.retry_after_seconds) || RESEND_COOLDOWN_DEFAULT
       error.value = t('otp.resend.wait')
     } else {
@@ -158,11 +158,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="pinova-route-natural-height pinova-auth-page-shell min-h-0 flex flex-1 flex-col items-stretch justify-center bg-transparent dark:bg-transparent px-4 py-6 sm:px-6 sm:py-12 lg:min-h-screen lg:items-center">
+  <div class="fotoce-route-natural-height fotoce-auth-page-shell min-h-0 flex flex-1 flex-col items-stretch justify-center bg-transparent dark:bg-transparent px-4 py-6 sm:px-6 sm:py-12 lg:min-h-screen lg:items-center">
     <div class="w-full max-w-md lg:bg-white lg:dark:bg-neutral-900 lg:p-8 xl:p-10 lg:rounded-[40px] lg:shadow-sm lg:border lg:border-neutral-100 lg:dark:border-neutral-800">
       <div class="text-center mb-10">
         <div class="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
-          <PinovaIcon name="verified_user" class="text-pink-700 text-3xl" />
+          <FotoceIcon name="verified_user" class="text-pink-700 text-3xl" />
         </div>
         <h2 class="text-3xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('otp.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('otp.subtitle') }} <strong>{{ email }}</strong></p>
@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
 
       <form v-if="!success && !locked" @submit.prevent="handleVerify" class="space-y-6">
         <div v-if="error" class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-pink-50 border border-pink-100 text-pink-700 text-sm">
-          <PinovaIcon name="error" class="text-lg" />
+          <FotoceIcon name="error" class="text-lg" />
           {{ error }}
         </div>
 
@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
           />
         </div>
 
-        <PinovaButton
+        <FotoceButton
           type="submit"
           data-testid="otp-submit"
           variant="primary"
@@ -222,7 +222,7 @@ onBeforeUnmount(() => {
           :disabled="!canSubmit"
         >
           {{ loading ? t('otp.submitting') : t('otp.submit') }}
-        </PinovaButton>
+        </FotoceButton>
 
         <p class="text-center text-sm text-neutral-500 dark:text-neutral-400">
           {{ t('otp.notReceived') }}
@@ -241,16 +241,16 @@ onBeforeUnmount(() => {
           class="mt-6 rounded-2xl border border-pink-100 dark:border-pink-900 bg-pink-50/80 dark:bg-pink-950/40 p-4 text-center text-sm text-neutral-800 dark:text-neutral-200"
         >
           <p class="font-medium">{{ t('auth.emailDeliveryBlocked.googleHint') }}</p>
-          <PinovaButton variant="secondary" block to="/login" class="mt-3">
+          <FotoceButton variant="secondary" block to="/login" class="mt-3">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 shrink-0" alt="" />
             {{ t('login.googleCta') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
       </form>
 
       <div class="mt-8 text-center">
         <router-link to="/login" class="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 text-sm font-medium flex items-center justify-center gap-2">
-          <PinovaIcon name="arrow_back" class="text-lg" />
+          <FotoceIcon name="arrow_back" class="text-lg" />
           {{ t('otp.back') }}
         </router-link>
       </div>

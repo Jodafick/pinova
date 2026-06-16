@@ -1,7 +1,7 @@
 /** Signaux d’engagement pour proposer notifications / PWA au bon moment (après une action à forte valeur). */
 export type EngagementMoment =
   | 'pin_published'
-  | 'pin_saved'
+  | 'foto_saved'
   | 'user_followed'
   | 'feed_engaged'
 

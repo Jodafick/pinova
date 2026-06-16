@@ -27,7 +27,7 @@ import {
 } from '../utils/checkoutFlow'
 
 import { trackEvent, trackOnce } from '../lib/analytics'
-import { buildCheckoutSuccessClientProps } from '@pinova/shared'
+import { buildCheckoutSuccessClientProps } from '@fotoce/shared'
 import { requestCheckoutPendingRecap } from '../lib/requestCheckoutPendingRecap'
 
 

@@ -6,8 +6,8 @@
 import { ref, computed, watch, onMounted, onActivated } from 'vue'
 import type { FeedItem, SponsoredAd } from '../types'
 import api from '../api/index'
-import PinGrid from './PinGrid.vue'
-import PinovaModal from './ui/PinovaModal.vue'
+import FotoGrid from './FotoGrid.vue'
+import FotoceModal from './ui/FotoceModal.vue'
 import { useI18n } from '../i18n'
 import { useDataSaver } from '../composables/useDataSaver'
 import { fetchExploreBoardsPage, fetchHeaderSearch, type HeaderSearchBoard } from '../composables/useHeaderSearch'
@@ -22,7 +22,7 @@ type TopicCategory = {
   icon?: string
   color?: string
   coverImage?: string | null
-  pinCount: number
+  fotoCount: number
 }
 
 const props = withDefaults(
@@ -86,7 +86,7 @@ function useCategoryCoverUrl(c?: TopicCategory | null): string | null {
 const loadCategories = async (query = '') => {
   categoriesLoading.value = true
   try {
-    const response = await api.get('pins/topics/', { params: { limit: 30, q: query, lang: currentLang.value } })
+    const response = await api.get('fotos/topics/', { params: { limit: 30, q: query, lang: currentLang.value } })
     categories.value = Array.isArray(response.data) ? response.data : []
   } catch (err) {
     console.error('Erreur lors du chargement des categories:', err)
@@ -172,7 +172,7 @@ function onToggleSave(slug: string) {
   emit('toggle-save', slug)
 }
 
-function onOpenPin(slug: string) {
+function onOpenFoto(slug: string) {
   emit('open-pin', slug)
 }
 
@@ -195,7 +195,7 @@ function onOpenSponsored(item: SponsoredAd) {
         v-if="textQuery"
         class="mt-4 inline-flex flex-wrap items-center gap-2 rounded-full bg-pink-50 dark:bg-pink-950/40 border border-pink-100 dark:border-pink-900/60 px-4 py-2 text-sm text-pink-700 dark:text-pink-600"
       >
-        <PinovaIcon name="search" class="text-base text-pink-700" />
+        <FotoceIcon name="search" class="text-base text-pink-700" />
         <span>{{ t('explore.searchActive', { q: textQuery }) }}</span>
         <button type="button" class="ml-1 text-xs font-semibold text-pink-700 hover:underline" @click="emit('clear-search')">
           {{ t('explore.clearSearch') }}
@@ -213,9 +213,9 @@ function onOpenSponsored(item: SponsoredAd) {
           class="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs sm:text-sm font-extrabold text-pink-700 dark:text-pink-600 bg-pink-50 dark:bg-pink-950/50 border border-pink-200/90 dark:border-pink-700/70 shadow-sm shadow-pink-900/5 hover:bg-pink-100/90 dark:hover:bg-pink-900/35 active:scale-[0.98] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-700 dark:outline-pink-600"
           @click="openCategoriesModal"
         >
-          <PinovaIcon name="apps" class="text-[18px] leading-none text-pink-700 dark:text-pink-600" />
+          <FotoceIcon name="apps" class="text-[18px] leading-none text-pink-700 dark:text-pink-600" />
           {{ t('explore.allCategories') }}
-          <PinovaIcon name="expand_more" class="text-[18px] leading-none opacity-80" />
+          <FotoceIcon name="expand_more" class="text-[18px] leading-none opacity-80" />
         </button>
       </div>
       <div v-if="categoriesLoading" class="flex items-center gap-3 overflow-x-auto pb-1 pt-0.5 no-scrollbar touch-pan-x">
@@ -260,10 +260,10 @@ function onOpenSponsored(item: SponsoredAd) {
           />
           <div v-else class="absolute inset-0 pointer-events-none" :style="{ background: category.color || '#6B7280' }" />
           <div class="relative z-[1]">
-            <PinovaIcon :name="category.icon || 'category'" class="text-2xl mb-1.5 opacity-90 block drop-shadow-md" />
+            <FotoceIcon :name="category.icon || 'category'" class="text-2xl mb-1.5 opacity-90 block drop-shadow-md" />
             <p class="text-xs font-semibold leading-tight drop-shadow line-clamp-2">{{ category.name }}</p>
             <p class="text-[11px] opacity-90 mt-0.5 drop-shadow">
-              {{ t('explore.pinsCount', { count: category.pinCount }) }}
+              {{ t('explore.pinsCount', { count: category.fotoCount }) }}
             </p>
           </div>
         </button>
@@ -273,7 +273,7 @@ function onOpenSponsored(item: SponsoredAd) {
           class="snap-start shrink-0 w-[10.25rem] sm:w-40 min-h-[7rem] flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-pink-200/90 dark:border-pink-700/70 bg-gradient-to-br from-pink-50 to-white dark:from-pink-950/40 dark:to-neutral-900/80 text-pink-700 dark:text-pink-600 text-xs font-bold px-2 text-center shadow-sm shadow-pink-900/10 hover:from-pink-100 hover:to-pink-50/80 dark:hover:from-pink-900/50 dark:hover:to-neutral-900 transition active:scale-[0.98] ring-1 ring-pink-100/80 dark:ring-pink-800/40"
           @click="openCategoriesModal"
         >
-          <PinovaIcon name="grid_view" class="text-2xl text-pink-700 dark:text-pink-600" />
+          <FotoceIcon name="grid_view" class="text-2xl text-pink-700 dark:text-pink-600" />
           {{ t('explore.showMoreCategories') }}
         </button>
       </div>
@@ -289,7 +289,7 @@ function onOpenSponsored(item: SponsoredAd) {
           class="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs sm:text-sm font-extrabold text-pink-700 dark:text-pink-600 bg-pink-50 dark:bg-pink-950/50 border border-pink-200/90 dark:border-pink-700/70 hover:bg-pink-100/90 dark:hover:bg-pink-900/35 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-700 dark:outline-pink-600"
         >
           {{ t('explore.seeAllBoards') }}
-          <PinovaIcon name="arrow_forward" class="text-[18px] leading-none" />
+          <FotoceIcon name="arrow_forward" class="text-[18px] leading-none" />
         </router-link>
       </div>
       <div v-if="boardsLoading" class="flex items-center gap-3 sm:gap-4 overflow-x-auto pb-1 pt-0.5 no-scrollbar touch-pan-x">
@@ -330,7 +330,7 @@ function onOpenSponsored(item: SponsoredAd) {
               v-else
               class="col-span-2 row-span-2 flex items-center justify-center bg-gradient-to-br from-pink-100 to-neutral-100 dark:from-pink-950/50 dark:to-[#0a0a0c]"
             >
-              <PinovaIcon name="collections" class="text-4xl text-pink-700 dark:text-pink-600 opacity-90" />
+              <FotoceIcon name="collections" class="text-4xl text-pink-700 dark:text-pink-600 opacity-90" />
             </div>
           </div>
           <div
@@ -340,7 +340,7 @@ function onOpenSponsored(item: SponsoredAd) {
             <p class="font-semibold text-xs sm:text-sm leading-tight drop-shadow-sm line-clamp-2">{{ board.name }}</p>
             <p class="text-[10px] sm:text-[11px] opacity-92 mt-0.5 truncate">@{{ board.ownerUsername }}</p>
             <p class="text-[10px] font-semibold text-pink-700 dark:text-pink-600/95 mt-0.5">
-              {{ t('header.search.boardPinsCount', { count: board.pinCount }) }}
+              {{ t('header.search.boardFotosCount', { count: board.fotoCount }) }}
             </p>
           </div>
         </router-link>
@@ -353,7 +353,7 @@ function onOpenSponsored(item: SponsoredAd) {
       </p>
     </section>
 
-    <PinovaModal
+    <FotoceModal
       v-model:open="categoriesModalOpen"
       presentation="tallSheet"
       presentation-lg="center"
@@ -367,7 +367,7 @@ function onOpenSponsored(item: SponsoredAd) {
           :aria-label="t('common.close')"
           @click="categoriesModalOpen = false"
         >
-          <PinovaIcon name="close" class="text-[22px] leading-none" />
+          <FotoceIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
       <div class="-mx-2 sm:mx-0">
@@ -409,10 +409,10 @@ function onOpenSponsored(item: SponsoredAd) {
             />
             <div v-else class="absolute inset-0 pointer-events-none" :style="{ background: category.color || '#6B7280' }" />
             <div class="relative z-[1]">
-              <PinovaIcon :name="category.icon || 'category'" class="text-2xl mb-1 opacity-90 block drop-shadow-md" />
+              <FotoceIcon :name="category.icon || 'category'" class="text-2xl mb-1 opacity-90 block drop-shadow-md" />
               <p class="text-xs font-semibold leading-tight drop-shadow">{{ category.name }}</p>
               <p class="text-[11px] opacity-90 mt-0.5 drop-shadow">
-                {{ t('explore.pinsCount', { count: category.pinCount }) }}
+                {{ t('explore.pinsCount', { count: category.fotoCount }) }}
               </p>
             </div>
           </button>
@@ -421,7 +421,7 @@ function onOpenSponsored(item: SponsoredAd) {
           {{ t('header.search.empty') }}
         </p>
       </div>
-    </PinovaModal>
+    </FotoceModal>
 
     <section v-if="selectedTopic">
       <div class="flex items-center justify-between mb-4">
@@ -431,17 +431,17 @@ function onOpenSponsored(item: SponsoredAd) {
           class="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center gap-1"
           @click="emit('update:selectedTopic', null)"
         >
-          <PinovaIcon name="close" class="text-base" />
+          <FotoceIcon name="close" class="text-base" />
           {{ t('common.close') }}
         </button>
       </div>
 
-      <PinGrid
-        v-if="pins.length > 0 || (loading && pins.length === 0) || (isFetchingNextPage && pins.length > 0)"
+      <FotoGrid
+        v-if="pins.length > 0 || (loading && fotos.length === 0) || (isFetchingNextPage && fotos.length > 0)"
         class="w-full"
-        :pins="pins"
-        :loading-initial="loading && pins.length === 0"
-        :loading-more="isFetchingNextPage && pins.length > 0"
+        :pins="fotos"
+        :loading-initial="loading && fotos.length === 0"
+        :loading-more="isFetchingNextPage && fotos.length > 0"
         @toggle-save="onToggleSave"
         @open-pin="onOpenPin"
         @open-sponsored="onOpenSponsored"
@@ -450,7 +450,7 @@ function onOpenSponsored(item: SponsoredAd) {
         v-else-if="!loading"
         class="flex flex-col items-center justify-center py-16 text-center"
       >
-        <PinovaIcon name="search_off" class="text-5xl text-neutral-300 dark:text-neutral-600 mb-3" />
+        <FotoceIcon name="search_off" class="text-5xl text-neutral-300 dark:text-neutral-600 mb-3" />
         <h2 class="text-lg font-semibold text-neutral-700 dark:text-neutral-200 mb-1">{{ t('home.empty.title') }}</h2>
         <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">{{ t('home.empty.desc') }}</p>
       </div>
@@ -460,17 +460,17 @@ function onOpenSponsored(item: SponsoredAd) {
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{{ t('explore.trending') }}</h2>
         <span class="inline-flex items-center gap-1 text-sm text-pink-700 font-medium">
-          <PinovaIcon name="trending_up" class="text-base shrink-0" aria-hidden="true" />
+          <FotoceIcon name="trending_up" class="text-base shrink-0" aria-hidden="true" />
           {{ t('explore.popular') }}
         </span>
       </div>
 
-      <PinGrid
-        v-if="pins.length > 0 || (loading && pins.length === 0) || (isFetchingNextPage && pins.length > 0)"
+      <FotoGrid
+        v-if="pins.length > 0 || (loading && fotos.length === 0) || (isFetchingNextPage && fotos.length > 0)"
         class="w-full"
-        :pins="pins"
-        :loading-initial="loading && pins.length === 0"
-        :loading-more="isFetchingNextPage && pins.length > 0"
+        :pins="fotos"
+        :loading-initial="loading && fotos.length === 0"
+        :loading-more="isFetchingNextPage && fotos.length > 0"
         @toggle-save="onToggleSave"
         @open-pin="onOpenPin"
         @open-sponsored="onOpenSponsored"
@@ -479,7 +479,7 @@ function onOpenSponsored(item: SponsoredAd) {
         v-else-if="!loading"
         class="flex flex-col items-center justify-center py-16 text-center"
       >
-        <PinovaIcon name="search_off" class="text-5xl text-neutral-300 dark:text-neutral-600 mb-3" />
+        <FotoceIcon name="search_off" class="text-5xl text-neutral-300 dark:text-neutral-600 mb-3" />
         <h2 class="text-lg font-semibold text-neutral-700 dark:text-neutral-200 mb-1">{{ t('home.empty.title') }}</h2>
         <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">{{ t('home.empty.desc') }}</p>
       </div>

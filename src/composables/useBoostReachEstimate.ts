@@ -9,14 +9,14 @@ export type BoostReachEstimate = {
   heuristic: boolean
 }
 
-export function useBoostReachEstimate(pinSlug: () => string | undefined, packageSlug: () => string | undefined) {
+export function useBoostReachEstimate(fotoSlug: () => string | undefined, packageSlug: () => string | undefined) {
   const estimate = ref<BoostReachEstimate | null>(null)
   const loading = ref(false)
 
   watch(
-    [pinSlug, packageSlug],
+    [fotoSlug, packageSlug],
     async () => {
-      const slug = pinSlug()
+      const slug = fotoSlug()
       if (!slug) {
         estimate.value = null
         return
@@ -25,7 +25,7 @@ export function useBoostReachEstimate(pinSlug: () => string | undefined, package
       try {
         const pkg = packageSlug()
         const res = await api.get<BoostReachEstimate>(
-          `monetization/pins/${encodeURIComponent(slug)}/boost-estimate/`,
+          `monetization/fotos/${encodeURIComponent(slug)}/boost-estimate/`,
           { params: pkg ? { package: pkg } : {} },
         )
         estimate.value = res.data

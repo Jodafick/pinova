@@ -1,7 +1,7 @@
-/** Politique mot de passe Pinova — miroir client de accounts/password_policy.py */
+/** Politique mot de passe Fotoce — miroir client de accounts/password_policy.py */
 
 export const PASSWORD_MIN_LENGTH = 8
-export const PASSWORD_VALID_EXAMPLE = 'Pinova2026'
+export const PASSWORD_VALID_EXAMPLE = 'Fotoce2026'
 
 export const PASSWORD_RULE_IDS = ['min_length', 'has_letter', 'has_digit', 'not_trivial'] as const
 export type PasswordRuleId = (typeof PASSWORD_RULE_IDS)[number]
@@ -21,8 +21,8 @@ const TRIVIAL_PASSWORDS = new Set([
   'admin123',
   'letmein1',
   'welcome1',
-  'pinova',
-  'pinova123',
+  'fotoce',
+  'fotoce123',
   'changeme',
   'changeme1',
   'iloveyou',

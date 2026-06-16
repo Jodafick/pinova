@@ -11,7 +11,7 @@
  * applique sa propre politique selon le type de média).
  */
 import { ref, watch } from 'vue'
-import PinovaModal from './ui/PinovaModal.vue'
+import FotoceModal from './ui/FotoceModal.vue'
 import BirthDatePicker from './BirthDatePicker.vue'
 import { useI18n } from '../i18n'
 import { useAuth } from '../composables/useAuth'
@@ -92,7 +92,7 @@ async function save() {
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     :open="modelValue"
     presentation="center"
     :show-header="false"
@@ -144,7 +144,7 @@ async function save() {
         </button>
       </div>
     </div>
-  </PinovaModal>
+  </FotoceModal>
 </template>
 
 <style scoped>

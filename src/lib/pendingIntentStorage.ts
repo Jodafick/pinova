@@ -1,4 +1,4 @@
-import { createSyncPendingIntentStorage } from '@pinova/shared'
+import { createSyncPendingIntentStorage } from '@fotoce/shared'
 
 const storage =
   typeof sessionStorage !== 'undefined'

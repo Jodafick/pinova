@@ -1,7 +1,7 @@
 /**
  * Glass — système de surfaces translucides iOS-style centralisé.
  *
- * Toutes les modales / sheets / chromes de Pinova utilisent ces tokens pour
+ * Toutes les modales / sheets / chromes de Fotoce utilisent ces tokens pour
  * garantir une cohérence visuelle (Apple-like) ET de bonnes performances sur
  * Safari iOS (le backdrop-filter est coûteux : on le limite à ces surfaces).
  *
@@ -10,8 +10,8 @@
  *  - `glassStroke`      : bordure subtile lumineuse en haut, ombre en bas
  *  - `scrim`            : opacité du backdrop derrière la modale (dim progressif)
  *
- * Chaque token expose un mode "rose accent" pour les surfaces Pinova
- * (sheets de création, contextual menus dont le sujet est rose pinova).
+ * Chaque token expose un mode "rose accent" pour les surfaces Fotoce
+ * (sheets de création, contextual menus dont le sujet est rose fotoce).
  *
  * Côté CSS, ces tokens sont aussi exposés en variables `--glass-*` via
  * `style.css` pour les composants `<style>` purs.
@@ -34,7 +34,7 @@ export const GLASS = {
    * - Subtle  : sheet large (peu d'opacité, laisse beaucoup passer)
    * - Default : sheet et chromes standards (équilibre vision/lisibilité)
    * - Strong  : modale critique (lisibilité maximale)
-   * - Rose    : variantes rose accent (sheets de création / actions Pinova)
+   * - Rose    : variantes rose accent (sheets de création / actions Fotoce)
    */
   fill: {
     subtle:  { light: 'rgba(255, 255, 255, 0.62)', dark: 'rgba(8, 8, 11, 0.58)' } as GlassToken,

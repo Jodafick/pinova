@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
-const TEST_EMAIL = 'ux.funnel.e2e@pinova.test'
-const TEST_PASSWORD = 'Pinova42!'
+const TEST_EMAIL = 'ux.funnel.e2e@fotoce.test'
+const TEST_PASSWORD = 'Fotoce42!'
 const TEST_OTP = '123456'
 const PIN_SLUG = 'e2e-first-pin'
 const FAKE_ACCESS = 'fake-access'
@@ -25,20 +25,20 @@ function buildMePayload(onboardingCompleted: boolean) {
 
 async function resetConsentState(page: import('@playwright/test').Page) {
   await page.addInitScript(() => {
-    localStorage.setItem('pinova_flag_onboarding_v2', '1')
-    localStorage.removeItem('pinova_cookie_consent_v1')
-    localStorage.removeItem('pinova_cookie_consent_decided')
-    localStorage.removeItem('pinova_analytics_consent')
-    localStorage.removeItem('pinova_analytics_opt_out')
-    localStorage.removeItem('pinova_analytics_once_landing_viewed')
+    localStorage.setItem('fotoce_flag_onboarding_v2', '1')
+    localStorage.removeItem('fotoce_cookie_consent_v1')
+    localStorage.removeItem('fotoce_cookie_consent_decided')
+    localStorage.removeItem('fotoce_analytics_consent')
+    localStorage.removeItem('fotoce_analytics_opt_out')
+    localStorage.removeItem('fotoce_analytics_once_landing_viewed')
   })
 }
 
 async function clearAuthStorageOnce(page: import('@playwright/test').Page) {
   await page.evaluate(() => {
-    localStorage.removeItem('pinova_me_payload_v1')
-    localStorage.removeItem('pinova_token')
-    localStorage.removeItem('pinova_refresh_token')
+    localStorage.removeItem('fotoce_me_payload_v1')
+    localStorage.removeItem('fotoce_token')
+    localStorage.removeItem('fotoce_refresh_token')
   })
 }
 
@@ -110,7 +110,7 @@ test.describe('UX funnel — invité → register → OTP → onboarding → fir
         await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
         return
       }
-      if (url.includes('pins/topics/') && method === 'GET') {
+      if (url.includes('fotos/topics/') && method === 'GET') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -118,14 +118,14 @@ test.describe('UX funnel — invité → register → OTP → onboarding → fir
         })
         return
       }
-      if (url.endsWith('pins/') && method === 'POST') {
+      if (url.endsWith('fotos/') && method === 'POST') {
         await route.fulfill({
           status: 201,
           contentType: 'application/json',
           body: JSON.stringify({
             id: 9001,
             slug: PIN_SLUG,
-            title: 'Mon premier pin E2E',
+            title: 'Mon premier foto E2E',
             topic: 'Design',
             image: '/media/e2e/pin.png',
             author_profile: { id: 42, username: 'e2euser', display_name: 'E2E User' },
@@ -135,7 +135,7 @@ test.describe('UX funnel — invité → register → OTP → onboarding → fir
         })
         return
       }
-      if (method === 'GET' && /pins(\/|$|\?)/.test(url) && !url.includes(`pins/${PIN_SLUG}`)) {
+      if (method === 'GET' && /pins(\/|$|\?)/.test(url) && !url.includes(`fotos/${PIN_SLUG}`)) {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -143,14 +143,14 @@ test.describe('UX funnel — invité → register → OTP → onboarding → fir
         })
         return
       }
-      if (url.includes(`pins/${PIN_SLUG}/`) && method === 'GET') {
+      if (url.includes(`fotos/${PIN_SLUG}/`) && method === 'GET') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
             id: 9001,
             slug: PIN_SLUG,
-            title: 'Mon premier pin E2E',
+            title: 'Mon premier foto E2E',
             topic: 'Design',
             image: '/media/e2e/pin.png',
             author_profile: { id: 42, username: 'e2euser', display_name: 'E2E User' },
@@ -203,26 +203,26 @@ test.describe('UX funnel — invité → register → OTP → onboarding → fir
 
     await expect(page).toHaveURL(/\/(\?|$)/, { timeout: 15_000 })
 
-    // ── Création du premier pin ──
+    // ── Création du premier foto ──
     await page.goto('/create')
-    await expect(page.getByTestId('create-pin-title')).toBeVisible()
+    await expect(page.getByTestId('create-foto-title')).toBeVisible()
 
-    await page.getByTestId('create-pin-file').setInputFiles({
-      name: 'pin.png',
+    await page.getByTestId('create-foto-file').setInputFiles({
+      name: 'foto.png',
       mimeType: 'image/png',
       buffer: TINY_PNG,
     })
 
-    await page.getByTestId('create-pin-title').fill('Mon premier pin E2E')
-    await page.getByTestId('create-pin-category').fill('Design')
+    await page.getByTestId('create-foto-title').fill('Mon premier foto E2E')
+    await page.getByTestId('create-foto-category').fill('Design')
 
-    await expect(page.getByTestId('create-pin-next')).toBeEnabled({ timeout: 20_000 })
-    await page.getByTestId('create-pin-next').click()
+    await expect(page.getByTestId('create-foto-next')).toBeEnabled({ timeout: 20_000 })
+    await page.getByTestId('create-foto-next').click()
 
-    await expect(page.getByTestId('create-pin-publish')).toBeEnabled({ timeout: 15_000 })
-    await page.getByTestId('create-pin-publish').click()
+    await expect(page.getByTestId('create-foto-publish')).toBeEnabled({ timeout: 15_000 })
+    await page.getByTestId('create-foto-publish').click()
 
     await expect(page.getByRole('status')).toContainText(/publié|published/i, { timeout: 15_000 })
-    await expect(page).toHaveURL(new RegExp(`pin=${PIN_SLUG}|/pin/${PIN_SLUG}`), { timeout: 15_000 })
+    await expect(page).toHaveURL(new RegExp(`foto=${PIN_SLUG}|/foto/${PIN_SLUG}`), { timeout: 15_000 })
   })
 })

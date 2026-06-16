@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '../i18n'
-import PinovaModal from './ui/PinovaModal.vue'
+import FotoceModal from './ui/FotoceModal.vue'
 
 const props = defineProps<{
   open: boolean
@@ -34,7 +34,7 @@ function onOpenChange(v: boolean) {
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     :open="open"
     presentation="fullscreen"
     :title="t('billing.receiptModal.title')"
@@ -57,7 +57,7 @@ function onOpenChange(v: boolean) {
             rel="noopener noreferrer"
             class="lux-btn-primary text-xs px-5 py-2.5"
           >
-            <PinovaIcon name="download" class="text-base" />
+            <FotoceIcon name="download" class="text-base" />
             {{ t('billing.receiptModal.download') }}
           </a>
           <button
@@ -66,7 +66,7 @@ function onOpenChange(v: boolean) {
             :aria-label="t('billing.receiptModal.close')"
             @click="emit('close')"
           >
-            <PinovaIcon name="close" />
+            <FotoceIcon name="close" />
           </button>
         </div>
       </header>
@@ -83,7 +83,7 @@ function onOpenChange(v: boolean) {
           v-else
           class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center text-sm text-neutral-700 dark:text-neutral-300 bg-neutral-50 dark:bg-neutral-900"
         >
-          <PinovaIcon name="description" class="text-5xl text-neutral-300" />
+          <FotoceIcon name="description" class="text-5xl text-neutral-300" />
           <p>{{ t('billing.receiptModal.noUrl') }}</p>
         </div>
         <div
@@ -106,5 +106,5 @@ function onOpenChange(v: boolean) {
         </button>
       </footer>
     </div>
-  </PinovaModal>
+  </FotoceModal>
 </template>

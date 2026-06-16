@@ -2,7 +2,7 @@ import type { Router } from 'vue-router'
 import type { User } from '../types'
 import { peekPendingIntent } from '../lib/pendingIntentStorage'
 import { getPostAuthRouteName } from './onboarding'
-import { resolveWebPostAuthPath } from '@pinova/shared'
+import { resolveWebPostAuthPath } from '@fotoce/shared'
 
 /**
  * Après connexion / inscription : navigation pleine page (pas de transition SPA)

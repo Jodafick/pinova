@@ -103,7 +103,7 @@ watch(() => props.mediaUrl, () => {
       v-if="showOverlay"
       class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40 px-4 text-center z-[25] pointer-events-none"
     >
-      <PinovaIcon :name="clientSideLevel === 'block' ? 'block' : 'visibility_off'" class="text-white text-3xl opacity-90" />
+      <FotoceIcon :name="clientSideLevel === 'block' ? 'block' : 'visibility_off'" class="text-white text-3xl opacity-90" />
       <p class="text-white text-sm font-semibold drop-shadow-md max-w-[240px] leading-snug">
         {{ overlayMessage }}
       </p>

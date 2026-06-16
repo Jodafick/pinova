@@ -1,13 +1,13 @@
-export const PENDING_INTENT_STORAGE_KEY = 'pinova-pending-intent'
+export const PENDING_INTENT_STORAGE_KEY = 'fotoce-pending-intent'
 export const PENDING_INTENT_TTL_MS = 30 * 60 * 1000
 
 export type PendingIntentType = 'like' | 'save' | 'follow' | 'comment' | 'translate' | 'contest'
 
-export type PendingIntentScope = 'pin' | 'comment'
+export type PendingIntentScope = 'foto' | 'comment'
 
 export interface PendingIntentMetadata {
   scope?: PendingIntentScope
-  pinSlug?: string
+  fotoSlug?: string
   text?: string
   parentId?: number | null
   gif?: string | null

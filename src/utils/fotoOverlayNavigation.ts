@@ -1,6 +1,6 @@
 import type { Router } from 'vue-router'
 
-/** Routes KeepAlive qui embarquent `PinDetailOverlayHost`. */
+/** Routes KeepAlive qui embarquent `FotoDetailOverlayHost`. */
 export const PIN_OVERLAY_ROUTE_NAMES = new Set([
   'home',
   'profile',
@@ -49,12 +49,12 @@ function resolveRouteName(
 }
 
 /**
- * Ouvre la fiche pin en overlay (`?pin=`) sur la page courante quand possible,
- * sans passer par le redirect `/pin/:slug` → `/`.
+ * Ouvre la fiche foto en overlay (`?foto=`) sur la page courante quand possible,
+ * sans passer par le redirect `/foto/:slug` → `/`.
  */
-export function pushPinDetailOverlay(
+export function pushFotoDetailOverlay(
   router: Router,
-  pinSlug: string,
+  fotoSlug: string,
   opts?: {
     commentId?: string
     routeContext?: PinOverlayRouteContext
@@ -62,10 +62,10 @@ export function pushPinDetailOverlay(
     preferNotificationsFallback?: boolean
   },
 ): void {
-  const slug = pinSlug.trim()
+  const slug = fotoSlug.trim()
   if (!slug) return
 
-  const patch: Record<string, string> = { pin: slug }
+  const patch: Record<string, string> = { foto: slug }
   if (opts?.commentId) patch.commentId = opts.commentId
 
   const routeName = resolveRouteName(router, opts?.routeContext)

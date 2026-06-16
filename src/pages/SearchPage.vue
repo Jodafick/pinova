@@ -8,8 +8,8 @@ import {
   type HeaderSearchUser,
   type HeaderSearchBoard,
 } from '../composables/useHeaderSearch'
-import { usePins } from '../composables/usePins'
-import type { Pin } from '../types'
+import { useFotos } from '../composables/useFotos'
+import type { Foto } from '../types'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import AppMobilePageHeader from '../components/AppMobilePageHeader.vue'
 import HeaderMobileSearchField from '../components/HeaderMobileSearchField.vue'
@@ -18,7 +18,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { isAuthenticated } = useAuth()
-const { trackSearchInteraction } = usePins()
+const { trackSearchInteraction } = useFotos()
 
 const queryParam = computed(() => {
   const raw = route.query.q
@@ -28,10 +28,10 @@ const queryParam = computed(() => {
 const inputValue = ref(queryParam.value)
 const inputRef = ref<HTMLInputElement | null>(null)
 
-const pins = ref<Pin[]>([])
+const fotos = ref<Foto[]>([])
 const users = ref<HeaderSearchUser[]>([])
 const boards = ref<HeaderSearchBoard[]>([])
-const recommended = ref<Pin[]>([])
+const recommended = ref<Foto[]>([])
 const loading = ref(false)
 /** Vrai dès qu'au moins une recherche a été soumise (vue empty vs vue prompt). */
 const hasSubmitted = ref(false)
@@ -39,7 +39,7 @@ const lastFetchedQuery = ref<string | null>(null)
 
 const trimmedQuery = computed(() => inputValue.value.trim())
 const hasResults = computed(
-  () => pins.value.length + users.value.length + boards.value.length > 0,
+  () => fotos.value.length + users.value.length + boards.value.length > 0,
 )
 const showRecommended = computed(() => !hasSubmitted.value && recommended.value.length > 0)
 
@@ -53,7 +53,7 @@ async function runSearch(q: string) {
   hasSubmitted.value = true
   try {
     const r = await fetchHeaderSearch(q, 18)
-    pins.value = r.pins
+    fotos.value = r.pins
     users.value = r.users
     boards.value = r.boards
     recommended.value = r.recommendedPins
@@ -63,7 +63,7 @@ async function runSearch(q: string) {
     }
   } catch (err) {
     console.error('SearchPage: search error', err)
-    pins.value = []
+    fotos.value = []
     users.value = []
     boards.value = []
   } finally {
@@ -90,7 +90,7 @@ function clearInput() {
   inputValue.value = ''
   syncUrl('')
   // Effacement = on revient à la vue d'invitation (pas de fetch automatique).
-  pins.value = []
+  fotos.value = []
   users.value = []
   boards.value = []
   hasSubmitted.value = false
@@ -102,8 +102,8 @@ function gotoExplore() {
   router.push(q ? { path: '/explore', query: { q } } : { path: '/explore' })
 }
 
-function openPin(slug: string) {
-  router.push({ path: `/pin/${encodeURIComponent(slug)}` })
+function openFoto(slug: string) {
+  router.push({ path: `/foto/${encodeURIComponent(slug)}` })
 }
 
 function openUser(username: string) {
@@ -149,7 +149,7 @@ function goBack() {
 </script>
 
 <template>
-  <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-4 sm:py-8">
+  <div class="fotoce-inpage-mobile-header-offset w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-4 sm:py-8 max-lg:pt-0">
     <AppMobilePageHeader class="lg:hidden" @back="goBack">
       <template #center>
         <HeaderMobileSearchField
@@ -168,9 +168,9 @@ function goBack() {
           :disabled="loading || !trimmedQuery"
           @click="submit"
         >
-          <PinovaIcon v-if="loading" name="progress_activity" spin class="animate-spin text-[22px] leading-none" aria-hidden="true" />
+          <FotoceIcon v-if="loading" name="progress_activity" spin class="animate-spin text-[22px] leading-none" aria-hidden="true" />
           <template v-else>
-            <PinovaIcon name="search" class="text-[22px] leading-none sm:hidden" aria-hidden="true" />
+            <FotoceIcon name="search" class="text-[22px] leading-none sm:hidden" aria-hidden="true" />
             <span class="hidden text-sm font-semibold sm:inline">{{ t('common.search') }}</span>
           </template>
         </button>
@@ -186,7 +186,7 @@ function goBack() {
           <div
             class="flex flex-1 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2.5 transition focus-within:border-transparent focus-within:ring-2 focus-within:ring-pink-700 dark:focus-within:ring-pink-600 dark:border-neutral-700 dark:bg-neutral-900"
           >
-            <PinovaIcon name="search" class="text-lg text-neutral-400 dark:text-neutral-500" />
+            <FotoceIcon name="search" class="text-lg text-neutral-400 dark:text-neutral-500" />
             <input
               ref="inputRef"
               v-model="inputValue"
@@ -206,7 +206,7 @@ function goBack() {
               :aria-label="t('common.cancel')"
               @click="clearInput"
             >
-              <PinovaIcon name="close" class="text-base" />
+              <FotoceIcon name="close" class="text-base" />
             </button>
           </div>
           <button
@@ -214,8 +214,8 @@ function goBack() {
             class="flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-pink-700 dark:bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-pink-800 dark:hover:opacity-90 disabled:opacity-60 sm:px-5"
             :disabled="loading || !trimmedQuery"
           >
-            <PinovaIcon v-if="loading" name="progress_activity" spin class="animate-spin text-base leading-none" aria-hidden="true" />
-            <PinovaIcon v-else name="search" class="text-base leading-none sm:hidden" aria-hidden="true" />
+            <FotoceIcon v-if="loading" name="progress_activity" spin class="animate-spin text-base leading-none" aria-hidden="true" />
+            <FotoceIcon v-else name="search" class="text-base leading-none sm:hidden" aria-hidden="true" />
             <span class="hidden sm:inline">{{ t('common.search') }}</span>
           </button>
         </form>
@@ -302,14 +302,14 @@ function goBack() {
                     v-else
                     class="col-span-2 row-span-2 flex items-center justify-center bg-gradient-to-br from-pink-100 to-neutral-100 dark:from-pink-950/50 dark:to-neutral-900"
                   >
-                    <PinovaIcon name="collections" class="text-3xl text-pink-700 dark:text-pink-600 opacity-90" />
+                    <FotoceIcon name="collections" class="text-3xl text-pink-700 dark:text-pink-600 opacity-90" />
                   </div>
                 </div>
                 <div class="p-3">
                   <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{{ b.name }}</p>
                   <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">@{{ b.ownerUsername }}</p>
                   <p class="text-[11px] font-semibold text-pink-700 dark:text-pink-600 mt-1">
-                    {{ t('header.search.boardPinsCount', { count: b.pinCount }) }}
+                    {{ t('header.search.boardFotosCount', { count: b.fotoCount }) }}
                   </p>
                 </div>
               </button>
@@ -328,13 +328,13 @@ function goBack() {
           <ul class="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <li
               v-for="pin in pins"
-              :key="`pin-${pin.id}`"
+              :key="`foto-${pin.id}`"
               class="rounded-2xl overflow-hidden border border-neutral-200/70 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-pink-200 dark:hover:border-pink-800 transition"
             >
               <button
                 type="button"
                 class="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600"
-                @click="openPin(pin.slug)"
+                @click="openFoto(pin.slug)"
               >
                 <div class="aspect-[3/4] bg-neutral-100 dark:bg-neutral-800">
                   <img
@@ -346,8 +346,8 @@ function goBack() {
                   />
                 </div>
                 <div class="p-3">
-                  <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-2">{{ pin.title }}</p>
-                  <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5">@{{ pin.username }}</p>
+                  <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-2">{{ foto.title }}</p>
+                  <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5">@{{ foto.username }}</p>
                 </div>
               </button>
             </li>
@@ -371,7 +371,7 @@ function goBack() {
               <button
                 type="button"
                 class="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-700 dark:focus-visible:ring-pink-600"
-                @click="openPin(pin.slug)"
+                @click="openFoto(pin.slug)"
               >
                 <div class="aspect-[3/4] bg-neutral-100 dark:bg-neutral-800">
                   <img
@@ -383,7 +383,7 @@ function goBack() {
                   />
                 </div>
                 <div class="p-3">
-                  <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-2">{{ pin.title }}</p>
+                  <p class="text-sm font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-2">{{ foto.title }}</p>
                   <p class="text-[11px] text-pink-700 dark:text-pink-600 font-semibold mt-0.5">
                     {{ t('header.search.forYouBadge') }}
                   </p>
@@ -398,7 +398,7 @@ function goBack() {
           v-if="!loading && hasSubmitted && !hasResults"
           class="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-8 text-center"
         >
-          <PinovaIcon name="search_off" class="text-4xl text-neutral-300 dark:text-neutral-600 mb-2" />
+          <FotoceIcon name="search_off" class="text-4xl text-neutral-300 dark:text-neutral-600 mb-2" />
           <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
             {{ t('header.search.empty') }}
           </p>
@@ -419,7 +419,7 @@ function goBack() {
           v-else-if="!loading && !hasSubmitted && !showRecommended"
           class="rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-700 bg-white/50 dark:bg-neutral-900/40 p-8 text-center"
         >
-          <PinovaIcon name="search" class="text-4xl text-neutral-300 dark:text-neutral-600 mb-2" />
+          <FotoceIcon name="search" class="text-4xl text-neutral-300 dark:text-neutral-600 mb-2" />
           <p class="text-sm text-neutral-600 dark:text-neutral-300">
             {{ t('search.promptHint') }}
           </p>

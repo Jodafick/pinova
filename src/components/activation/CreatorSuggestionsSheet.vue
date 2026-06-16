@@ -3,14 +3,14 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../api/index'
 import AvatarDisc from '../AvatarDisc.vue'
-import PinovaModal from '../ui/PinovaModal.vue'
-import PinovaButton from '../ui/PinovaButton.vue'
+import FotoceModal from '../ui/FotoceModal.vue'
+import FotoceButton from '../ui/FotoceButton.vue'
 import { useI18n } from '../../i18n'
 import { useAuth } from '../../composables/useAuth'
 import { useActivationFunnel } from '../../composables/useActivationFunnel'
 import { trackEvent, trackOnce } from '../../lib/analytics'
 import { closeCreatorSuggestions } from '../../composables/useActivationMoments'
-import { getFullMediaUrl } from '../../composables/usePins'
+import { getFullMediaUrl } from '../../composables/useFotos'
 
 type CreatorRow = {
   username: string
@@ -76,7 +76,7 @@ async function followRow(row: CreatorRow) {
   try {
     await api.post(`profiles/${row.username}/follow/`)
     followedCount.value += 1
-    trackEvent('creator_followed_after_first_pin', { username: row.username })
+    trackEvent('creator_followed_after_first_foto', { username: row.username })
     if (followedCount.value >= goal) {
       await addMilestones('creator_discovery_done', 'first_follow_obtained')
       trackEvent('creator_level_progressed', { level: 1, milestone: 'creator_discovery_done' })
@@ -106,7 +106,7 @@ async function done() {
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     :open="open"
     presentation="tallSheet"
     :title="t('activation.suggestions.title')"
@@ -142,14 +142,14 @@ async function done() {
             {{ t('activation.suggestions.followers', { count: row.followers_count }) }}
           </p>
         </div>
-        <PinovaButton
+        <FotoceButton
           variant="secondary"
           size="sm"
           :loading="!!following[row.username]"
           @click="followRow(row)"
         >
-          {{ t('pin.follow') }}
-        </PinovaButton>
+          {{ t('foto.follow') }}
+        </FotoceButton>
       </li>
     </ul>
 
@@ -158,13 +158,13 @@ async function done() {
         <p class="text-center text-xs text-neutral-500">
           {{ t('activation.suggestions.progress', { count: followedCount, goal }) }}
         </p>
-        <PinovaButton v-if="canFinish" variant="primary" block @click="done">
+        <FotoceButton v-if="canFinish" variant="primary" block @click="done">
           {{ t('activation.suggestions.done') }}
-        </PinovaButton>
-        <PinovaButton variant="secondary" block @click="skip">
+        </FotoceButton>
+        <FotoceButton variant="secondary" block @click="skip">
           {{ t('activation.suggestions.skip') }}
-        </PinovaButton>
+        </FotoceButton>
       </div>
     </template>
-  </PinovaModal>
+  </FotoceModal>
 </template>

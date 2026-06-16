@@ -2,10 +2,10 @@
  * Sécurise le padding haut en PWA installée lorsque `env(safe-area-inset-top)`
  * renvoie 0 (cas fréquent sur Android WebAPK alors que la barre système overlap le contenu).
  *
- * Pose `--pinova-pwa-extra-top-inset` sur `<html>` ; consommé par `.pinova-app-chrome-safe-pt`.
+ * Pose `--fotoce-pwa-extra-top-inset` sur `<html>` ; consommé par `.fotoce-app-chrome-safe-pt`.
  */
 
-const EXTRA_VAR = '--pinova-pwa-extra-top-inset'
+const EXTRA_VAR = '--fotoce-pwa-extra-top-inset'
 /** Dessous de ce seuil (px mesurés sur une sonde avec env()), on active un fallback. */
 const TRUST_CSS_ENV_TOP_MIN = 14
 /** Marge indicative barre de statut / encoche logicielle quand le moteur ne fournit pas d’inset. */

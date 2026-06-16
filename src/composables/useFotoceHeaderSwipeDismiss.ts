@@ -1,7 +1,7 @@
 /**
  * Fermeture « tirer le header vers le bas » pour une page fullscreen rendue
  * hors LayerHost (cold start / URL directe). Même logique que FullscreenPresenter
- * (axe vertical + handle `data-pinova-swipe-dismiss-handle`).
+ * (axe vertical + handle `data-fotoce-swipe-dismiss-handle`).
  *
  * Le pointerdown est attaché à `gestureRootRef` (typiquement le header seul)
  * pour ne pas entrer en conflit avec un `useEdgeSwipeBack` sur la coquille.
@@ -13,14 +13,14 @@ import { useSpring } from './useSpring'
 import { GESTURE, SPRINGS } from '../theme/motion'
 import { getAdaptiveGesture } from '../navigation/adaptiveNavigator'
 
-export interface UsePinovaHeaderSwipeDismissOptions {
+export interface UseFotoceHeaderSwipeDismissOptions {
   gestureRootRef: Ref<HTMLElement | null>
   transformRef: Ref<HTMLElement | null>
   enabled: () => boolean
   onClose: () => void
 }
 
-export function usePinovaHeaderSwipeDismiss(options: UsePinovaHeaderSwipeDismissOptions) {
+export function useFotoceHeaderSwipeDismiss(options: UseFotoceHeaderSwipeDismissOptions) {
   const ySpring = useSpring(0, SPRINGS.sheetSpring)
 
   const gesture = useGestureEngine(options.gestureRootRef, {
@@ -28,7 +28,7 @@ export function usePinovaHeaderSwipeDismiss(options: UsePinovaHeaderSwipeDismiss
     preventScroll: false,
     canAcceptPointerDown: (e) => {
       const el = e.target as HTMLElement | null
-      return !!(el && typeof el.closest === 'function' && el.closest('[data-pinova-swipe-dismiss-handle]'))
+      return !!(el && typeof el.closest === 'function' && el.closest('[data-fotoce-swipe-dismiss-handle]'))
     },
     disabled: () => !options.enabled(),
     onStart: () => {

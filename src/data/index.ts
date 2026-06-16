@@ -1,5 +1,5 @@
 /**
- * Pinova data layer — barrel export.
+ * Fotoce data layer — barrel export.
  *
  *  Branchement standard côté `main.ts` :
  *

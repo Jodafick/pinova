@@ -35,8 +35,8 @@ const variationStyle = computed(() => ({
   <span
     :class="[
       'material-symbols-outlined',
-      'pinova-icon',
-      meta.spin ? 'pinova-icon--spin' : '',
+      'fotoce-icon',
+      meta.spin ? 'fotoce-icon--spin' : '',
       attrs.class,
     ]"
     :style="[variationStyle, attrs.style]"

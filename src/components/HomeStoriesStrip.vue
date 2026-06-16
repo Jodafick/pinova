@@ -2,8 +2,8 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api/index'
-import { mapDjangoPinToFrontend } from '../composables/usePins'
-import type { Pin } from '../types'
+import { mapDjangoFotoToFrontend } from '../composables/useFotos'
+import type { Foto } from '../types'
 import StoryViewer from './StoryViewer.vue'
 import { useI18n } from '../i18n'
 import { API_BASE_URL } from '../config/env'
@@ -47,13 +47,13 @@ type StoryRingGroupUi = {
   avatar_url: string
   avatar_color: string
   cover_image_url: string
-  pins: Pin[]
+  pins: Foto[]
 }
 
 const groups = ref<StoryRingGroupUi[]>([])
 const loading = ref(true)
 const viewerOpen = ref(false)
-const viewerPins = ref<Pin[]>([])
+const viewerFotos = ref<Foto[]>([])
 const viewerInitialIndex = ref(0)
 const viewerInitialSegmentElapsed = ref(0)
 const scrollEl = ref<HTMLElement | null>(null)
@@ -130,7 +130,7 @@ async function load(opts?: { soft?: boolean; force?: boolean }) {
 
   if (!soft) loading.value = true
   try {
-    const res = await api.get('pins/active-stories/')
+    const res = await api.get('fotos/active-stories/')
     const rawGroups = res.data.groups
     if (Array.isArray(rawGroups) && rawGroups.length > 0) {
       const mapped = rawGroups.map((g: Record<string, unknown>) => ({
@@ -139,7 +139,7 @@ async function load(opts?: { soft?: boolean; force?: boolean }) {
         avatar_url: mediaUrl(g.avatar_url as string),
         avatar_color: String(g.avatar_color ?? 'bg-neutral-400'),
         cover_image_url: mediaUrl(g.cover_image_url as string),
-        pins: ((g.pins as unknown[]) || []).map(mapDjangoPinToFrontend),
+        pins: ((g.pins as unknown[]) || []).map(mapDjangoFotoToFrontend),
       }))
       groups.value = mapped
       setCachedHomeStoriesGroups(
@@ -153,7 +153,7 @@ async function load(opts?: { soft?: boolean; force?: boolean }) {
         })),
       )
     } else {
-      const flat = ((res.data.pins || []) as unknown[]).map(mapDjangoPinToFrontend)
+      const flat = ((res.data.pins || []) as unknown[]).map(mapDjangoFotoToFrontend)
       const mapped: StoryRingGroupUi[] =
         flat.length > 0
           ? [
@@ -199,7 +199,7 @@ function refreshStoriesFromLiveChannel() {
   void load({ soft: true, force: true })
 }
 
-/** Vignette anneau : dernier pin de la story (chronologie) préféré ; image puis vidéo. */
+/** Vignette anneau : dernier foto de la story (chronologie) préféré ; image puis vidéo. */
 function ringCoverUrl(g: StoryRingGroupUi) {
   const fromApi = g.cover_image_url?.trim()
   if (fromApi) return fromApi
@@ -224,12 +224,12 @@ function openStoryFromSlugIfPossible() {
   if (!slug || loading.value) return
 
   const grps = groups.value
-  let pinIdx = -1
+  let fotoIdx = -1
   let found: StoryRingGroupUi | null = null
   for (const g of grps) {
     const i = g.pins.findIndex((p) => p.slug === slug)
     if (i !== -1) {
-      pinIdx = i
+      fotoIdx = i
       found = g
       break
     }
@@ -238,13 +238,13 @@ function openStoryFromSlugIfPossible() {
   const nextQuery = { ...route.query } as Record<string, string | string[] | undefined | null>
   delete nextQuery.story
 
-  if (found != null && pinIdx >= 0) {
-    viewerPins.value = [...found.pins]
-    viewerInitialIndex.value = pinIdx
+  if (found != null && fotoIdx >= 0) {
+    viewerFotos.value = [...found.pins]
+    viewerInitialIndex.value = fotoIdx
     viewerInitialSegmentElapsed.value = initialStorySegmentElapsedForUser(
       found.username,
       found.pins,
-      pinIdx,
+      fotoIdx,
     )
     viewerOpen.value = true
     // Nettoyer l'URL immédiatement pour éviter une réouverture au prochain montage/watch
@@ -252,7 +252,7 @@ function openStoryFromSlugIfPossible() {
     return
   }
 
-  /* Story absente du bandeau (expirée, filtre) : page détail si le pin existe encore. */
+  /* Story absente du bandeau (expirée, filtre) : page détail si le foto existe encore. */
   const cq = route.query.commentId
   const commentQ: Record<string, string> = {}
   if (cq) {
@@ -260,7 +260,7 @@ function openStoryFromSlugIfPossible() {
     if (typeof c === 'string' && c.trim()) commentQ.commentId = c.trim()
   }
   void router.replace({
-    path: `/pin/${encodeURIComponent(slug)}`,
+    path: `/foto/${encodeURIComponent(slug)}`,
     query: commentQ.commentId ? { commentId: commentQ.commentId } : {},
   })
 }
@@ -269,7 +269,7 @@ function openAt(groupIndex: number) {
   const g = displayGroups.value[groupIndex]
   if (!g?.pins?.length) return
   /* Une barre par auteur uniquement ; ne pas concaténer les autres comptes. */
-  viewerPins.value = [...g.pins]
+  viewerFotos.value = [...g.pins]
   const idx = initialStoryIndexForUser(g.username, g.pins)
   viewerInitialIndex.value = idx
   viewerInitialSegmentElapsed.value = initialStorySegmentElapsedForUser(g.username, g.pins, idx)
@@ -375,7 +375,7 @@ onUnmounted(() => {
         :aria-label="t('home.stories.prev')"
         @click="scrollPrev"
       >
-        <PinovaIcon name="chevron_left" class="text-2xl" />
+        <FotoceIcon name="chevron_left" class="text-2xl" />
       </button>
 
       <div
@@ -427,7 +427,7 @@ onUnmounted(() => {
         :aria-label="t('home.stories.next')"
         @click="scrollNext"
       >
-        <PinovaIcon name="chevron_right" class="text-2xl" />
+        <FotoceIcon name="chevron_right" class="text-2xl" />
       </button>
     </div>
 
@@ -463,9 +463,9 @@ onUnmounted(() => {
   </div>
 
   <StoryViewer
-    v-if="viewerPins.length > 0"
+    v-if="viewerFotos.length > 0"
     v-model="viewerOpen"
-    :pins="viewerPins"
+    :pins="viewerFotos"
     :initial-index="viewerInitialIndex"
     :initial-segment-elapsed-ms="viewerInitialSegmentElapsed"
     @session-end="onStripStorySessionEnd"

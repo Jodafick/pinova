@@ -1,7 +1,7 @@
 import { computed, onMounted, ref } from 'vue'
 import api from '../api/index'
 import { useI18n } from '../i18n'
-import { QUICK_PIN_DEFAULT_TOPIC } from './pinCreateShared'
+import { QUICK_PIN_DEFAULT_TOPIC } from './fotoCreateShared'
 
 export type TopicSuggestion = {
   name: string
@@ -33,7 +33,7 @@ export function useTopicSuggestions(initial = QUICK_PIN_DEFAULT_TOPIC) {
   async function loadSuggestions() {
     loading.value = true
     try {
-      const response = await api.get('pins/topics/', {
+      const response = await api.get('fotos/topics/', {
         params: { lang: currentLang.value, limit: 12 },
       })
       const payload = Array.isArray(response.data) ? response.data : []

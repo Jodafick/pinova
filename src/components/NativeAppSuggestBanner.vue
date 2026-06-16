@@ -70,7 +70,7 @@ function onDismiss() {
       v-if="open"
       class="pointer-events-none fixed inset-x-0 bottom-0 z-[58] flex justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] max-lg:pb-[max(1rem,env(safe-area-inset-bottom,0px))]"
       role="region"
-      aria-label="Pinova app"
+      aria-label="Fotoce app"
     >
       <div
         class="pointer-events-auto flex w-full max-w-md flex-col gap-2.5 rounded-2xl border border-neutral-200/90 bg-white/95 px-3.5 py-3 shadow-lg shadow-black/10 backdrop-blur-md dark:border-white/12 dark:bg-neutral-900/95 dark:shadow-black/45 sm:flex-row sm:items-center sm:justify-between"

@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { usePins } from '../composables/usePins'
+import { useFotos } from '../composables/useFotos'
 import { useI18n } from '../i18n'
 import api from '../api/index'
 import { displayInitials } from '../utils/displayInitials'
@@ -13,7 +13,7 @@ import UserSearchPickModal from '../components/UserSearchPickModal.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import SettingsProfileExtended from '../components/settings/SettingsProfileExtended.vue'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 import ProfileIdentityBlock from '../components/settings/ProfileIdentityBlock.vue'
 import BirthDatePicker from '../components/BirthDatePicker.vue'
 import { profileExtendedToApiPayload } from '../utils/mapProfileExtended'
@@ -58,7 +58,7 @@ const router = useRouter()
 const route = useRoute()
 const { currentUser, updateProfile, logout, manageSubscription, fetchSupportTickets, createSupportTicket, fetchSubscriptionInvoices, fetchSubscriptionInvoiceReceipt, fetchCurrentUser } =
   useAuth()
-const { unblockUser } = usePins()
+const { unblockUser } = useFotos()
 const { t, currentLang } = useI18n()
 const { preference: appearancePreference, setPreference: setAppearancePreference } = useAppearance()
 
@@ -1292,7 +1292,7 @@ watch(
 
 <template>
   <div
-    class="pinova-settings-page max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col h-full min-h-0 pt-2 lg:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[min(100dvh,100svh)]"
+    class="fotoce-settings-page max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col h-full min-h-0 pt-2 lg:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12 min-h-[min(100dvh,100svh)]"
   >
     <div v-if="detailSectionId" class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
       <div class="settings-detail-orb settings-detail-orb--rose" />
@@ -1307,7 +1307,7 @@ watch(
         :to="{ name: 'settings' }"
         class="flex items-center gap-3 px-4 py-3.5 text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition"
       >
-        <PinovaIcon name="arrow_back" class="text-[22px] text-rose-600 dark:text-rose-400" />
+        <FotoceIcon name="arrow_back" class="text-[22px] text-rose-600 dark:text-rose-400" />
         <div class="min-w-0 flex-1">
           <p class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
             {{ t('settings.title') }}
@@ -1325,9 +1325,9 @@ watch(
     >
       <p class="font-semibold">{{ t('settings.password.socialBannerTitle') }}</p>
       <p class="mt-1 text-xs leading-relaxed opacity-90">{{ t('settings.password.socialBannerBody') }}</p>
-      <PinovaButton variant="primary" size="sm" class="mt-3" @click="openInitialPasswordModal">
+      <FotoceButton variant="primary" size="sm" class="mt-3" @click="openInitialPasswordModal">
         {{ t('settings.password.socialBannerCta') }}
-      </PinovaButton>
+      </FotoceButton>
     </div>
 
 
@@ -1336,12 +1336,12 @@ watch(
       v-if="saved"
       class="mb-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm"
     >
-      <PinovaIcon name="check_circle" class="text-lg" />
+      <FotoceIcon name="check_circle" class="text-lg" />
       {{ t('settings.saved') }}
     </div>
 
     <div class="flex-1 flex flex-col min-h-0">
-      <div class="space-y-8 pinova-settings-detail-sections relative z-[1]">
+      <div class="space-y-8 fotoce-settings-detail-sections relative z-[1]">
       <!-- Profile section -->
       <section v-if="showSettingsSection('settings-profile')" id="settings-profile" class="app-card scroll-mt-[min(46vh,20.5rem)] lg:scroll-mt-44 rounded-2xl overflow-hidden">
         <div v-if="!detailSectionId" class="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100 dark:border-neutral-800 dark:border-neutral-800">
@@ -1379,9 +1379,9 @@ watch(
                 class="hidden"
                 @change="handleFileChange"
               />
-              <PinovaButton variant="secondary" size="sm" class="text-sm w-full sm:w-auto" @click="triggerFileInput">
+              <FotoceButton variant="secondary" size="sm" class="text-sm w-full sm:w-auto" @click="triggerFileInput">
                 {{ t('settings.profile.changePhoto') }}
-              </PinovaButton>
+              </FotoceButton>
               <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">{{ t('settings.profile.photoHint') }}</p>
             </div>
           </div>
@@ -1473,14 +1473,14 @@ watch(
           </div>
 
           <div class="flex justify-end">
-            <PinovaButton
+            <FotoceButton
               variant="primary"
               class="text-sm flex items-center gap-2"
               :loading="saving"
               @click="handleSave"
             >
               {{ saving ? t('settings.profile.saving') : t('settings.profile.save') }}
-            </PinovaButton>
+            </FotoceButton>
           </div>
         </div>
       </section>
@@ -1522,7 +1522,7 @@ watch(
             </div>
             <select
               v-model="appearanceSelect"
-              class="w-full sm:w-auto sm:min-w-[10.5rem] rounded-xl border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 pinova-focus-ring"
+              class="w-full sm:w-auto sm:min-w-[10.5rem] rounded-xl border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 fotoce-focus-ring"
               :aria-label="t('settings.appearance.modeLabel')"
             >
               <option value="light">{{ t('settings.appearance.light') }}</option>
@@ -1546,7 +1546,7 @@ watch(
             <select
               v-if="isStandalone || canOfferInstallExperience"
               v-model="pwaDeviceAction"
-              class="w-full sm:w-auto sm:min-w-[12rem] rounded-xl border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 pinova-focus-ring"
+              class="w-full sm:w-auto sm:min-w-[12rem] rounded-xl border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 fotoce-focus-ring"
               :aria-label="t('settings.pwa.onDevice.label')"
               @change="onPwaDeviceActionChange"
             >
@@ -1625,7 +1625,7 @@ watch(
                 <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.notifications.web.desc') }}</p>
               </div>
               <div class="flex flex-col gap-2 shrink-0 self-stretch sm:self-auto sm:min-w-[11rem]">
-                <PinovaButton
+                <FotoceButton
                   v-if="!webNotificationsEnabled"
                   variant="primary"
                   size="sm"
@@ -1635,8 +1635,8 @@ watch(
                   @click="activateWebNotifications"
                 >
                   {{ t('settings.notifications.web.enable') }}
-                </PinovaButton>
-                <PinovaButton
+                </FotoceButton>
+                <FotoceButton
                   v-else
                   variant="secondary"
                   size="sm"
@@ -1646,7 +1646,7 @@ watch(
                   @click="deactivateWebNotifications"
                 >
                   {{ t('settings.notifications.web.disable') }}
-                </PinovaButton>
+                </FotoceButton>
               </div>
             </div>
             <p
@@ -1658,7 +1658,7 @@ watch(
           </div>
           <p v-if="webNotificationsError" class="text-xs text-pink-700">{{ webNotificationsError }}</p>
           <div class="flex items-center justify-end">
-            <PinovaButton
+            <FotoceButton
               variant="primary"
               size="sm"
               :loading="notificationsSaving"
@@ -1666,7 +1666,7 @@ watch(
               @click="persistNotificationSettings"
             >
               {{ notificationsSaving ? t('settings.notifications.saving') : t('settings.notifications.save') }}
-            </PinovaButton>
+            </FotoceButton>
           </div>
           <p v-if="notificationsSaved" class="text-xs text-emerald-700">{{ t('settings.notifications.saved') }}</p>
         </div>
@@ -1735,9 +1735,9 @@ watch(
                 </p>
                 <p class="text-xs app-text-muted">@{{ row.username }}</p>
               </div>
-              <PinovaButton variant="secondary" size="sm" class="shrink-0 text-xs" @click="handleUnblockUser(row)">
+              <FotoceButton variant="secondary" size="sm" class="shrink-0 text-xs" @click="handleUnblockUser(row)">
                 {{ t('settings.blocked.unblock') }}
-              </PinovaButton>
+              </FotoceButton>
             </li>
           </ul>
         </div>
@@ -1755,30 +1755,30 @@ watch(
             <p class="text-sm font-medium text-neutral-800 dark:text-neutral-100 mb-2">{{ t('settings.access.dataSaver') }}</p>
             <p class="text-xs text-neutral-600 dark:text-neutral-300 mb-3">{{ t('settings.access.dataSaver.desc') }}</p>
             <div class="flex flex-wrap gap-2">
-              <PinovaButton
+              <FotoceButton
                 size="sm"
                 class="text-xs"
                 :variant="dataSaverOverride === 'auto' ? 'primary' : 'secondary'"
                 @click="handleDataSaverMode('auto')"
               >
                 {{ t('settings.access.dataSaver.auto') }}
-              </PinovaButton>
-              <PinovaButton
+              </FotoceButton>
+              <FotoceButton
                 size="sm"
                 class="text-xs"
                 :variant="dataSaverOverride === 'on' ? 'primary' : 'secondary'"
                 @click="handleDataSaverMode('on')"
               >
                 {{ t('settings.access.dataSaver.on') }}
-              </PinovaButton>
-              <PinovaButton
+              </FotoceButton>
+              <FotoceButton
                 size="sm"
                 class="text-xs"
                 :variant="dataSaverOverride === 'off' ? 'primary' : 'secondary'"
                 @click="handleDataSaverMode('off')"
               >
                 {{ t('settings.access.dataSaver.off') }}
-              </PinovaButton>
+              </FotoceButton>
             </div>
             <p class="text-[11px] text-neutral-600 dark:text-neutral-300 mt-2">{{ t('settings.access.dataSaver.hint', { active: isLowDataMode ? t('settings.access.dataSaver.yes') : t('settings.access.dataSaver.no') }) }}</p>
           </div>
@@ -1821,7 +1821,7 @@ watch(
               </label>
             </fieldset>
             <div class="flex justify-end mt-2">
-              <PinovaButton
+              <FotoceButton
                 variant="primary"
                 size="sm"
                 class="text-xs"
@@ -1829,7 +1829,7 @@ watch(
                 @click="persistSensitiveMediaPreferences"
               >
                 {{ sensitiveMediaPrefsSaving ? t('settings.access.sensitiveMedia.saving') : t('settings.access.sensitiveMedia.save') }}
-              </PinovaButton>
+              </FotoceButton>
             </div>
             <p v-if="sensitiveMediaPrefsSaved" class="text-xs text-emerald-700">{{ t('settings.access.sensitiveMedia.saved') }}</p>
           </div>
@@ -1847,7 +1847,7 @@ watch(
               </div>
             </label>
             <div class="flex justify-end mt-2">
-              <PinovaButton
+              <FotoceButton
                 variant="primary"
                 size="sm"
                 class="text-xs"
@@ -1855,7 +1855,7 @@ watch(
                 @click="persistDigestWeekly"
               >
                 {{ digestSaving ? t('settings.access.digestSaving') : t('settings.access.digestSave') }}
-              </PinovaButton>
+              </FotoceButton>
             </div>
             <p v-if="digestSaved" class="text-xs text-emerald-700 mt-2">{{ t('settings.access.digestSaved') }}</p>
           </div>
@@ -1968,7 +1968,7 @@ watch(
         </div>
         <div class="p-4 sm:p-6 space-y-4">
           <p class="text-xs text-neutral-500 dark:text-neutral-400 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 px-3 py-2">
-            {{ t('pin.boost.hint') }}
+            {{ t('foto.boost.hint') }}
           </p>
           <div class="flex flex-wrap gap-2">
             <router-link
@@ -1978,7 +1978,7 @@ watch(
               {{ t('promote.boost.title') }}
             </router-link>
             <router-link
-              :to="{ name: 'pin-promo-campaigns' }"
+              :to="{ name: 'foto-promo-campaigns' }"
               class="inline-flex items-center gap-2 rounded-full border border-pink-200 px-4 py-2 text-xs font-semibold text-pink-800 dark:border-pink-500/40 dark:text-pink-200"
             >
               {{ t('promote.campaigns.title') }}
@@ -2017,7 +2017,7 @@ watch(
             to="/staff/partner-ads"
             class="inline-flex items-center gap-2 text-sm font-semibold text-pink-700 dark:text-pink-400 hover:underline mt-2"
           >
-            <PinovaIcon name="campaign" class="text-lg" />
+            <FotoceIcon name="campaign" class="text-lg" />
             {{ t('settings.nav.partnerAdsStaff') }}
           </router-link>
         </div>
@@ -2044,7 +2044,7 @@ watch(
                   <span class="text-neutral-400 dark:text-neutral-500">(@{{ row.owner_username }})</span>
                 </p>
                 <div class="flex flex-wrap gap-2">
-                  <PinovaButton
+                  <FotoceButton
                     variant="primary"
                     size="sm"
                     class="text-[11px]"
@@ -2052,8 +2052,8 @@ watch(
                     @click="respondSeatInvite(row.id, 'accept')"
                   >
                     {{ t('settings.seats.accept') }}
-                  </PinovaButton>
-                  <PinovaButton
+                  </FotoceButton>
+                  <FotoceButton
                     variant="secondary"
                     size="sm"
                     class="text-[11px]"
@@ -2061,7 +2061,7 @@ watch(
                     @click="respondSeatInvite(row.id, 'decline')"
                   >
                     {{ t('settings.seats.decline') }}
-                  </PinovaButton>
+                  </FotoceButton>
                 </div>
               </div>
             </div>
@@ -2070,7 +2070,7 @@ watch(
               <p class="text-xs text-neutral-700 dark:text-neutral-300">
                 {{ t('settings.seats.memberOf', { username: seatHub.sponsor_display_name || seatHub.sponsor_username || '' }) }}
               </p>
-              <PinovaButton
+              <FotoceButton
                 variant="primary"
                 size="sm"
                 class="text-xs"
@@ -2078,7 +2078,7 @@ watch(
                 @click="leaveSeatGroup"
               >
                 {{ t('settings.seats.leave') }}
-              </PinovaButton>
+              </FotoceButton>
             </template>
 
             <template v-else-if="seatHub.role === 'owner'">
@@ -2092,15 +2092,15 @@ watch(
                 }}
               </p>
               <div class="space-y-2">
-                <PinovaButton
+                <FotoceButton
                   variant="secondary"
                   class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl text-xs border-pink-300 text-pink-700 dark:text-pink-600"
                   :disabled="seatBusy"
                   @click="seatInviteSearchOpen = true"
                 >
-                  <PinovaIcon name="person_search" class="text-lg" />
+                  <FotoceIcon name="person_search" class="text-lg" />
                   {{ t('settings.seats.inviteSearchMember') }}
-                </PinovaButton>
+                </FotoceButton>
               </div>
               <p v-if="seatHub.members?.length" class="text-xs font-semibold text-neutral-800 dark:text-neutral-100 pt-2">{{ t('settings.seats.members') }}</p>
               <ul v-if="seatHub.members?.length" class="space-y-1">
@@ -2182,10 +2182,10 @@ watch(
             {{ subscriptionScheduleHint }}
           </p>
           <div class="flex flex-wrap gap-2">
-            <PinovaButton variant="primary" size="sm" :to="{ name: 'premium' }">
+            <FotoceButton variant="primary" size="sm" :to="{ name: 'premium' }">
               {{ t('settings.subscription.managePlans') }}
-            </PinovaButton>
-            <PinovaButton
+            </FotoceButton>
+            <FotoceButton
               variant="primary"
               size="sm"
               :disabled="subscriptionActionPending || currentPlan === 'free'"
@@ -2193,8 +2193,8 @@ watch(
               @click="handleCancelAtPeriodEnd"
             >
               {{ t('settings.subscription.cancelAtEnd') }}
-            </PinovaButton>
-            <PinovaButton
+            </FotoceButton>
+            <FotoceButton
               v-if="currentPlan === 'pro'"
               variant="secondary"
               size="sm"
@@ -2203,8 +2203,8 @@ watch(
               @click="handleSchedulePlusAtRenewal"
             >
               {{ t('settings.subscription.scheduleToPlus') }}
-            </PinovaButton>
-            <PinovaButton
+            </FotoceButton>
+            <FotoceButton
               v-if="currentUser?.subscription?.scheduledPlan"
               variant="ghost"
               size="sm"
@@ -2212,8 +2212,8 @@ watch(
               @click="handleClearPlannedChange"
             >
               {{ t('settings.subscription.clearSchedule') }}
-            </PinovaButton>
-            <PinovaButton
+            </FotoceButton>
+            <FotoceButton
               variant="secondary"
               size="sm"
               :disabled="subscriptionActionPending"
@@ -2221,7 +2221,7 @@ watch(
               @click="handleReactivateSubscription"
             >
               {{ t('settings.subscription.reactivate') }}
-            </PinovaButton>
+            </FotoceButton>
           </div>
           <p v-if="subscriptionActionMessage" class="text-xs text-neutral-600 dark:text-neutral-300">{{ subscriptionActionMessage }}</p>
 
@@ -2337,19 +2337,19 @@ watch(
         </div>
         <div class="divide-y divide-neutral-100 dark:divide-neutral-800">
           <RouterLink to="/faq" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
-            <PinovaIcon name="help" class="text-[20px] text-rose-600 dark:text-rose-400" />
+            <FotoceIcon name="help" class="text-[20px] text-rose-600 dark:text-rose-400" />
             {{ t('nav.faq') }}
           </RouterLink>
           <RouterLink to="/legal/privacy" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
-            <PinovaIcon name="shield" class="text-[20px] text-rose-600 dark:text-rose-400" />
+            <FotoceIcon name="shield" class="text-[20px] text-rose-600 dark:text-rose-400" />
             {{ t('legal.badgePrivacy') }}
           </RouterLink>
           <RouterLink to="/legal/terms" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
-            <PinovaIcon name="description" class="text-[20px] text-rose-600 dark:text-rose-400" />
+            <FotoceIcon name="description" class="text-[20px] text-rose-600 dark:text-rose-400" />
             {{ t('legal.badgeTerms') }}
           </RouterLink>
           <RouterLink to="/contact" class="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-neutral-800 dark:text-neutral-100 hover:bg-rose-500/5 transition">
-            <PinovaIcon name="mail" class="text-[20px] text-rose-600 dark:text-rose-400" />
+            <FotoceIcon name="mail" class="text-[20px] text-rose-600 dark:text-rose-400" />
             {{ t('app.footer.contact') }}
           </RouterLink>
         </div>
@@ -2365,16 +2365,16 @@ watch(
             </p>
           </div>
           <div v-if="passwordSaved" class="text-green-600 flex items-center gap-1 text-xs font-bold animate-fade-in shrink-0">
-            <PinovaIcon name="check_circle" class="text-sm" />
+            <FotoceIcon name="check_circle" class="text-sm" />
             {{ t('settings.password.saved') }}
           </div>
         </div>
 
         <div v-if="needsPasswordSetup" class="p-4 sm:p-6 space-y-4">
           <p class="text-sm text-neutral-600 dark:text-neutral-300">{{ t('settings.password.socialSectionLead') }}</p>
-          <PinovaButton variant="primary" class="text-sm w-full sm:w-auto" @click="openInitialPasswordModal">
+          <FotoceButton variant="primary" class="text-sm w-full sm:w-auto" @click="openInitialPasswordModal">
             {{ t('settings.password.socialBannerCta') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
 
         <div v-else class="p-4 sm:p-6 space-y-5">
@@ -2444,7 +2444,7 @@ watch(
           <p class="mt-1 text-xs leading-relaxed text-rose-900 dark:text-rose-100/90">
             {{ t('settings.danger.delete.bannerBody', { date: scheduledAccountDeletionLabel }) }}
           </p>
-          <PinovaButton
+          <FotoceButton
             variant="secondary"
             size="sm"
             class="mt-3 border-rose-200 dark:border-rose-700/70 text-rose-900 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/30"
@@ -2452,14 +2452,14 @@ watch(
             @click="cancelAccountDeletion()"
           >
             {{ t('settings.danger.delete.cancelSchedule') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
         <div class="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-200/45 dark:border-pink-800/40">
           <div>
             <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.gdpr.exportTitle') }}</p>
             <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.gdpr.exportDesc') }}</p>
           </div>
-          <PinovaButton
+          <FotoceButton
             variant="secondary"
             class="text-sm border-pink-300 text-pink-700 dark:text-pink-600"
             :disabled="dataExportBusy"
@@ -2467,20 +2467,20 @@ watch(
             @click="requestDataExport()"
           >
             {{ t('settings.gdpr.exportCta') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
         <div class="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-pink-200/45 dark:border-pink-800/40">
           <div>
             <p class="text-sm font-medium text-neutral-700 dark:text-neutral-200">{{ t('settings.danger.logout') }}</p>
             <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('settings.danger.logout.desc') }}</p>
           </div>
-          <PinovaButton
+          <FotoceButton
             variant="secondary"
             class="text-sm border-pink-300 text-pink-700 dark:text-pink-600"
             @click="handleLogout"
           >
             {{ t('settings.danger.logout.cta') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
         <div class="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4 bg-rose-50/45 dark:bg-rose-950/20">
           <div class="max-w-xl flex-1 space-y-2">
@@ -2488,14 +2488,14 @@ watch(
             <p class="text-xs text-neutral-700 leading-relaxed">{{ t('settings.danger.delete.warningBody') }}</p>
           </div>
           <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
-            <PinovaButton
+            <FotoceButton
               variant="danger"
               class="text-sm text-center"
               :disabled="accountDeletionBusy || !!scheduledAccountDeletion"
               @click="requestAccountDeletion()"
             >
               {{ t('settings.danger.delete.scheduleCta') }}
-            </PinovaButton>
+            </FotoceButton>
             <p v-if="scheduledAccountDeletion" class="text-[11px] text-rose-800 text-center sm:text-right max-w-[14rem] sm:max-w-none">
               {{ t('settings.danger.delete.useBannerCancel') }}
             </p>
@@ -2528,7 +2528,7 @@ watch(
             :aria-label="t('common.close')"
             @click="closeInitialPasswordModal"
           >
-            <PinovaIcon name="close" class="text-xl" />
+            <FotoceIcon name="close" class="text-xl" />
           </button>
         </div>
         <p class="text-sm text-neutral-600 dark:text-neutral-300">{{ t('settings.password.setInitialModalBody') }}</p>
@@ -2560,17 +2560,17 @@ watch(
           </div>
         </div>
         <div class="flex justify-end gap-2 pt-2">
-          <PinovaButton variant="secondary" size="sm" @click="closeInitialPasswordModal">
+          <FotoceButton variant="secondary" size="sm" @click="closeInitialPasswordModal">
             {{ t('common.cancel') }}
-          </PinovaButton>
-          <PinovaButton
+          </FotoceButton>
+          <FotoceButton
             variant="primary"
             size="sm"
             :disabled="initialPwBusy || !initialPw1 || !initialPw2"
             @click="submitInitialPassword"
           >
             {{ initialPwBusy ? t('settings.password.submitting') : t('settings.password.setInitialSubmit') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
       </div>
     </div>
@@ -2611,7 +2611,7 @@ watch(
   right: -44px;
   background: rgba(139, 92, 246, 0.26);
 }
-.pinova-settings-detail-sections :deep(section) {
+.fotoce-settings-detail-sections :deep(section) {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }

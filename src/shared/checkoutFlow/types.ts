@@ -5,12 +5,12 @@ export type CheckoutMeta = {
   currency?: string
 }
 
-export const CHECKOUT_URL_KEY = 'pinova_checkout_pending_url'
-export const CHECKOUT_FLOW_KEY = 'pinova_checkout_flow'
-export const CHECKOUT_AMOUNT_KEY = 'pinova_checkout_amount'
-export const CHECKOUT_CURRENCY_KEY = 'pinova_checkout_currency'
-export const PREMIUM_CONFIRMED_KEY = 'pinova_checkout_premium_confirmed'
-export const PENDING_SUBSCRIPTION_TX_KEY = 'pinova_pending_subscription_tx'
+export const CHECKOUT_URL_KEY = 'fotoce_checkout_pending_url'
+export const CHECKOUT_FLOW_KEY = 'fotoce_checkout_flow'
+export const CHECKOUT_AMOUNT_KEY = 'fotoce_checkout_amount'
+export const CHECKOUT_CURRENCY_KEY = 'fotoce_checkout_currency'
+export const PREMIUM_CONFIRMED_KEY = 'fotoce_checkout_premium_confirmed'
+export const PENDING_SUBSCRIPTION_TX_KEY = 'fotoce_pending_subscription_tx'
 
 export function checkoutFunnelProps(
   flow: CheckoutFlow,

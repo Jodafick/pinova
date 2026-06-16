@@ -1,4 +1,4 @@
-import { mapDjangoPinToFrontend, getFullMediaUrl } from '../composables/usePins'
+import { mapDjangoFotoToFrontend, getFullMediaUrl } from '../composables/useFotos'
 import type { MeHydrationPinsPage, User } from '../types'
 
 function normalizeBoardPreviews(raw: unknown): string[] {
@@ -17,7 +17,7 @@ export function mapBoardRowFromBoardsApiRow(
   return {
     id: Number(b.id),
     name: String(b.name ?? ''),
-    pinCount: Number(b.pin_count ?? 0),
+    fotoCount: Number(b.pin_count ?? 0),
     isPrivate: !!b.is_private,
     collaboratorCount: Number(b.collaborator_count ?? 0),
     previewImages: normalizeBoardPreviews(b.preview_images),
@@ -49,15 +49,15 @@ function parseMePinsPage(raw: unknown): MeHydrationPinsPage | undefined {
         : o.previous === null || o.previous === undefined
           ? null
           : String(o.previous),
-    results: resultsRaw.map((p) => mapDjangoPinToFrontend(p)),
+    results: resultsRaw.map((p) => mapDjangoFotoToFrontend(p)),
   }
 }
 
-/** Extrait le bundle `_page` ajouté par `GET/PATCH me/` (liste tableaux page 1, pins créés / enregistrés). */
+/** Extrait le bundle `_page` ajouté par `GET/PATCH me/` (liste tableaux page 1, fotos créés / enregistrés). */
 export function extractMeHydrationFromApiPayload(data: Record<string, unknown> | null | undefined): {
   boards: NonNullable<User['boards']>
   createdPinsPage?: MeHydrationPinsPage
-  savedPinsPage?: MeHydrationPinsPage
+  savedFotosPage?: MeHydrationPinsPage
 } | null {
   if (!data || data.me_boards_page == null || typeof data.me_boards_page !== 'object') return null
   const bp = data.me_boards_page as Record<string, unknown>
@@ -67,10 +67,10 @@ export function extractMeHydrationFromApiPayload(data: Record<string, unknown> |
       ? (rawBoards as Record<string, unknown>[]).map(mapBoardRowFromBoardsApiRow)
       : []
   const createdPinsPage = parseMePinsPage(data.me_created_pins_page)
-  const savedPinsPage = parseMePinsPage(data.me_saved_pins_page)
+  const savedFotosPage = parseMePinsPage(data.me_saved_pins_page)
   return {
     boards,
     createdPinsPage,
-    savedPinsPage,
+    savedFotosPage,
   }
 }

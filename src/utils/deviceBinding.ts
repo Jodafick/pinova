@@ -1,7 +1,7 @@
-const STORAGE_KEY = 'pinova_device_binding'
+const STORAGE_KEY = 'fotoce_device_binding'
 
 /**
- * Identifiant stable navigateur pour l’intent referral (header `X-Pinova-Device-Binding`).
+ * Identifiant stable navigateur pour l’intent referral (header `X-Fotoce-Device-Binding`).
  */
 export function ensureDeviceBindingId(): string {
   if (typeof window === 'undefined') return ''

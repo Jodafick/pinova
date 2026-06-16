@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import PinovaModal from '../components/ui/PinovaModal.vue'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceModal from '../components/ui/FotoceModal.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 import { useRoute, useRouter } from 'vue-router'
-import PinGrid from '../components/PinGrid.vue'
-import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
+import FotoGrid from '../components/FotoGrid.vue'
+import FotoDetailOverlayHost from '../components/FotoDetailOverlayHost.vue'
 import BoardHeaderSkeleton from '../components/BoardHeaderSkeleton.vue'
 import UserListSkeleton from '../components/UserListSkeleton.vue'
 import api from '../api/index'
-import { mapDjangoPinToFrontend, usePins } from '../composables/usePins'
+import { mapDjangoFotoToFrontend, useFotos } from '../composables/useFotos'
 import {
   boardDetailCacheKey,
   getCachedBoardDetail,
@@ -17,7 +17,7 @@ import {
 } from '../lib/cache/entityClientCache'
 import { useAuth } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
-import type { Pin, SponsoredAd } from '../types'
+import type { Foto, SponsoredAd } from '../types'
 import { pushFeedItemOverlay } from '../utils/feedOverlayNavigation'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
@@ -37,7 +37,7 @@ const { t } = useI18n()
 const { showAlert, showPrompt, showConfirm } = useAppModal()
 const route = useRoute()
 const router = useRouter()
-const { toggleSave } = usePins()
+const { toggleSave } = useFotos()
 const { currentUser, updateBoard, deleteBoard, addBoardCollaborator, fetchCurrentUser } = useAuth()
 const { promptGuest } = useGuestAuthGate()
 
@@ -104,7 +104,7 @@ const loading = ref(true)
 const loadError = ref<'not_found' | 'generic' | null>(null)
 const boardName = ref('')
 const ownerUsername = ref('')
-const boardPins = ref<Pin[]>([])
+const boardFotos = ref<Foto[]>([])
 const viewerCanManage = ref(false)
 const boardIsPrivate = ref(false)
 const boardIsOwner = ref(false)
@@ -120,7 +120,7 @@ const boardDeletePending = ref(false)
 
 const boardEditCanTogglePrivate = computed(() => viewerCanManage.value && boardIsOwner.value)
 const organizeModalOpen = ref(false)
-const organizePins = ref<
+const organizeFotos = ref<
   Array<{ id: number; slug: string; title: string; image: string; position: number; scheduled_publish_at?: string | null }>
 >([])
 const organizeLoading = ref(false)
@@ -141,7 +141,7 @@ function snapshotBoardState(): BoardDetailSnapshot {
     viewerCanManage: viewerCanManage.value,
     boardIsPrivate: boardIsPrivate.value,
     boardIsOwner: boardIsOwner.value,
-    boardPins: boardPins.value,
+    boardFotos: boardFotos.value,
   }
 }
 
@@ -171,7 +171,7 @@ async function loadBoard() {
     boardIsPrivate.value = cached.boardIsPrivate
     boardIsOwner.value = cached.boardIsOwner
     boardDescription.value = cached.boardDescription
-    boardPins.value = cached.boardPins
+    boardFotos.value = cached.boardFotos
     loadError.value = null
     loading.value = false
     return
@@ -181,7 +181,7 @@ async function loadBoard() {
   loadError.value = null
   ownerUsername.value = pathOwner
   boardName.value = ''
-  boardPins.value = []
+  boardFotos.value = []
   viewerCanManage.value = false
   boardIsPrivate.value = false
   boardIsOwner.value = false
@@ -194,14 +194,14 @@ async function loadBoard() {
     boardIsPrivate.value = !!(res.data.is_private ?? res.data.isPrivate)
     boardIsOwner.value = !!(res.data.is_owner ?? res.data.isOwner)
     boardDescription.value = String(res.data.description ?? '')
-    boardPins.value = (res.data.pins || []).map(mapDjangoPinToFrontend)
+    boardFotos.value = (res.data.pins || []).map(mapDjangoFotoToFrontend)
     persistBoardClientCache()
   } catch (e: unknown) {
     const status = (e as { response?: { status?: number } })?.response?.status
     loadError.value = status === 404 ? 'not_found' : 'generic'
     boardName.value = ''
     ownerUsername.value = pathOwner
-    boardPins.value = []
+    boardFotos.value = []
     viewerCanManage.value = false
     boardIsPrivate.value = false
     boardIsOwner.value = false
@@ -211,8 +211,8 @@ async function loadBoard() {
   }
 }
 
-function openPin(slug: string) {
-  router.push({ path: route.path, query: { ...route.query, pin: slug } })
+function openFoto(slug: string) {
+  router.push({ path: route.path, query: { ...route.query, foto: slug } })
 }
 
 function openSponsored(item: SponsoredAd) {
@@ -227,13 +227,13 @@ async function onToggleSave(slug: string) {
   try {
     await toggleSave(slug)
   } catch {
-    /* erreur déjà loguée dans usePins */
+    /* erreur déjà loguée dans useFotos */
   }
 }
 
 function onPinDeletedFromGrid(slug: string) {
-  boardPins.value = boardPins.value.filter((p) => p.slug !== slug)
-  organizePins.value = organizePins.value.filter((p) => p.slug !== slug)
+  boardFotos.value = boardFotos.value.filter((p) => p.slug !== slug)
+  organizeFotos.value = organizeFotos.value.filter((p) => p.slug !== slug)
   persistBoardClientCache()
 }
 
@@ -243,11 +243,11 @@ async function openOrganize() {
   organizeTouchFrom.value = null
   organizeModalOpen.value = true
   organizeLoading.value = true
-  organizePins.value = []
+  organizeFotos.value = []
   dragOrganizeIndex.value = null
   try {
-    const res = await api.get(`boards/${boardId.value}/ordered-pins/`)
-    organizePins.value = [...(res.data.pins || [])]
+    const res = await api.get(`boards/${boardId.value}/ordered-fotos/`)
+    organizeFotos.value = [...(res.data.pins || [])]
   } catch {
     organizeModalOpen.value = false
   } finally {
@@ -263,24 +263,24 @@ watch(organizeModalOpen, (open) => {
   if (!open) {
     organizeTouchDragging.value = false
     organizeTouchFrom.value = null
-    organizePins.value = []
+    organizeFotos.value = []
   }
 })
 
-/** Aligne boardPins sur l’ordre du modal après succès POST (sans refetch). */
+/** Aligne boardFotos sur l’ordre du modal après succès POST (sans refetch). */
 function reorderBoardPinsFromOrganizeModal() {
-  const orderIds = organizePins.value.map((p) => p.id)
+  const orderIds = organizeFotos.value.map((p) => p.id)
   if (orderIds.length === 0) return
-  const byId = new Map(boardPins.value.map((p) => [p.id, p]))
-  const ordered: Pin[] = []
+  const byId = new Map(boardFotos.value.map((p) => [p.id, p]))
+  const ordered: Foto[] = []
   for (const id of orderIds) {
-    const pin = byId.get(id)
-    if (pin) ordered.push(pin)
+    const foto = byId.get(id)
+    if (foto) ordered.push(foto)
   }
-  for (const pin of boardPins.value) {
-    if (!orderIds.includes(pin.id)) ordered.push(pin)
+  for (const foto of boardFotos.value) {
+    if (!orderIds.includes(pin.id)) ordered.push(foto)
   }
-  boardPins.value = ordered
+  boardFotos.value = ordered
   persistBoardClientCache()
 }
 
@@ -288,8 +288,8 @@ async function saveBoardOrder() {
   if (!boardId.value) return
   organizeSaving.value = true
   try {
-    await api.post(`boards/${boardId.value}/reorder-pins/`, {
-      pin_ids: organizePins.value.map((p) => p.id),
+    await api.post(`boards/${boardId.value}/reorder-fotos/`, {
+      foto_ids: organizeFotos.value.map((p) => p.id),
     })
     reorderBoardPinsFromOrganizeModal()
     closeOrganize()
@@ -383,13 +383,13 @@ function endOrganizeTouchDragFromRow(e: PointerEvent) {
   organizeTouchFrom.value = null
 }
 
-function reorderOrganizePinRows(from: number, to: number) {
+function reorderOrganizeFotoRows(from: number, to: number) {
   if (from === to) return
-  const arr = [...organizePins.value]
+  const arr = [...organizeFotos.value]
   const moved = arr.splice(from, 1)[0]
   if (moved === undefined) return
   arr.splice(to, 0, moved)
-  organizePins.value = arr
+  organizeFotos.value = arr
 }
 
 /** Poignée : au tactile, démarrage immédiat du glisser (DnD HTML5 peu fiable au doigt). */
@@ -418,7 +418,7 @@ function onOrganizeRowPointerMove(e: PointerEvent) {
   if (!Number.isFinite(to)) return
   const from = organizeTouchFrom.value
   if (from === to) return
-  reorderOrganizePinRows(from, to)
+  reorderOrganizeFotoRows(from, to)
   organizeTouchFrom.value = to
 }
 
@@ -432,8 +432,8 @@ function onOrganizeDragStart(index: number, event: DragEvent) {
   dragOrganizeIndex.value = index
   /* Requis par Firefox / Safari pour autoriser le drop sur une autre ligne. */
   try {
-    event.dataTransfer?.setData('text/plain', `pinova-organize:${index}`)
-    event.dataTransfer?.setData('application/x-pinova-board-organize', String(index))
+    event.dataTransfer?.setData('text/plain', `fotoce-organize:${index}`)
+    event.dataTransfer?.setData('application/x-fotoce-board-organize', String(index))
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
   } catch {
     /* certains navigateurs restreignent setData hors geste utilisateur */
@@ -453,7 +453,7 @@ function onOrganizeDrop(index: number) {
   const from = dragOrganizeIndex.value
   dragOrganizeIndex.value = null
   if (from === null || from === index) return
-  reorderOrganizePinRows(from, index)
+  reorderOrganizeFotoRows(from, index)
 }
 
 async function shareThisBoard() {
@@ -473,13 +473,13 @@ async function shareThisBoard() {
       { showAlert, showPrompt },
       {
         url,
-        title: `${boardName.value.trim() || 'Pinova'} — Pinova`,
+        title: `${boardName.value.trim() || 'Fotoce'} — Fotoce`,
         text: `@${owner}`,
         copiedMessage: t('profile.share.boardCopied'),
         copyErrorMessage: t('profile.share.copyError'),
         copyErrorTitle: t('modal.errorTitle'),
-        manualTitle: t('pin.share.manualTitle'),
-        manualBody: t('pin.share.manualBody'),
+        manualTitle: t('foto.share.manualTitle'),
+        manualBody: t('foto.share.manualBody'),
       },
     )
   } catch {
@@ -587,7 +587,7 @@ watch(
       return
     }
     setMobileBoardMoreTrailing({
-      ariaLabel: t('pin.ownerMenu.more'),
+      ariaLabel: t('foto.ownerMenu.more'),
       onClick: () => {
         boardActionsOpen.value = !boardActionsOpen.value
       },
@@ -620,14 +620,14 @@ onUnmounted(() => {
 
 <template>
   <div class="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-    <PinovaButton
+    <FotoceButton
       variant="secondary"
       class="group mb-8 hidden text-sm lg:inline-flex"
       @click="router.back()"
     >
-      <PinovaIcon name="arrow_back" class="text-lg" />
+      <FotoceIcon name="arrow_back" class="text-lg" />
       {{ t('common.back') }}
-    </PinovaButton>
+    </FotoceButton>
 
     <div v-if="loading" class="app-skeleton-wave w-full min-w-0">
       <template v-if="routeOwnerUsername && !boardName">
@@ -640,12 +640,12 @@ onUnmounted(() => {
             >
               @{{ routeOwnerUsername }}
             </router-link>
-            <p class="text-sm app-text-muted mt-2">{{ t('board.pinCount', { count: boardPins.length }) }}</p>
+            <p class="text-sm app-text-muted mt-2">{{ t('board.fotoCount', { count: boardFotos.length }) }}</p>
           </div>
         </div>
       </template>
       <BoardHeaderSkeleton v-else />
-      <PinGrid class="mt-2 sm:mt-6 w-full" :pins="boardPins" :loading-initial="boardPins.length === 0" />
+      <FotoGrid class="mt-2 sm:mt-6 w-full" :pins="boardFotos" :loading-initial="boardFotos.length === 0" />
     </div>
 
     <div v-else-if="loadError === 'not_found'" class="w-full min-w-0 text-center py-16 text-neutral-600 dark:text-neutral-400">
@@ -667,7 +667,7 @@ onUnmounted(() => {
           >
             @{{ ownerUsername }}
           </router-link>
-          <p class="text-sm app-text-muted mt-2">{{ t('board.pinCount', { count: boardPins.length }) }}</p>
+          <p class="text-sm app-text-muted mt-2">{{ t('board.fotoCount', { count: boardFotos.length }) }}</p>
         </div>
         <button
           type="button"
@@ -675,17 +675,17 @@ onUnmounted(() => {
           class="hidden lg:inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-neutral-200/90 bg-white/90 text-neutral-700 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900/90 dark:text-neutral-200 dark:hover:bg-neutral-800"
           :aria-expanded="boardActionsOpen"
           aria-haspopup="menu"
-          :aria-label="t('pin.ownerMenu.more')"
+          :aria-label="t('foto.ownerMenu.more')"
           @click="boardActionsOpen = !boardActionsOpen"
         >
-          <PinovaIcon name="more_vert" class="text-[22px]" />
+          <FotoceIcon name="more_vert" class="text-[22px]" />
         </button>
       </div>
 
-      <PinGrid
-        v-if="boardPins.length"
+      <FotoGrid
+        v-if="boardFotos.length"
         class="w-full"
-        :pins="boardPins"
+        :pins="boardFotos"
         @open-pin="openPin"
         @open-sponsored="openSponsored"
         @toggle-save="onToggleSave"
@@ -709,7 +709,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="shareThisBoardFromMenu"
         >
-          <PinovaIcon name="share" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
+          <FotoceIcon name="share" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
           {{ t('board.share') }}
         </button>
         <button
@@ -719,7 +719,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="openBoardEditorFromMenu"
         >
-          <PinovaIcon name="edit" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
+          <FotoceIcon name="edit" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
           {{ t('board.editBoard') }}
         </button>
         <button
@@ -729,8 +729,8 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="openOrganizeFromMenu"
         >
-          <PinovaIcon name="drag_indicator" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
-          {{ t('board.organizePins') }}
+          <FotoceIcon name="drag_indicator" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
+          {{ t('board.organizeFotos') }}
         </button>
         <button
           v-if="boardIsOwner && currentPlan !== 'free'"
@@ -739,7 +739,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 dark:text-neutral-100 hover:bg-pink-50/60 dark:hover:bg-white/[0.06] transition-colors"
           @click="openInviteCollaboratorFromBoard"
         >
-          <PinovaIcon name="person_add" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
+          <FotoceIcon name="person_add" class="text-lg text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
           {{ t('profile.boards.invitePromptTitle') }}
         </button>
         <button
@@ -751,7 +751,7 @@ onUnmounted(() => {
           @click="confirmDeleteBoardFromMenu"
         >
           <span v-if="boardDeletePending" class="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" aria-hidden="true" />
-          <PinovaIcon v-else name="delete" class="text-lg shrink-0" aria-hidden="true" />
+          <FotoceIcon v-else name="delete" class="text-lg shrink-0" aria-hidden="true" />
           {{ t('board.deleteBoard') }}
         </button>
       </div>
@@ -766,9 +766,9 @@ onUnmounted(() => {
       @pick="onBoardInvitePick"
     />
 
-    <PinDetailOverlayHost :feed-items="boardPins" />
+    <FotoDetailOverlayHost :feed-items="boardFotos" />
 
-    <PinovaModal
+    <FotoceModal
       v-model:open="organizeModalOpen"
       presentation="tallSheet"
       presentation-lg="center"
@@ -783,7 +783,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="closeOrganize"
         >
-          <PinovaIcon name="close" class="text-[22px] leading-none" />
+          <FotoceIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 
@@ -794,7 +794,7 @@ onUnmounted(() => {
         </div>
         <ul v-else class="space-y-2 touch-pan-y">
           <li
-            v-for="(p, idx) in organizePins"
+            v-for="(p, idx) in organizeFotos"
             :key="p.id"
             :data-organize-index="idx"
             class="lux-organize-row !cursor-default touch-pan-y"
@@ -818,7 +818,7 @@ onUnmounted(() => {
             />
             <div class="min-w-0 flex-1">
               <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{{ p.title }}</p>
-              <p v-if="p.scheduled_publish_at" class="text-[10px] text-amber-700 dark:text-amber-400">{{ t('pin.scheduledBadge') }}</p>
+              <p v-if="p.scheduled_publish_at" class="text-[10px] text-amber-700 dark:text-amber-400">{{ t('foto.scheduledBadge') }}</p>
             </div>
             <button
               type="button"
@@ -829,7 +829,7 @@ onUnmounted(() => {
               @dragstart.stop="onOrganizeDragStart(idx, $event)"
               @dragend="onOrganizeDragEnd"
             >
-              <PinovaIcon name="drag_indicator" class="text-[30px] leading-none" aria-hidden="true" />
+              <FotoceIcon name="drag_indicator" class="text-[30px] leading-none" aria-hidden="true" />
             </button>
           </li>
         </ul>
@@ -837,22 +837,22 @@ onUnmounted(() => {
 
       <template #footer>
         <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganize">
+          <FotoceButton variant="secondary" class="w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganize">
             {{ t('profile.boards.organizeClose') }}
-          </PinovaButton>
-          <PinovaButton
+          </FotoceButton>
+          <FotoceButton
             variant="primary"
             class="w-full sm:w-auto min-h-[44px] sm:min-w-[9rem]"
-            :disabled="organizeSaving || organizeLoading || organizePins.length === 0"
+            :disabled="organizeSaving || organizeLoading || organizeFotos.length === 0"
             @click="saveBoardOrder"
           >
             {{ organizeSaving ? t('common.loading') : t('profile.boards.organizeSave') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
       </template>
-    </PinovaModal>
+    </FotoceModal>
 
-    <PinovaModal
+    <FotoceModal
       v-model:open="boardEditOpen"
       presentation="tallSheet"
       presentation-lg="center"
@@ -865,7 +865,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="closeBoardEditor"
         >
-          <PinovaIcon name="close" class="text-[22px] leading-none" />
+          <FotoceIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 
@@ -887,19 +887,19 @@ onUnmounted(() => {
 
       <template #footer>
         <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeBoardEditor">
+          <FotoceButton variant="secondary" class="w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeBoardEditor">
             {{ t('common.cancel') }}
-          </PinovaButton>
-          <PinovaButton
+          </FotoceButton>
+          <FotoceButton
             variant="primary"
             class="w-full sm:w-auto min-h-[44px] sm:min-w-[9rem]"
             :disabled="boardEditSaving"
             @click="submitBoardMeta"
           >
             {{ boardEditSaving ? t('board.savingBoard') : t('board.saveChanges') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
       </template>
-    </PinovaModal>
+    </FotoceModal>
   </div>
 </template>

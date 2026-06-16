@@ -1,4 +1,4 @@
-export type PinovaLanguage = {
+export type FotoceLanguage = {
   code: string
   /** Libellé en français (UI par défaut) */
   label: string
@@ -11,7 +11,7 @@ export type PinovaLanguage = {
   region: 'europe' | 'africa' | 'asia' | 'americas' | 'middle-east' | 'oceania'
 }
 
-export const PINOVA_LANGUAGES: readonly PinovaLanguage[] = [
+export const FOTOCE_LANGUAGES: readonly FotoceLanguage[] = [
   { code: 'fr', label: 'Français', nativeLabel: 'Français', flag: '🇫🇷', googleCode: 'fr', region: 'europe' },
   { code: 'en', label: 'Anglais', nativeLabel: 'English', flag: '🇬🇧', googleCode: 'en', region: 'europe' },
   { code: 'es', label: 'Espagnol', nativeLabel: 'Español', flag: '🇪🇸', googleCode: 'es', region: 'europe' },
@@ -72,11 +72,11 @@ export const PINOVA_LANGUAGES: readonly PinovaLanguage[] = [
   { code: 'kk', label: 'Kazakh', nativeLabel: 'Қазақ', flag: '🇰🇿', googleCode: 'kk', region: 'asia' },
 ] as const
 
-export type LangCode = (typeof PINOVA_LANGUAGES)[number]['code']
+export type LangCode = (typeof FOTOCE_LANGUAGES)[number]['code']
 
-const byCode = new Map(PINOVA_LANGUAGES.map((l) => [l.code, l]))
+const byCode = new Map(FOTOCE_LANGUAGES.map((l) => [l.code, l]))
 
-export function getLanguageMeta(code: string): PinovaLanguage | undefined {
+export function getLanguageMeta(code: string): FotoceLanguage | undefined {
   return byCode.get(code)
 }
 
@@ -84,7 +84,7 @@ export function isSupportedLang(code: string): code is LangCode {
   return byCode.has(code)
 }
 
-/** Résout un tag BCP-47 (navigateur) vers un code Pinova supporté. */
+/** Résout un tag BCP-47 (navigateur) vers un code Fotoce supporté. */
 export function resolveLangFromBcp47(raw: string | null | undefined): LangCode {
   const normalized = (raw || '').trim().toLowerCase()
   if (!normalized) return 'en'
@@ -113,11 +113,11 @@ export function detectBrowserLangCode(): LangCode {
   return 'en'
 }
 
-export function languageSearchHaystack(lang: PinovaLanguage): string {
+export function languageSearchHaystack(lang: FotoceLanguage): string {
   return [lang.code, lang.label, lang.nativeLabel, lang.label.toLowerCase(), lang.nativeLabel.toLowerCase()].join(' ')
 }
 
-export const REGION_ORDER: PinovaLanguage['region'][] = [
+export const REGION_ORDER: FotoceLanguage['region'][] = [
   'africa',
   'europe',
   'americas',
@@ -126,7 +126,7 @@ export const REGION_ORDER: PinovaLanguage['region'][] = [
   'oceania',
 ]
 
-export const REGION_LABELS: Record<PinovaLanguage['region'], { fr: string; en: string }> = {
+export const REGION_LABELS: Record<FotoceLanguage['region'], { fr: string; en: string }> = {
   africa: { fr: 'Afrique', en: 'Africa' },
   europe: { fr: 'Europe', en: 'Europe' },
   americas: { fr: 'Amériques', en: 'Americas' },

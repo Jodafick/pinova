@@ -2,7 +2,7 @@
  * Bus temps réel notifications in-app :
  * - WebSocket `/api/notifications/ws`
  * - fallback polling `GET notifications/events`
- * - fallback badge `X-Pinova-Unread-Notifications` (via `applyUnreadCountFromResponseHeader`)
+ * - fallback badge `X-Fotoce-Unread-Notifications` (via `applyUnreadCountFromResponseHeader`)
  */
 export type NotificationLivePayload = {
   id: number
@@ -11,8 +11,8 @@ export type NotificationLivePayload = {
   message?: string
   action_url?: string
   metadata?: Record<string, unknown>
-  pin_id?: number | null
-  pin_slug?: string | null
+  foto_id?: number | null
+  foto_slug?: string | null
   comment_id?: number | null
   is_read?: boolean
   created_at?: string
@@ -30,7 +30,7 @@ const liveNotificationListeners = new Set<(payload: NotificationLivePayload) => 
 let lastKnownUnreadCount = 0
 
 /** Nom d'en-tête (minuscules pour axios dans le navigateur). */
-export const UNREAD_NOTIFICATION_RESPONSE_HEADER = 'x-pinova-unread-notifications'
+export const UNREAD_NOTIFICATION_RESPONSE_HEADER = 'x-fotoce-unread-notifications'
 
 export function subscribeUnreadCountFromHeader(listener: (count: number) => void): () => void {
   unreadHeaderListeners.add(listener)

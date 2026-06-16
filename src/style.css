@@ -1,8 +1,8 @@
 @import "tailwindcss";
-/* Tokens canoniques 1:1 avec `Pinova-Mobile/src/theme/tokens.ts` — préfixe `--pn-*`. */
+/* Tokens canoniques 1:1 avec `Fotoce-Mobile/src/theme/tokens.ts` — préfixe `--pn-*`. */
 @import "./theme/tokens.css";
 
-/* Material Symbols (PinovaIcon) — subset Google Fonts au boot. */
+/* Material Symbols (FotoceIcon) — subset Google Fonts au boot. */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined', sans-serif;
   font-weight: normal;
@@ -22,27 +22,27 @@
     'opsz' 24;
 }
 
-.pinova-icon {
+.fotoce-icon {
   vertical-align: -0.125em;
 }
 
-.pinova-icon--spin {
-  animation: pinova-icon-spin 1s linear infinite;
+.fotoce-icon--spin {
+  animation: fotoce-icon-spin 1s linear infinite;
 }
 
-@keyframes pinova-icon-spin {
+@keyframes fotoce-icon-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-/** Thème sombre : classe `dark` sur `<html>` (paramètres Pinova). */
+/** Thème sombre : classe `dark` sur `<html>` (paramètres Fotoce). */
 @variant dark (.dark &);
 
 /**
  * Safari iOS / PWA standalone : évite flex + min-h-0 sur l’empilement racine qui
  * donne hauteur 0 (pages vides : création story, caméra, modales décalées).
  */
-.pinova-min-vh-fill {
+.fotoce-min-vh-fill {
   min-height: 100vh;
   min-height: 100svh;
   min-height: -webkit-fill-available;
@@ -55,7 +55,7 @@
    * contenu et ne scroll pas alors que ce wrapper est en `overflow:hidden` → page figée
    * (Chrome responsive, Android). `100dvh` suit la barre d’adresse ; `svh` en repli.
    */
-  .pinova-chrome-stack {
+  .fotoce-chrome-stack {
     min-height: 100svh;
     min-height: -webkit-fill-available;
     height: 100svh;
@@ -69,7 +69,7 @@
    * Remplit la colonne flex du `<main>` sans empiler un second 100svh (vide scrollable en bas PWA).
    * Les routes plein écran gèrent leur propre hauteur via flex-1 sur la page racine.
    */
-  .pinova-page-transition-host {
+  .fotoce-page-transition-host {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
@@ -77,7 +77,7 @@
     width: 100%;
   }
 
-  .pinova-page-transition-host > * {
+  .fotoce-page-transition-host > * {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -85,7 +85,7 @@
   }
 
   /* Auth / contenu naturel : évite le vide scrollable en bas (PWA). */
-  .pinova-page-transition-host > .pinova-route-natural-height {
+  .fotoce-page-transition-host > .fotoce-route-natural-height {
     flex: 0 1 auto;
     min-height: min-content;
     height: auto;
@@ -93,31 +93,55 @@
 }
 
 /* Pages auth invitées : marge haute mobile/PWA + bas safe-area. */
-.pinova-auth-page-shell {
+.fotoce-auth-page-shell {
   width: 100%;
   box-sizing: border-box;
   padding-top: calc(1.25rem + env(safe-area-inset-top, 0px));
   padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
 }
 
-@media (display-mode: standalone) {
-  .pinova-auth-page-shell {
+/* Login / register mobile : tab bar + chrome App gèrent les insets. */
+@media (max-width: 1023px) {
+  .fotoce-auth-page-shell--tab-bar {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+/* Recherche mobile : header fixe in-page (pas la barre globale App.vue). */
+@media (max-width: 1023px) {
+  .fotoce-inpage-mobile-header-offset {
     padding-top: calc(
-      2.5rem + env(safe-area-inset-top, 0px) + var(--pinova-pwa-extra-top-inset, 0px)
+      3.25rem + env(safe-area-inset-top, 0px) + var(--fotoce-pwa-extra-top-inset, 0px)
+    );
+  }
+}
+
+/* Bannière cookies : au-dessus de la tab bar mobile quand elle est visible. */
+@media (max-width: 1023px) {
+  html[data-fotoce-tab-bar-visible] .fotoce-cookie-consent-banner {
+    bottom: calc(var(--fotoce-mobile-tab-bar-h, 4.25rem) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (display-mode: standalone) {
+  .fotoce-auth-page-shell {
+    padding-top: calc(
+      2.5rem + env(safe-area-inset-top, 0px) + var(--fotoce-pwa-extra-top-inset, 0px)
     );
     padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
 @media (min-width: 1024px) {
-  .pinova-auth-page-shell {
+  .fotoce-auth-page-shell {
     padding-top: 0;
     padding-bottom: 0;
   }
 }
 
 @media (min-width: 1024px) {
-  .pinova-page-transition-host {
+  .fotoce-page-transition-host {
     min-height: 0;
   }
 }
@@ -174,7 +198,7 @@
   --card-text: rgb(39 39 42);
   --card-text-muted: rgb(82 82 91);
   /** Hauteur contenu tab bar mobile (hors safe-area home indicator). */
-  --pinova-mobile-tab-bar-h: 4.25rem;
+  --fotoce-mobile-tab-bar-h: 4.25rem;
   --skeleton-base: rgb(229 231 235);
   --skeleton-base-soft: rgb(243 244 246);
   --skeleton-shimmer: linear-gradient(
@@ -501,18 +525,18 @@
  * Pins, tableaux, modales — esthétique plus « premium » (ombres stratifiées, dégradés discrets).
  */
 @layer components {
-  .pinova-sticky-below-global-header {
+  .fotoce-sticky-below-global-header {
     top: var(
-      --pinova-global-header-h,
-      calc(3.5rem + env(safe-area-inset-top, 0px) + var(--pinova-pwa-extra-top-inset, 0px))
+      --fotoce-global-header-h,
+      calc(3.5rem + env(safe-area-inset-top, 0px) + var(--fotoce-pwa-extra-top-inset, 0px))
     );
   }
 
-  .pinova-header-chrome {
+  .fotoce-header-chrome {
     @apply bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md border-b border-neutral-200/80 dark:border-neutral-800/80;
   }
 
-  .lux-pin-card {
+  .lux-foto-card {
     @apply rounded-3xl overflow-hidden cursor-pointer max-w-full box-border;
     border: 1px solid rgb(228 228 231 / 0.45);
     box-shadow:
@@ -526,7 +550,7 @@
   }
 
   @media (hover: hover) {
-    .lux-pin-card:hover {
+    .lux-foto-card:hover {
       transform: translateY(-3px);
       border-color: rgb(228 228 231 / 0.75);
       box-shadow:
@@ -535,11 +559,11 @@
     }
   }
 
-  .lux-pin-card:focus-visible {
+  .lux-foto-card:focus-visible {
     @apply outline outline-2 outline-offset-2 outline-neutral-900;
   }
 
-  .lux-pin-skeleton-card {
+  .lux-foto-skeleton-card {
     @apply rounded-3xl overflow-hidden pointer-events-none select-none touch-none;
     border: 1px solid rgb(228 228 231 / 0.6);
     box-shadow: 0 8px 32px -12px rgb(15 23 42 / 0.1);
@@ -593,7 +617,7 @@
     filter: brightness(1.08);
   }
 
-  /** Boutons icônes discrets (fiche pin, etc.) */
+  /** Boutons icônes discrets (fiche foto, etc.) */
   .lux-icon-ring-btn {
     @apply w-10 h-10 rounded-full flex items-center justify-center transition-all text-neutral-700 border;
     border-color: transparent;
@@ -606,8 +630,8 @@
     box-shadow: 0 8px 22px -10px rgb(15 23 42 / 0.2);
   }
 
-  /** Carte « héro » fiche pin */
-  .lux-pin-detail-card {
+  /** Carte « héro » fiche foto */
+  .lux-foto-detail-card {
     border-radius: 1.75rem;
     overflow: hidden;
     border: 1px solid rgb(228 228 231 / 0.85);
@@ -618,7 +642,7 @@
     background: linear-gradient(172deg, #ffffff 0%, #fcfcfd 60%, #f6f6f7 100%);
   }
 
-  .pin-detail-heart-burst {
+  .foto-detail-heart-burst {
     position: absolute;
     inset: 0;
     z-index: 35;
@@ -628,10 +652,10 @@
     text-shadow: 0 18px 50px rgb(0 0 0 / 0.55);
   }
 
-  .pin-detail-heart-burst .pinova-icon {
+  .foto-detail-heart-burst .fotoce-icon {
     font-size: clamp(7rem, 34vw, 15rem);
     line-height: 1;
-    animation: pin-detail-heart-pop 0.88s cubic-bezier(0.2, 0.88, 0.34, 1.02) forwards;
+    animation: foto-detail-heart-pop 0.88s cubic-bezier(0.2, 0.88, 0.34, 1.02) forwards;
   }
 
   .lux-btn-secondary {
@@ -681,7 +705,7 @@
     filter: brightness(1.08);
   }
 
-  .lux-btn-pin-save {
+  .lux-btn-foto-save {
     @apply absolute top-3 right-3 z-10 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300;
     background: #db2777;
     color: #fff;
@@ -689,7 +713,7 @@
     border: 1px solid rgb(255 255 255 / 0.15);
   }
 
-  .lux-btn-pin-save-saved {
+  .lux-btn-foto-save-saved {
     @apply opacity-100;
     background: #27272a;
     box-shadow: 0 8px 28px -4px rgb(15 23 42 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.06);
@@ -901,7 +925,7 @@
     background: var(--surface-floating-item-active);
   }
 
-  /** Poignée sheet (même gabarit que ModalHeader / PinovaModal — une seule barre par modale). */
+  /** Poignée sheet (même gabarit que ModalHeader / FotoceModal — une seule barre par modale). */
   .app-modal-sheet-handle {
     width: 38px;
     height: 4px;
@@ -935,7 +959,7 @@
 
   .app-modal-backdrop {
     /* Toujours via Teleport vers body : un ancêtre avec perspective/transform
-       (ex. `.pinova-profile-offcanvas-root`) recale `fixed` sur toute la page. */
+       (ex. `.fotoce-profile-offcanvas-root`) recale `fixed` sur toute la page. */
     background: radial-gradient(circle at 35% -10%, rgb(244 114 182 / 0.2), transparent 44%), var(--surface-backdrop);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -954,39 +978,39 @@
     color: var(--card-text);
   }
 
-  /* Cartes Paramètres : fond déjà translucide (`--card-bg`) + flou aligné sur `.pinova-glass`. */
-  .pinova-settings-page .app-card {
+  /* Cartes Paramètres : fond déjà translucide (`--card-bg`) + flou aligné sur `.fotoce-glass`. */
+  .fotoce-settings-page .app-card {
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
   }
 
   /* Paramètres (hub + détail) : texte / surfaces via tokens thème — pas de rgba blanc figé. */
-  .pinova-settings-page,
-  .pinova-settings-hub {
+  .fotoce-settings-page,
+  .fotoce-settings-hub {
     color: var(--card-text);
   }
 
-  .pinova-settings-page .pinova-settings-detail-sections :is(section, .app-card) {
+  .fotoce-settings-page .fotoce-settings-detail-sections :is(section, .app-card) {
     background: var(--card-bg);
     color: var(--card-text);
     border-color: var(--card-border);
     box-shadow: var(--card-shadow);
   }
 
-  .pinova-settings-page .settings-subsection-label,
-  .pinova-settings-hub .settings-hub-group-title {
+  .fotoce-settings-page .settings-subsection-label,
+  .fotoce-settings-hub .settings-hub-group-title {
     color: var(--card-text-muted);
   }
 
-  .pinova-settings-hub .settings-hub-row-label {
+  .fotoce-settings-hub .settings-hub-row-label {
     color: var(--card-text);
   }
 
-  .pinova-settings-hub .settings-hub-row-chevron {
+  .fotoce-settings-hub .settings-hub-row-chevron {
     color: var(--card-text-muted);
   }
 
-  .pinova-settings-hub .settings-hub-card {
+  .fotoce-settings-hub .settings-hub-card {
     background: var(--card-bg);
     border-color: var(--card-border);
     box-shadow: var(--card-shadow);
@@ -994,12 +1018,12 @@
     -webkit-backdrop-filter: var(--glass-blur);
   }
 
-  .pinova-settings-hub .settings-hub-row--border {
+  .fotoce-settings-hub .settings-hub-row--border {
     border-bottom-color: var(--card-border);
   }
 
-  .dark .pinova-settings-hub .settings-hub-row:hover .settings-hub-row-chevron,
-  .dark .pinova-settings-hub .settings-hub-row:focus-visible .settings-hub-row-chevron {
+  .dark .fotoce-settings-hub .settings-hub-row:hover .settings-hub-row-chevron,
+  .dark .fotoce-settings-hub .settings-hub-row:focus-visible .settings-hub-row-chevron {
     color: rgb(251 113 133);
   }
 
@@ -1106,8 +1130,8 @@
   }
 }
 
-/* ─── Thème sombre : surfaces « lux » (cartes pin, modales, champs) ───────── */
-.dark .lux-pin-card {
+/* ─── Thème sombre : surfaces « lux » (cartes foto, modales, champs) ───────── */
+.dark .lux-foto-card {
   border-color: rgb(63 63 70 / 0.55);
   box-shadow:
     0 1px 2px rgb(0 0 0 / 0.28),
@@ -1115,7 +1139,7 @@
   background: transparent;
 }
 
-.dark .lux-pin-skeleton-card {
+.dark .lux-foto-skeleton-card {
   border-color: rgb(63 63 70 / 0.65);
   box-shadow: 0 8px 32px -12px rgb(0 0 0 / 0.45);
   background: rgb(24 24 27 / 0.22);
@@ -1132,12 +1156,12 @@
   box-shadow: 0 10px 28px -6px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
-.dark .lux-btn-pin-save {
+.dark .lux-btn-foto-save {
   background: #ec4899;
   box-shadow: 0 8px 24px -10px rgb(236 72 153 / 0.5);
 }
 
-.dark .lux-btn-pin-save-saved {
+.dark .lux-btn-foto-save-saved {
   background: rgb(12 12 16);
   border-color: rgb(48 48 58 / 0.88);
   box-shadow: 0 8px 28px -4px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.04);
@@ -1154,7 +1178,7 @@
   box-shadow: 0 8px 22px -10px rgb(0 0 0 / 0.5);
 }
 
-.dark .lux-pin-detail-card {
+.dark .lux-foto-detail-card {
   border-color: rgb(63 63 70 / 0.85);
   background: linear-gradient(172deg, rgb(28 26 30) 0%, rgb(20 18 22) 100%);
   box-shadow:
@@ -1163,7 +1187,7 @@
     0 14px 36px -16px rgb(190 24 93 / 0.15);
 }
 
-@keyframes pin-detail-heart-pop {
+@keyframes foto-detail-heart-pop {
   0% {
     opacity: 0;
     transform: scale(0.28);
@@ -1189,12 +1213,12 @@
 }
 
 @media (max-width: 1023px) {
-  .pin-detail-page-wrap {
+  .foto-detail-page-wrap {
     max-width: none;
     padding: 0;
   }
 
-  .pin-detail-back {
+  .foto-detail-back {
     position: fixed;
     left: 0.875rem;
     top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
@@ -1209,15 +1233,15 @@
     backdrop-filter: blur(12px);
   }
 
-  .pin-detail-back .pinova-icon {
+  .foto-detail-back .fotoce-icon {
     font-size: 1.25rem;
   }
 
-  .pin-detail-back {
+  .foto-detail-back {
     font-size: 0;
   }
 
-  .pin-detail-mobile-card {
+  .foto-detail-mobile-card {
     position: relative;
     min-height: 100svh;
     border: 0;
@@ -1226,7 +1250,7 @@
     box-shadow: none;
   }
 
-  .pin-detail-media-pane {
+  .foto-detail-media-pane {
     position: absolute;
     inset: 0;
     min-height: 100svh;
@@ -1235,14 +1259,14 @@
     background: #000;
   }
 
-  .pin-detail-media-wrap {
+  .foto-detail-media-wrap {
     position: absolute;
     inset: 0;
     align-items: center;
     justify-content: center;
   }
 
-  .pin-detail-media {
+  .foto-detail-media {
     width: 100%;
     height: 100svh;
     max-height: none;
@@ -1250,7 +1274,7 @@
     background: #000;
   }
 
-  .pin-detail-info-pane {
+  .foto-detail-info-pane {
     position: relative;
     z-index: 20;
     min-height: 100svh;
@@ -1262,12 +1286,12 @@
     background: linear-gradient(180deg, rgb(0 0 0 / 0.05) 0%, rgb(0 0 0 / 0.14) 44%, rgb(0 0 0 / 0.72) 100%);
   }
 
-  .pin-detail-info-pane > * {
+  .foto-detail-info-pane > * {
     position: relative;
     z-index: 2;
   }
 
-  .pin-detail-actions {
+  .foto-detail-actions {
     position: absolute;
     right: 0.75rem;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 7.5rem);
@@ -1278,14 +1302,14 @@
     gap: 0.75rem;
   }
 
-  .pin-detail-actions > div:first-child {
+  .foto-detail-actions > div:first-child {
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
   }
 
-  .pin-detail-actions .lux-icon-ring-btn,
-  .pin-detail-save {
+  .foto-detail-actions .lux-icon-ring-btn,
+  .foto-detail-save {
     width: 2.75rem;
     height: 2.75rem;
     border-radius: 999px;
@@ -1296,45 +1320,45 @@
     backdrop-filter: blur(12px);
   }
 
-  .pin-detail-actions .lux-icon-ring-btn:hover:not(:disabled),
-  .pin-detail-save:hover:not(:disabled) {
+  .foto-detail-actions .lux-icon-ring-btn:hover:not(:disabled),
+  .foto-detail-save:hover:not(:disabled) {
     background: rgb(0 0 0 / 0.58);
     border-color: rgb(255 255 255 / 0.2);
   }
 
-  .pin-detail-save {
+  .foto-detail-save {
     padding: 0;
     font-size: 0;
   }
 
-  .pin-detail-save .pin-detail-save-icon {
+  .foto-detail-save .foto-detail-save-icon {
     font-size: 1.35rem;
   }
 
-  .pin-detail-info-pane a,
-  .pin-detail-info-pane p,
-  .pin-detail-info-pane h1,
-  .pin-detail-info-pane h2,
-  .pin-detail-info-pane h3,
-  .pin-detail-info-pane span {
+  .foto-detail-info-pane a,
+  .foto-detail-info-pane p,
+  .foto-detail-info-pane h1,
+  .foto-detail-info-pane h2,
+  .foto-detail-info-pane h3,
+  .foto-detail-info-pane span {
     color: inherit;
   }
 
-  .pin-detail-info-pane #pin-detail-title {
+  .foto-detail-info-pane #foto-detail-title {
     color: #fff;
     text-shadow: 0 2px 18px rgb(0 0 0 / 0.55);
   }
 
-  .pin-detail-info-pane .text-neutral-800,
-  .pin-detail-info-pane .text-neutral-900,
-  .pin-detail-info-pane .text-neutral-950,
-  .pin-detail-info-pane .text-neutral-700,
-  .pin-detail-info-pane .text-neutral-600,
-  .pin-detail-info-pane .text-neutral-500 {
+  .foto-detail-info-pane .text-neutral-800,
+  .foto-detail-info-pane .text-neutral-900,
+  .foto-detail-info-pane .text-neutral-950,
+  .foto-detail-info-pane .text-neutral-700,
+  .foto-detail-info-pane .text-neutral-600,
+  .foto-detail-info-pane .text-neutral-500 {
     color: rgb(255 255 255 / 0.78);
   }
 
-  .pin-detail-comments-pane {
+  .foto-detail-comments-pane {
     margin-top: 1rem;
     max-height: 45svh;
     overflow: auto;
@@ -1467,7 +1491,7 @@
 }
 
 /**
- * Réduit (sans abolir) enregistrement / glisser / menu contextuel sur médias pin.
+ * Réduit (sans abolir) enregistrement / glisser / menu contextuel sur médias foto.
  * iOS peut toujours proposer capture écran ou partage système — compléter côté serveur (URL signées, filigrane).
  */
 .pin-media-antileak {
@@ -1512,23 +1536,23 @@
 ─────────────────────────────────────────────────────────────────────────── */
 
 /*
-  Utilitaires safe-area : `pinova-safe-top`, `pinova-safe-bottom`, etc.
+  Utilitaires safe-area : `fotoce-safe-top`, `fotoce-safe-bottom`, etc.
   Permettent d'ajouter du padding sans dépendre du composable JS.
   Toujours utiliser `max()` pour assurer un minimum sur les écrans sans notch.
 */
-.pinova-safe-top { padding-top: env(safe-area-inset-top, 0px); }
-.pinova-safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
-.pinova-safe-left { padding-left: env(safe-area-inset-left, 0px); }
-.pinova-safe-right { padding-right: env(safe-area-inset-right, 0px); }
-.pinova-safe-x {
+.fotoce-safe-top { padding-top: env(safe-area-inset-top, 0px); }
+.fotoce-safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.fotoce-safe-left { padding-left: env(safe-area-inset-left, 0px); }
+.fotoce-safe-right { padding-right: env(safe-area-inset-right, 0px); }
+.fotoce-safe-x {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
-.pinova-safe-y {
+.fotoce-safe-y {
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.pinova-safe-all {
+.fotoce-safe-all {
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
@@ -1538,37 +1562,37 @@
 /*
   Padding / min-height des chrome fixes (`GlobalHeader`, `AppMobilePageHeader`).
   — `constant()` : iOS 11.0–11.2 (pré-env).
-  — `env()` + `var(--pinova-pwa-extra-top-inset)` : secours pose par `utils/pwaSafeTopInset.ts`
+  — `env()` + `var(--fotoce-pwa-extra-top-inset)` : secours pose par `utils/pwaSafeTopInset.ts`
     quand l’inset CSS reste quasi nulle en standalone (Android / rares WebView).
 */
-.pinova-app-chrome-safe-pt {
+.fotoce-app-chrome-safe-pt {
   padding-top: calc(0.375rem + constant(safe-area-inset-top));
   padding-top: calc(
-    0.375rem + env(safe-area-inset-top, 0px) + var(--pinova-pwa-extra-top-inset, 0px)
+    0.375rem + env(safe-area-inset-top, 0px) + var(--fotoce-pwa-extra-top-inset, 0px)
   );
 }
 
-.pinova-app-chrome-safe-inner-min-h {
+.fotoce-app-chrome-safe-inner-min-h {
   min-height: calc(2.75rem + constant(safe-area-inset-top));
   min-height: calc(
-    2.75rem + env(safe-area-inset-top, 0px) + var(--pinova-pwa-extra-top-inset, 0px)
+    2.75rem + env(safe-area-inset-top, 0px) + var(--fotoce-pwa-extra-top-inset, 0px)
   );
 }
 
 /*
-  Tab bar mobile : hauteur calée sur `--pinova-mobile-tab-bar-h` + safe-area une seule fois.
+  Tab bar mobile : hauteur calée sur `--fotoce-mobile-tab-bar-h` + safe-area une seule fois.
   Le padding bas du `<main>` utilise la même formule (App.vue).
 */
 .app-mobile-tab-bar {
   box-sizing: border-box;
-  min-height: calc(var(--pinova-mobile-tab-bar-h) + env(safe-area-inset-bottom, 0px));
+  min-height: calc(var(--fotoce-mobile-tab-bar-h) + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Réserve l’espace sous la tab bar fixe (pages Home / Profil, etc.). */
 @media (max-width: 1023px) {
-  .pinova-mobile-tab-bar-scroll-pad {
-    padding-bottom: calc(var(--pinova-mobile-tab-bar-h, 4.25rem) + env(safe-area-inset-bottom, 0px));
+  .fotoce-mobile-tab-bar-scroll-pad {
+    padding-bottom: calc(var(--fotoce-mobile-tab-bar-h, 4.25rem) + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1577,7 +1601,7 @@
   composition GPU sans surcharge de `will-change` permanent.
   Le `will-change` doit être posé/retiré via JS pour les animations longues.
 */
-.pinova-gpu {
+.fotoce-gpu {
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -1587,7 +1611,7 @@
   Élément qui sera animé en transform : promote sur le compositor.
   À ne pas mettre partout : coûteux en mémoire.
 */
-.pinova-gpu-animate {
+.fotoce-gpu-animate {
   will-change: transform, opacity;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
@@ -1598,7 +1622,7 @@
   Désactive le tap highlight iOS et le 300ms delay.
   À appliquer sur tous les éléments interactifs.
 */
-.pinova-tap {
+.fotoce-tap {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -1607,13 +1631,13 @@
   Spring CSS de base utilisable comme transition (équivalent
   Reanimated `withSpring` damping 18 stiffness 320).
 */
-.pinova-spring {
+.fotoce-spring {
   transition-property: transform, opacity, background-color, border-color, color;
   transition-duration: 240ms;
   transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.pinova-spring-soft {
+.fotoce-spring-soft {
   transition-property: transform, opacity, background-color, border-color, color;
   transition-duration: 380ms;
   transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1637,7 +1661,7 @@
 /*
   Empêche les rebonds iOS sur le body racine quand on est en plein écran
   immersif (layer fullscreen). Le scroll body est verrouillé par layerManager
-  via la classe `.pinova-layer-scroll-lock` (cf. LayerHost.vue).
+  via la classe `.fotoce-layer-scroll-lock` (cf. LayerHost.vue).
 */
 html, body {
   /* overscroll en chaîne : la couche du dessus reçoit le scroll en premier. */
@@ -1649,26 +1673,26 @@ html, body {
   Permettent à des composants externes de cibler la palette des couches.
 */
 :root {
-  --pinova-bg-surface: rgb(255 255 255);
-  --pinova-bg-surface-dark: rgb(18 16 20);
-  --pinova-page-bg: rgb(250 247 249);
-  --pinova-page-bg-dark: rgb(7 5 6);
-  --pinova-pink-border: rgba(219, 39, 119, 0.22);
-  --pinova-pink-border-dark: rgba(219, 39, 119, 0.35);
-  --pinova-border-soft: rgb(234 221 229);
-  --pinova-border-dark: rgb(45 38 43);
+  --fotoce-bg-surface: rgb(255 255 255);
+  --fotoce-bg-surface-dark: rgb(18 16 20);
+  --fotoce-page-bg: rgb(250 247 249);
+  --fotoce-page-bg-dark: rgb(7 5 6);
+  --fotoce-pink-border: rgba(219, 39, 119, 0.22);
+  --fotoce-pink-border-dark: rgba(219, 39, 119, 0.35);
+  --fotoce-border-soft: rgb(234 221 229);
+  --fotoce-border-dark: rgb(45 38 43);
 
   /* ───── Motion tokens (CSS) — miroirs de src/theme/motion.ts ───── */
-  --pinova-dur-ultra-fast: 120ms;
-  --pinova-dur-fast: 180ms;
-  --pinova-dur-medium: 260ms;
-  --pinova-dur-slow: 380ms;
-  --pinova-dur-ambient: 640ms;
+  --fotoce-dur-ultra-fast: 120ms;
+  --fotoce-dur-fast: 180ms;
+  --fotoce-dur-medium: 260ms;
+  --fotoce-dur-slow: 380ms;
+  --fotoce-dur-ambient: 640ms;
 
-  --pinova-ease-ios-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --pinova-ease-ios-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --pinova-ease-ios-in-out: cubic-bezier(0.42, 0, 0.58, 1);
-  --pinova-ease-ios-snappy: cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  --fotoce-ease-ios-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --fotoce-ease-ios-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --fotoce-ease-ios-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+  --fotoce-ease-ios-snappy: cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -1681,24 +1705,24 @@ html, body {
   Press feedback CSS fallback (sans JS).
   Préférer la directive `v-press` qui apporte le retour spring physique.
 */
-.pinova-press {
+.fotoce-press {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   transform-origin: 50% 50%;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transition:
-    transform var(--pinova-dur-ultra-fast) var(--pinova-ease-ios-out),
-    filter var(--pinova-dur-fast) var(--pinova-ease-ios-out);
+    transform var(--fotoce-dur-ultra-fast) var(--fotoce-ease-ios-out),
+    filter var(--fotoce-dur-fast) var(--fotoce-ease-ios-out);
 }
 
 @media (hover: hover) {
-  .pinova-press:hover:not(:disabled):not([aria-disabled="true"]) {
+  .fotoce-press:hover:not(:disabled):not([aria-disabled="true"]) {
     filter: brightness(1.04);
   }
 }
 
-.pinova-press:active:not(:disabled):not([aria-disabled="true"]) {
+.fotoce-press:active:not(:disabled):not([aria-disabled="true"]) {
   transform: scale3d(0.92, 0.92, 1);
   filter: brightness(0.97);
 }
@@ -1707,23 +1731,23 @@ html, body {
   Spring approximations (CSS-only) — pour les éléments qui ne peuvent pas
   utiliser useSpring (svg, images, transitions simples).
 */
-.pinova-spring-out {
+.fotoce-spring-out {
   transition-property: transform, opacity;
-  transition-duration: var(--pinova-dur-medium);
-  transition-timing-function: var(--pinova-ease-ios-out);
+  transition-duration: var(--fotoce-dur-medium);
+  transition-timing-function: var(--fotoce-ease-ios-out);
 }
 
-.pinova-spring-overshoot {
+.fotoce-spring-overshoot {
   transition-property: transform, opacity;
-  transition-duration: var(--pinova-dur-slow);
-  transition-timing-function: var(--pinova-ease-ios-overshoot);
+  transition-duration: var(--fotoce-dur-slow);
+  transition-timing-function: var(--fotoce-ease-ios-overshoot);
 }
 
 /*
   iOS scroll feel : momentum + overscroll contain.
   À appliquer sur les conteneurs scrollables internes.
 */
-.pinova-scroll-ios {
+.fotoce-scroll-ios {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scroll-behavior: smooth;
@@ -1731,7 +1755,7 @@ html, body {
   touch-action: pan-y;
 }
 
-.pinova-scroll-ios-x {
+.fotoce-scroll-ios-x {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   scroll-behavior: smooth;
@@ -1742,8 +1766,8 @@ html, body {
   Désactive les transitions du sélecteur durant un drag (pour follow finger 1:1).
   Le composable bottom-sheet ajoute cette classe pendant `isDragging`.
 */
-.pinova-no-transition,
-.pinova-no-transition * {
+.fotoce-no-transition,
+.fotoce-no-transition * {
   transition: none !important;
   animation-duration: 0 !important;
 }
@@ -1752,9 +1776,9 @@ html, body {
   Skeleton local (perception performance) :
   - apparaît instantanément (animation 0ms)
   - shimmer subtil pour signaler "en cours"
-  À utiliser pour les zones d'attente API : `class="pinova-skel"`.
+  À utiliser pour les zones d'attente API : `class="fotoce-skel"`.
 */
-.pinova-skel {
+.fotoce-skel {
   position: relative;
   overflow: hidden;
   background: var(--skeleton-base, rgb(229 231 235));
@@ -1762,7 +1786,7 @@ html, body {
   isolation: isolate;
 }
 
-.pinova-skel::after {
+.fotoce-skel::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1772,15 +1796,15 @@ html, body {
     rgb(255 255 255 / 0.6) 38%,
     transparent 72%
   );
-  animation: pinova-shimmer 1.4s linear infinite;
+  animation: fotoce-shimmer 1.4s linear infinite;
   pointer-events: none;
 }
 
-.dark .pinova-skel {
+.dark .fotoce-skel {
   background: var(--skeleton-base, rgb(63 63 70));
 }
 
-.dark .pinova-skel::after {
+.dark .fotoce-skel::after {
   background: linear-gradient(
     100deg,
     transparent 0%,
@@ -1789,14 +1813,14 @@ html, body {
   );
 }
 
-@keyframes pinova-shimmer {
+@keyframes fotoce-shimmer {
   from { transform: translate3d(-100%, 0, 0); }
   to   { transform: translate3d(100%, 0, 0); }
 }
 
 /*
  * ─────────────────────────────────────────────────────────────────────────
- *  Pinova Design System — Tokens unifiés (sync src/theme/*.ts)
+ *  Fotoce Design System — Tokens unifiés (sync src/theme/*.ts)
  * ─────────────────────────────────────────────────────────────────────────
  *
  *  Variables sémantiques exposées en CSS pour usage direct dans :
@@ -1804,160 +1828,160 @@ html, body {
  *    - utilitaires Tailwind via [class*='-var']
  *    - inline styles ad-hoc
  *
- *  Toutes les vars suivent le pattern : --pinova-<group>-<role>
+ *  Toutes les vars suivent le pattern : --fotoce-<group>-<role>
  *
  *  Modes dark/light : commutation automatique via .dark sur <html>.
  */
 
 :root {
   /* ── Surfaces (élévations) ── */
-  --pinova-surface-base:      #f9f8f9;
-  --pinova-surface-elevated:  #ffffff;
-  --pinova-surface-floating:  #fdfcfd;
-  --pinova-surface-overlay:   #ffffff;
-  --pinova-surface-popover:   #ffffff;
+  --fotoce-surface-base:      #f9f8f9;
+  --fotoce-surface-elevated:  #ffffff;
+  --fotoce-surface-floating:  #fdfcfd;
+  --fotoce-surface-overlay:   #ffffff;
+  --fotoce-surface-popover:   #ffffff;
 
   /* ── Texte ── */
-  --pinova-text-primary:      #161417;
-  --pinova-text-secondary:    #56525a;
-  --pinova-text-tertiary:     #75717a;
-  --pinova-text-disabled:     #a8a4a9;
-  --pinova-text-link:         #e0245e;
-  --pinova-text-on-accent:    #ffffff;
+  --fotoce-text-primary:      #161417;
+  --fotoce-text-secondary:    #56525a;
+  --fotoce-text-tertiary:     #75717a;
+  --fotoce-text-disabled:     #a8a4a9;
+  --fotoce-text-link:         #e0245e;
+  --fotoce-text-on-accent:    #ffffff;
 
   /* ── Bordures ── */
-  --pinova-border-subtle:     #e6e4e7;
-  --pinova-border-default:    #d3d0d4;
-  --pinova-border-rose:       #ffc2d6;
-  --pinova-border-focus:      #ff4d7d;
+  --fotoce-border-subtle:     #e6e4e7;
+  --fotoce-border-default:    #d3d0d4;
+  --fotoce-border-rose:       #ffc2d6;
+  --fotoce-border-focus:      #ff4d7d;
 
-  /* ── Accent rose Pinova ── */
-  --pinova-accent:            #e0245e;
-  --pinova-accent-hover:      #ff4d7d;
-  --pinova-accent-pressed:    #c11550;
-  --pinova-accent-subtle:     #fff1f5;
-  --pinova-accent-strong:     #ffe1eb;
+  /* ── Accent rose Fotoce ── */
+  --fotoce-accent:            #e0245e;
+  --fotoce-accent-hover:      #ff4d7d;
+  --fotoce-accent-pressed:    #c11550;
+  --fotoce-accent-subtle:     #fff1f5;
+  --fotoce-accent-strong:     #ffe1eb;
 
   /* ── Skeletons ── */
-  --pinova-skel-base:         #f1f0f2;
-  --pinova-skel-highlight:    #e6e4e7;
+  --fotoce-skel-base:         #f1f0f2;
+  --fotoce-skel-highlight:    #e6e4e7;
 
   /* ── Backdrops ── */
-  --pinova-backdrop-soft:     rgba(0, 0, 0, 0.12);
-  --pinova-backdrop-default:  rgba(0, 0, 0, 0.32);
-  --pinova-backdrop-strong:   rgba(0, 0, 0, 0.52);
+  --fotoce-backdrop-soft:     rgba(0, 0, 0, 0.12);
+  --fotoce-backdrop-default:  rgba(0, 0, 0, 0.32);
+  --fotoce-backdrop-strong:   rgba(0, 0, 0, 0.52);
 
   /* ── Shadows stratifiées (multi-layer, GPU-friendly) ── */
-  --pinova-shadow-ambient:
+  --fotoce-shadow-ambient:
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 4px 12px rgba(15, 23, 42, 0.05);
-  --pinova-shadow-directional:
+  --fotoce-shadow-directional:
     0 2px 4px rgba(15, 23, 42, 0.05),
     0 10px 24px rgba(15, 23, 42, 0.09),
     0 0 0 1px rgba(255, 255, 255, 0.6) inset;
-  --pinova-shadow-floating:
+  --fotoce-shadow-floating:
     0 4px 10px rgba(15, 23, 42, 0.08),
     0 18px 42px rgba(15, 23, 42, 0.12),
     0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-  --pinova-shadow-modal:
+  --fotoce-shadow-modal:
     0 8px 16px rgba(15, 23, 42, 0.10),
     0 36px 70px rgba(15, 23, 42, 0.18),
     0 0 0 1px rgba(255, 255, 255, 0.45) inset;
-  --pinova-shadow-elevated:
+  --fotoce-shadow-elevated:
     0 12px 22px rgba(15, 23, 42, 0.14),
     0 44px 90px rgba(15, 23, 42, 0.22),
     0 14px 32px rgba(224, 36, 94, 0.10),
     0 0 0 1px rgba(255, 255, 255, 0.42) inset;
-  --pinova-shadow-pressed:
+  --fotoce-shadow-pressed:
     0 1px 2px rgba(15, 23, 42, 0.06),
     0 4px 8px rgba(15, 23, 42, 0.08);
 
   /* ── Glow accents ── */
-  --pinova-glow-rose-soft:    0 0 32px rgba(255, 95, 145, 0.18);
-  --pinova-glow-rose-medium:  0 0 48px rgba(224, 36, 94, 0.28);
-  --pinova-glow-rose-strong:  0 0 72px rgba(224, 36, 94, 0.42);
-  --pinova-focus-ring:        0 0 0 3px rgba(224, 36, 94, 0.32);
-  --pinova-focus-outline:     2px solid var(--pn-pink-strong, #e0245e);
+  --fotoce-glow-rose-soft:    0 0 32px rgba(255, 95, 145, 0.18);
+  --fotoce-glow-rose-medium:  0 0 48px rgba(224, 36, 94, 0.28);
+  --fotoce-glow-rose-strong:  0 0 72px rgba(224, 36, 94, 0.42);
+  --fotoce-focus-ring:        0 0 0 3px rgba(224, 36, 94, 0.32);
+  --fotoce-focus-outline:     2px solid var(--pn-pink-strong, #e0245e);
 
   /* ── Radius unifiés ── */
-  --pinova-radius-xs:         4px;
-  --pinova-radius-sm:         8px;
-  --pinova-radius-ms:         12px;
-  --pinova-radius-md:         16px;
-  --pinova-radius-card:       22px;
-  --pinova-radius-floating:   24px;
-  --pinova-radius-sheet:      28px;
-  --pinova-radius-fullscreen: 38px;
-  --pinova-radius-full:       9999px;
+  --fotoce-radius-xs:         4px;
+  --fotoce-radius-sm:         8px;
+  --fotoce-radius-ms:         12px;
+  --fotoce-radius-md:         16px;
+  --fotoce-radius-card:       22px;
+  --fotoce-radius-floating:   24px;
+  --fotoce-radius-sheet:      28px;
+  --fotoce-radius-fullscreen: 38px;
+  --fotoce-radius-full:       9999px;
 
   /* ── Spacing échelle 4px ── */
-  --pinova-space-hairline:    2px;
-  --pinova-space-xs:          4px;
-  --pinova-space-sm:          8px;
-  --pinova-space-ms:          12px;
-  --pinova-space-md:          16px;
-  --pinova-space-ml:          20px;
-  --pinova-space-lg:          24px;
-  --pinova-space-xl:          32px;
-  --pinova-space-xxl:         40px;
-  --pinova-space-xxxl:        56px;
-  --pinova-space-hero:        72px;
+  --fotoce-space-hairline:    2px;
+  --fotoce-space-xs:          4px;
+  --fotoce-space-sm:          8px;
+  --fotoce-space-ms:          12px;
+  --fotoce-space-md:          16px;
+  --fotoce-space-ml:          20px;
+  --fotoce-space-lg:          24px;
+  --fotoce-space-xl:          32px;
+  --fotoce-space-xxl:         40px;
+  --fotoce-space-xxxl:        56px;
+  --fotoce-space-hero:        72px;
 }
 
 .dark {
   /* ── Surfaces OLED-friendly (jamais gris plat) ── */
-  --pinova-surface-base:      #030304;
-  --pinova-surface-elevated:  #08080b;
-  --pinova-surface-floating:  #0c0c10;
-  --pinova-surface-overlay:   #101014;
-  --pinova-surface-popover:   #141418;
+  --fotoce-surface-base:      #030304;
+  --fotoce-surface-elevated:  #08080b;
+  --fotoce-surface-floating:  #0c0c10;
+  --fotoce-surface-overlay:   #101014;
+  --fotoce-surface-popover:   #141418;
 
   /* ── Texte OLED ── */
-  --pinova-text-primary:      #f6f5f7;
-  --pinova-text-secondary:    #bab7bf;
-  --pinova-text-tertiary:     #8f8c96;
-  --pinova-text-disabled:     #3d3941;
-  --pinova-text-link:         #ff4d7d;
+  --fotoce-text-primary:      #f6f5f7;
+  --fotoce-text-secondary:    #bab7bf;
+  --fotoce-text-tertiary:     #8f8c96;
+  --fotoce-text-disabled:     #3d3941;
+  --fotoce-text-link:         #ff4d7d;
 
   /* ── Bordures dark ── */
-  --pinova-border-subtle:     #1f1e24;
-  --pinova-border-default:    #2a2830;
-  --pinova-border-rose:       rgba(255, 145, 180, 0.22);
-  --pinova-border-focus:      #ff4d7d;
+  --fotoce-border-subtle:     #1f1e24;
+  --fotoce-border-default:    #2a2830;
+  --fotoce-border-rose:       rgba(255, 145, 180, 0.22);
+  --fotoce-border-focus:      #ff4d7d;
 
   /* ── Accent dark (un poil plus clair que light pour contraste sur fonds sombres) ── */
-  --pinova-accent:            #ff4d7d;
-  --pinova-accent-hover:      #ff8aae;
-  --pinova-accent-pressed:    #e0245e;
-  --pinova-accent-subtle:     rgba(224, 36, 94, 0.12);
-  --pinova-accent-strong:     rgba(224, 36, 94, 0.22);
+  --fotoce-accent:            #ff4d7d;
+  --fotoce-accent-hover:      #ff8aae;
+  --fotoce-accent-pressed:    #e0245e;
+  --fotoce-accent-subtle:     rgba(224, 36, 94, 0.12);
+  --fotoce-accent-strong:     rgba(224, 36, 94, 0.22);
 
   /* ── Skeletons dark ── */
-  --pinova-skel-base:         #0e0e12;
-  --pinova-skel-highlight:    #141418;
+  --fotoce-skel-base:         #0e0e12;
+  --fotoce-skel-highlight:    #141418;
 
   /* ── Backdrops dark ── */
-  --pinova-backdrop-soft:     rgba(0, 0, 0, 0.52);
-  --pinova-backdrop-default:  rgba(0, 0, 0, 0.68);
-  --pinova-backdrop-strong:   rgba(0, 0, 0, 0.82);
+  --fotoce-backdrop-soft:     rgba(0, 0, 0, 0.52);
+  --fotoce-backdrop-default:  rgba(0, 0, 0, 0.68);
+  --fotoce-backdrop-strong:   rgba(0, 0, 0, 0.82);
 
   /* ── Shadows dark (atténuées en bordure highlight, plus profondes) ── */
-  --pinova-shadow-ambient:
+  --fotoce-shadow-ambient:
     0 1px 2px rgba(0, 0, 0, 0.28),
     0 4px 14px rgba(0, 0, 0, 0.34);
-  --pinova-shadow-directional:
+  --fotoce-shadow-directional:
     0 2px 6px rgba(0, 0, 0, 0.36),
     0 12px 26px rgba(0, 0, 0, 0.44),
     0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  --pinova-shadow-floating:
+  --fotoce-shadow-floating:
     0 6px 14px rgba(0, 0, 0, 0.45),
     0 22px 48px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-  --pinova-shadow-modal:
+  --fotoce-shadow-modal:
     0 12px 24px rgba(0, 0, 0, 0.55),
     0 44px 80px rgba(0, 0, 0, 0.62),
     0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-  --pinova-shadow-elevated:
+  --fotoce-shadow-elevated:
     0 16px 30px rgba(0, 0, 0, 0.60),
     0 56px 100px rgba(0, 0, 0, 0.70),
     0 14px 32px rgba(224, 36, 94, 0.16),
@@ -1969,75 +1993,75 @@ html, body {
  *  Classes utilitaires Premium — Cards / surfaces / boutons / chips
  * ─────────────────────────────────────────────────────────────────────────
  *
- *  Préfixe `.pds-` (Pinova Design System) pour éviter collision avec
+ *  Préfixe `.pds-` (Fotoce Design System) pour éviter collision avec
  *  les classes legacy `.lux-*` et `.app-*` (qu'on conserve par migration).
  */
 
 /* ── Cards ── */
 .pds-card {
-  background-color: var(--pinova-surface-elevated);
-  border: 1px solid var(--pinova-border-subtle);
-  border-radius: var(--pinova-radius-card);
-  box-shadow: var(--pinova-shadow-ambient);
-  color: var(--pinova-text-primary);
+  background-color: var(--fotoce-surface-elevated);
+  border: 1px solid var(--fotoce-border-subtle);
+  border-radius: var(--fotoce-radius-card);
+  box-shadow: var(--fotoce-shadow-ambient);
+  color: var(--fotoce-text-primary);
   transition:
-    box-shadow var(--pinova-dur-medium, 260ms) var(--pinova-ease-ios-out, cubic-bezier(0.22, 1, 0.36, 1)),
-    transform var(--pinova-dur-medium, 260ms) var(--pinova-ease-ios-out, cubic-bezier(0.22, 1, 0.36, 1)),
-    border-color var(--pinova-dur-fast, 180ms) ease;
+    box-shadow var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-ios-out, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-ios-out, cubic-bezier(0.22, 1, 0.36, 1)),
+    border-color var(--fotoce-dur-fast, 180ms) ease;
 }
 
 @media (hover: hover) {
   .pds-card:hover {
-    box-shadow: var(--pinova-shadow-directional);
+    box-shadow: var(--fotoce-shadow-directional);
     transform: translate3d(0, -2px, 0);
   }
 }
 
 .pds-card-floating {
-  background-color: var(--pinova-surface-floating);
-  border: 1px solid var(--pinova-border-subtle);
-  border-radius: var(--pinova-radius-floating);
-  box-shadow: var(--pinova-shadow-floating);
-  color: var(--pinova-text-primary);
+  background-color: var(--fotoce-surface-floating);
+  border: 1px solid var(--fotoce-border-subtle);
+  border-radius: var(--fotoce-radius-floating);
+  box-shadow: var(--fotoce-shadow-floating);
+  color: var(--fotoce-text-primary);
 }
 
 .pds-card-elevated {
-  background-color: var(--pinova-surface-elevated);
-  border: 1px solid var(--pinova-border-subtle);
-  border-radius: var(--pinova-radius-card);
-  box-shadow: var(--pinova-shadow-elevated);
-  color: var(--pinova-text-primary);
+  background-color: var(--fotoce-surface-elevated);
+  border: 1px solid var(--fotoce-border-subtle);
+  border-radius: var(--fotoce-radius-card);
+  box-shadow: var(--fotoce-shadow-elevated);
+  color: var(--fotoce-text-primary);
 }
 
 /* ── Surface (générique : sections, panels) ── */
 .pds-surface {
-  background-color: var(--pinova-surface-base);
-  color: var(--pinova-text-primary);
+  background-color: var(--fotoce-surface-base);
+  color: var(--fotoce-text-primary);
 }
 .pds-surface-elevated {
-  background-color: var(--pinova-surface-elevated);
-  color: var(--pinova-text-primary);
+  background-color: var(--fotoce-surface-elevated);
+  color: var(--fotoce-text-primary);
 }
 
 /* ── Pills / Chips ── */
 .pds-pill {
   display: inline-flex;
   align-items: center;
-  gap: var(--pinova-space-xs);
+  gap: var(--fotoce-space-xs);
   padding: 6px 14px;
-  border-radius: var(--pinova-radius-full);
+  border-radius: var(--fotoce-radius-full);
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  background-color: var(--pinova-accent-subtle);
-  color: var(--pinova-accent);
-  border: 1px solid var(--pinova-border-rose);
+  background-color: var(--fotoce-accent-subtle);
+  color: var(--fotoce-accent);
+  border: 1px solid var(--fotoce-border-rose);
   -webkit-tap-highlight-color: transparent;
 }
 .pds-pill--neutral {
-  background-color: var(--pinova-surface-elevated);
-  color: var(--pinova-text-secondary);
-  border-color: var(--pinova-border-subtle);
+  background-color: var(--fotoce-surface-elevated);
+  color: var(--fotoce-text-secondary);
+  border-color: var(--fotoce-border-subtle);
 }
 
 /* ── Boutons premium ── */
@@ -2045,9 +2069,9 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--pinova-space-sm);
+  gap: var(--fotoce-space-sm);
   padding: 12px 20px;
-  border-radius: var(--pinova-radius-md);
+  border-radius: var(--fotoce-radius-md);
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.005em;
@@ -2058,19 +2082,19 @@ html, body {
   touch-action: manipulation;
   transform-origin: center;
   transition:
-    transform var(--pinova-dur-ultra-fast, 120ms) var(--pinova-ease-ios-out, cubic-bezier(0.22, 1, 0.36, 1)),
-    filter var(--pinova-dur-fast, 180ms) ease,
-    box-shadow var(--pinova-dur-fast, 180ms) ease,
-    background-color var(--pinova-dur-fast, 180ms) ease;
+    transform var(--fotoce-dur-ultra-fast, 120ms) var(--fotoce-ease-ios-out, cubic-bezier(0.22, 1, 0.36, 1)),
+    filter var(--fotoce-dur-fast, 180ms) ease,
+    box-shadow var(--fotoce-dur-fast, 180ms) ease,
+    background-color var(--fotoce-dur-fast, 180ms) ease;
 }
 .pds-btn:focus-visible {
   outline: none;
-  box-shadow: var(--pinova-focus-ring);
+  box-shadow: var(--fotoce-focus-ring);
 }
 
 /* Anneau focus réutilisable (settings, chips, etc.) */
-.pinova-focus-ring:focus-visible {
-  outline: var(--pinova-focus-outline);
+.fotoce-focus-ring:focus-visible {
+  outline: var(--fotoce-focus-outline);
   outline-offset: 2px;
 }
 
@@ -2084,13 +2108,13 @@ summary:focus-visible,
 [role='tab']:focus-visible,
 [role='radio']:focus-visible,
 [role='switch']:focus-visible {
-  outline: var(--pinova-focus-outline);
+  outline: var(--fotoce-focus-outline);
   outline-offset: 2px;
 }
 
-button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.app-btn):not(.lux-pin-card),
+button:focus-visible:not(:disabled):not(.fotoce-focus-ring):not(.pds-btn):not(.app-btn):not(.lux-foto-card),
 [role='button']:focus-visible:not(.pds-btn):not(.app-btn) {
-  outline: var(--pinova-focus-outline);
+  outline: var(--fotoce-focus-outline);
   outline-offset: 2px;
 }
 .pds-btn:disabled {
@@ -2103,7 +2127,7 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
   transform: scale3d(0.96, 0.96, 1);
 }
 
-/* Primary — Rose Pinova glossy avec gradient + inset highlight. */
+/* Primary — Rose Fotoce glossy avec gradient + inset highlight. */
 .pds-btn--primary {
   color: white;
   background: linear-gradient(135deg, #ff4d7d 0%, #e0245e 55%, #c11550 100%);
@@ -2128,41 +2152,41 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
 
 /* Secondary — surface card + glow rose subtil. */
 .pds-btn--secondary {
-  color: var(--pinova-text-primary);
-  background-color: var(--pinova-surface-elevated);
-  border-color: var(--pinova-border-subtle);
-  box-shadow: var(--pinova-shadow-ambient);
+  color: var(--fotoce-text-primary);
+  background-color: var(--fotoce-surface-elevated);
+  border-color: var(--fotoce-border-subtle);
+  box-shadow: var(--fotoce-shadow-ambient);
 }
 @media (hover: hover) {
   .pds-btn--secondary:hover:not(:disabled) {
-    background-color: var(--pinova-surface-floating);
-    border-color: var(--pinova-border-default);
-    box-shadow: var(--pinova-shadow-directional);
+    background-color: var(--fotoce-surface-floating);
+    border-color: var(--fotoce-border-default);
+    box-shadow: var(--fotoce-shadow-directional);
   }
 }
 
 /* Ghost — transparent avec hover subtil. */
 .pds-btn--ghost {
-  color: var(--pinova-text-primary);
+  color: var(--fotoce-text-primary);
   background-color: transparent;
   border-color: transparent;
 }
 @media (hover: hover) {
   .pds-btn--ghost:hover:not(:disabled) {
-    background-color: var(--pinova-accent-subtle);
-    color: var(--pinova-accent);
+    background-color: var(--fotoce-accent-subtle);
+    color: var(--fotoce-accent);
   }
 }
 
 /* Floating — bouton flottant glassmorphisme. */
 .pds-btn--floating {
-  color: var(--pinova-text-primary);
+  color: var(--fotoce-text-primary);
   background-color: var(--glass-fill);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-color: var(--glass-border);
-  box-shadow: var(--pinova-shadow-floating);
-  border-radius: var(--pinova-radius-full);
+  box-shadow: var(--fotoce-shadow-floating);
+  border-radius: var(--fotoce-radius-full);
 }
 
 /* Danger — rouge accent. */
@@ -2173,9 +2197,9 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
 }
 
 /* Sizes */
-.pds-btn--sm    { padding: 8px 14px; font-size: 0.875rem; border-radius: var(--pinova-radius-ms); }
-.pds-btn--lg    { padding: 14px 24px; font-size: 1.0625rem; border-radius: var(--pinova-radius-md); }
-.pds-btn--icon  { padding: 0; width: 40px; height: 40px; border-radius: var(--pinova-radius-full); }
+.pds-btn--sm    { padding: 8px 14px; font-size: 0.875rem; border-radius: var(--fotoce-radius-ms); }
+.pds-btn--lg    { padding: 14px 24px; font-size: 1.0625rem; border-radius: var(--fotoce-radius-md); }
+.pds-btn--icon  { padding: 0; width: 40px; height: 40px; border-radius: var(--fotoce-radius-full); }
 
 /* Typography utility classes (correspondent à src/theme/typography.ts) */
 .pds-display-3xl { font-size: 2.5rem;    line-height: 1.15; letter-spacing: -0.02em;  font-weight: 700; }
@@ -2192,54 +2216,54 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
 .pds-overline    { font-size: 0.6875rem; line-height: 1.2;  letter-spacing: 0.08em; font-weight: 600; text-transform: uppercase; }
 
 /* Semantic color utilities */
-.pds-text-primary    { color: var(--pinova-text-primary); }
-.pds-text-secondary  { color: var(--pinova-text-secondary); }
-.pds-text-tertiary   { color: var(--pinova-text-tertiary); }
-.pds-text-accent     { color: var(--pinova-accent); }
-.pds-text-link       { color: var(--pinova-text-link); }
-.pds-bg-base         { background-color: var(--pinova-surface-base); }
-.pds-bg-elevated     { background-color: var(--pinova-surface-elevated); }
-.pds-bg-floating     { background-color: var(--pinova-surface-floating); }
-.pds-bg-accent-subtle { background-color: var(--pinova-accent-subtle); }
+.pds-text-primary    { color: var(--fotoce-text-primary); }
+.pds-text-secondary  { color: var(--fotoce-text-secondary); }
+.pds-text-tertiary   { color: var(--fotoce-text-tertiary); }
+.pds-text-accent     { color: var(--fotoce-accent); }
+.pds-text-link       { color: var(--fotoce-text-link); }
+.pds-bg-base         { background-color: var(--fotoce-surface-base); }
+.pds-bg-elevated     { background-color: var(--fotoce-surface-elevated); }
+.pds-bg-floating     { background-color: var(--fotoce-surface-floating); }
+.pds-bg-accent-subtle { background-color: var(--fotoce-accent-subtle); }
 
-.pds-border-subtle  { border: 1px solid var(--pinova-border-subtle); }
-.pds-border-default { border: 1px solid var(--pinova-border-default); }
-.pds-border-rose    { border: 1px solid var(--pinova-border-rose); }
+.pds-border-subtle  { border: 1px solid var(--fotoce-border-subtle); }
+.pds-border-default { border: 1px solid var(--fotoce-border-default); }
+.pds-border-rose    { border: 1px solid var(--fotoce-border-rose); }
 
 /* Shadow utilities */
-.pds-shadow-ambient     { box-shadow: var(--pinova-shadow-ambient); }
-.pds-shadow-directional { box-shadow: var(--pinova-shadow-directional); }
-.pds-shadow-floating    { box-shadow: var(--pinova-shadow-floating); }
-.pds-shadow-modal       { box-shadow: var(--pinova-shadow-modal); }
-.pds-shadow-elevated    { box-shadow: var(--pinova-shadow-elevated); }
-.pds-glow-rose          { box-shadow: var(--pinova-glow-rose-soft); }
+.pds-shadow-ambient     { box-shadow: var(--fotoce-shadow-ambient); }
+.pds-shadow-directional { box-shadow: var(--fotoce-shadow-directional); }
+.pds-shadow-floating    { box-shadow: var(--fotoce-shadow-floating); }
+.pds-shadow-modal       { box-shadow: var(--fotoce-shadow-modal); }
+.pds-shadow-elevated    { box-shadow: var(--fotoce-shadow-elevated); }
+.pds-glow-rose          { box-shadow: var(--fotoce-glow-rose-soft); }
 
 /* Radius utilities */
-.pds-radius-card    { border-radius: var(--pinova-radius-card); }
-.pds-radius-md      { border-radius: var(--pinova-radius-md); }
-.pds-radius-floating { border-radius: var(--pinova-radius-floating); }
-.pds-radius-sheet   { border-radius: var(--pinova-radius-sheet); }
-.pds-radius-full    { border-radius: var(--pinova-radius-full); }
+.pds-radius-card    { border-radius: var(--fotoce-radius-card); }
+.pds-radius-md      { border-radius: var(--fotoce-radius-md); }
+.pds-radius-floating { border-radius: var(--fotoce-radius-floating); }
+.pds-radius-sheet   { border-radius: var(--fotoce-radius-sheet); }
+.pds-radius-full    { border-radius: var(--fotoce-radius-full); }
 
 /*
   Reduced motion : on neutralise shimmer et springs CSS.
   (Le moteur JS `useSpring` checke lui-même prefers-reduced-motion.)
 */
 @media (prefers-reduced-motion: reduce) {
-  .pinova-press:active:not(:disabled):not([aria-disabled="true"]) {
+  .fotoce-press:active:not(:disabled):not([aria-disabled="true"]) {
     transform: none !important;
   }
-  .pinova-spring-out,
-  .pinova-spring-overshoot {
-    transition: opacity var(--pinova-dur-fast) ease !important;
+  .fotoce-spring-out,
+  .fotoce-spring-overshoot {
+    transition: opacity var(--fotoce-dur-fast) ease !important;
   }
-  .pinova-skel::after { animation: none !important; }
+  .fotoce-skel::after { animation: none !important; }
 }
 
 /*
  * ─────────────────────────────────────────────────────────────────────────
  *  Glass tokens (sync src/theme/glass.ts) — usage via classes utilitaires
- *  ou via les composants `PinovaModal` / `ModalHeader`.
+ *  ou via les composants `FotoceModal` / `ModalHeader`.
  * ─────────────────────────────────────────────────────────────────────────
  */
 :root {
@@ -2262,15 +2286,15 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
   --glass-shadow-lg: var(--glass-shadow-lg-light);
   --glass-scrim: var(--glass-scrim-default-light);
   --glass-scrim-strong: var(--glass-scrim-strong-light);
-  /* Blur réduit par défaut — premium conservé via data-pinova-quality="high". */
+  /* Blur réduit par défaut — premium conservé via data-fotoce-quality="high". */
   --glass-blur: saturate(160%) blur(10px);
   --glass-blur-strong: saturate(170%) blur(14px);
 
-  /* Tokens accent rose (CTA, .pinova-glass-rose) — les modales PinovaModal utilisent `--glass-fill` neutre. */
-  --pinova-rose-500: #e0245e;
-  --pinova-rose-400: #ff4d7d;
-  --pinova-rose-300: #ff79a3;
-  --pinova-rose-50: #fff1f5;
+  /* Tokens accent rose (CTA, .fotoce-glass-rose) — les modales FotoceModal utilisent `--glass-fill` neutre. */
+  --fotoce-rose-500: #e0245e;
+  --fotoce-rose-400: #ff4d7d;
+  --fotoce-rose-300: #ff79a3;
+  --fotoce-rose-50: #fff1f5;
 }
 
 .dark {
@@ -2289,10 +2313,10 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
 
 /*
  * Classes utilitaires glass — pour styles directs (cards, popovers, etc.).
- * Les modales utilisent les composants `PinovaModal` qui appliquent ces
+ * Les modales utilisent les composants `FotoceModal` qui appliquent ces
  * tokens directement via inline styles (plus précis selon le variant).
  */
-.pinova-glass {
+.fotoce-glass {
   background-color: var(--glass-fill);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -2300,7 +2324,7 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
   box-shadow: var(--glass-shadow-md);
 }
 
-.pinova-glass-strong {
+.fotoce-glass-strong {
   background-color: var(--glass-fill-strong);
   backdrop-filter: var(--glass-blur-strong);
   -webkit-backdrop-filter: var(--glass-blur-strong);
@@ -2308,7 +2332,7 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
   box-shadow: var(--glass-shadow-lg);
 }
 
-.pinova-glass-rose {
+.fotoce-glass-rose {
   background-color: var(--glass-fill-rose);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -2339,8 +2363,8 @@ button:focus-visible:not(:disabled):not(.pinova-focus-ring):not(.pds-btn):not(.a
   width: 100%;
   height: 100%;
   transition:
-    transform var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1)),
-    opacity var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+    transform var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1)),
+    opacity var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
   will-change: transform, opacity;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -2401,7 +2425,7 @@ main {
   .page-forward-leave-active,
   .page-back-enter-active,
   .page-back-leave-active {
-    transition: opacity var(--pinova-dur-fast, 180ms) ease !important;
+    transition: opacity var(--fotoce-dur-fast, 180ms) ease !important;
     transform: none !important;
   }
   .page-forward-enter-from,
@@ -2417,7 +2441,7 @@ main {
   inset: 0;
   width: 100%;
   height: 100%;
-  transition: opacity var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+  transition: opacity var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
   will-change: opacity;
 }
 .page-initial-enter-from,
@@ -2456,7 +2480,7 @@ main {
  * ─────────────────────────────────────────────────────────────────────────
  */
 
-html.pinova-micro-feedback-pulse::after {
+html.fotoce-micro-feedback-pulse::after {
   content: "";
   position: fixed;
   inset: 0;
@@ -2469,42 +2493,42 @@ html.pinova-micro-feedback-pulse::after {
     transparent 62%
   );
   opacity: 0;
-  animation: pinova-micro-feedback-pulse-anim 260ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: fotoce-micro-feedback-pulse-anim 260ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-@keyframes pinova-micro-feedback-pulse-anim {
+@keyframes fotoce-micro-feedback-pulse-anim {
   0%   { opacity: 0; transform: scale3d(0.98, 0.98, 1); }
   35%  { opacity: 1; }
   100% { opacity: 0; transform: scale3d(1.02, 1.02, 1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.pinova-micro-feedback-pulse::after {
+  html.fotoce-micro-feedback-pulse::after {
     animation: none;
     opacity: 0;
   }
 }
 
 /* Cible interactive iOS : supprime le délai 300ms legacy, pas de zoom double-tap. */
-.pinova-interactive {
+.fotoce-interactive {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
 /* Glow léger au focus visible (succès / navigation clavier) — reste subtil. */
-.pinova-interactive-glow:focus-visible {
+.fotoce-interactive-glow:focus-visible {
   outline: none;
   box-shadow:
     0 0 0 2px rgba(224, 36, 94, 0.35),
     0 0 24px rgba(255, 95, 145, 0.18);
 }
 
-/* Ripple logiciel discret (à combiner avec .pinova-interactive sur un bouton). */
-.pinova-soft-ripple {
+/* Ripple logiciel discret (à combiner avec .fotoce-interactive sur un bouton). */
+.fotoce-soft-ripple {
   position: relative;
   overflow: hidden;
 }
-.pinova-soft-ripple::after {
+.fotoce-soft-ripple::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -2514,15 +2538,15 @@ html.pinova-micro-feedback-pulse::after {
   transform: scale(0.2);
   pointer-events: none;
 }
-.pinova-soft-ripple.is-rippling::after {
-  animation: pinova-soft-ripple-anim 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+.fotoce-soft-ripple.is-rippling::after {
+  animation: fotoce-soft-ripple-anim 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-@keyframes pinova-soft-ripple-anim {
+@keyframes fotoce-soft-ripple-anim {
   0%   { opacity: 0.55; transform: scale(0.2); }
   100% { opacity: 0; transform: scale(2.2); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pinova-soft-ripple.is-rippling::after { animation: none; opacity: 0; }
+  .fotoce-soft-ripple.is-rippling::after { animation: none; opacity: 0; }
 }
 
 /*
@@ -2537,18 +2561,18 @@ html.pinova-micro-feedback-pulse::after {
  *   - `overscroll-behavior: contain` sur scrollers pour empêcher la propagation
  *
  *  Aucune règle ici ne dépend d'une classe métier : elles s'appliquent partout
- *  où on a posé `.pinova-gpu`, `.pinova-scroller`, etc.
+ *  où on a posé `.fotoce-gpu`, `.fotoce-scroller`, etc.
  */
 
 /* Promotion GPU pour conteneurs animés explicitement. */
-.pinova-gpu {
+.fotoce-gpu {
   transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
 /* Scrollers internes : empêche les "scroll chain" sur Safari iOS. */
-.pinova-scroller {
+.fotoce-scroller {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   /* Contain : limite les reflows au scroller lui-même. */
@@ -2557,7 +2581,7 @@ html.pinova-micro-feedback-pulse::after {
 
 /* Cartes virtualisées : containment fort pour qu'un changement d'un item
    ne force pas tout le feed à relayouter. */
-.pinova-virtual-item {
+.fotoce-virtual-item {
   contain: layout paint style;
   content-visibility: auto;
   contain-intrinsic-size: 1px 280px;
@@ -2575,17 +2599,17 @@ html.pinova-micro-feedback-pulse::after {
  * z-40) au-dessus du menu, et `perspective` recalait les `position:fixed`
  * du tiroir. L'émulateur desktop ne reproduisait pas ce bug.
  *
- * Le tiroir (`ProfileMobileNavDrawer`, Teleport body) utilise z-[45] :
- * il doit rester au-dessus de ce shell (z-40) pour rester visible et cliquable.
+ * Le tiroir (`ProfileMobileNavDrawer`, Teleport body) utilise z-[45] ;
+ * le backdrop ne couvre que la zone gauche (~78vw) pour laisser visible la carte profil décalée.
  */
-.pinova-profile-shell {
+.fotoce-profile-shell {
   position: relative;
   z-index: 40;
   isolation: isolate;
 }
 
 @media (max-width: 1023px) {
-  .pinova-profile-shell {
+  .fotoce-profile-shell {
     transform-origin: left center;
     transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
                 box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -2595,11 +2619,11 @@ html.pinova-micro-feedback-pulse::after {
   }
 
   /* Pas de perspective : elle recale les `fixed` du tiroir et casse le compositing. */
-  .pinova-profile-offcanvas-root {
+  .fotoce-profile-offcanvas-root {
     perspective: none;
   }
 
-  .pinova-profile-shell--open {
+  .fotoce-profile-shell--open {
     overflow-x: hidden;
     transform-style: flat;
     transform: translate3d(78vw, 18px, 0) scale(0.92);
@@ -2608,26 +2632,13 @@ html.pinova-micro-feedback-pulse::after {
     box-shadow: 0 25px 25px rgba(0, 0, 0, 0.25);
     pointer-events: none;
   }
-  html.dark .pinova-profile-shell--open {
+  html.dark .fotoce-profile-shell--open {
     background: rgba(10, 10, 10, 0.95);
     box-shadow: 0 28px 55px -8px rgba(0, 0, 0, 0.62);
   }
 
-  /* iOS : pas de carte 3D — le tiroir slide seul (évite écran noir / fixed cassés). */
-  html[data-pinova-motion="ios"] .pinova-profile-shell--open {
-    transform: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: transparent;
-    pointer-events: none;
-  }
-  html.dark[data-pinova-motion="ios"] .pinova-profile-shell--open {
-    background: transparent;
-    box-shadow: none;
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .pinova-profile-shell--open {
+    .fotoce-profile-shell--open {
       transform: none !important;
       border-radius: 0 !important;
       box-shadow: none !important;
@@ -2638,39 +2649,39 @@ html.pinova-micro-feedback-pulse::after {
 
 /* Couches frozen / sleeping : on coupe pointer-events + animations,
    et on supprime les filtres lourds pour libérer le compositor. */
-.pinova-layer-frozen,
-.pinova-layer-sleeping {
+.fotoce-layer-frozen,
+.fotoce-layer-sleeping {
   pointer-events: none !important;
 }
-.pinova-layer-frozen *,
-.pinova-layer-sleeping * {
+.fotoce-layer-frozen *,
+.fotoce-layer-sleeping * {
   animation-play-state: paused !important;
 }
-.pinova-layer-sleeping {
+.fotoce-layer-sleeping {
   filter: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
 /* Mode "motion saver" global : on coupe les filtres animés, les transitions courtes restent. */
-html.pinova-motion-saver *,
-html.pinova-motion-saver *::before,
-html.pinova-motion-saver *::after {
+html.fotoce-motion-saver *,
+html.fotoce-motion-saver *::before,
+html.fotoce-motion-saver *::after {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 120ms !important;
 }
-html.pinova-motion-saver .pinova-glass,
-html.pinova-motion-saver .pinova-glass-strong,
-html.pinova-motion-saver .pinova-glass-rose,
-html.pinova-motion-saver .pinova-settings-page .app-card {
+html.fotoce-motion-saver .fotoce-glass,
+html.fotoce-motion-saver .fotoce-glass-strong,
+html.fotoce-motion-saver .fotoce-glass-rose,
+html.fotoce-motion-saver .fotoce-settings-page .app-card {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
 /*
  * ─────────────────────────────────────────────────────────────────────────
- *  Adaptive Quality Mode (Prompt 14) — data-pinova-quality="low|medium|high"
+ *  Adaptive Quality Mode (Prompt 14) — data-fotoce-quality="low|medium|high"
  * ─────────────────────────────────────────────────────────────────────────
  *
  *  Géré par `src/core/performanceEngine.ts`. L'engine pose l'attribut sur
@@ -2681,29 +2692,29 @@ html.pinova-motion-saver .pinova-settings-page .app-card {
  *  low    : aucun blur, transitions ultra-courtes, ombres simples, glow off.
  *
  *  Tous les composants existants en bénéficient sans modification : ils
- *  consomment `var(--pinova-dur-*)` et `backdrop-filter: var(--glass-blur)`,
+ *  consomment `var(--fotoce-dur-*)` et `backdrop-filter: var(--glass-blur)`,
  *  qu'on neutralise ici.
  */
 
 /* ── medium : compromis fluidité / esthétique ── */
-html[data-pinova-quality="high"] {
+html[data-fotoce-quality="high"] {
   --glass-blur: saturate(180%) blur(16px);
   --glass-blur-strong: saturate(190%) blur(20px);
 }
 
-html[data-pinova-quality="medium"] {
-  --pinova-dur-fast: 140ms;
-  --pinova-dur-medium: 200ms;
-  --pinova-dur-slow: 280ms;
+html[data-fotoce-quality="medium"] {
+  --fotoce-dur-fast: 140ms;
+  --fotoce-dur-medium: 200ms;
+  --fotoce-dur-slow: 280ms;
   --glass-blur: saturate(150%) blur(6px);
   --glass-blur-strong: saturate(155%) blur(8px);
-  --pinova-glow-rose-soft: 0 0 18px rgba(255, 95, 145, 0.10);
-  --pinova-glow-rose-medium: 0 0 28px rgba(224, 36, 94, 0.16);
-  --pinova-glow-rose-strong: 0 0 40px rgba(224, 36, 94, 0.22);
+  --fotoce-glow-rose-soft: 0 0 18px rgba(255, 95, 145, 0.10);
+  --fotoce-glow-rose-medium: 0 0 28px rgba(224, 36, 94, 0.16);
+  --fotoce-glow-rose-strong: 0 0 40px rgba(224, 36, 94, 0.22);
 }
-html[data-pinova-quality="medium"] .pinova-glass,
-html[data-pinova-quality="medium"] .pinova-glass-strong,
-html[data-pinova-quality="medium"] .pinova-glass-rose {
+html[data-fotoce-quality="medium"] .fotoce-glass,
+html[data-fotoce-quality="medium"] .fotoce-glass-strong,
+html[data-fotoce-quality="medium"] .fotoce-glass-rose {
   /* `var()` est déjà ré-écrit ci-dessus mais on s'assure qu'aucun composant
      n'a un blur > 12px en valeur littérale. */
   backdrop-filter: var(--glass-blur);
@@ -2711,40 +2722,40 @@ html[data-pinova-quality="medium"] .pinova-glass-rose {
 }
 
 /* ── low : on coupe les filtres lourds, on raccourcit les transitions ── */
-html[data-pinova-quality="low"] {
-  --pinova-dur-ultra-fast: 80ms;
-  --pinova-dur-fast: 100ms;
-  --pinova-dur-medium: 140ms;
-  --pinova-dur-slow: 180ms;
-  --pinova-dur-ambient: 240ms;
+html[data-fotoce-quality="low"] {
+  --fotoce-dur-ultra-fast: 80ms;
+  --fotoce-dur-fast: 100ms;
+  --fotoce-dur-medium: 140ms;
+  --fotoce-dur-slow: 180ms;
+  --fotoce-dur-ambient: 240ms;
   --glass-blur: none;
   --glass-blur-strong: none;
-  --pinova-glow-rose-soft: none;
-  --pinova-glow-rose-medium: none;
-  --pinova-glow-rose-strong: none;
-  --pinova-shadow-hover-glow: none;
+  --fotoce-glow-rose-soft: none;
+  --fotoce-glow-rose-medium: none;
+  --fotoce-glow-rose-strong: none;
+  --fotoce-shadow-hover-glow: none;
 }
-html[data-pinova-quality="low"] .pinova-glass,
-html[data-pinova-quality="low"] .pinova-glass-strong,
-html[data-pinova-quality="low"] .pinova-glass-rose,
-html[data-pinova-quality="low"] .pinova-settings-page .app-card {
+html[data-fotoce-quality="low"] .fotoce-glass,
+html[data-fotoce-quality="low"] .fotoce-glass-strong,
+html[data-fotoce-quality="low"] .fotoce-glass-rose,
+html[data-fotoce-quality="low"] .fotoce-settings-page .app-card {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 /* Coupe les keyframes décoratives (heart pop, shimmer, pulse) en low. */
-html[data-pinova-quality="low"] .pinova-soft-ripple.is-rippling::after,
-html[data-pinova-quality="low"] .pin-detail-heart-burst .pinova-icon,
-html[data-pinova-quality="low"] .pin-detail-heart-burst .material-symbols-outlined,
-html[data-pinova-quality="low"] .pinova-skel::after,
-html[data-pinova-quality="low"] html.pinova-micro-feedback-pulse::after {
+html[data-fotoce-quality="low"] .fotoce-soft-ripple.is-rippling::after,
+html[data-fotoce-quality="low"] .foto-detail-heart-burst .fotoce-icon,
+html[data-fotoce-quality="low"] .foto-detail-heart-burst .material-symbols-outlined,
+html[data-fotoce-quality="low"] .fotoce-skel::after,
+html[data-fotoce-quality="low"] html.fotoce-micro-feedback-pulse::after {
   animation: none !important;
   opacity: 0 !important;
 }
 /* On garde les transitions structurelles courtes mais on tue les
    transitions long-running cosmétiques. */
-html[data-pinova-quality="low"] .pds-btn,
-html[data-pinova-quality="low"] .pds-card {
-  transition-duration: var(--pinova-dur-fast) !important;
+html[data-fotoce-quality="low"] .pds-btn,
+html[data-fotoce-quality="low"] .pds-card {
+  transition-duration: var(--fotoce-dur-fast) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2857,7 +2868,7 @@ html[data-pinova-quality="low"] .pds-card {
 }
 
 /* Android Material : ombre modale un peu plus « elevation » (léger). */
-html[data-pinova-motion="material"] .pinova-layer-modal__card {
+html[data-fotoce-motion="material"] .fotoce-layer-modal__card {
   box-shadow:
     0 0 0 1px rgba(15, 23, 42, 0.05) inset,
     0 4px 8px -2px rgba(0, 0, 0, 0.12),
@@ -2871,7 +2882,7 @@ html[data-pinova-motion="material"] .pinova-layer-modal__card {
  * ─────────────────────────────────────────────────────────────────────────
  *
  *  Tokens définis dans `src/theme/platformTokens.ts`, miroirs CSS ici.
- *  Le sélecteur `html[data-pinova-motion="..."]` permet à TOUS les composants
+ *  Le sélecteur `html[data-fotoce-motion="..."]` permet à TOUS les composants
  *  (`pds-btn`, `pds-card`, etc.) de s'adapter visuellement sans changer leur
  *  API. Même classe utilitaire, rendu différent.
  *
@@ -2884,158 +2895,158 @@ html[data-pinova-motion="material"] .pinova-layer-modal__card {
  *  oublie un override.
  */
 
-/* Defaults (iOS) — explicitement déclarés pour permettre `var(--pinova-btn-padding)`
+/* Defaults (iOS) — explicitement déclarés pour permettre `var(--fotoce-btn-padding)`
    dans les composants même quand `applyPlatformTokens()` n'a pas été appelé. */
 :root {
-  --pinova-platform-mode: ios;
-  --pinova-space-scale: 1;
-  --pinova-type-scale: 1;
-  --pinova-type-line-scale: 1;
-  --pinova-type-tracking-delta: 0em;
-  --pinova-btn-padding: 12px 20px;
-  --pinova-card-padding: 16px;
-  --pinova-sheet-padding: 20px 16px;
-  --pinova-gap-stack: 16px;
-  --pinova-gap-inline: 8px;
-  --pinova-radius-button: 16px;
-  --pinova-shadow-hover-glow: none;
-  --pinova-press-scale: 0.92;
-  --pinova-press-brightness: 0.97;
-  --pinova-ripple-color: rgba(0, 0, 0, 0.06);
+  --fotoce-platform-mode: ios;
+  --fotoce-space-scale: 1;
+  --fotoce-type-scale: 1;
+  --fotoce-type-line-scale: 1;
+  --fotoce-type-tracking-delta: 0em;
+  --fotoce-btn-padding: 12px 20px;
+  --fotoce-card-padding: 16px;
+  --fotoce-sheet-padding: 20px 16px;
+  --fotoce-gap-stack: 16px;
+  --fotoce-gap-inline: 8px;
+  --fotoce-radius-button: 16px;
+  --fotoce-shadow-hover-glow: none;
+  --fotoce-press-scale: 0.92;
+  --fotoce-press-brightness: 0.97;
+  --fotoce-ripple-color: rgba(0, 0, 0, 0.06);
 }
 
 .dark {
-  --pinova-ripple-color: rgba(255, 255, 255, 0.07);
+  --fotoce-ripple-color: rgba(255, 255, 255, 0.07);
 }
 
 /* ── iOS — par défaut, on conserve toutes les valeurs canoniques. ── */
-html[data-pinova-motion="ios"] {
-  --pinova-platform-mode: ios;
-  --pinova-space-scale: 1;
-  --pinova-type-scale: 1;
-  --pinova-type-line-scale: 1;
-  --pinova-type-tracking-delta: 0em;
-  --pinova-btn-padding: 12px 20px;
-  --pinova-card-padding: 16px;
-  --pinova-sheet-padding: 20px 16px;
-  --pinova-gap-stack: 16px;
-  --pinova-gap-inline: 8px;
-  --pinova-radius-button: 16px;
-  --pinova-radius-card: 22px;
-  --pinova-radius-sheet: 28px;
-  --pinova-radius-fullscreen: 38px;
-  --pinova-radius-floating: 24px;
-  --pinova-press-scale: 0.92;
-  --pinova-press-brightness: 0.97;
-  --pinova-shadow-hover-glow: none;
-  --pinova-dur-fast: 180ms;
-  --pinova-dur-medium: 260ms;
-  --pinova-dur-slow: 380ms;
-  --pinova-easing: cubic-bezier(0.22, 1, 0.36, 1);
-  --pinova-ripple-color: rgba(0, 0, 0, 0.04);
+html[data-fotoce-motion="ios"] {
+  --fotoce-platform-mode: ios;
+  --fotoce-space-scale: 1;
+  --fotoce-type-scale: 1;
+  --fotoce-type-line-scale: 1;
+  --fotoce-type-tracking-delta: 0em;
+  --fotoce-btn-padding: 12px 20px;
+  --fotoce-card-padding: 16px;
+  --fotoce-sheet-padding: 20px 16px;
+  --fotoce-gap-stack: 16px;
+  --fotoce-gap-inline: 8px;
+  --fotoce-radius-button: 16px;
+  --fotoce-radius-card: 22px;
+  --fotoce-radius-sheet: 28px;
+  --fotoce-radius-fullscreen: 38px;
+  --fotoce-radius-floating: 24px;
+  --fotoce-press-scale: 0.92;
+  --fotoce-press-brightness: 0.97;
+  --fotoce-shadow-hover-glow: none;
+  --fotoce-dur-fast: 180ms;
+  --fotoce-dur-medium: 260ms;
+  --fotoce-dur-slow: 380ms;
+  --fotoce-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --fotoce-ripple-color: rgba(0, 0, 0, 0.04);
 }
-html[data-pinova-motion="ios"].dark {
-  --pinova-ripple-color: rgba(255, 255, 255, 0.04);
+html[data-fotoce-motion="ios"].dark {
+  --fotoce-ripple-color: rgba(255, 255, 255, 0.04);
 }
 
 /* ── Material (Android) — elevation harde, ripple, radius rectangulaires. ── */
-html[data-pinova-motion="material"] {
-  --pinova-platform-mode: material;
-  --pinova-space-scale: 0.95;
-  --pinova-type-scale: 1.04;
-  --pinova-type-line-scale: 1.02;
-  --pinova-type-tracking-delta: 0.005em;
-  --pinova-btn-padding: 10px 18px;
-  --pinova-card-padding: 14px;
-  --pinova-sheet-padding: 18px 16px;
-  --pinova-gap-stack: 14px;
-  --pinova-gap-inline: 8px;
-  --pinova-radius-button: 12px;
-  --pinova-radius-card: 16px;
-  --pinova-radius-sheet: 20px;
-  --pinova-radius-fullscreen: 24px;
-  --pinova-radius-floating: 20px;
-  --pinova-press-scale: 0.96;
-  --pinova-press-brightness: 1;
-  --pinova-shadow-hover-glow: none;
-  --pinova-dur-fast: 160ms;
-  --pinova-dur-medium: 240ms;
-  --pinova-dur-slow: 320ms;
-  --pinova-easing: cubic-bezier(0.4, 0, 0.2, 1);
-  --pinova-ripple-color: rgba(0, 0, 0, 0.10);
+html[data-fotoce-motion="material"] {
+  --fotoce-platform-mode: material;
+  --fotoce-space-scale: 0.95;
+  --fotoce-type-scale: 1.04;
+  --fotoce-type-line-scale: 1.02;
+  --fotoce-type-tracking-delta: 0.005em;
+  --fotoce-btn-padding: 10px 18px;
+  --fotoce-card-padding: 14px;
+  --fotoce-sheet-padding: 18px 16px;
+  --fotoce-gap-stack: 14px;
+  --fotoce-gap-inline: 8px;
+  --fotoce-radius-button: 12px;
+  --fotoce-radius-card: 16px;
+  --fotoce-radius-sheet: 20px;
+  --fotoce-radius-fullscreen: 24px;
+  --fotoce-radius-floating: 20px;
+  --fotoce-press-scale: 0.96;
+  --fotoce-press-brightness: 1;
+  --fotoce-shadow-hover-glow: none;
+  --fotoce-dur-fast: 160ms;
+  --fotoce-dur-medium: 240ms;
+  --fotoce-dur-slow: 320ms;
+  --fotoce-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --fotoce-ripple-color: rgba(0, 0, 0, 0.10);
 
   /* Material elevation — moins de "halo" et plus de contact directionnel. */
-  --pinova-shadow-ambient:
+  --fotoce-shadow-ambient:
     0 1px 1px rgba(0, 0, 0, 0.14),
     0 1px 2px rgba(0, 0, 0, 0.10);
-  --pinova-shadow-directional:
+  --fotoce-shadow-directional:
     0 2px 4px rgba(0, 0, 0, 0.16),
     0 4px 8px -2px rgba(0, 0, 0, 0.10);
-  --pinova-shadow-floating:
+  --fotoce-shadow-floating:
     0 3px 6px rgba(0, 0, 0, 0.20),
     0 8px 16px -4px rgba(0, 0, 0, 0.14);
-  --pinova-shadow-modal:
+  --fotoce-shadow-modal:
     0 8px 12px -4px rgba(0, 0, 0, 0.18),
     0 28px 56px -8px rgba(0, 0, 0, 0.32);
-  --pinova-shadow-elevated:
+  --fotoce-shadow-elevated:
     0 12px 18px -6px rgba(0, 0, 0, 0.22),
     0 40px 80px -12px rgba(0, 0, 0, 0.42);
-  --pinova-shadow-pressed:
+  --fotoce-shadow-pressed:
     0 1px 1px rgba(0, 0, 0, 0.18),
     0 2px 4px rgba(0, 0, 0, 0.12);
 }
-html[data-pinova-motion="material"].dark {
-  --pinova-ripple-color: rgba(255, 255, 255, 0.10);
+html[data-fotoce-motion="material"].dark {
+  --fotoce-ripple-color: rgba(255, 255, 255, 0.10);
 }
 
 /* ── Desktop — densité productive, hover affordant, transitions rapides. ── */
-html[data-pinova-motion="desktop"] {
-  --pinova-platform-mode: desktop;
-  --pinova-space-scale: 0.85;
-  --pinova-type-scale: 0.95;
-  --pinova-type-line-scale: 1.05;
-  --pinova-type-tracking-delta: -0.003em;
-  --pinova-btn-padding: 8px 16px;
-  --pinova-card-padding: 14px;
-  --pinova-sheet-padding: 16px;
-  --pinova-gap-stack: 12px;
-  --pinova-gap-inline: 6px;
-  --pinova-radius-button: 10px;
-  --pinova-radius-card: 14px;
-  --pinova-radius-sheet: 18px;
-  --pinova-radius-fullscreen: 20px;
-  --pinova-radius-floating: 14px;
-  --pinova-press-scale: 0.98;
-  --pinova-press-brightness: 0.99;
-  --pinova-shadow-hover-glow:
+html[data-fotoce-motion="desktop"] {
+  --fotoce-platform-mode: desktop;
+  --fotoce-space-scale: 0.85;
+  --fotoce-type-scale: 0.95;
+  --fotoce-type-line-scale: 1.05;
+  --fotoce-type-tracking-delta: -0.003em;
+  --fotoce-btn-padding: 8px 16px;
+  --fotoce-card-padding: 14px;
+  --fotoce-sheet-padding: 16px;
+  --fotoce-gap-stack: 12px;
+  --fotoce-gap-inline: 6px;
+  --fotoce-radius-button: 10px;
+  --fotoce-radius-card: 14px;
+  --fotoce-radius-sheet: 18px;
+  --fotoce-radius-fullscreen: 20px;
+  --fotoce-radius-floating: 14px;
+  --fotoce-press-scale: 0.98;
+  --fotoce-press-brightness: 0.99;
+  --fotoce-shadow-hover-glow:
     0 0 0 1px rgba(224, 36, 94, 0.18),
     0 8px 22px -8px rgba(224, 36, 94, 0.22);
-  --pinova-dur-fast: 120ms;
-  --pinova-dur-medium: 180ms;
-  --pinova-dur-slow: 240ms;
-  --pinova-easing: cubic-bezier(0.22, 1, 0.36, 1);
-  --pinova-ripple-color: rgba(0, 0, 0, 0.03);
+  --fotoce-dur-fast: 120ms;
+  --fotoce-dur-medium: 180ms;
+  --fotoce-dur-slow: 240ms;
+  --fotoce-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --fotoce-ripple-color: rgba(0, 0, 0, 0.03);
 
   /* Desktop : ombres au repos minimales (le hover prend le relais). */
-  --pinova-shadow-ambient:
+  --fotoce-shadow-ambient:
     0 1px 0 rgba(15, 23, 42, 0.04),
     0 1px 3px rgba(15, 23, 42, 0.06);
-  --pinova-shadow-directional:
+  --fotoce-shadow-directional:
     0 1px 2px rgba(15, 23, 42, 0.05),
     0 6px 14px -4px rgba(15, 23, 42, 0.10);
-  --pinova-shadow-floating:
+  --fotoce-shadow-floating:
     0 6px 14px -4px rgba(15, 23, 42, 0.12),
     0 14px 28px -10px rgba(15, 23, 42, 0.18);
-  --pinova-shadow-modal:
+  --fotoce-shadow-modal:
     0 12px 22px -6px rgba(15, 23, 42, 0.18),
     0 32px 60px -16px rgba(15, 23, 42, 0.28);
-  --pinova-shadow-elevated:
+  --fotoce-shadow-elevated:
     0 16px 28px -8px rgba(15, 23, 42, 0.22),
     0 44px 80px -20px rgba(15, 23, 42, 0.36),
     0 10px 28px rgba(224, 36, 94, 0.08);
 }
-html[data-pinova-motion="desktop"].dark {
-  --pinova-ripple-color: rgba(255, 255, 255, 0.04);
+html[data-fotoce-motion="desktop"].dark {
+  --fotoce-ripple-color: rgba(255, 255, 255, 0.04);
 }
 
 /*
@@ -3043,117 +3054,117 @@ html[data-pinova-motion="desktop"].dark {
  *  Component Adaptation Layer — pds-btn / pds-card / pds-pill / pds-surface
  * ─────────────────────────────────────────────────────────────────────────
  *
- *  Les classes existantes consomment les vars `--pinova-*` ci-dessus —
+ *  Les classes existantes consomment les vars `--fotoce-*` ci-dessus —
  *  donc tout `pds-btn` / `pds-card` change automatiquement de feel selon
- *  `data-pinova-motion`. Cette section ajoute SEULEMENT les overrides
+ *  `data-fotoce-motion`. Cette section ajoute SEULEMENT les overrides
  *  spécifiques à chaque plateforme qui ne peuvent pas se faire via vars
  *  (ex: `.pds-btn:active` scale variable, ripple Material, hover desktop).
  */
 
 /* Padding / radius / typography piloté par tokens — appliqué à .pds-btn. */
 .pds-btn {
-  padding: var(--pinova-btn-padding, 12px 20px);
-  border-radius: var(--pinova-radius-button, 16px);
-  letter-spacing: calc(-0.005em + var(--pinova-type-tracking-delta, 0em));
-  font-size: calc(1rem * var(--pinova-type-scale, 1));
+  padding: var(--fotoce-btn-padding, 12px 20px);
+  border-radius: var(--fotoce-radius-button, 16px);
+  letter-spacing: calc(-0.005em + var(--fotoce-type-tracking-delta, 0em));
+  font-size: calc(1rem * var(--fotoce-type-scale, 1));
 }
 .pds-btn:active:not(:disabled) {
-  transform: scale3d(var(--pinova-press-scale, 0.96), var(--pinova-press-scale, 0.96), 1);
-  filter: brightness(var(--pinova-press-brightness, 0.97));
+  transform: scale3d(var(--fotoce-press-scale, 0.96), var(--fotoce-press-scale, 0.96), 1);
+  filter: brightness(var(--fotoce-press-brightness, 0.97));
 }
 
 /* Card : padding & radius platform-aware. */
 .pds-card,
 .pds-card-floating,
 .pds-card-elevated {
-  padding: var(--pinova-card-padding, 16px);
-  border-radius: var(--pinova-radius-card, 22px);
+  padding: var(--fotoce-card-padding, 16px);
+  border-radius: var(--fotoce-radius-card, 22px);
 }
 
 /* iOS — press feedback prononcé (déjà géré par var). Glass disponible. */
 
 /* Material — ripple universel sur boutons & cartes interactives. */
-html[data-pinova-motion="material"] .pds-btn,
-html[data-pinova-motion="material"] .pds-card,
-html[data-pinova-motion="material"] .pinova-interactive {
+html[data-fotoce-motion="material"] .pds-btn,
+html[data-fotoce-motion="material"] .pds-card,
+html[data-fotoce-motion="material"] .fotoce-interactive {
   position: relative;
   overflow: hidden;
 }
-html[data-pinova-motion="material"] .pds-btn::after,
-html[data-pinova-motion="material"] .pds-card::after,
-html[data-pinova-motion="material"] .pinova-interactive::after {
+html[data-fotoce-motion="material"] .pds-btn::after,
+html[data-fotoce-motion="material"] .pds-card::after,
+html[data-fotoce-motion="material"] .fotoce-interactive::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: radial-gradient(
     circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
-    var(--pinova-ripple-color, rgba(0, 0, 0, 0.10)) 0%,
+    var(--fotoce-ripple-color, rgba(0, 0, 0, 0.10)) 0%,
     transparent 60%
   );
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--pinova-dur-fast, 160ms) ease;
+  transition: opacity var(--fotoce-dur-fast, 160ms) ease;
 }
-html[data-pinova-motion="material"] .pds-btn:active::after,
-html[data-pinova-motion="material"] .pds-card:active::after,
-html[data-pinova-motion="material"] .pinova-interactive:active::after {
+html[data-fotoce-motion="material"] .pds-btn:active::after,
+html[data-fotoce-motion="material"] .pds-card:active::after,
+html[data-fotoce-motion="material"] .fotoce-interactive:active::after {
   opacity: 1;
   transition-duration: 60ms;
 }
 /* Material : primary perd le gradient gloss iOS pour un fill solide + elevation. */
-html[data-pinova-motion="material"] .pds-btn--primary {
-  background: var(--pinova-accent, #e0245e);
-  box-shadow: var(--pinova-shadow-floating);
+html[data-fotoce-motion="material"] .pds-btn--primary {
+  background: var(--fotoce-accent, #e0245e);
+  box-shadow: var(--fotoce-shadow-floating);
 }
-html[data-pinova-motion="material"] .pds-btn--primary:active:not(:disabled) {
-  background: var(--pinova-accent-pressed, #c11550);
-  box-shadow: var(--pinova-shadow-pressed);
+html[data-fotoce-motion="material"] .pds-btn--primary:active:not(:disabled) {
+  background: var(--fotoce-accent-pressed, #c11550);
+  box-shadow: var(--fotoce-shadow-pressed);
 }
-html[data-pinova-motion="material"] .pds-btn--secondary {
-  box-shadow: var(--pinova-shadow-ambient);
+html[data-fotoce-motion="material"] .pds-btn--secondary {
+  box-shadow: var(--fotoce-shadow-ambient);
 }
-html[data-pinova-motion="material"] .pds-card {
-  box-shadow: var(--pinova-shadow-ambient);
+html[data-fotoce-motion="material"] .pds-card {
+  box-shadow: var(--fotoce-shadow-ambient);
 }
 
 /* Desktop — hover affordances, focus ring strong, pas de scale press marqué. */
 @media (hover: hover) {
-  html[data-pinova-motion="desktop"] .pds-btn:hover:not(:disabled) {
-    box-shadow: var(--pinova-shadow-hover-glow);
+  html[data-fotoce-motion="desktop"] .pds-btn:hover:not(:disabled) {
+    box-shadow: var(--fotoce-shadow-hover-glow);
     transform: translate3d(0, -0.5px, 0);
   }
-  html[data-pinova-motion="desktop"] .pds-card:hover {
+  html[data-fotoce-motion="desktop"] .pds-card:hover {
     box-shadow:
-      var(--pinova-shadow-directional),
-      var(--pinova-shadow-hover-glow);
+      var(--fotoce-shadow-directional),
+      var(--fotoce-shadow-hover-glow);
     transform: translate3d(0, -2px, 0);
   }
-  html[data-pinova-motion="desktop"] .pds-btn--ghost:hover:not(:disabled) {
-    background-color: var(--pinova-accent-subtle);
+  html[data-fotoce-motion="desktop"] .pds-btn--ghost:hover:not(:disabled) {
+    background-color: var(--fotoce-accent-subtle);
   }
 }
-html[data-pinova-motion="desktop"] .pds-btn:focus-visible {
+html[data-fotoce-motion="desktop"] .pds-btn:focus-visible {
   box-shadow:
-    var(--pinova-focus-ring),
-    var(--pinova-shadow-hover-glow);
+    var(--fotoce-focus-ring),
+    var(--fotoce-shadow-hover-glow);
 }
-html[data-pinova-motion="desktop"] .pds-btn:active:not(:disabled) {
+html[data-fotoce-motion="desktop"] .pds-btn:active:not(:disabled) {
   transform: scale3d(0.985, 0.985, 1);
   filter: none;
 }
 
 /* Cards interactives en desktop : curseur pointer + transitions courtes. */
-html[data-pinova-motion="desktop"] .pds-card {
+html[data-fotoce-motion="desktop"] .pds-card {
   transition:
-    box-shadow var(--pinova-dur-fast, 120ms) var(--pinova-easing),
-    transform var(--pinova-dur-fast, 120ms) var(--pinova-easing),
-    border-color var(--pinova-dur-fast, 120ms) ease;
+    box-shadow var(--fotoce-dur-fast, 120ms) var(--fotoce-easing),
+    transform var(--fotoce-dur-fast, 120ms) var(--fotoce-easing),
+    border-color var(--fotoce-dur-fast, 120ms) ease;
 }
 
 /* Material : on neutralise le hover desktop sur Android (tactile). */
-html[data-pinova-motion="material"] .pds-btn:hover:not(:disabled),
-html[data-pinova-motion="material"] .pds-card:hover {
+html[data-fotoce-motion="material"] .pds-btn:hover:not(:disabled),
+html[data-fotoce-motion="material"] .pds-card:hover {
   transform: none;
 }
 
@@ -3162,42 +3173,42 @@ html[data-pinova-motion="material"] .pds-card:hover {
  * On utilise calc() sur les classes existantes pour ne PAS dupliquer
  * la hiérarchie typo (qui reste pilotée par `src/theme/typography.ts`).
  */
-.pds-display-3xl { font-size: calc(2.5rem    * var(--pinova-type-scale, 1)); line-height: calc(1.15 * var(--pinova-type-line-scale, 1)); }
-.pds-display-2xl { font-size: calc(2rem      * var(--pinova-type-scale, 1)); line-height: calc(1.18 * var(--pinova-type-line-scale, 1)); }
-.pds-display-xl  { font-size: calc(1.625rem  * var(--pinova-type-scale, 1)); line-height: calc(1.22 * var(--pinova-type-line-scale, 1)); }
-.pds-title-lg    { font-size: calc(1.25rem   * var(--pinova-type-scale, 1)); }
-.pds-title-md    { font-size: calc(1.0625rem * var(--pinova-type-scale, 1)); }
-.pds-title-sm    { font-size: calc(0.9375rem * var(--pinova-type-scale, 1)); }
-.pds-body-lg     { font-size: calc(1.0625rem * var(--pinova-type-scale, 1)); }
-.pds-body-md     { font-size: calc(1rem      * var(--pinova-type-scale, 1)); }
-.pds-body-sm     { font-size: calc(0.875rem  * var(--pinova-type-scale, 1)); }
-.pds-caption     { font-size: calc(0.8125rem * var(--pinova-type-scale, 1)); }
-.pds-metadata    { font-size: calc(0.75rem   * var(--pinova-type-scale, 1)); }
+.pds-display-3xl { font-size: calc(2.5rem    * var(--fotoce-type-scale, 1)); line-height: calc(1.15 * var(--fotoce-type-line-scale, 1)); }
+.pds-display-2xl { font-size: calc(2rem      * var(--fotoce-type-scale, 1)); line-height: calc(1.18 * var(--fotoce-type-line-scale, 1)); }
+.pds-display-xl  { font-size: calc(1.625rem  * var(--fotoce-type-scale, 1)); line-height: calc(1.22 * var(--fotoce-type-line-scale, 1)); }
+.pds-title-lg    { font-size: calc(1.25rem   * var(--fotoce-type-scale, 1)); }
+.pds-title-md    { font-size: calc(1.0625rem * var(--fotoce-type-scale, 1)); }
+.pds-title-sm    { font-size: calc(0.9375rem * var(--fotoce-type-scale, 1)); }
+.pds-body-lg     { font-size: calc(1.0625rem * var(--fotoce-type-scale, 1)); }
+.pds-body-md     { font-size: calc(1rem      * var(--fotoce-type-scale, 1)); }
+.pds-body-sm     { font-size: calc(0.875rem  * var(--fotoce-type-scale, 1)); }
+.pds-caption     { font-size: calc(0.8125rem * var(--fotoce-type-scale, 1)); }
+.pds-metadata    { font-size: calc(0.75rem   * var(--fotoce-type-scale, 1)); }
 
 /*
  * Variants utilitaires par densité — exposés comme classes pour les composants
  * qui veulent moduler manuellement (`<button class="pds-btn pds-btn--dense">`).
  */
-.pds-btn--dense   { padding: 6px 12px; font-size: calc(0.8125rem * var(--pinova-type-scale, 1)); border-radius: var(--pinova-radius-ms); }
-.pds-btn--airy    { padding: 16px 24px; font-size: calc(1.0625rem * var(--pinova-type-scale, 1)); border-radius: var(--pinova-radius-md); }
+.pds-btn--dense   { padding: 6px 12px; font-size: calc(0.8125rem * var(--fotoce-type-scale, 1)); border-radius: var(--fotoce-radius-ms); }
+.pds-btn--airy    { padding: 16px 24px; font-size: calc(1.0625rem * var(--fotoce-type-scale, 1)); border-radius: var(--fotoce-radius-md); }
 
 /* Surface (sheet / modal) : radius platform-aware utilisables hors composants. */
-.pds-surface-sheet      { border-radius: var(--pinova-radius-sheet); padding: var(--pinova-sheet-padding); }
-.pds-surface-fullscreen { border-radius: var(--pinova-radius-fullscreen); }
-.pds-surface-floating   { border-radius: var(--pinova-radius-floating); box-shadow: var(--pinova-shadow-floating); }
+.pds-surface-sheet      { border-radius: var(--fotoce-radius-sheet); padding: var(--fotoce-sheet-padding); }
+.pds-surface-fullscreen { border-radius: var(--fotoce-radius-fullscreen); }
+.pds-surface-floating   { border-radius: var(--fotoce-radius-floating); box-shadow: var(--fotoce-shadow-floating); }
 
 /*
  * Glass : sur Android, on coupe le blur (elevation prend le relais) tout
  * en gardant les fills opaques pour préserver la lisibilité.
  */
-html[data-pinova-motion="material"] .pinova-glass,
-html[data-pinova-motion="material"] .pinova-glass-strong,
-html[data-pinova-motion="material"] .pinova-glass-rose {
+html[data-fotoce-motion="material"] .fotoce-glass,
+html[data-fotoce-motion="material"] .fotoce-glass-strong,
+html[data-fotoce-motion="material"] .fotoce-glass-rose {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  background-color: var(--pinova-surface-elevated);
-  border-color: var(--pinova-border-subtle);
-  box-shadow: var(--pinova-shadow-modal);
+  background-color: var(--fotoce-surface-elevated);
+  border-color: var(--fotoce-border-subtle);
+  box-shadow: var(--fotoce-shadow-modal);
 }
 
 /*
@@ -3206,13 +3217,13 @@ html[data-pinova-motion="material"] .pinova-glass-rose {
  */
 @media (prefers-reduced-motion: reduce) {
   .pds-btn:active:not(:disabled),
-  html[data-pinova-motion="desktop"] .pds-btn:hover:not(:disabled),
-  html[data-pinova-motion="desktop"] .pds-card:hover {
+  html[data-fotoce-motion="desktop"] .pds-btn:hover:not(:disabled),
+  html[data-fotoce-motion="desktop"] .pds-card:hover {
     transform: none !important;
   }
-  html[data-pinova-motion="material"] .pds-btn::after,
-  html[data-pinova-motion="material"] .pds-card::after,
-  html[data-pinova-motion="material"] .pinova-interactive::after {
+  html[data-fotoce-motion="material"] .pds-btn::after,
+  html[data-fotoce-motion="material"] .pds-card::after,
+  html[data-fotoce-motion="material"] .fotoce-interactive::after {
     opacity: 0 !important;
     transition: none !important;
   }
@@ -3222,10 +3233,10 @@ html[data-pinova-motion="material"] .pinova-glass-rose {
  * ─────────────────────────────────────────────────────────────────────────
  *  A11y : skip-link (#main-content)
  *  ─ Caché par défaut, visible au focus clavier. Apparaît en haut-gauche
- *    avec un fond rose Pinova pour rester reconnaissable.
+ *    avec un fond rose Fotoce pour rester reconnaissable.
  * ─────────────────────────────────────────────────────────────────────────
  */
-.pinova-skip-link {
+.fotoce-skip-link {
   position: fixed;
   top: -100px;
   left: 12px;
@@ -3240,8 +3251,8 @@ html[data-pinova-motion="material"] .pinova-glass-rose {
   box-shadow: 0 12px 24px -10px rgba(190, 24, 93, 0.45);
   transition: top 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms ease;
 }
-.pinova-skip-link:focus-visible,
-.pinova-skip-link:focus {
+.fotoce-skip-link:focus-visible,
+.fotoce-skip-link:focus {
   top: calc(env(safe-area-inset-top, 0px) + 12px);
   outline: 3px solid rgba(255, 255, 255, 0.85);
   outline-offset: 2px;
@@ -3267,74 +3278,74 @@ html[data-pinova-motion="material"] .pinova-glass-rose {
  *  View Transitions API (Chrome 111+, Safari 18+)
  *  ─ On déclare un `view-transition-name` global sur le shell pour que la
  *    transition de page soit naturelle. Les overrides directionnels par
- *    `data-pinova-nav-dir` permettent de varier l'effet (slide push vs pop).
+ *    `data-fotoce-nav-dir` permettent de varier l'effet (slide push vs pop).
  * ─────────────────────────────────────────────────────────────────────────
  */
-@supports (view-transition-name: pinova-root) {
+@supports (view-transition-name: fotoce-root) {
   :root {
-    view-transition-name: pinova-root;
+    view-transition-name: fotoce-root;
   }
   /* Animation par défaut : fade rapide iOS-like. */
-  ::view-transition-old(pinova-root),
-  ::view-transition-new(pinova-root) {
+  ::view-transition-old(fotoce-root),
+  ::view-transition-new(fotoce-root) {
     animation-duration: 240ms;
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  ::view-transition-old(pinova-root) {
-    animation-name: pinova-vt-fade-out;
+  ::view-transition-old(fotoce-root) {
+    animation-name: fotoce-vt-fade-out;
   }
-  ::view-transition-new(pinova-root) {
-    animation-name: pinova-vt-fade-in;
+  ::view-transition-new(fotoce-root) {
+    animation-name: fotoce-vt-fade-in;
   }
   /* Direction forward : slide vers la gauche + fade. */
-  html[data-pinova-nav-dir="forward"]::view-transition-old(pinova-root) {
-    animation-name: pinova-vt-slide-left-out;
+  html[data-fotoce-nav-dir="forward"]::view-transition-old(fotoce-root) {
+    animation-name: fotoce-vt-slide-left-out;
   }
-  html[data-pinova-nav-dir="forward"]::view-transition-new(pinova-root) {
-    animation-name: pinova-vt-slide-left-in;
+  html[data-fotoce-nav-dir="forward"]::view-transition-new(fotoce-root) {
+    animation-name: fotoce-vt-slide-left-in;
   }
   /* Direction back : slide vers la droite. */
-  html[data-pinova-nav-dir="back"]::view-transition-old(pinova-root) {
-    animation-name: pinova-vt-slide-right-out;
+  html[data-fotoce-nav-dir="back"]::view-transition-old(fotoce-root) {
+    animation-name: fotoce-vt-slide-right-out;
   }
-  html[data-pinova-nav-dir="back"]::view-transition-new(pinova-root) {
-    animation-name: pinova-vt-slide-right-in;
+  html[data-fotoce-nav-dir="back"]::view-transition-new(fotoce-root) {
+    animation-name: fotoce-vt-slide-right-in;
   }
   /* Material / desktop : on garde un simple fade (cohérent platform). */
-  html[data-pinova-motion="material"]::view-transition-old(pinova-root),
-  html[data-pinova-motion="material"]::view-transition-new(pinova-root),
-  html[data-pinova-motion="desktop"]::view-transition-old(pinova-root),
-  html[data-pinova-motion="desktop"]::view-transition-new(pinova-root) {
-    animation-name: pinova-vt-fade-out, pinova-vt-fade-in;
+  html[data-fotoce-motion="material"]::view-transition-old(fotoce-root),
+  html[data-fotoce-motion="material"]::view-transition-new(fotoce-root),
+  html[data-fotoce-motion="desktop"]::view-transition-old(fotoce-root),
+  html[data-fotoce-motion="desktop"]::view-transition-new(fotoce-root) {
+    animation-name: fotoce-vt-fade-out, fotoce-vt-fade-in;
   }
   @media (prefers-reduced-motion: reduce) {
-    ::view-transition-old(pinova-root),
-    ::view-transition-new(pinova-root) {
+    ::view-transition-old(fotoce-root),
+    ::view-transition-new(fotoce-root) {
       animation-duration: 120ms;
-      animation-name: pinova-vt-fade-out, pinova-vt-fade-in;
+      animation-name: fotoce-vt-fade-out, fotoce-vt-fade-in;
     }
   }
 }
 
-@keyframes pinova-vt-fade-out {
+@keyframes fotoce-vt-fade-out {
   from { opacity: 1; } to { opacity: 0; }
 }
-@keyframes pinova-vt-fade-in {
+@keyframes fotoce-vt-fade-in {
   from { opacity: 0; } to { opacity: 1; }
 }
-@keyframes pinova-vt-slide-left-out {
+@keyframes fotoce-vt-slide-left-out {
   from { opacity: 1; transform: translateX(0); }
   to   { opacity: 0; transform: translateX(-6%); }
 }
-@keyframes pinova-vt-slide-left-in {
+@keyframes fotoce-vt-slide-left-in {
   from { opacity: 0; transform: translateX(6%); }
   to   { opacity: 1; transform: translateX(0); }
 }
-@keyframes pinova-vt-slide-right-out {
+@keyframes fotoce-vt-slide-right-out {
   from { opacity: 1; transform: translateX(0); }
   to   { opacity: 0; transform: translateX(6%); }
 }
-@keyframes pinova-vt-slide-right-in {
+@keyframes fotoce-vt-slide-right-in {
   from { opacity: 0; transform: translateX(-6%); }
   to   { opacity: 1; transform: translateX(0); }
 }
@@ -3343,14 +3354,14 @@ html[data-pinova-motion="material"] .pinova-glass-rose {
  *  Skip link — WCAG 2.4.1 « Bypass Blocks ». Invisible jusqu'à focus clavier.
  *  Cible `#main` posé sur le `<main>` racine dans App.vue.
  * ───────────────────────────────────────────────────────────────────────── */
-.pinova-skip-link {
+.fotoce-skip-link {
   position: fixed;
   top: 0;
   left: 50%;
   transform: translate(-50%, -100%);
   z-index: 10000;
   padding: 0.6rem 1rem;
-  background: var(--pinova-pink-strong, #db2777);
+  background: var(--fotoce-pink-strong, #db2777);
   color: #fff;
   font-weight: 600;
   font-size: 0.875rem;
@@ -3360,8 +3371,8 @@ html[data-pinova-motion="material"] .pinova-glass-rose {
   box-shadow: 0 12px 32px -8px rgba(190, 24, 93, 0.4);
   transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
 }
-.pinova-skip-link:focus,
-.pinova-skip-link:focus-visible {
+.fotoce-skip-link:focus,
+.fotoce-skip-link:focus-visible {
   transform: translate(-50%, 0);
   outline: 2px solid #fff;
   outline-offset: 2px;
@@ -3371,9 +3382,9 @@ html[data-pinova-motion="material"] .pinova-glass-rose {
 .pin-sensitive-blur {
   filter: blur(18px);
 }
-html[data-pinova-quality="medium"] .pin-sensitive-blur {
+html[data-fotoce-quality="medium"] .pin-sensitive-blur {
   filter: blur(12px);
 }
-html[data-pinova-quality="low"] .pin-sensitive-blur {
+html[data-fotoce-quality="low"] .pin-sensitive-blur {
   filter: blur(8px);
 }

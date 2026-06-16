@@ -10,12 +10,12 @@
  *  - L'API JS expose les tokens typés (`iosTokens`, `androidTokens`,
  *    `desktopTokens`) pour styles dynamiques (springs, inline transform, etc.).
  *  - Le rendu visuel est piloté côté CSS via les sélecteurs
- *    `html[data-pinova-motion="ios|material|desktop"]` qui réécrivent les
- *    variables `--pinova-*` (cf. `style.css`). Donc même API composant,
+ *    `html[data-fotoce-motion="ios|material|desktop"]` qui réécrivent les
+ *    variables `--fotoce-*` (cf. `style.css`). Donc même API composant,
  *    rendu différent par OS — *consistance UX, rendu adaptatif*.
  *
  *  Synchronisation :
- *  - `adaptiveNavigator.syncAdaptiveDocumentState()` pose `data-pinova-motion`.
+ *  - `adaptiveNavigator.syncAdaptiveDocumentState()` pose `data-fotoce-motion`.
  *  - `applyPlatformTokens()` (optionnel) écrit aussi les vars inline sur
  *    `<html>` pour les cas SSR / iframe / test où on veut forcer un mode.
  */
@@ -213,7 +213,7 @@ export const iosTokens: PlatformTokens = {
 /* ───────────────────────── Tokens — Android (Material) ─────────────────── */
 
 /**
- * Android = elevation harde + ripple. On garde l'identité Pinova mais on bouge
+ * Android = elevation harde + ripple. On garde l'identité Fotoce mais on bouge
  * vers un feel Material : padding équilibrés, radius plus rectangulaires,
  * shadows directives plus contact, ripple sur press.
  */
@@ -398,40 +398,40 @@ export function usePlatformTokens(): {
 
 /**
  * Construit un block de CSS vars à appliquer sur `<html>` ou n'importe quel root.
- * Utilisé en complément des sélecteurs `html[data-pinova-motion=...]` quand on
+ * Utilisé en complément des sélecteurs `html[data-fotoce-motion=...]` quand on
  * veut FORCER un mode (preview / sandbox / tests).
  */
 export function platformTokensCssVars(tokens: PlatformTokens): Record<string, string> {
   return {
-    '--pinova-platform-mode': tokens.mode,
-    '--pinova-density': tokens.spacing.density,
-    '--pinova-space-scale': String(tokens.spacing.scale),
-    '--pinova-btn-padding': tokens.spacing.buttonPadding,
-    '--pinova-card-padding': tokens.spacing.cardPadding,
-    '--pinova-sheet-padding': tokens.spacing.sheetPadding,
-    '--pinova-gap-stack': tokens.spacing.gapStack,
-    '--pinova-gap-inline': tokens.spacing.gapInline,
-    '--pinova-type-scale': String(tokens.typography.scale),
-    '--pinova-type-line-scale': String(tokens.typography.lineHeightScale),
-    '--pinova-type-tracking-delta': tokens.typography.letterSpacingDelta,
-    '--pinova-radius-button': tokens.radius.button,
-    '--pinova-radius-card': tokens.radius.card,
-    '--pinova-radius-sheet': tokens.radius.sheet,
-    '--pinova-radius-fullscreen': tokens.radius.fullscreen,
-    '--pinova-radius-floating': tokens.radius.floating,
-    '--pinova-shadow-ambient': tokens.shadows.ambient,
-    '--pinova-shadow-directional': tokens.shadows.directional,
-    '--pinova-shadow-floating': tokens.shadows.floating,
-    '--pinova-shadow-modal': tokens.shadows.modal,
-    '--pinova-shadow-elevated': tokens.shadows.elevated,
-    '--pinova-shadow-pressed': tokens.shadows.pressed,
-    '--pinova-shadow-hover-glow': tokens.shadows.hoverGlow,
-    '--pinova-dur-fast': `${tokens.motion.durFastMs}ms`,
-    '--pinova-dur-medium': `${tokens.motion.durMediumMs}ms`,
-    '--pinova-dur-slow': `${tokens.motion.durSlowMs}ms`,
-    '--pinova-easing': tokens.motion.easing,
-    '--pinova-press-scale': String(tokens.motion.pressScale),
-    '--pinova-press-brightness': String(tokens.interaction.pressBrightness),
+    '--fotoce-platform-mode': tokens.mode,
+    '--fotoce-density': tokens.spacing.density,
+    '--fotoce-space-scale': String(tokens.spacing.scale),
+    '--fotoce-btn-padding': tokens.spacing.buttonPadding,
+    '--fotoce-card-padding': tokens.spacing.cardPadding,
+    '--fotoce-sheet-padding': tokens.spacing.sheetPadding,
+    '--fotoce-gap-stack': tokens.spacing.gapStack,
+    '--fotoce-gap-inline': tokens.spacing.gapInline,
+    '--fotoce-type-scale': String(tokens.typography.scale),
+    '--fotoce-type-line-scale': String(tokens.typography.lineHeightScale),
+    '--fotoce-type-tracking-delta': tokens.typography.letterSpacingDelta,
+    '--fotoce-radius-button': tokens.radius.button,
+    '--fotoce-radius-card': tokens.radius.card,
+    '--fotoce-radius-sheet': tokens.radius.sheet,
+    '--fotoce-radius-fullscreen': tokens.radius.fullscreen,
+    '--fotoce-radius-floating': tokens.radius.floating,
+    '--fotoce-shadow-ambient': tokens.shadows.ambient,
+    '--fotoce-shadow-directional': tokens.shadows.directional,
+    '--fotoce-shadow-floating': tokens.shadows.floating,
+    '--fotoce-shadow-modal': tokens.shadows.modal,
+    '--fotoce-shadow-elevated': tokens.shadows.elevated,
+    '--fotoce-shadow-pressed': tokens.shadows.pressed,
+    '--fotoce-shadow-hover-glow': tokens.shadows.hoverGlow,
+    '--fotoce-dur-fast': `${tokens.motion.durFastMs}ms`,
+    '--fotoce-dur-medium': `${tokens.motion.durMediumMs}ms`,
+    '--fotoce-dur-slow': `${tokens.motion.durSlowMs}ms`,
+    '--fotoce-easing': tokens.motion.easing,
+    '--fotoce-press-scale': String(tokens.motion.pressScale),
+    '--fotoce-press-brightness': String(tokens.interaction.pressBrightness),
   }
 }
 
@@ -440,7 +440,7 @@ let lastAppliedMode: PlatformMode | null = null
 /**
  * Applique les CSS vars sur `<html>`. Idempotent (skip si le mode n'a pas changé).
  * Le rendu visuel n'a pas BESOIN de cet appel : le CSS contient déjà des
- * sélecteurs `html[data-pinova-motion="..."]` qui font la commutation. Cette
+ * sélecteurs `html[data-fotoce-motion="..."]` qui font la commutation. Cette
  * fonction sert pour les cas où on veut surcharger un mode différent du
  * profil adaptatif (sandbox, preview), ou pour exposer les vars TS aux
  * composants qui les lisent en `getComputedStyle()`.

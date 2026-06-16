@@ -35,7 +35,7 @@ watch(
   (next, prev) => {
     if (prev && next[0] === prev[0] && next[1] === prev[1] && next[2] === prev[2]) return
     const ins = insRef.value
-    if (ins) delete ins.dataset.pinovaAdQueued
+    if (ins) delete ins.dataset.fotoceAdQueued
     void scheduleFill()
   },
 )

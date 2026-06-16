@@ -40,7 +40,7 @@ export const SPACING = {
 /**
  * Radius — coins arrondis. Tous en `px`.
  *
- * Standards Pinova (cohérence inter-composants) :
+ * Standards Fotoce (cohérence inter-composants) :
  *  - cards               : 22 (lux feel)
  *  - sheets bottom       : 28 (haut seulement)
  *  - sheets fullscreen   : 38
@@ -58,7 +58,7 @@ export const RADIUS = {
   ms:  12,
   /** 16px — boutons standards iOS. */
   md:  16,
-  /** 22px — cards Pinova (lux). */
+  /** 22px — cards Fotoce (lux). */
   card: 22,
   /** 24px — floating elements (FAB, contextual menu, popovers). */
   floating: 24,

@@ -1,5 +1,5 @@
 /**
- * Motion System Pinova — tokens partagés iOS-like.
+ * Motion System Fotoce — tokens partagés iOS-like.
  *
  * Inspiré de :
  *  - iOS UIKit (UIView animateWithSpring, damping ratio)
@@ -104,7 +104,7 @@ export type MotionSpringKey = keyof typeof SPRINGS
 export const TRANSITIONS = {
   /** Boutons : press feedback compatible CSS (fallback du JS spring). */
   press: `transform ${DURATIONS.ultraFast}ms ${EASING.iosOut}, filter ${DURATIONS.fast}ms ${EASING.iosOut}`,
-  /** Carte / pin / élément liste. */
+  /** Carte / foto / élément liste. */
   card: `transform ${DURATIONS.medium}ms ${EASING.iosOut}, box-shadow ${DURATIONS.medium}ms ${EASING.iosOut}, border-color ${DURATIONS.fast}ms ${EASING.iosOut}`,
   /** Apparition / disparition standard. */
   fade: `opacity ${DURATIONS.medium}ms ${EASING.iosOut}`,
@@ -181,7 +181,7 @@ export function rubberBand(offset: number, dimension: number): number {
   return sign * ((1 - 1 / (abs / dimension + 1)) * dimension * (1 / c))
 }
 
-/** Synonyme MOTION pour parité avec Pinova-Mobile/src/theme/motion.ts. */
+/** Synonyme MOTION pour parité avec Fotoce-Mobile/src/theme/motion.ts. */
 export const MOTION = {
   fast: DURATIONS.fast,
   medium: DURATIONS.medium,

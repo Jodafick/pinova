@@ -1,10 +1,10 @@
 import type { RouteLocationNormalized } from 'vue-router'
 
 const APP_DEEP_LINK_SCHEME = (
-  (import.meta.env.VITE_APP_DEEP_LINK_SCHEME as string | undefined)?.trim() || 'pinova'
+  (import.meta.env.VITE_APP_DEEP_LINK_SCHEME as string | undefined)?.trim() || 'fotoce'
 ).replace(/:\/\//g, '').replace(/:$/g, '')
 
-/** iPhone / iPad / iPod : éviter `location.href = pinova://…` (Safari affiche souvent « adresse invalide » si l’app n’est pas installée). */
+/** iPhone / iPad / iPod : éviter `location.href = fotoce://…` (Safari affiche souvent « adresse invalide » si l’app n’est pas installée). */
 function isIosMobileUa(): boolean {
   if (typeof navigator === 'undefined') return false
   return /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
@@ -59,7 +59,7 @@ function openCustomSchemeViaHiddenFrame(url: string): void {
 }
 
 /**
- * Navigation vers une URL absolue https ou vers un schéma custom (ex. `pinova://`).
+ * Navigation vers une URL absolue https ou vers un schéma custom (ex. `fotoce://`).
  * Sur iOS, les schémas custom passent par une iframe cachée pour limiter l’alerte Safari « adresse invalide ».
  */
 export function openMobileDeepLink(url: string): void {
@@ -88,7 +88,7 @@ export function isMobileBrowser(): boolean {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(ua)
 }
 
-const NATIVE_APP_SUGGEST_DISMISSED_KEY = 'pinova:native-app-suggest-dismissed-v1'
+const NATIVE_APP_SUGGEST_DISMISSED_KEY = 'fotoce:native-app-suggest-dismissed-v1'
 
 export function isNativeAppSuggestDismissed(): boolean {
   if (typeof window === 'undefined') return true
@@ -154,15 +154,15 @@ function firstRouteQuery(
 }
 
 /**
- * Pour certaines routes, une partie de la query est déjà représentée dans le chemin `pinova://`.
+ * Pour certaines routes, une partie de la query est déjà représentée dans le chemin `fotoce://`.
  */
 function queryKeysOmittedWhenBuildingDeepLink(
   route: RouteLocationNormalized,
 ): Set<string> {
   const omit = new Set<string>()
   if (route.name === 'home') {
-    const pin = firstRouteQuery(route, 'pin')
-    if (pin) omit.add('pin')
+    const foto = firstRouteQuery(route, 'foto')
+    if (foto) omit.add('foto')
   }
   return omit
 }
@@ -170,8 +170,8 @@ function queryKeysOmittedWhenBuildingDeepLink(
 function buildScreenPath(route: RouteLocationNormalized): string | null {
   switch (route.name) {
     case 'home': {
-      const pin = firstRouteQuery(route, 'pin')
-      if (pin) return `pin/${encodeURIComponent(pin)}`
+      const foto = firstRouteQuery(route, 'foto')
+      if (foto) return `foto/${encodeURIComponent(foto)}`
       return 'home'
     }
     case 'notifications':
@@ -186,13 +186,13 @@ function buildScreenPath(route: RouteLocationNormalized): string | null {
       return 'following'
     case 'search':
       return 'search'
-    case 'pin-detail': {
+    case 'foto-detail': {
       const slug = getRouteParam(route.params, 'slug')
-      return slug ? `pin/${encodeURIComponent(slug)}` : null
+      return slug ? `foto/${encodeURIComponent(slug)}` : null
     }
-    case 'edit-pin': {
+    case 'edit-foto': {
       const slug = getRouteParam(route.params, 'slug')
-      return slug ? `pin/${encodeURIComponent(slug)}/edit` : null
+      return slug ? `foto/${encodeURIComponent(slug)}/edit` : null
     }
     case 'create':
       return 'create'

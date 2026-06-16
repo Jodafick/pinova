@@ -2,8 +2,8 @@
 import { ref, watch, nextTick } from 'vue'
 import { useAppModal } from '../composables/useAppModal'
 import { useI18n } from '../i18n'
-import PinovaModal from './ui/PinovaModal.vue'
-import PinovaButton from './ui/PinovaButton.vue'
+import FotoceModal from './ui/FotoceModal.vue'
+import FotoceButton from './ui/FotoceButton.vue'
 
 const {
   open,
@@ -20,7 +20,7 @@ const {
 
 const { t } = useI18n()
 
-const okButtonRef = ref<InstanceType<typeof PinovaButton> | null>(null)
+const okButtonRef = ref<InstanceType<typeof FotoceButton> | null>(null)
 const promptInputRef = ref<HTMLInputElement | null>(null)
 
 watch(open, (isOpen) => {
@@ -70,7 +70,7 @@ function variantStyles(): string {
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     :open="open"
     presentation="tallSheet"
     presentation-lg="center"
@@ -85,7 +85,7 @@ function variantStyles(): string {
           class="flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ring-inset shrink-0 shadow-inner"
           :class="variantStyles()"
         >
-          <PinovaIcon :name="variantIcon()" class="text-[28px]" />
+          <FotoceIcon :name="variantIcon()" class="text-[28px]" />
         </div>
         <h2
           v-if="title"
@@ -119,15 +119,15 @@ function variantStyles(): string {
 
     <template #footer>
       <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <PinovaButton
+        <FotoceButton
           v-if="mode === 'prompt' || mode === 'confirm'"
           variant="secondary"
           class="w-full sm:w-auto min-h-[44px]"
           @click="mode === 'confirm' ? finishConfirm(false) : finishPrompt(false)"
         >
           {{ t('common.cancel') }}
-        </PinovaButton>
-        <PinovaButton
+        </FotoceButton>
+        <FotoceButton
           ref="okButtonRef"
           variant="primary"
           class="w-full sm:w-auto min-h-[44px] min-w-[7.5rem]"
@@ -140,8 +140,8 @@ function variantStyles(): string {
           "
         >
           {{ mode === 'confirm' ? t('modal.confirm.ok') : t('common.ok') }}
-        </PinovaButton>
+        </FotoceButton>
       </div>
     </template>
-  </PinovaModal>
+  </FotoceModal>
 </template>

@@ -1,16 +1,16 @@
 /**
- * Pinova Native Tokens — mapping CSS 1:1 avec `Pinova-Mobile/src/theme/tokens.ts`.
+ * Fotoce Native Tokens — mapping CSS 1:1 avec `Fotoce-Mobile/src/theme/tokens.ts`.
  *
- *  Préfixe : `--pn-*` (Pinova Native) — distinct de `--pinova-*` pour éviter
+ *  Préfixe : `--pn-*` (Fotoce Native) — distinct de `--fotoce-*` pour éviter
  *  les collisions avec les variables existantes du prompt 12 (`platformTokens`)
  *  et les variables historiques de `style.css` (`--card-*`, `--btn-*`, ...).
  *
  *  Stratégie :
  *   - Ce fichier déclare la palette canonique mobile sous forme de CSS vars.
- *   - `platformTokens.ts` continue d'injecter dynamiquement `--pinova-*`
+ *   - `platformTokens.ts` continue d'injecter dynamiquement `--fotoce-*`
  *     selon la plateforme (iOS / Material / Desktop) — non touché.
  *   - Les composants nouveaux peuvent utiliser SOIT `--pn-*` (alignés mobile)
- *     SOIT `--pinova-*` (alignés platform-aware). À terme on convergera.
+ *     SOIT `--fotoce-*` (alignés platform-aware). À terme on convergera.
  *
  *  Dark mode : déclenché via `html.dark` (cohérent avec `useAppearance.ts`).
  */

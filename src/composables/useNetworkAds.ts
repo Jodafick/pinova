@@ -83,19 +83,19 @@ export function useNetworkAds() {
   }
 }
 
-/** Insère des marqueurs pub réseau dans une liste de pins (côté client). */
+/** Insère des marqueurs pub réseau dans une liste de fotos (côté client). */
 export function injectNetworkAdMarkers<T extends { id?: string | number }>(
   items: T[],
   opts: { everyN: number; enabled: boolean },
 ): Array<T | { feedType: 'network_ad'; id: string }> {
   if (!opts.enabled || opts.everyN < 1) return items
   const out: Array<T | { feedType: 'network_ad'; id: string }> = []
-  let pinCount = 0
+  let fotoCount = 0
   for (const item of items) {
     out.push(item)
-    pinCount += 1
-    if (pinCount % opts.everyN === 0) {
-      out.push({ feedType: 'network_ad', id: `network-ad-${pinCount}` })
+    fotoCount += 1
+    if (fotoCount % opts.everyN === 0) {
+      out.push({ feedType: 'network_ad', id: `network-ad-${fotoCount}` })
     }
   }
   return out

@@ -10,7 +10,7 @@
  *  - `getAdaptiveProfile()` : snapshot synchrone (SSR-safe).
  *  - `getAdaptiveGesture()` : copie des constantes `GESTURE` ajustées.
  *  - `getPageTransitionNames(direction)` : noms de classes `<transition>` router-view.
- *  - `syncAdaptiveDocumentState()` : pose `data-pinova-*` sur `<html>` pour le CSS.
+ *  - `syncAdaptiveDocumentState()` : pose `data-fotoce-*` sur `<html>` pour le CSS.
  *
  * À initialiser une fois au boot : `initAdaptiveNavigator()`.
  */
@@ -24,13 +24,13 @@ import { motionDeviceTier } from '../core/motionBudget'
  */
 let _applyPlatformTokens: ((mode?: MotionLanguage) => void) | null = null
 
-export type PinovaPlatform = 'ios' | 'android' | 'desktop' | 'unknown'
+export type FotocePlatform = 'ios' | 'android' | 'desktop' | 'unknown'
 /** Langage motion : même stack logique, rendu différent. */
 export type MotionLanguage = 'ios' | 'material' | 'desktop'
 export type InputKind = 'touch' | 'mouse' | 'mixed' | 'unknown'
 
 export interface AdaptiveProfile {
-  platform: PinovaPlatform
+  platform: FotocePlatform
   input: InputKind
   /** `true` si `env(safe-area-inset-*)` est utilisable (iOS notch / home indicator). */
   safeAreaCapable: boolean
@@ -46,7 +46,7 @@ export interface AdaptiveProfile {
 const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280)
 const lastPointerType = ref<'touch' | 'mouse' | 'pen' | 'unknown'>('unknown')
 
-function detectUaPlatform(): PinovaPlatform {
+function detectUaPlatform(): FotocePlatform {
   if (typeof navigator === 'undefined') return 'unknown'
   const ua = navigator.userAgent || ''
   if (/iPad|iPhone|iPod/i.test(ua)) return 'ios'
@@ -73,7 +73,7 @@ function readSafeAreaCapable(): boolean {
   }
 }
 
-function inferInput(platform: PinovaPlatform, coarse: boolean): InputKind {
+function inferInput(platform: FotocePlatform, coarse: boolean): InputKind {
   const pt = lastPointerType.value
   if (pt === 'touch' || (coarse && platform !== 'desktop')) return 'touch'
   if (pt === 'mouse' || pt === 'pen') return 'mouse'
@@ -83,7 +83,7 @@ function inferInput(platform: PinovaPlatform, coarse: boolean): InputKind {
 }
 
 function inferMotionLanguage(p: {
-  platform: PinovaPlatform
+  platform: FotocePlatform
   input: InputKind
   vw: number
   coarse: boolean
@@ -182,20 +182,20 @@ export function getPageTransitionNames(direction: PageNavDirection): { enter: st
     : { enter: 'page-back', leave: 'page-back' }
 }
 
-/** Met à jour `data-pinova-*` sur `<html>` pour le CSS (densité, ripple Android, etc.). */
+/** Met à jour `data-fotoce-*` sur `<html>` pour le CSS (densité, ripple Android, etc.). */
 export function syncAdaptiveDocumentState(): void {
   if (typeof document === 'undefined') return
   const p = profileRef.value
   const root = document.documentElement
-  root.dataset.pinovaPlatform = p.platform
-  root.dataset.pinovaInput = p.input
-  root.dataset.pinovaMotion = p.motionLanguage
-  root.dataset.pinovaPerfTier = p.performanceTier
-  root.dataset.pinovaDensity =
+  root.dataset.fotocePlatform = p.platform
+  root.dataset.fotoceInput = p.input
+  root.dataset.fotoceMotion = p.motionLanguage
+  root.dataset.fotocePerfTier = p.performanceTier
+  root.dataset.fotoceDensity =
     p.motionLanguage === 'desktop' ? 'compact'
     : p.motionLanguage === 'material' ? 'balanced'
     : 'cozy'
-  root.toggleAttribute('data-pinova-safe-area', p.safeAreaCapable)
+  root.toggleAttribute('data-fotoce-safe-area', p.safeAreaCapable)
   /* Lazy : applique les CSS vars du Design System adaptatif. */
   if (_applyPlatformTokens) _applyPlatformTokens()
 }

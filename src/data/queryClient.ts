@@ -1,5 +1,5 @@
 /**
- * Pinova Query Client — port web de `Pinova-Mobile/data/query/createAppQueryClient`.
+ * Fotoce Query Client — port web de `Fotoce-Mobile/data/query/createAppQueryClient`.
  *
  *  Politiques alignées 1:1 avec le mobile :
  *   - staleTime  : 30 min  (perçu offline-first ; cache client entités pour le détail)
@@ -35,7 +35,7 @@ const GC_MS    = 7 * 24 * 60 * 60 * 1000  /* 7 jours */
 /**
  * Heuristique d'erreur : on retry les pannes transitoires, pas les erreurs métier.
  * Implémentation conservative (sans dépendance externe) — peut être enrichie
- * en alignant sur `Pinova-Mobile/api/errors.getApiErrorKind`.
+ * en alignant sur `Fotoce-Mobile/api/errors.getApiErrorKind`.
  */
 function isTransientError(err: unknown): boolean {
   if (!err) return false
@@ -58,7 +58,7 @@ function retryQuery(failureCount: number, error: unknown): boolean {
   return isTransientError(error)
 }
 
-export function createPinovaQueryClient(): QueryClient {
+export function createFotoceQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
       queries: {
@@ -79,4 +79,4 @@ export function createPinovaQueryClient(): QueryClient {
 }
 
 /** Instance singleton — partagée entre `VueQueryPlugin` et le persister. */
-export const queryClient: QueryClient = createPinovaQueryClient()
+export const queryClient: QueryClient = createFotoceQueryClient()

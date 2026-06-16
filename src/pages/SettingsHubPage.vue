@@ -23,7 +23,7 @@ const visibleGroups = computed(() =>
 
 <template>
   <div
-    class="pinova-settings-hub max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col min-h-[min(100dvh,100svh)] pt-2 lg:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12"
+    class="fotoce-settings-hub max-w-3xl mx-auto w-full min-w-0 overflow-x-clip px-4 sm:px-6 flex flex-col min-h-[min(100dvh,100svh)] pt-2 lg:pt-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-12"
   >
     <div class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
       <div class="settings-hub-orb settings-hub-orb--rose" />
@@ -52,9 +52,9 @@ const visibleGroups = computed(() =>
             class="settings-hub-row group"
             :class="{ 'settings-hub-row--border': idx < group.items.length - 1 }"
           >
-            <PinovaIcon :name="item.icon" class="settings-hub-row-icon" />
+            <FotoceIcon :name="item.icon" class="settings-hub-row-icon" />
             <span class="settings-hub-row-label">{{ t(item.labelKey) }}</span>
-            <PinovaIcon name="chevron_right" class="settings-hub-row-chevron" />
+            <FotoceIcon name="chevron_right" class="settings-hub-row-chevron" />
           </RouterLink>
         </div>
       </section>

@@ -9,7 +9,7 @@ import { ref } from 'vue'
 import type { Router } from 'vue-router'
 import type { PageNavDirection } from './adaptiveNavigator'
 
-const NAV_STACK_KEY = 'pinova-page-nav-stack-v1'
+const NAV_STACK_KEY = 'fotoce-page-nav-stack-v1'
 const MAX_STACK = 48
 
 export const pageNavDirection = ref<PageNavDirection>('forward')

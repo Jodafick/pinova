@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import type { SponsoredAd } from '../types'
-import { isPartnerAd, isPinPromo } from '../types'
+import { isPartnerAd, isFotoPromo } from '../types'
 import { useI18n } from '../i18n'
 import api from '../api/index'
 import OfflineImg from './OfflineImg.vue'
@@ -16,7 +16,7 @@ const emit = defineEmits<{ (e: 'dismiss'): void }>()
 const { t } = useI18n()
 const router = useRouter()
 
-const badge = () => (isPinPromo(props.item) ? t('feed.pinPromo.badge') : t('feed.partnerAd.badge'))
+const badge = () => (isFotoPromo(props.item) ? t('feed.fotoPromo.badge') : t('feed.partnerAd.badge'))
 
 async function onTap() {
   if (isPartnerAd(props.item)) {
@@ -28,9 +28,9 @@ async function onTap() {
     window.open(props.item.ctaUrl, '_blank', 'noopener,noreferrer')
     return
   }
-  if (isPinPromo(props.item)) {
+  if (isFotoPromo(props.item)) {
     try {
-      await api.post(`monetization/pin-promo-campaigns/${props.item.campaignId}/click/`)
+      await api.post(`monetization/foto-promo-campaigns/${props.item.campaignId}/click/`)
     } catch {
       /* ignore */
     }
@@ -39,8 +39,8 @@ async function onTap() {
       window.open(cta, '_blank', 'noopener,noreferrer')
       return
     }
-    if (props.item.pinSlug) {
-      void router.push({ path: '/', query: { pin: props.item.pinSlug } })
+    if (props.item.fotoSlug) {
+      void router.push({ path: '/', query: { foto: props.item.fotoSlug } })
     }
   }
 }
@@ -79,7 +79,7 @@ async function onTap() {
       class="shrink-0 text-[10px] font-bold rounded-full px-2.5 py-1"
       :class="variant === 'story' ? 'bg-white text-pink-800' : 'bg-pink-700 text-white'"
     >
-      {{ isPinPromo(item) ? t('feed.pinPromo.ctaShort') : t('feed.partnerAd.ctaShort') }}
+      {{ isFotoPromo(item) ? t('feed.fotoPromo.ctaShort') : t('feed.partnerAd.ctaShort') }}
     </span>
     <button
       type="button"
@@ -87,7 +87,7 @@ async function onTap() {
       :aria-label="t('common.close')"
       @click.stop="emit('dismiss')"
     >
-      <PinovaIcon name="close" class="text-base" />
+      <FotoceIcon name="close" class="text-base" />
     </button>
   </div>
 </template>

@@ -6,7 +6,7 @@ import {
   useActivationMoments,
 } from '../../composables/useActivationMoments'
 import { navigateToPublishedPin } from '../../utils/postPublishNavigation'
-import FirstPinCelebrationModal from './FirstPinCelebrationModal.vue'
+import FirstFotoCelebrationModal from './FirstFotoCelebrationModal.vue'
 import CreatorSuggestionsSheet from './CreatorSuggestionsSheet.vue'
 
 const router = useRouter()
@@ -17,18 +17,18 @@ watch(celebrationOpen, async (open) => {
   if (open) return
   const pending = pendingPublishedPin.value
   if (!pending?.slug) {
-    clearPendingPublishedPin()
+    clearPendingPublishedFoto()
     await router.push('/')
     return
   }
   const slug = pending.slug
   const username = pending.username
-  clearPendingPublishedPin()
-  await navigateToPublishedPin(router, { slug, username: username ?? null, pin: null })
+  clearPendingPublishedFoto()
+  await navigateToPublishedFoto(router, { slug, username: username ?? null, foto: null })
 })
 </script>
 
 <template>
-  <FirstPinCelebrationModal v-model:open="celebrationOpen" />
+  <FirstFotoCelebrationModal v-model:open="celebrationOpen" />
   <CreatorSuggestionsSheet v-model:open="suggestionsOpen" />
 </template>

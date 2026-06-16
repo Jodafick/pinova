@@ -1,7 +1,7 @@
 import { onMounted, watch, type Ref } from 'vue'
 import type { CampaignTargeting } from './useCampaignTargeting'
 
-const DRAFT_KEY = 'pinova_campaign_draft_v1'
+const DRAFT_KEY = 'fotoce_campaign_draft_v1'
 
 export type CampaignDraft = {
   headline: string

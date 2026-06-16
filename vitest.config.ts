@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@pinova/shared': path.resolve(__dirname, 'src/shared/index.ts'),
+      '@fotoce/shared': path.resolve(__dirname, 'src/shared/index.ts'),
     },
   },
   test: {

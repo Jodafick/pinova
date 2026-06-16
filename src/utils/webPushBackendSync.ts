@@ -12,7 +12,7 @@ export async function resyncWebPushSubscriptionForCurrentUser(api: AxiosInstance
   }
   if (Notification.permission !== 'granted') return
   try {
-    const registration = await navigator.serviceWorker.register('/pinova-push-sw.js', { scope: '/push/' })
+    const registration = await navigator.serviceWorker.register('/fotoce-push-sw.js', { scope: '/push/' })
     const sub = await registration.pushManager.getSubscription()
     if (!sub) return
     const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } }

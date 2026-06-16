@@ -328,7 +328,7 @@ defineExpose({
 
     <!-- Indicator mute (overlay subtil). -->
     <div v-if="!noTapUnmute && isPlaying && isMutedLocal" class="smart-video__mute-badge" aria-hidden="true">
-      <PinovaIcon name="volume_off" />
+      <FotoceIcon name="volume_off" />
     </div>
 
     <!-- Indicator low-power (autoplay désactivé). -->
@@ -339,12 +339,12 @@ defineExpose({
       :aria-label="'Lire la vidéo'"
       @click.stop="tryPlay"
     >
-      <PinovaIcon name="play_arrow" />
+      <FotoceIcon name="play_arrow" />
     </button>
 
     <!-- Erreur. -->
     <div v-if="hasError" class="smart-video__error" aria-live="polite">
-      <PinovaIcon name="broken_image" />
+      <FotoceIcon name="broken_image" />
     </div>
   </div>
 </template>
@@ -398,7 +398,7 @@ defineExpose({
   pointer-events: none;
   z-index: 2;
 }
-.smart-video__mute-badge .pinova-icon { font-size: 18px; }
+.smart-video__mute-badge .fotoce-icon { font-size: 18px; }
 
 .smart-video__play-btn {
   position: absolute;
@@ -418,7 +418,7 @@ defineExpose({
   z-index: 3;
   -webkit-tap-highlight-color: transparent;
 }
-.smart-video__play-btn .pinova-icon { font-size: 30px; }
+.smart-video__play-btn .fotoce-icon { font-size: 30px; }
 
 .smart-video__error {
   position: absolute;
@@ -428,7 +428,7 @@ defineExpose({
   color: rgba(255, 255, 255, 0.6);
   z-index: 4;
 }
-.smart-video__error .pinova-icon { font-size: 36px; }
+.smart-video__error .fotoce-icon { font-size: 36px; }
 
 @media (prefers-reduced-motion: reduce) {
   .smart-video :deep(video) {

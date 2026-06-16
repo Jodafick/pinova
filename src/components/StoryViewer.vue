@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Pin } from '../types'
-import { usePins, isAlreadyReportedError } from '../composables/usePins'
+import type { Foto } from '../types'
+import { useFotos, isAlreadyReportedError } from '../composables/useFotos'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
-import PinSensitiveMedia from './PinSensitiveMedia.vue'
-import PinovaModal from './ui/PinovaModal.vue'
+import FotoSensitiveMedia from './FotoSensitiveMedia.vue'
+import FotoceModal from './ui/FotoceModal.vue'
 import StorySegmentedProgressBar from './StorySegmentedProgressBar.vue'
 import StoryLikersModal from './StoryLikersModal.vue'
 import ReportContentModal from './ReportContentModal.vue'
@@ -23,7 +23,7 @@ import ContextualSponsoredSlot from './ContextualSponsoredSlot.vue'
 
 const props = defineProps<{
   modelValue: boolean
-  pins: Pin[]
+  pins: Foto[]
   initialIndex?: number
   /** Ms déjà écoulées sur `initialIndex` (reprise après fermeture du viewer). */
   initialSegmentElapsedMs?: number
@@ -35,7 +35,7 @@ const emit = defineEmits<{
     e: 'session-end',
     payload: {
       username: string
-      pinSlugs: string[]
+      fotoSlugs: string[]
       resumeIndex: number
       allCaughtUp: boolean
       segmentElapsedMs: number
@@ -47,7 +47,7 @@ const emit = defineEmits<{
 const closingSessionReason = ref<'completed_all' | null>(null)
 
 const router = useRouter()
-const { toggleLike, reportPin, trackPinView } = usePins()
+const { toggleLike, reportFoto, trackFotoView } = useFotos()
 const { isAuthenticated, currentUser } = useAuth()
 const { promptGuest } = useGuestAuthGate()
 const { t } = useI18n()
@@ -90,9 +90,9 @@ let heartBurstHideTimer: number | null = null
 const expandedDesc = ref(false)
 const storyLikersOpen = ref(false)
 const reportStoryOpen = ref(false)
-/** Feuille Partager / Signaler — même principe que l’appui long sur la fiche pin mobile. */
+/** Feuille Partager / Signaler — même principe que l’appui long sur la fiche foto mobile. */
 const storyActionsOpen = ref(false)
-/** État like / reactions — props.story ≠ store `pins`; toggleLike ne met pas à jour le viewer. */
+/** État like / reactions — props.story ≠ store `fotos`; toggleLike ne met pas à jour le viewer. */
 const storyLikedBySlug = ref<Record<string, boolean>>({})
 const storyReactionsBySlug = ref<Record<string, number>>({})
 /** Recrée l’animation CSS de la barre du segment courant à chaque story. */
@@ -120,7 +120,7 @@ const playbackPaused = computed(() =>
   storyActionsOpen.value || storyLikersOpen.value || reportStoryOpen.value,
 )
 
-/** Fermeture par swipe bas — aligné `PinDetailMobileFullscreen`. */
+/** Fermeture par swipe bas — aligné `FotoDetailMobileFullscreen`. */
 const surfaceDragY = ref(0)
 const surfacePointerActive = ref(false)
 const gestureStart = ref<{ x: number; y: number; at: number } | null>(null)
@@ -312,7 +312,7 @@ function endGesture(x: number, y: number) {
       return
     }
 
-    const pin = current.value
+    const foto = current.value
     if (!pin || isOwnerViewingStory.value) return
     const now = Date.now()
     if (
@@ -322,10 +322,10 @@ function endGesture(x: number, y: number) {
     ) {
       lastTap = 0
       if (!isAuthenticated.value) {
-        promptGuest('like', { resourceId: pin.slug })
+        promptGuest('like', { resourceId: foto.slug })
         return
       }
-      const slug = pin.slug
+      const slug = foto.slug
       const likedStored = storyLikedBySlug.value[slug]
       const alreadyLiked =
         typeof likedStored === 'boolean' ? likedStored : !!pin.liked
@@ -499,7 +499,7 @@ function restartCurrentSegment() {
   slideDurationMs.value = DEFAULT_IMAGE_MS
   bumpProgressAnimation()
 
-  const pin = props.pins[index.value]
+  const foto = props.pins[index.value]
   if (!pin || !props.modelValue) return
 
   const resumeMs = pendingOpenResumeElapsed.value
@@ -582,11 +582,11 @@ watch(
     if (prevOpen && !open && props.pins.length > 0) {
       const username = props.pins[0]?.username?.trim() ?? ''
       if (username) {
-        const pinSlugs = props.pins.map((p) => p.slug)
+        const fotoSlugs = props.pins.map((p) => p.slug)
         const allCaughtUp = closingSessionReason.value === 'completed_all'
         emit('session-end', {
           username,
-          pinSlugs,
+          fotoSlugs,
           resumeIndex: allCaughtUp ? 0 : index.value,
           allCaughtUp,
           segmentElapsedMs: allCaughtUp ? 0 : computeSegmentElapsedForEmit(),
@@ -618,7 +618,7 @@ watch(
  * reactions, etc.) → cycles de re-render lourds qui finissaient par geler le
  * modal sur certains appareils. On surveille maintenant seulement les
  * signaux qui changent vraiment l'engagement à synchroniser (longueur + slug
- * du pin courant), ce qui suffit pour le cas usage réel.
+ * du foto courant), ce qui suffit pour le cas usage réel.
  */
 watch(
   [
@@ -667,14 +667,14 @@ watch(
   },
 )
 
-/** Enregistrement vues (PinViewEvent) — aligné fiche pin / mobile. */
+/** Enregistrement vues (FotoViewEvent) — aligné fiche foto / mobile. */
 watch(
   () =>
     props.modelValue && current.value?.slug && isAuthenticated.value
       ? `${current.value.slug}`
       : '',
   (slug) => {
-    if (slug) void trackPinView(slug)
+    if (slug) void trackFotoView(slug)
   },
 )
 
@@ -705,9 +705,9 @@ const descriptionDisplay = computed(() => {
 })
 
 const storyAuthorInitials = computed(() => {
-  const pin = current.value
+  const foto = current.value
   if (!pin?.user?.trim()) return '?'
-  const parts = pin.user.trim().split(/\s+/).filter(Boolean)
+  const parts = foto.user.trim().split(/\s+/).filter(Boolean)
   if (parts.length >= 2) {
     const first = parts[0] ?? ''
     const last = parts[parts.length - 1] ?? ''
@@ -715,7 +715,7 @@ const storyAuthorInitials = computed(() => {
     const b = last[0] || ''
     return (a + b).toUpperCase()
   }
-  return pin.user.trim().slice(0, 2).toUpperCase()
+  return foto.user.trim().slice(0, 2).toUpperCase()
 })
 
 const storyAuthorAvatarTw = computed(() => {
@@ -734,10 +734,10 @@ const storyAuthorAvatarStyle = computed(() => {
 
 /** Stories : uniquement le propriétaire voit le compteur (liste des j’aime au clic). */
 const isOwnerViewingStory = computed(() => {
-  const pin = current.value
+  const foto = current.value
   const u = currentUser.value?.username
   if (!pin || !u) return false
-  return pin.username.trim().toLowerCase() === u.trim().toLowerCase()
+  return foto.username.trim().toLowerCase() === u.trim().toLowerCase()
 })
 
 function openStoryLikersModal() {
@@ -746,13 +746,13 @@ function openStoryLikersModal() {
 }
 
 async function handleReportStory() {
-  const pin = current.value
+  const foto = current.value
   if (!pin) return
   if (!isAuthenticated.value) {
     promptGuest('generic')
     return
   }
-  if (currentUser.value && pin.username === currentUser.value.username) {
+  if (currentUser.value && foto.username === currentUser.value.username) {
     await showAlert(t('moderation.reportOwnDisabled'), { variant: 'info' })
     return
   }
@@ -762,9 +762,9 @@ async function handleReportStory() {
 async function handleShareStory() {
   const slug = current.value?.slug?.trim()
   if (!slug) return
-  const url = `${window.location.origin}/pin/${encodeURIComponent(slug)}`
+  const url = `${window.location.origin}/foto/${encodeURIComponent(slug)}`
   const shareData = {
-    title: (current.value?.title || 'Pinova').trim() || 'Pinova',
+    title: (current.value?.title || 'Fotoce').trim() || 'Fotoce',
     text: `@${current.value?.username ?? ''}`.trim(),
     url,
   }
@@ -778,17 +778,17 @@ async function handleShareStory() {
   }
   try {
     await navigator.clipboard.writeText(url)
-    await showAlert(t('pin.share.copied'), { variant: 'success' })
+    await showAlert(t('foto.share.copied'), { variant: 'success' })
   } catch {
-    await showAlert(`${t('pin.share.manualBody')}\n\n${url}`, { variant: 'info', title: t('pin.share.manualTitle') })
+    await showAlert(`${t('foto.share.manualBody')}\n\n${url}`, { variant: 'info', title: t('foto.share.manualTitle') })
   }
 }
 
 async function handleSubmitStoryReport(payload: { category: string; details: string }) {
-  const pin = current.value
+  const foto = current.value
   if (!pin) return
   try {
-    await reportPin(pin.slug, payload)
+    await reportFoto(pin.slug, payload)
     reportStoryOpen.value = false
     await showAlert(t('moderation.reportSent'), { variant: 'success' })
   } catch (e) {
@@ -857,8 +857,8 @@ function onStoryVideoLoadedMetadata(e: Event) {
 
 async function finalizeStoryImageFromEl(img: HTMLImageElement) {
   if (!props.modelValue) return
-  const pin = props.pins[index.value]
-  if (!pin || pin.storyVideoUrl?.trim()) return
+  const foto = props.pins[index.value]
+  if (!pin || foto.storyVideoUrl?.trim()) return
   try {
     await img.decode?.()
   } catch {
@@ -890,7 +890,7 @@ function onStoryVideoError() {
 
 /** Fin lecture vidéo : prioritaire sur le timer avec marge. */
 function onStoryVideoEnded() {
-  const pin = props.pins[index.value]
+  const foto = props.pins[index.value]
   if (!pin?.storyVideoUrl?.trim()) return
   clearVideoSafetyTimer()
   clearAdvance()
@@ -898,10 +898,10 @@ function onStoryVideoEnded() {
 }
 
 async function doLike() {
-  const pin = current.value
+  const foto = current.value
   if (!pin) return
   if (!isAuthenticated.value) {
-    promptGuest('like', { resourceId: pin.slug })
+    promptGuest('like', { resourceId: foto.slug })
     return
   }
   if (isOwnerViewingStory.value) return
@@ -913,7 +913,7 @@ async function doLike() {
     heartBurstHideTimer = null
   }, 980)
 
-  const slug = pin.slug
+  const slug = foto.slug
   const prevLikedStored = storyLikedBySlug.value[slug]
   const prevLiked =
     typeof prevLikedStored === 'boolean' ? prevLikedStored : !!pin.liked
@@ -968,7 +968,7 @@ function openPinPage() {
   const slug = current.value?.slug
   if (!slug) return
   close()
-  router.push(`/pin/${slug}`)
+  router.push(`/foto/${slug}`)
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -1016,7 +1016,7 @@ onUnmounted(() => {
 <template>
   <Teleport to="body">
     <div
-      v-if="modelValue && pins.length > 0"
+      v-if="modelValue && fotos.length > 0"
       ref="storyRootRef"
       class="story-viewer-root fixed inset-0 z-[100] flex flex-col overflow-hidden bg-transparent touch-none select-none"
       :class="{ 'story-viewer--exit-closing': isExitClosing }"
@@ -1046,7 +1046,7 @@ onUnmounted(() => {
               :aria-label="t('common.close')"
               @click.stop="close"
             >
-              <PinovaIcon name="close" class="text-[22px]" />
+              <FotoceIcon name="close" class="text-[22px]" />
             </button>
             <div class="min-w-0 flex-1" aria-hidden="true" />
           </div>
@@ -1093,7 +1093,7 @@ onUnmounted(() => {
             :title="storySoundOn ? t('story.sound.mute') : t('story.sound.unmute')"
             @click.stop="toggleStorySound"
           >
-            <PinovaIcon :name="storySoundOn ? 'volume_up' : 'volume_off'" class="text-[22px]" />
+            <FotoceIcon :name="storySoundOn ? 'volume_up' : 'volume_off'" class="text-[22px]" />
           </button>
         </div>
 
@@ -1102,7 +1102,7 @@ onUnmounted(() => {
             Padding symétrique : auparavant `pt-14 pb-28` poussait l'image
             visuellement vers le bas de l'écran. On utilise maintenant la même
             valeur haut/bas (assez pour que le titre auteur en haut et le
-            bouton « voir le pin » en bas ne se superposent pas trop, mais sans
+            bouton « voir le foto » en bas ne se superposent pas trop, mais sans
             décentrer l'image par rapport au viewport).
           -->
           <div class="relative flex flex-1 items-center justify-center px-3 py-16 sm:px-8">
@@ -1125,7 +1125,7 @@ onUnmounted(() => {
               v-if="current"
               class="relative z-[10] w-full max-w-[min(100%,520px)] overflow-hidden rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-white/10"
             >
-            <PinSensitiveMedia
+            <FotoSensitiveMedia
               v-if="current.storyVideoUrl"
               :sensitive="!!current.mediaSensitiveBlur"
               :viewer-can-reveal="viewerCanRevealSensitive"
@@ -1151,8 +1151,8 @@ onUnmounted(() => {
                 @error="onStoryVideoError"
                 v-bind="pinMediaAntiLeakVideoBindings(false)"
               />
-            </PinSensitiveMedia>
-            <PinSensitiveMedia
+            </FotoSensitiveMedia>
+            <FotoSensitiveMedia
               v-else-if="current.imageUrl"
               :sensitive="!!current.mediaSensitiveBlur"
               :viewer-can-reveal="viewerCanRevealSensitive"
@@ -1175,7 +1175,7 @@ onUnmounted(() => {
                 @load="onStoryImageLoaded"
                 @error="onStoryImageError"
               />
-            </PinSensitiveMedia>
+            </FotoSensitiveMedia>
 
             <!-- Description bas du média -->
             <div
@@ -1206,10 +1206,10 @@ onUnmounted(() => {
               v-if="!isOwnerViewingStory"
               type="button"
               class="absolute top-3 right-3 z-40 flex items-center justify-center rounded-full bg-black/45 backdrop-blur-md w-11 h-11 text-white border border-white/15 hover:bg-black/55 transition"
-              :title="t('pin.doubleTapLikeHint')"
+              :title="t('foto.doubleTapLikeHint')"
               @click.stop="doLike"
             >
-              <PinovaIcon name="favorite" class="text-[26px] transition-colors" :class="currentStoryLiked ? 'text-pink-700 dark:text-pink-600' : 'text-white'" />
+              <FotoceIcon name="favorite" class="text-[26px] transition-colors" :class="currentStoryLiked ? 'text-pink-700 dark:text-pink-600' : 'text-white'" />
             </button>
             <button
               v-else
@@ -1218,7 +1218,7 @@ onUnmounted(() => {
               :aria-label="t('story.likers.title', { count: currentStoryReactions })"
               @click.stop="openStoryLikersModal"
             >
-                <PinovaIcon name="favorite" class="text-[24px] text-pink-700 dark:text-pink-600" />
+                <FotoceIcon name="favorite" class="text-[24px] text-pink-700 dark:text-pink-600" />
               <span class="text-xs font-semibold tabular-nums min-w-[1.25rem]">{{ currentStoryReactions }}</span>
             </button>
 
@@ -1228,7 +1228,7 @@ onUnmounted(() => {
                 :key="heartBurstKey"
                 class="pointer-events-none absolute inset-0 flex items-center justify-center z-[45]"
               >
-                <PinovaIcon name="favorite" class="text-pink-700 dark:text-pink-600 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]" />
+                <FotoceIcon name="favorite" class="text-pink-700 dark:text-pink-600 story-heart-burst drop-shadow-[0_10px_40px_rgba(0,0,0,.55)]" />
               </div>
             </transition>
           </div>
@@ -1246,7 +1246,7 @@ onUnmounted(() => {
             class="pointer-events-auto rounded-full border border-white/20 bg-white/15 px-5 py-2.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/25"
             @click="openPinPage"
           >
-            {{ t('story.viewPin') }}
+            {{ t('story.viewFoto') }}
           </button>
         </div>
       </div>
@@ -1254,11 +1254,11 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <PinovaModal
+    <FotoceModal
       v-model:open="storyActionsOpen"
       presentation="tallSheet"
       :depth-effect="false"
-      :title="t('pin.actionsTitle')"
+      :title="t('foto.actionsTitle')"
     >
       <template #headerEnd>
         <button
@@ -1267,7 +1267,7 @@ onUnmounted(() => {
           :aria-label="t('common.close')"
           @click="storyActionsOpen = false"
         >
-          <PinovaIcon name="close" class="text-[22px] leading-none" />
+          <FotoceIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
       <div class="space-y-2">
@@ -1277,8 +1277,8 @@ onUnmounted(() => {
           class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-neutral-900 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-white/10"
           @click="closeActionsAndShare"
         >
-          <PinovaIcon name="share" class="text-[20px]" />
-          {{ t('pin.shareLink') }}
+          <FotoceIcon name="share" class="text-[20px]" />
+          {{ t('foto.shareLink') }}
         </button>
         <button
           v-if="isAuthenticated && current?.username !== currentUser?.username"
@@ -1286,11 +1286,11 @@ onUnmounted(() => {
           class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-neutral-900 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-white/10"
           @click="closeActionsAndReport"
         >
-          <PinovaIcon name="flag" class="text-[20px]" />
+          <FotoceIcon name="flag" class="text-[20px]" />
           {{ t('moderation.report') }}
         </button>
       </div>
-    </PinovaModal>
+    </FotoceModal>
   </Teleport>
 
   <ReportContentModal

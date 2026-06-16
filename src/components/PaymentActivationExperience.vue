@@ -4,7 +4,7 @@ import ConfettiBurst from './ConfettiBurst.vue'
 import { useI18n } from '../i18n'
 import type { PaymentActivationPhase } from '../composables/usePaymentActivation'
 import type { CheckoutFlow } from '../utils/checkoutFlow'
-import PinovaButton from './ui/PinovaButton.vue'
+import FotoceButton from './ui/FotoceButton.vue'
 
 const props = defineProps<{
   flow: CheckoutFlow
@@ -88,7 +88,7 @@ const showRetry = computed(() => props.phase === 'error' || props.phase === 'pen
             : 'bg-pink-50 dark:bg-pink-950/35'
       "
     >
-      <PinovaIcon :name="iconName" class="text-4xl" :class="iconClass" />
+      <FotoceIcon :name="iconName" class="text-4xl" :class="iconClass" />
     </div>
 
     <div class="space-y-2">
@@ -124,31 +124,31 @@ const showRetry = computed(() => props.phase === 'error' || props.phase === 'pen
         :key="key"
         class="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-200"
       >
-        <PinovaIcon name="check_circle" class="text-base text-emerald-500 shrink-0 mt-0.5" />
+        <FotoceIcon name="check_circle" class="text-base text-emerald-500 shrink-0 mt-0.5" />
         <span>{{ t(key) }}</span>
       </li>
     </ul>
 
-    <PinovaButton
+    <FotoceButton
       v-if="showContinue"
       variant="primary"
       block
       @click="emit('continue')"
     >
       {{ t('checkout.activation.continue') }}
-    </PinovaButton>
+    </FotoceButton>
 
     <p v-if="phase === 'pending'" class="text-xs text-neutral-500 dark:text-neutral-400">
       {{ t('checkout.activation.sub.pendingEmail') }}
     </p>
 
     <div v-if="showRetry" class="flex flex-col gap-2">
-      <PinovaButton variant="secondary" block @click="emit('retry')">
+      <FotoceButton variant="secondary" block @click="emit('retry')">
         {{ t('checkout.activation.retry') }}
-      </PinovaButton>
-      <PinovaButton variant="ghost" block @click="emit('continue')">
+      </FotoceButton>
+      <FotoceButton variant="ghost" block @click="emit('continue')">
         {{ t('checkout.return.continue') }}
-      </PinovaButton>
+      </FotoceButton>
     </div>
 
     <p v-if="phase === 'confirming'" class="text-xs text-neutral-400 animate-pulse">

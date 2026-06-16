@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <!--
-      Thème avant le 1er paint : aligné sur `useAppearance` (localStorage `pinova-appearance`).
+      Thème avant le 1er paint : aligné sur `useAppearance` (localStorage `fotoce-appearance`).
       Sans cela, un utilisateur en « dark » avec OS clair voyait un flash / splash trop clair.
     -->
     <script>
       (function () {
         try {
-          var key = 'pinova-appearance'
+          var key = 'fotoce-appearance'
           var stored = localStorage.getItem(key)
           var dark =
             stored === 'dark' ||
@@ -32,10 +32,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="description" content="Pinova — votre source d'inspiration visuelle." />
+    <meta name="description" content="Fotoce — votre source d'inspiration visuelle." />
     <meta name="format-detection" content="telephone=no" />
 
-    <title>Pinova</title>
+    <title>Fotoce</title>
 
     <!--
       theme-color : différent en light vs dark (iOS 15+ supporte media queries).
@@ -49,7 +49,7 @@
     <!-- Installation PWA / écran d’accueil (iOS & Android) -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Pinova" />
+    <meta name="apple-mobile-web-app-title" content="Fotoce" />
     <!--
       black-translucent : la status bar overlap le contenu (PWA premium).
       Combiné à env(safe-area-inset-top) → contenu sous Dynamic Island.
@@ -81,8 +81,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- API + médias (Render) — réduit TTFB sur le premier fetch feed / images. -->
-    <link rel="preconnect" href="https://pinova-backend-8mlq.onrender.com" crossorigin />
-    <link rel="dns-prefetch" href="https://pinova-backend-8mlq.onrender.com" />
+    <link rel="preconnect" href="https://fotoce-backend-8mlq.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fotoce-backend-8mlq.onrender.com" />
 
     <link rel="preload" as="image" href="/logo.png" />
 

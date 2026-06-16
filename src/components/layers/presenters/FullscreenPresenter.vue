@@ -42,7 +42,7 @@ const gesture = useGestureEngine(surfaceRef, {
   canAcceptPointerDown: (e) => {
     if (!props.layer.dismissStrategy.swipeFromHeaderOnly) return true
     const el = e.target as HTMLElement | null
-    return !!(el && typeof el.closest === 'function' && el.closest('[data-pinova-swipe-dismiss-handle]'))
+    return !!(el && typeof el.closest === 'function' && el.closest('[data-fotoce-swipe-dismiss-handle]'))
   },
   onStart: () => {
     if (!swipeEnabled.value) {
@@ -93,7 +93,7 @@ function tick() {
   surf.style.borderRadius = `${radius}px`
   /* Dim du fond (le noir s'éclaircit légèrement à mesure que la surface descend). */
   const dim = Math.max(0.4, 1 - Math.max(0, y) / h)
-  rootRef.value?.style.setProperty('--pinova-fs-dim', String(dim))
+  rootRef.value?.style.setProperty('--fotoce-fs-dim', String(dim))
 
   if (ySpring.isAnimating.value || gesture.isDragging.value || y !== 0) {
     raf = requestAnimationFrame(tick)
@@ -124,16 +124,16 @@ provide(LAYER_CONTEXT_KEY, {
 <template>
   <div
     ref="rootRef"
-    class="pinova-layer-fullscreen"
+    class="fotoce-layer-fullscreen"
     role="dialog"
     aria-modal="true"
     :style="{ zIndex: layer.zIndex } as Record<string, string | number>"
   >
-    <div class="pinova-layer-fullscreen__dim" aria-hidden="true" />
+    <div class="fotoce-layer-fullscreen__dim" aria-hidden="true" />
     <div
       ref="surfaceRef"
-      class="pinova-layer-fullscreen__surface"
-      :class="{ 'pinova-no-transition': gesture.isDragging.value }"
+      class="fotoce-layer-fullscreen__surface"
+      :class="{ 'fotoce-no-transition': gesture.isDragging.value }"
     >
       <!--
         WebKit iOS : route-root en `absolute; inset: 0` (la chaîne flex avec
@@ -143,7 +143,7 @@ provide(LAYER_CONTEXT_KEY, {
         `pt-[calc(env(safe-area-inset-top)+…)]`). Un padding ici en plus
         provoquait un double espace vide visible en PWA standalone.
       -->
-      <div class="pinova-layer-fullscreen__route-root">
+      <div class="fotoce-layer-fullscreen__route-root">
         <component :is="layer.component" v-bind="layer.componentProps" />
       </div>
     </div>
@@ -151,23 +151,23 @@ provide(LAYER_CONTEXT_KEY, {
 </template>
 
 <style>
-.pinova-layer-fullscreen {
+.fotoce-layer-fullscreen {
   position: absolute;
   inset: 0;
   background: transparent;
   overflow: hidden;
-  --pinova-fs-dim: 1;
+  --fotoce-fs-dim: 1;
 }
 
-.pinova-layer-fullscreen__dim {
+.fotoce-layer-fullscreen__dim {
   position: absolute;
   inset: 0;
   background: #000;
-  opacity: var(--pinova-fs-dim, 1);
+  opacity: var(--fotoce-fs-dim, 1);
   pointer-events: none;
 }
 
-.pinova-layer-fullscreen__surface {
+.fotoce-layer-fullscreen__surface {
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -175,12 +175,12 @@ provide(LAYER_CONTEXT_KEY, {
   overscroll-behavior: contain;
   background: #000;
   /* Slide bottom→top à l'entrée (jouée une seule fois). */
-  animation: pinova-fs-in 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: fotoce-fs-in 360ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, border-radius;
   transform: translate3d(0, 0, 0);
 }
 
-.pinova-layer-fullscreen__route-root {
+.fotoce-layer-fullscreen__route-root {
   position: absolute;
   inset: 0;
   display: flex;
@@ -191,13 +191,13 @@ provide(LAYER_CONTEXT_KEY, {
   box-sizing: border-box;
 }
 
-@keyframes pinova-fs-in {
+@keyframes fotoce-fs-in {
   from { transform: translate3d(0, 100%, 0); }
   to   { transform: translate3d(0, 0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinova-layer-fullscreen__surface {
+  .fotoce-layer-fullscreen__surface {
     animation-duration: 0.01ms !important;
   }
 }

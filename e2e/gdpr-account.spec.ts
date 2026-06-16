@@ -33,7 +33,7 @@ async function dismissAlertModal(page: import('@playwright/test').Page) {
 }
 
 function resetE2eGdprState() {
-  const backendDir = path.join(process.cwd(), '..', 'pinova-backend')
+  const backendDir = path.join(process.cwd(), '..', 'fotoce-backend')
   execSync('python manage.py seed_e2e_gdpr_users', {
     cwd: backendDir,
     env: { ...process.env, CELERY_TASK_ALWAYS_EAGER: 'True' },
@@ -68,14 +68,14 @@ test.describe('RGPD — flux réels (API locale, sans mocks métier)', () => {
     const consentBody = (await consentRes.json()) as { analytics?: boolean }
     expect(consentBody.analytics).toBe(true)
 
-    const consent = await page.evaluate(() => window.localStorage.getItem('pinova_analytics_consent'))
+    const consent = await page.evaluate(() => window.localStorage.getItem('fotoce_analytics_consent'))
     expect(consent).toBe('granted')
 
     await expect
       .poll(async () =>
         page.evaluate(() => {
-          const api = (window as unknown as { __pinovaAnalyticsTest?: { isAnalyticsEnabled: () => boolean } })
-            .__pinovaAnalyticsTest
+          const api = (window as unknown as { __fotoceAnalyticsTest?: { isAnalyticsEnabled: () => boolean } })
+            .__fotoceAnalyticsTest
           return api?.isAnalyticsEnabled?.() ?? false
         }),
       )
@@ -83,8 +83,8 @@ test.describe('RGPD — flux réels (API locale, sans mocks métier)', () => {
 
     await page.evaluate(() => {
       ;(
-        window as unknown as { __pinovaAnalyticsTest?: { trackEvent: (e: string, p?: object) => void } }
-      ).__pinovaAnalyticsTest?.trackEvent('landing_viewed', { path: '/', page: 'home_landing' })
+        window as unknown as { __fotoceAnalyticsTest?: { trackEvent: (e: string, p?: object) => void } }
+      ).__fotoceAnalyticsTest?.trackEvent('landing_viewed', { path: '/', page: 'home_landing' })
     })
 
     await expect.poll(() => captures.length, { timeout: 10_000 }).toBeGreaterThan(0)

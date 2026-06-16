@@ -3,4 +3,4 @@ export type {
   PresenceStatus,
   SocialLinks,
   UserProfileExtended,
-} from '@pinova/shared'
+} from '@fotoce/shared'

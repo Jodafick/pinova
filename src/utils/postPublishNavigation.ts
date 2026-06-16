@@ -1,14 +1,14 @@
 import type { Router } from 'vue-router'
-import type { Pin } from '../types'
+import type { Foto } from '../types'
 import { fetchCurrentUser } from '../composables/useAuth'
-import { getCachedPinDetail } from '../lib/cache/pinClientCache'
+import { getCachedFotoDetail } from '../lib/cache/fotoClientCache'
 
-export const PROFILE_PUBLISH_PIN_QUERY = 'pin'
+export const PROFILE_PUBLISH_FOTO_QUERY = 'foto'
 
-/** Après publication : profil auteur + overlay pin (?pin=) + /me à jour. */
-export async function navigateToPublishedPin(
+/** Après publication : profil auteur + overlay foto (?foto=) + /me à jour. */
+export async function navigateToPublishedFoto(
   router: Router,
-  opts: { slug: string; username?: string | null; pin?: Pin | null },
+  opts: { slug: string; username?: string | null; foto?: Foto | null },
 ): Promise<void> {
   const slug = opts.slug.trim()
   if (!slug) {
@@ -22,22 +22,22 @@ export async function navigateToPublishedPin(
   if (username) {
     await router.push({
       path: `/profile/${encodeURIComponent(username)}`,
-      query: { [PROFILE_PUBLISH_PIN_QUERY]: slug },
+      query: { [PROFILE_PUBLISH_FOTO_QUERY]: slug },
     })
     return
   }
 
-  window.location.assign(`/?pin=${encodeURIComponent(slug)}`)
+  window.location.assign(`/?foto=${encodeURIComponent(slug)}`)
 }
 
-/** Injecte le pin publié dans la grille profil si absent (KeepAlive). */
+/** Injecte le foto publié dans la grille profil si absent (KeepAlive). */
 export function prependPublishedPinToProfileGrid(
-  profilePins: { value: Pin[] },
+  profileFotos: { value: Foto[] },
   slug: string,
-  pin?: Pin | null,
+  foto?: Foto | null,
 ): void {
   const s = slug.trim()
-  if (!s || profilePins.value.some((p) => p.slug === s)) return
-  const hit = pin?.slug === s ? pin : getCachedPinDetail(s)
-  if (hit) profilePins.value = [hit, ...profilePins.value]
+  if (!s || profileFotos.value.some((p) => p.slug === s)) return
+  const hit = foto?.slug === s ? foto : getCachedFotoDetail(s)
+  if (hit) profileFotos.value = [hit, ...profileFotos.value]
 }

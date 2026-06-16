@@ -8,7 +8,7 @@ export type AnalyticsEvent =
   | 'onboarding_step_completed'
   | 'onboarding_step_skipped'
   | 'onboarding_completed'
-  | 'first_pin_published'
+  | 'first_foto_published'
   | 'first_follow'
   | 'first_like'
   | 'first_save'
@@ -20,9 +20,9 @@ export type AnalyticsEvent =
   | 'boost_purchased'
   | 'tip_sent'
   | 'campaign_launched'
-  | 'pin_viewed'
-  | 'pin_liked'
-  | 'pin_saved'
+  | 'foto_viewed'
+  | 'foto_liked'
+  | 'foto_saved'
   | 'search_performed'
   | 'ux_nav_end'
   | 'ux_layer_push'
@@ -35,10 +35,10 @@ export type AnalyticsEvent =
   | 'register_with_ref_code'
   | 'revenue_recorded'
   | 'creator_suggestions_opened'
-  | 'creator_followed_after_first_pin'
+  | 'creator_followed_after_first_foto'
   | 'creator_level_progressed'
-  | 'first_pin_confetti_shown'
-  | 'first_pin_started'
+  | 'first_foto_confetti_shown'
+  | 'first_foto_started'
   | 'payment_success_animation_shown'
   | 'premium_activated'
   | 'boost_activated'
@@ -57,10 +57,10 @@ export interface AnalyticsConfig {
   platform?: string
 }
 
-const STORAGE_DISTINCT = 'pinova_analytics_distinct_id'
-const STORAGE_ONCE_PREFIX = 'pinova_analytics_once_'
-const STORAGE_OPT_OUT = 'pinova_analytics_opt_out'
-const STORAGE_ANALYTICS_CONSENT = 'pinova_analytics_consent'
+const STORAGE_DISTINCT = 'fotoce_analytics_distinct_id'
+const STORAGE_ONCE_PREFIX = 'fotoce_analytics_once_'
+const STORAGE_OPT_OUT = 'fotoce_analytics_opt_out'
+const STORAGE_ANALYTICS_CONSENT = 'fotoce_analytics_consent'
 
 function randomId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
@@ -114,7 +114,7 @@ export function createAnalyticsClient(config: AnalyticsConfig, storage: Analytic
           event,
           distinct_id: distinctId || (await loadDistinctId()),
           properties: {
-            $lib: 'pinova-analytics',
+            $lib: 'fotoce-analytics',
             platform,
             ...properties,
           },
@@ -322,7 +322,7 @@ export function createSyncAnalyticsClient(
           event,
           distinct_id: distinctId || loadDistinctId(),
           properties: {
-            $lib: 'pinova-analytics',
+            $lib: 'fotoce-analytics',
             platform,
             ...properties,
           },

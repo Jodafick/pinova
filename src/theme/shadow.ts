@@ -5,7 +5,7 @@
  *  - Multi-layer soft shadows (jamais une seule grosse ombre)
  *  - Opacités faibles (0.04 → 0.22) pour éviter l'effet "drop shadow lourd"
  *  - Pas de blur géant animé : GPU coût élevé sur Safari iOS
- *  - Couleurs subtilement teintées (rose Pinova sur certaines couches)
+ *  - Couleurs subtilement teintées (rose Fotoce sur certaines couches)
  *  - Variantes light/dark pensées séparément (pas juste opacity++)
  *
  * Hiérarchie d'élévation (z-axis perçue) :

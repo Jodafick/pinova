@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { usePins } from '../composables/usePins'
+import { useFotos } from '../composables/useFotos'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { useAppModal } from '../composables/useAppModal'
@@ -9,8 +9,8 @@ import { pushToast } from '../composables/useToast'
 import { trackOnce } from '../lib/analytics'
 import PrivateTags from '../components/PrivateTags.vue'
 import CreatePinEditSkeleton from '../components/CreatePinEditSkeleton.vue'
-import PinovaButton from '../components/ui/PinovaButton.vue'
-import QuickCreatePinView from '../components/QuickCreatePinView.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
+import QuickCreateFotoView from '../components/QuickCreateFotoView.vue'
 import StoryImageCropEditor from '../components/StoryImageCropEditor.vue'
 import BirthDateRequiredModal from '../components/BirthDateRequiredModal.vue'
 import api from '../api/index'
@@ -27,20 +27,20 @@ import {
   formatDrfErrorMessages,
   drfErrorTouchesFields,
 } from '../utils/apiValidationErrors'
-import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
+import { translateFotoceErrorToken, translateFotoceNonFieldToken } from '../utils/formErrorMessages'
 import { escapeHtml } from '../utils/escapeHtml'
 import { useAnchoredDropdown } from '../composables/useAnchoredDropdown'
 import { usePointerOutsideDismiss } from '../composables/usePointerOutsideDismiss'
 import { useIsLgDown } from '../composables/useIsLgDown'
 import { useEdgeSwipeBack } from '../composables/useEdgeSwipeBack'
-import { usePinovaHeaderSwipeDismiss } from '../composables/usePinovaHeaderSwipeDismiss'
+import { useFotoceHeaderSwipeDismiss } from '../composables/useFotoceHeaderSwipeDismiss'
 import { useLayer } from '../navigation/useLayer'
 import {
   invalidateHomeStoriesCache,
   invalidateProfileActiveStories,
 } from '../utils/activeStoriesCache'
 import { navigateToPublishedPin } from '../utils/postPublishNavigation'
-import { shouldCelebrateFirstPin } from '@pinova/shared'
+import { shouldCelebrateFirstPin } from '@fotoce/shared'
 import { useActivationFunnel } from '../composables/useActivationFunnel'
 import { openFirstPinCelebration } from '../composables/useActivationMoments'
 
@@ -58,7 +58,7 @@ const { showAlert } = useAppModal()
 
 const router = useRouter()
 const route = useRoute()
-const { addPin, updatePin, topics, getPin, fetchPinBySlug, fetchPrivateTags } = usePins()
+const { addFoto, updateFoto, topics, getFoto, fetchFotoBySlug, fetchPrivateTags } = useFotos()
 const { currentUser, fetchMyBoards, isAuthenticated, fetchCurrentUser } = useAuth()
 const { funnelState } = useActivationFunnel()
 
@@ -82,16 +82,16 @@ function openCameraCapture() {
   nativeCameraInput.value?.click()
 }
 /** Retouche image (mobile, breakpoint lg) — étape 2 avant formulaire. */
-const pinMobilePendingImage = ref<File | null>(null)
+const fotoMobilePendingImage = ref<File | null>(null)
 /** Après rognage : retour depuis l’étape 3 rouvre l’éditeur avec le fichier courant. */
 const mobileReturnToEditOnBack = ref(false)
-const pinMobileMetaScrollRef = ref<HTMLElement | null>(null)
-const pinMobileShellRef = ref<HTMLElement | null>(null)
-const pinMobileHeaderSwipeRef = ref<HTMLElement | null>(null)
+const fotoMobileMetaScrollRef = ref<HTMLElement | null>(null)
+const fotoMobileShellRef = ref<HTMLElement | null>(null)
+const fotoMobileHeaderSwipeRef = ref<HTMLElement | null>(null)
 const { isLgDown } = useIsLgDown()
 const { layer, close: closeLayer, popAll } = useLayer()
 
-/** Ferme les couches plein écran (création pin) puis navigue : les liens internes sinon restent sous le layer. */
+/** Ferme les couches plein écran (création foto) puis navigue : les liens internes sinon restent sous le layer. */
 async function navigateFromCreateLayer(path: string) {
   popAll()
   await nextTick()
@@ -119,7 +119,7 @@ const moderationBirthOpts = computed(() => ({
   isAuthenticated: isAuthenticated.value,
 }))
 
-// Privacy mode (qui peut voir ce pin)
+// Privacy mode (qui peut voir ce foto)
 const visibility = ref<'public' | 'followers' | 'private'>('public')
 
 // Tags privés
@@ -175,7 +175,7 @@ usePointerOutsideDismiss(() => [
 const categorySearch = ref('')
 let categorySearchTimer: ReturnType<typeof setTimeout> | null = null
 
-const editSlug = computed(() => (route.name === 'edit-pin' ? String(route.params.slug || '').trim() : ''))
+const editSlug = computed(() => (route.name === 'edit-foto' ? String(route.params.slug || '').trim() : ''))
 const isEditMode = computed(() => editSlug.value.length > 0)
 const isQuickMode = computed(() => !isEditMode.value && String(route.query.mode || '') === 'quick')
 const isCompleteDetailsMode = computed(() => isEditMode.value && String(route.query.complete || '') === '1')
@@ -187,7 +187,7 @@ async function skipCompleteDetails() {
     return
   }
   if (layer.value) popAll()
-  await navigateToPublishedPin(router, {
+  await navigateToPublishedFoto(router, {
     slug,
     username: currentUser.value?.username,
   })
@@ -264,7 +264,7 @@ const loadTopics = async (query = '') => {
     return
   }
   try {
-    const response = await api.get('pins/topics/', {
+    const response = await api.get('fotos/topics/', {
       params: { lang: currentLang.value, q: query, limit: 20 },
     })
     const payload = Array.isArray(response.data) ? response.data : []
@@ -319,10 +319,10 @@ onMounted(async () => {
   if (isEditMode.value) {
     loadingEdit.value = true
     try {
-      await fetchPinBySlug(editSlug.value)
-      const p = getPin(editSlug.value)
+      await fetchFotoBySlug(editSlug.value)
+      const p = getFoto(editSlug.value)
       if (!p || currentUser.value?.username !== p.username) {
-        await showAlert(t('pin.edit.denied'), { variant: 'warning', title: t('modal.errorTitle') })
+        await showAlert(t('foto.edit.denied'), { variant: 'warning', title: t('modal.errorTitle') })
         router.replace('/')
         return
       }
@@ -364,7 +364,7 @@ onMounted(async () => {
       }
       createStep.value = 2
     } catch {
-      await showAlert(t('pin.edit.loadError'), { variant: 'danger', title: t('modal.errorTitle') })
+      await showAlert(t('foto.edit.loadError'), { variant: 'danger', title: t('modal.errorTitle') })
       router.replace('/')
     } finally {
       loadingEdit.value = false
@@ -497,14 +497,14 @@ async function ensureBirthDateBeforeMedia(): Promise<boolean> {
   return false
 }
 
-function pinMobileUsesCropEditor(file: File) {
+function fotoMobileUsesCropEditor(file: File) {
   if (!isLgDown.value || !file.type.startsWith('image/')) return false
   if (file.type === 'image/gif') return false
   return true
 }
 
 function closePinMobileCropEditor() {
-  pinMobilePendingImage.value = null
+  fotoMobilePendingImage.value = null
   mobileCreateStep.value = 'pick'
 }
 
@@ -526,7 +526,7 @@ async function commitPickedImageFile(file: File, opts?: { fromCrop?: boolean }) 
 }
 
 async function onPinMobileCropped(file: File) {
-  pinMobilePendingImage.value = null
+  fotoMobilePendingImage.value = null
   await commitPickedImageFile(file, { fromCrop: true })
 }
 
@@ -543,9 +543,9 @@ function mobilePinMetaBack() {
     if (
       mobileReturnToEditOnBack.value &&
       imageFile.value &&
-      pinMobileUsesCropEditor(imageFile.value)
+      fotoMobileUsesCropEditor(imageFile.value)
     ) {
-      pinMobilePendingImage.value = imageFile.value
+      fotoMobilePendingImage.value = imageFile.value
       mobileCreateStep.value = 'edit'
       return
     }
@@ -560,7 +560,7 @@ async function setMediaFile(file: File) {
   if (!(await ensureBirthDateBeforeMedia())) return
   if (file.type.startsWith('video/')) {
     if (isLgDown.value && !isEditMode.value) {
-      void showAlert(t('create.pinMobile.videoNotAllowed'), { variant: 'warning' })
+      void showAlert(t('create.fotoMobile.videoNotAllowed'), { variant: 'warning' })
       return
     }
     if (isStory.value) {
@@ -584,8 +584,8 @@ async function setMediaFile(file: File) {
       void showAlert(t('create.upload.tooLarge'), { variant: 'warning' })
       return
     }
-    if (pinMobileUsesCropEditor(file)) {
-      pinMobilePendingImage.value = file
+    if (fotoMobileUsesCropEditor(file)) {
+      fotoMobilePendingImage.value = file
       mobileCreateStep.value = 'edit'
       return
     }
@@ -705,9 +705,9 @@ const submitPin = async () => {
 
     let resultPin
     if (isEditMode.value) {
-      resultPin = await updatePin(editSlug.value, formData)
+      resultPin = await updateFoto(editSlug.value, formData)
     } else {
-      resultPin = await addPin(formData)
+      resultPin = await addFoto(formData)
     }
     const destSlug = resultPin?.slug || editSlug.value
     if (isStory.value) {
@@ -719,13 +719,13 @@ const submitPin = async () => {
        stories_count, etc.) du profil courant doivent refléter la nouvelle
        publication immédiatement (header, profil, suggestions). */
     const successMessage = isEditMode.value
-      ? t('pin.edit.success')
+      ? t('foto.edit.success')
       : isStory.value
         ? t('create.story.success')
-        : t('create.pin.success')
+        : t('create.foto.success')
     pushToast({ message: successMessage, kind: 'success' })
     if (!isEditMode.value) {
-      trackOnce('first_pin_published', { pin_slug: destSlug, is_story: isStory.value })
+      trackOnce('first_foto_published', { foto_slug: destSlug, is_story: isStory.value })
       if (!isStory.value) {
         const { recordEngagementMoment } = await import('../utils/engagementMoments')
         recordEngagementMoment('pin_published')
@@ -735,7 +735,7 @@ const submitPin = async () => {
     const celebrateFirstPin =
       !isEditMode.value &&
       destSlug &&
-      shouldCelebrateFirstPin(funnelState.value, pinsBeforePublish, !!isStory.value)
+      shouldCelebrateFirstFoto(funnelState.value, pinsBeforePublish, !!isStory.value)
     if (celebrateFirstPin) {
       await fetchCurrentUser({ force: true, silent: true })
       openFirstPinCelebration({
@@ -747,10 +747,10 @@ const submitPin = async () => {
     if (isStory.value && destSlug) {
       window.location.assign(`/?story=${encodeURIComponent(destSlug)}`)
     } else if (destSlug) {
-      await navigateToPublishedPin(router, {
+      await navigateToPublishedFoto(router, {
         slug: destSlug,
         username: currentUser.value?.username,
-        pin: resultPin ?? null,
+        foto: resultPin ?? null,
       })
     } else {
       await router.push('/')
@@ -762,7 +762,7 @@ const submitPin = async () => {
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       const extracted = extractDrfFieldErrors(data)
       fieldErrors.value = Object.fromEntries(
-        Object.entries(extracted).map(([k, v]) => [k, translatePinovaErrorToken(v[0] || '', t)]),
+        Object.entries(extracted).map(([k, v]) => [k, translateFotoceErrorToken(v[0] || '', t)]),
       )
       if (drfErrorTouchesFields(data, CREATE_PIN_STEP_1_FIELD_KEYS)) {
         createStep.value = 1
@@ -796,9 +796,9 @@ const submitPin = async () => {
       const detail =
         typeof data.detail === 'string' && data.detail.trim() ? data.detail.trim() : ''
       const globalMsg = nfe0
-        ? translatePinovaNonFieldToken(nfe0, t)
+        ? translateFotoceNonFieldToken(nfe0, t)
         : detail
-          ? translatePinovaNonFieldToken(detail, t)
+          ? translateFotoceNonFieldToken(detail, t)
           : ''
 
       if (globalMsg) {
@@ -839,7 +839,7 @@ function setPinVisibility(id: 'public' | 'followers' | 'private') {
 function scrollPinMobileMetaToStart() {
   void nextTick(() => {
     requestAnimationFrame(() => {
-      const el = pinMobileMetaScrollRef.value
+      const el = fotoMobileMetaScrollRef.value
       if (!el) return
       el.scrollTop = 0
       titleInput.value?.focus({ preventScroll: true })
@@ -882,29 +882,29 @@ function createMobileEdgeUsesFullSlideOut() {
   return true
 }
 
-useEdgeSwipeBack(pinMobileShellRef, {
+useEdgeSwipeBack(fotoMobileShellRef, {
   enabled: () => isLgDown.value && !loadingEdit.value,
   fullSlideOut: createMobileEdgeUsesFullSlideOut,
   onDismiss: onCreateMobileEdgeDismiss,
   canAcceptPointerDown: (e) => {
     const el = e.target as HTMLElement | null
     if (!el) return true
-    return !el.closest('[data-pinova-no-edge-back]')
+    return !el.closest('[data-fotoce-no-edge-back]')
   },
 })
 
-usePinovaHeaderSwipeDismiss({
-  gestureRootRef: pinMobileHeaderSwipeRef,
-  transformRef: pinMobileShellRef,
+useFotoceHeaderSwipeDismiss({
+  gestureRootRef: fotoMobileHeaderSwipeRef,
+  transformRef: fotoMobileShellRef,
   enabled: () => isLgDown.value && !loadingEdit.value && !layer.value,
   onClose: () => leaveCreateFlow(),
 })
 </script>
 
 <template>
-  <QuickCreatePinView v-if="isQuickMode" @cancel="leaveCreateFlow()" />
+  <QuickCreateFotoView v-if="isQuickMode" @cancel="leaveCreateFlow()" />
 
-  <div v-else class="create-pin-page-root flex w-full flex-1 flex-col min-h-0">
+  <div v-else class="create-foto-page-root flex w-full flex-1 flex-col min-h-0">
   <CreatePinEditSkeleton
     v-if="loadingEdit"
     class="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
@@ -912,10 +912,10 @@ usePinovaHeaderSwipeDismiss({
 
   <div
     v-else-if="isLgDown"
-    ref="pinMobileShellRef"
-    class="pinova-create-flow-mobile flex min-h-0 w-full flex-1 flex-col overflow-hidden overflow-x-hidden bg-[#060408] text-white"
+    ref="fotoMobileShellRef"
+    class="fotoce-create-flow-mobile flex min-h-0 w-full flex-1 flex-col overflow-hidden overflow-x-hidden bg-[#060408] text-white"
   >
-    <input ref="fileInput" type="file" class="hidden" data-testid="create-pin-file" :accept="fileAcceptAttr" @change="onFileChange">
+    <input ref="fileInput" type="file" class="hidden" data-testid="create-foto-file" :accept="fileAcceptAttr" @change="onFileChange">
     <!-- Même entrée que desktop : absent ici, `openCameraCapture()` ne ciblait aucun élément. -->
     <input
       ref="nativeCameraInput"
@@ -933,16 +933,16 @@ usePinovaHeaderSwipeDismiss({
       <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
       <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />
 
-      <header ref="pinMobileHeaderSwipeRef" class="relative z-10 flex items-center justify-between" data-pinova-swipe-dismiss-handle>
+      <header ref="fotoMobileHeaderSwipeRef" class="relative z-10 flex items-center justify-between" data-fotoce-swipe-dismiss-handle>
         <button
           type="button"
           class="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white/80 transition active:scale-95"
           :aria-label="t('common.cancel')"
           @click="leaveCreateFlow()"
         >
-          <PinovaIcon name="close" class="text-xl" />
+          <FotoceIcon name="close" class="text-xl" />
         </button>
-        <p class="text-sm font-black tracking-tight">{{ t('create.pinMobile.header') }}</p>
+        <p class="text-sm font-black tracking-tight">{{ t('create.fotoMobile.header') }}</p>
         <span class="h-9 w-9" />
       </header>
 
@@ -956,11 +956,11 @@ usePinovaHeaderSwipeDismiss({
       </p>
 
       <section class="relative z-10 mx-auto mt-7 max-w-sm">
-        <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[0.25em] text-white/30">{{ t('create.pinMobile.stepBadge') }}</p>
+        <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[0.25em] text-white/30">{{ t('create.fotoMobile.stepBadge') }}</p>
         <h1 class="text-[2.35rem] font-black leading-[1.05] tracking-[-0.08em]">
-          {{ t('create.pinMobile.mediaTitleLine1') }}<br>{{ t('create.pinMobile.mediaTitleLine2') }}
+          {{ t('create.fotoMobile.mediaTitleLine1') }}<br>{{ t('create.fotoMobile.mediaTitleLine2') }}
         </h1>
-        <p class="mt-3 text-sm leading-6 text-white/40">{{ t('create.pinMobile.mediaHint') }}</p>
+        <p class="mt-3 text-sm leading-6 text-white/40">{{ t('create.fotoMobile.mediaHint') }}</p>
       </section>
 
       <section class="relative z-10 mx-auto mt-10 grid max-w-sm gap-3">
@@ -971,10 +971,10 @@ usePinovaHeaderSwipeDismiss({
           @click="fileInput?.click()"
         >
           <span class="absolute right-[1.375rem] top-[1.375rem] grid h-[3.75rem] w-[3.75rem] place-items-center rounded-full bg-white/15 text-white">
-            <PinovaIcon name="imagesmode" class="text-3xl" />
+            <FotoceIcon name="imagesmode" class="text-3xl" />
           </span>
-          <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/60">{{ t('create.pinMobile.galleryLabel') }}</span>
-          <span class="text-2xl font-black tracking-tight">{{ t('create.pinMobile.chooseFile') }}</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/60">{{ t('create.fotoMobile.galleryLabel') }}</span>
+          <span class="text-2xl font-black tracking-tight">{{ t('create.fotoMobile.chooseFile') }}</span>
         </button>
 
         <button
@@ -983,10 +983,10 @@ usePinovaHeaderSwipeDismiss({
           @click="openCameraCapture()"
         >
           <span class="absolute right-[1.375rem] top-[1.375rem] grid h-[3.75rem] w-[3.75rem] place-items-center rounded-full bg-white/5 text-pink-700 dark:text-pink-600">
-            <PinovaIcon name="photo_camera" class="text-3xl" />
+            <FotoceIcon name="photo_camera" class="text-3xl" />
           </span>
-          <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/35">{{ t('create.pinMobile.cameraLabel') }}</span>
-          <span class="text-[1.35rem] font-black tracking-tight">{{ t('create.pinMobile.capturePin') }}</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/35">{{ t('create.fotoMobile.cameraLabel') }}</span>
+          <span class="text-[1.35rem] font-black tracking-tight">{{ t('create.fotoMobile.captureFoto') }}</span>
         </button>
       </section>
 
@@ -1003,12 +1003,12 @@ usePinovaHeaderSwipeDismiss({
     </div>
 
     <div
-      v-else-if="!isEditMode && mobileCreateStep === 'edit' && pinMobilePendingImage"
+      v-else-if="!isEditMode && mobileCreateStep === 'edit' && fotoMobilePendingImage"
       class="relative z-[80] flex min-h-0 flex-1 flex-col"
     >
       <StoryImageCropEditor
-        export-profile="pin"
-        :file="pinMobilePendingImage"
+        export-profile="foto"
+        :file="fotoMobilePendingImage"
         @cancel="onPinMobileCropCancel"
         @apply="onPinMobileCropped"
       />
@@ -1017,9 +1017,9 @@ usePinovaHeaderSwipeDismiss({
     <!-- Étape 3 mobile (création + édition) : aperçu cadré + formulaire scrollable -->
     <div v-else class="pin-m-meta relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden bg-[#060408]">
       <header
-        ref="pinMobileHeaderSwipeRef"
+        ref="fotoMobileHeaderSwipeRef"
         class="relative z-30 flex shrink-0 items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]"
-        data-pinova-swipe-dismiss-handle
+        data-fotoce-swipe-dismiss-handle
       >
         <button
           type="button"
@@ -1027,15 +1027,15 @@ usePinovaHeaderSwipeDismiss({
           :aria-label="t('common.back')"
           @click="mobilePinMetaBack()"
         >
-          <PinovaIcon name="chevron_left" class="text-xl" />
+          <FotoceIcon name="chevron_left" class="text-xl" />
         </button>
         <button
           type="button"
           class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3 py-2 text-xs font-bold text-white/80 transition active:scale-95"
           @click="fileInput?.click()"
         >
-          <PinovaIcon name="imagesmode" class="text-base" />
-          {{ (imagePreviewUrl || storyVideoPreviewUrl || (existingImageUrl || '').trim() || (existingStoryVideoUrl || '').trim()) ? t('create.pinMobile.changeMedia') : t('create.pinMobile.galleryPill') }}
+          <FotoceIcon name="imagesmode" class="text-base" />
+          {{ (imagePreviewUrl || storyVideoPreviewUrl || (existingImageUrl || '').trim() || (existingStoryVideoUrl || '').trim()) ? t('create.fotoMobile.changeMedia') : t('create.fotoMobile.galleryPill') }}
         </button>
       </header>
 
@@ -1065,7 +1065,7 @@ usePinovaHeaderSwipeDismiss({
       </div>
 
       <main
-        ref="pinMobileMetaScrollRef"
+        ref="fotoMobileMetaScrollRef"
         class="pin-m-sheet relative z-20 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain rounded-t-[2rem] border-t border-white/10 bg-black/72 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-3 shadow-[0_-12px_40px_-18px_rgba(0,0,0,0.45)] backdrop-blur-2xl backdrop-saturate-150"
       >
         <div class="mx-auto mb-3 h-1.5 w-10 shrink-0 rounded-full bg-white/25" aria-hidden="true" />
@@ -1131,7 +1131,7 @@ usePinovaHeaderSwipeDismiss({
               <p v-if="fieldErrors.description" class="mt-1 text-xs font-semibold text-pink-700 dark:text-pink-600">{{ fieldErrors.description }}</p>
             </div>
             <div class="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-              <PinovaIcon name="link" class="text-lg text-white/35" />
+              <FotoceIcon name="link" class="text-lg text-white/35" />
               <input
                 ref="linkInput"
                 v-model="link"
@@ -1148,7 +1148,7 @@ usePinovaHeaderSwipeDismiss({
                 <input
                   ref="categoryInput"
                   v-model="categorySearch"
-                  data-testid="create-pin-category"
+                  data-testid="create-foto-category"
                   type="text"
                   :placeholder="t('create.field.category.placeholder')"
                   class="w-full rounded-2xl border border-white/13 bg-white/[0.055] px-4 py-3 text-sm text-white outline-none placeholder:text-white/38 focus:border-pink-700/70"
@@ -1159,7 +1159,7 @@ usePinovaHeaderSwipeDismiss({
                   class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full hover:bg-white/10"
                   @click="showCategoryDropdown = !showCategoryDropdown"
                 >
-                  <PinovaIcon name="expand_more" class="text-white/50" />
+                  <FotoceIcon name="expand_more" class="text-white/50" />
                 </button>
               </div>
               <Teleport to="body">
@@ -1177,7 +1177,7 @@ usePinovaHeaderSwipeDismiss({
                     class="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white/90 hover:bg-white/10"
                     @click="selectCategory(topicItem)"
                   >
-                    <PinovaIcon :name="topicItem.icon || 'category'" class="text-base text-white/40" />
+                    <FotoceIcon :name="topicItem.icon || 'category'" class="text-base text-white/40" />
                     <span>{{ topicItem.name }}</span>
                   </button>
                   <button
@@ -1209,7 +1209,7 @@ usePinovaHeaderSwipeDismiss({
                 :class="visibility === option.id ? 'border-pink-700 dark:border-pink-600 bg-pink-700/15 dark:bg-pink-600/15 text-pink-200' : 'border-white/10 bg-white/[0.04] text-white/50'"
                 @click="setPinVisibility(option.id as 'public' | 'followers' | 'private')"
               >
-                <PinovaIcon :name="option.icon" class="mb-0.5 block text-base" />
+                <FotoceIcon :name="option.icon" class="mb-0.5 block text-base" />
                 {{ option.label }}
               </button>
             </div>
@@ -1286,14 +1286,14 @@ usePinovaHeaderSwipeDismiss({
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <PinovaIcon v-else name="rocket_launch" class="text-xl" />
+            <FotoceIcon v-else name="rocket_launch" class="text-xl" />
             {{
               saving
-                ? (isEditMode ? t('pin.edit.saving') : t('create.publishing'))
+                ? (isEditMode ? t('foto.edit.saving') : t('create.publishing'))
                 : mediaModerationPending
                   ? t('moderation.scanningMediaShort')
                   : isEditMode
-                    ? t('pin.edit.save')
+                    ? t('foto.edit.save')
                     : t('create.publish')
             }}
           </button>
@@ -1304,8 +1304,8 @@ usePinovaHeaderSwipeDismiss({
               class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold text-white/45 transition active:scale-95"
               @click="openCameraCapture()"
             >
-              <PinovaIcon name="photo_camera" class="text-base" />
-              {{ t('create.pinMobile.cameraShortcut') }}
+              <FotoceIcon name="photo_camera" class="text-base" />
+              {{ t('create.fotoMobile.cameraShortcut') }}
             </button>
           </div>
           </div>
@@ -1318,7 +1318,7 @@ usePinovaHeaderSwipeDismiss({
     v-else
     class="flex min-h-full w-full min-w-0 max-w-5xl flex-1 flex-col mx-auto px-4 sm:px-6 py-8 sm:py-12 rounded-3xl bg-gradient-to-b from-pink-50/70 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900"
   >
-    <input ref="fileInput" type="file" class="hidden" data-testid="create-pin-file" :accept="fileAcceptAttr" @change="onFileChange">
+    <input ref="fileInput" type="file" class="hidden" data-testid="create-foto-file" :accept="fileAcceptAttr" @change="onFileChange">
     <input
       ref="nativeCameraInput"
       type="file"
@@ -1341,23 +1341,23 @@ usePinovaHeaderSwipeDismiss({
       </a>
     </div>
     <!-- Header -->
-    <div class="flex items-center justify-between mb-8" data-pinova-swipe-dismiss-handle>
+    <div class="flex items-center justify-between mb-8" data-fotoce-swipe-dismiss-handle>
       <div>
         <h1 class="text-[1.9375rem] sm:text-[2.1875rem] font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">
-          {{ isCompleteDetailsMode ? t('create.complete.title') : isEditMode ? t('pin.edit.title') : t('create.title') }}
+          {{ isCompleteDetailsMode ? t('create.complete.title') : isEditMode ? t('foto.edit.title') : t('create.title') }}
         </h1>
         <p class="text-sm text-neutral-500 dark:text-neutral-300 mt-1">
-          {{ isCompleteDetailsMode ? t('create.complete.subtitle') : isEditMode ? t('pin.edit.subtitle') : t('create.subtitle') }}
+          {{ isCompleteDetailsMode ? t('create.complete.subtitle') : isEditMode ? t('foto.edit.subtitle') : t('create.subtitle') }}
         </p>
         <p v-if="createStep === 1 && !isCompleteDetailsMode" class="text-xs text-pink-700 mt-2 font-medium">{{ t('create.step1.banner') }}</p>
       </div>
       <div class="flex items-center gap-3">
-        <PinovaButton variant="ghost" size="sm" @click="leaveCreateFlow()">
+        <FotoceButton variant="ghost" size="sm" @click="leaveCreateFlow()">
           {{ t('common.cancel') }}
-        </PinovaButton>
-        <PinovaButton
+        </FotoceButton>
+        <FotoceButton
           v-if="createStep === 2"
-          data-testid="create-pin-publish"
+          data-testid="create-foto-publish"
           data-welcome-coach="publish"
           variant="primary"
           size="sm"
@@ -1367,24 +1367,24 @@ usePinovaHeaderSwipeDismiss({
         >
           {{
             saving
-              ? (isEditMode ? t('pin.edit.saving') : t('create.publishing'))
+              ? (isEditMode ? t('foto.edit.saving') : t('create.publishing'))
               : mediaModerationPending
                 ? t('moderation.scanningMediaShort')
                 : isEditMode
-                  ? t('pin.edit.save')
+                  ? t('foto.edit.save')
                   : t('create.publish')
           }}
-        </PinovaButton>
-        <PinovaButton
+        </FotoceButton>
+        <FotoceButton
           v-else
-          data-testid="create-pin-next"
+          data-testid="create-foto-next"
           variant="primary"
           size="sm"
           :disabled="!title.trim() || needsBirthDateForMedia"
           @click="goStep2"
         >
           {{ t('create.step.next') }}
-        </PinovaButton>
+        </FotoceButton>
       </div>
     </div>
 
@@ -1424,7 +1424,7 @@ usePinovaHeaderSwipeDismiss({
             @click="fileInput?.click()"
           >
             <div class="w-16 h-16 rounded-full bg-neutral-200 flex items-center justify-center">
-              <PinovaIcon name="cloud_upload" class="text-3xl text-neutral-500" />
+              <FotoceIcon name="cloud_upload" class="text-3xl text-neutral-500" />
             </div>
             <div>
               <p class="text-sm font-semibold text-neutral-700 mb-1">
@@ -1438,7 +1438,7 @@ usePinovaHeaderSwipeDismiss({
                 <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded font-bold">PNG</span>
                 <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded font-bold">WEBP</span>
                 <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-pink-100 text-pink-700 rounded font-bold flex items-center gap-1">
-                  <PinovaIcon name="animation" class="text-xs" />
+                  <FotoceIcon name="animation" class="text-xs" />
                   {{ t('create.upload.gifBadge') }}
                 </span>
               </div>
@@ -1475,7 +1475,7 @@ usePinovaHeaderSwipeDismiss({
                 v-if="isGif"
                 class="absolute top-3 left-3 px-2 py-1 rounded-md bg-pink-700 dark:bg-pink-600 text-white text-[10px] font-bold tracking-wider flex items-center gap-1 shadow"
               >
-                <PinovaIcon name="animation" class="text-sm" />
+                <FotoceIcon name="animation" class="text-sm" />
                 {{ t('create.gif.label') }}
               </span>
             </template>
@@ -1496,7 +1496,7 @@ usePinovaHeaderSwipeDismiss({
               class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition z-20"
               @click="clearStep2Media"
             >
-              <PinovaIcon name="close" class="text-neutral-600" />
+              <FotoceIcon name="close" class="text-neutral-600" />
             </button>
           </div>
         </div>
@@ -1522,7 +1522,7 @@ usePinovaHeaderSwipeDismiss({
               ref="titleInput"
               v-model="title"
               type="text"
-              data-testid="create-pin-title"
+              data-testid="create-foto-title"
               data-welcome-coach="title"
               :placeholder="t('create.field.title.placeholder')"
               :class="[
@@ -1556,7 +1556,7 @@ usePinovaHeaderSwipeDismiss({
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-2">{{ t('create.field.link') }}</label>
             <div class="relative">
-              <PinovaIcon name="link" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-lg" />
+              <FotoceIcon name="link" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-lg" />
               <input
                 ref="linkInput"
                 v-model="link"
@@ -1579,7 +1579,7 @@ usePinovaHeaderSwipeDismiss({
               <input
                 ref="categoryInput"
                 v-model="categorySearch"
-                data-testid="create-pin-category"
+                data-testid="create-foto-category"
                 type="text"
                 :placeholder="t('create.field.category.placeholder')"
                 :class="[
@@ -1597,7 +1597,7 @@ usePinovaHeaderSwipeDismiss({
                 :aria-expanded="showCategoryDropdown"
                 @click="showCategoryDropdown = !showCategoryDropdown"
               >
-                <PinovaIcon name="expand_more" class="text-neutral-500" />
+                <FotoceIcon name="expand_more" class="text-neutral-500" />
               </button>
             </div>
             <Teleport to="body">
@@ -1615,7 +1615,7 @@ usePinovaHeaderSwipeDismiss({
                   class="w-full text-left px-3 py-2 text-sm text-neutral-800 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
                   @click="selectCategory(topicItem)"
                 >
-                  <PinovaIcon :name="topicItem.icon || 'category'" class="text-base text-neutral-500 dark:text-neutral-400" />
+                  <FotoceIcon :name="topicItem.icon || 'category'" class="text-base text-neutral-500 dark:text-neutral-400" />
                   <span>{{ topicItem.name }}</span>
                 </button>
                 <div
@@ -1703,7 +1703,7 @@ usePinovaHeaderSwipeDismiss({
                 @click="setPinVisibility(option.id as 'public' | 'followers' | 'private')"
               >
                 <div class="flex items-center gap-1.5 mb-0.5">
-                  <PinovaIcon :name="option.icon" class="text-base" :class="visibility === option.id ? 'text-pink-700' : 'text-neutral-500'" />
+                  <FotoceIcon :name="option.icon" class="text-base" :class="visibility === option.id ? 'text-pink-700' : 'text-neutral-500'" />
                   <span
                     class="text-xs font-bold"
                     :class="visibility === option.id ? 'text-pink-700' : 'text-neutral-700'"
@@ -1759,7 +1759,7 @@ usePinovaHeaderSwipeDismiss({
 
           <div class="pt-4 border-t border-neutral-100">
             <div class="flex items-start gap-3 text-sm text-neutral-500 bg-blue-50/40 border border-blue-100 rounded-xl px-4 py-3">
-              <PinovaIcon name="shield" class="text-lg text-blue-600" />
+              <FotoceIcon name="shield" class="text-lg text-blue-600" />
               <p class="text-xs leading-relaxed">
                 <span v-html="createNoTrackingSafeHtml"></span>
                 <a

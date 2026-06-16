@@ -19,10 +19,10 @@ import { fetchReferenceInterests } from '../lib/fetchReferenceInterests'
 import { useAppearance } from '../composables/useAppearance'
 import { fetchMentionUsersPage, type SuggestUserRow } from '../composables/useUserSuggestSearch'
 import AvatarDisc from '../components/AvatarDisc.vue'
-import { getFullMediaUrl } from '../composables/usePins'
+import { getFullMediaUrl } from '../composables/useFotos'
 
 import SearchableSelect from '../components/SearchableSelect.vue'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 import BirthDatePicker from '../components/BirthDatePicker.vue'
 import { getStoredReferralCode, clearStoredReferralCode } from '../composables/useReferralIntent'
 import { isFeatureEnabled } from '../lib/featureFlags'
@@ -253,7 +253,7 @@ const canSkipLocation = computed(() => onboardingV2 && step.value === 'location'
 const canSkipLater = computed(() => !onboardingV2 && stepIndex.value >= 2)
 const primaryCtaLabel = computed(() => {
   if (step.value === 'creators') {
-    return onboardingV2 ? t('onboarding.commencer') : t('onboarding.enterPinova')
+    return onboardingV2 ? t('onboarding.commencer') : t('onboarding.enterFotoce')
   }
   return t('onboarding.continue')
 })
@@ -369,15 +369,15 @@ function onSkipLater() {
           </div>
           <ul class="onboarding-bullets">
             <li>
-              <PinovaIcon name="auto_awesome" class="onboarding-bullet-icon onboarding-bullet-icon--rose" />
+              <FotoceIcon name="auto_awesome" class="onboarding-bullet-icon onboarding-bullet-icon--rose" />
               {{ t('onboarding.welcomeBullet1') }}
             </li>
             <li>
-              <PinovaIcon name="groups" class="onboarding-bullet-icon onboarding-bullet-icon--violet" />
+              <FotoceIcon name="groups" class="onboarding-bullet-icon onboarding-bullet-icon--violet" />
               {{ t('onboarding.welcomeBullet2') }}
             </li>
             <li>
-              <PinovaIcon name="tune" class="onboarding-bullet-icon onboarding-bullet-icon--emerald" />
+              <FotoceIcon name="tune" class="onboarding-bullet-icon onboarding-bullet-icon--emerald" />
               {{ t('onboarding.welcomeBullet3') }}
             </li>
           </ul>
@@ -423,7 +423,7 @@ function onSkipLater() {
               :class="{ 'onboarding-chip--active': selectedInterests.includes(item.slug) }"
               @click="toggleInterest(item.slug)"
             >
-              <PinovaIcon :name="item.icon" class="text-[18px] shrink-0" />
+              <FotoceIcon :name="item.icon" class="text-[18px] shrink-0" />
               <span class="truncate">{{ interestLabel(item, selectedLang) }}</span>
             </button>
           </div>
@@ -469,7 +469,7 @@ function onSkipLater() {
           </p>
 
           <div v-if="creatorsLoading" class="onboarding-creators-loading">
-            <PinovaIcon name="progress_activity" spin class="animate-spin text-rose-500" />
+            <FotoceIcon name="progress_activity" spin class="animate-spin text-rose-500" />
             {{ t('onboarding.creatorsLoading') }}
           </div>
 
@@ -497,8 +497,8 @@ function onSkipLater() {
                   {{ creatorReasonLabel(u.reason) }}
                 </p>
               </div>
-              <PinovaIcon name="check_circle" class="text-rose-500 shrink-0" />
-              <PinovaIcon name="add_circle" class="text-neutral-300 dark:text-neutral-600 shrink-0" />
+              <FotoceIcon name="check_circle" class="text-rose-500 shrink-0" />
+              <FotoceIcon name="add_circle" class="text-neutral-300 dark:text-neutral-600 shrink-0" />
             </li>
           </ul>
 
@@ -515,7 +515,7 @@ function onSkipLater() {
 
         <section v-else class="onboarding-panel onboarding-panel--done">
           <div class="onboarding-done-badge">
-            <PinovaIcon name="celebration" class="text-white text-4xl" />
+            <FotoceIcon name="celebration" class="text-white text-4xl" />
           </div>
           <h2 class="onboarding-title onboarding-title--welcome font-auth-title font-auth-title--black text-center">
             {{ t('onboarding.doneTitle') }}
@@ -557,7 +557,7 @@ function onSkipLater() {
           {{ t('onboarding.skipLater') }}
         </button>
         <div class="onboarding-btn--next flex-1 min-w-0">
-          <PinovaButton
+          <FotoceButton
             data-testid="onboarding-continue"
             variant="primary"
             block
@@ -566,7 +566,7 @@ function onSkipLater() {
             @click="onPrimaryAction"
           >
             {{ primaryCtaLabel }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
       </footer>
     </div>
@@ -644,7 +644,7 @@ function onSkipLater() {
 .onboarding-progress-wrap {
   position: relative;
   z-index: 2;
-  padding-top: max(0.75rem, env(safe-area-inset-top, 0px), var(--pinova-pwa-extra-top-inset, 0px));
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px), var(--fotoce-pwa-extra-top-inset, 0px));
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
@@ -962,7 +962,7 @@ function onSkipLater() {
   font-weight: 700;
 }
 
-.onboarding-chip--active .pinova-icon {
+.onboarding-chip--active .fotoce-icon {
   color: #fff;
 }
 

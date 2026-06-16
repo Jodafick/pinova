@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.prestige.pinova",
+      "package_name": "com.prestige.fotoce",
       "sha256_cert_fingerprints": [
         "TODO:REPLACE_WITH_ANDROID_RELEASE_SHA256"
       ]

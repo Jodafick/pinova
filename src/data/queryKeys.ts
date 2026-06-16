@@ -8,7 +8,7 @@
  *    queryClient.invalidateQueries({ queryKey: qk.feed.all })
  *    queryClient.invalidateQueries({ queryKey: qk.user.byId(42) })
  *
- *  Cohérent avec mobile (`Pinova-Mobile/data/query/keys.ts`).
+ *  Cohérent avec mobile (`Fotoce-Mobile/data/query/keys.ts`).
  */
 
 export const qk = {
@@ -23,11 +23,11 @@ export const qk = {
   },
 
   /* Pins. */
-  pin: {
-    all: ['pin'] as const,
-    detail: (slugOrId: string | number) => ['pin', 'detail', String(slugOrId)] as const,
-    comments: (pinId: string | number) => ['pin', 'comments', String(pinId)] as const,
-    related: (pinId: string | number) => ['pin', 'related', String(pinId)] as const,
+  foto: {
+    all: ['foto'] as const,
+    detail: (slugOrId: string | number) => ['foto', 'detail', String(slugOrId)] as const,
+    comments: (fotoId: string | number) => ['foto', 'comments', String(fotoId)] as const,
+    related: (fotoId: string | number) => ['foto', 'related', String(fotoId)] as const,
   },
 
   /* Users / profiles. */
@@ -45,7 +45,7 @@ export const qk = {
     all: ['board'] as const,
     byId: (id: string | number) => ['board', 'byId', String(id)] as const,
     byUser: (userId: string | number) => ['board', 'byUser', String(userId)] as const,
-    pins: (boardId: string | number) => ['board', 'pins', String(boardId)] as const,
+    pins: (boardId: string | number) => ['board', 'fotos', String(boardId)] as const,
   },
 
   /* Notifications. */
@@ -65,7 +65,7 @@ export const qk = {
   /* Search. */
   search: {
     all: ['search'] as const,
-    pins: (q: string) => ['search', 'pins', q] as const,
+    pins: (q: string) => ['search', 'fotos', q] as const,
     users: (q: string) => ['search', 'users', q] as const,
     boards: (q: string) => ['search', 'boards', q] as const,
     autocomplete: (q: string) => ['search', 'autocomplete', q] as const,

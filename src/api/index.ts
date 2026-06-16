@@ -17,7 +17,7 @@ import {
 import { createRequestId, REQUEST_ID_HEADER } from '../lib/requestId';
 import { setSentryRequestId } from '../lib/sentry';
 
-export const AUTH_INVALIDATED_EVENT = 'pinova-auth-invalidated'
+export const AUTH_INVALIDATED_EVENT = 'fotoce-auth-invalidated'
 
 const REFRESH_LEEWAY_SEC = 120
 let refreshInFlightPromise: Promise<string | null> | null = null
@@ -45,12 +45,12 @@ function readUnreadCountHeader(headers: unknown): string | undefined {
     ) => unknown
     const v =
       g(UNREAD_NOTIFICATION_RESPONSE_HEADER) ??
-      g('X-Pinova-Unread-Notifications')
+      g('X-Fotoce-Unread-Notifications')
     return typeof v === 'string' ? v : undefined
   }
   const h = headers as Record<string, string>
   return (
-    h[UNREAD_NOTIFICATION_RESPONSE_HEADER] ?? h['X-Pinova-Unread-Notifications'] ?? undefined
+    h[UNREAD_NOTIFICATION_RESPONSE_HEADER] ?? h['X-Fotoce-Unread-Notifications'] ?? undefined
   )
 }
 
@@ -68,13 +68,13 @@ const api = axios.create({
 
 function clearStoredTokens() {
   if (typeof window === 'undefined') return
-  window.localStorage.removeItem('pinova_token')
+  window.localStorage.removeItem('fotoce_token')
   clearStoredRefreshToken()
   delete api.defaults.headers.common.Authorization
   window.dispatchEvent(new Event(AUTH_INVALIDATED_EVENT))
 }
 
-/** Comme Pinova-Mobile : évite de tout effacer après un lag réseau / 5xx sur POST refresh. */
+/** Comme Fotoce-Mobile : évite de tout effacer après un lag réseau / 5xx sur POST refresh. */
 function shouldClearAuthAfterRefreshError(error: unknown): boolean {
   const e = error as { code?: unknown; message?: unknown; response?: { status?: number } }
   const status = e.response?.status
@@ -102,9 +102,9 @@ async function refreshAccessWithSingleFlight(refreshToken: string | null): Promi
     try {
       const deviceId = typeof window !== 'undefined' ? ensureDeviceBindingId() : ''
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (deviceId) headers['X-Pinova-Device-Binding'] = deviceId
+      if (deviceId) headers['X-Fotoce-Device-Binding'] = deviceId
       const lc = getCurrentWebLang()
-      headers['X-Pinova-Lang'] = lc
+      headers['X-Fotoce-Lang'] = lc
       headers['Accept-Language'] =
         lc === 'en' ? 'en, fr;q=0.82' : lc === 'fon' ? 'fon, fr;q=0.92' : 'fr, en;q=0.6'
       headers[REQUEST_ID_HEADER] = createRequestId()
@@ -125,7 +125,7 @@ async function refreshAccessWithSingleFlight(refreshToken: string | null): Promi
         return null
       }
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem('pinova_token', newAccess)
+        window.localStorage.setItem('fotoce_token', newAccess)
         if (newRefresh && shouldPersistRotatedRefresh()) {
           storeRefreshToken(newRefresh)
         }
@@ -153,7 +153,7 @@ export async function proactiveRefreshIfStale(): Promise<void> {
   const refresh = readStoredRefreshToken()
   if (!refresh && !canAttemptCookieRefresh()) return
 
-  const access = window.localStorage.getItem('pinova_token')
+  const access = window.localStorage.getItem('fotoce_token')
   const now = Math.floor(Date.now() / 1000)
   const exp = access ? decodeJwtExp(access) : null
   if (access && exp !== null && exp > now + REFRESH_LEEWAY_SEC) return
@@ -165,7 +165,7 @@ api.interceptors.request.use((config) => {
   const lc = getCurrentWebLang()
   config.headers = config.headers ?? {}
   const hdr = config.headers as Record<string, string>
-  hdr['X-Pinova-Lang'] = lc
+  hdr['X-Fotoce-Lang'] = lc
   hdr['Accept-Language'] =
     lc === 'en' ? 'en, fr;q=0.82' : lc === 'fon' ? 'fon, fr;q=0.92' : 'fr, en;q=0.6'
 
@@ -196,7 +196,7 @@ api.interceptors.request.use((config) => {
   const existingAuth = config.headers?.Authorization
   if (existingAuth) return config
 
-  let token = typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null
+  let token = typeof window !== 'undefined' ? window.localStorage.getItem('fotoce_token') : null
   if (token) {
     const exp = decodeJwtExp(token)
     const now = Math.floor(Date.now() / 1000)
@@ -205,7 +205,7 @@ api.interceptors.request.use((config) => {
       const refresh = readStoredRefreshToken()
       if (!refresh && !canAttemptCookieRefresh()) {
         if (typeof window !== 'undefined') {
-          window.localStorage.removeItem('pinova_token')
+          window.localStorage.removeItem('fotoce_token')
         }
         token = null
       }
@@ -216,7 +216,7 @@ api.interceptors.request.use((config) => {
   }
   const deviceId = typeof window !== 'undefined' ? ensureDeviceBindingId() : ''
   if (deviceId) {
-    config.headers['X-Pinova-Device-Binding'] = deviceId
+    config.headers['X-Fotoce-Device-Binding'] = deviceId
   }
   return config
 })

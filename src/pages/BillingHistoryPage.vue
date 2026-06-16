@@ -6,7 +6,7 @@ import BillingReceiptPdfModal from '../components/BillingReceiptPdfModal.vue'
 import { useAuth } from '../composables/useAuth'
 import { useBillingReceiptPdfModal } from '../composables/useBillingReceiptPdfModal'
 import { useI18n } from '../i18n'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 
 const router = useRouter()
 const { fetchSubscriptionInvoices, fetchSubscriptionInvoiceReceipt, fetchCurrentUser, currentUser } =
@@ -149,14 +149,14 @@ onMounted(async () => {
     class="min-h-[70vh] w-full min-w-0 bg-gradient-to-b from-neutral-50 via-white to-[#fdf8fb] dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 selection:bg-pink-100 selection:text-pink-900"
   >
     <div class="w-full min-w-0 max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-14 pb-16">
-      <PinovaButton
+      <FotoceButton
         variant="secondary"
         class="group mb-8 hidden text-sm lg:inline-flex"
         @click="router.push('/settings')"
       >
-        <PinovaIcon name="arrow_back" class="text-[1.125rem]" />
+        <FotoceIcon name="arrow_back" class="text-[1.125rem]" />
         {{ t('billing.backSettings') }}
-      </PinovaButton>
+      </FotoceButton>
 
       <header
         class="relative overflow-hidden rounded-3xl border border-pink-100/80 dark:border-pink-900/40 bg-gradient-to-br from-white via-white to-pink-50/40 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-900 px-6 sm:px-10 py-8 sm:py-10 shadow-[0_1px_0_0_rgba(0,0,0,0.04),0_12px_40px_-18px_rgba(225,29,119,0.18)] mb-8"
@@ -175,7 +175,7 @@ onMounted(async () => {
               class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-700 dark:from-pink-600 to-pink-700 dark:to-pink-600 text-white shadow-md shadow-pink-700/25"
               aria-hidden="true"
             >
-              <PinovaIcon name="receipt_long" class="text-[1.5rem]" />
+              <FotoceIcon name="receipt_long" class="text-[1.5rem]" />
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-pink-700">
@@ -212,7 +212,7 @@ onMounted(async () => {
             class="mb-4 flex items-start gap-2 rounded-2xl border border-rose-100 bg-rose-50/90 px-4 py-3 text-sm text-rose-800"
             role="alert"
           >
-            <PinovaIcon name="error" class="mt-0.5 text-[1.125rem] text-rose-500" />
+            <FotoceIcon name="error" class="mt-0.5 text-[1.125rem] text-rose-500" />
             <span>{{ receiptError }}</span>
           </p>
 
@@ -220,7 +220,7 @@ onMounted(async () => {
             v-if="!billingInvoices.length"
             class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-900/50 px-6 py-16 text-center"
           >
-            <PinovaIcon name="payments" class="mb-4 text-5xl text-neutral-300" aria-hidden="true" />
+            <FotoceIcon name="payments" class="mb-4 text-5xl text-neutral-300" aria-hidden="true" />
             <p class="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{{ t('settings.subscription.billingEmpty') }}</p>
             <p class="mt-2 max-w-xs text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
               {{ t('billing.subtitle') }}
@@ -255,7 +255,7 @@ onMounted(async () => {
                   </div>
                   <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
                     <span class="inline-flex items-center gap-1">
-                      <PinovaIcon name="schedule" class="text-[0.95rem] text-neutral-400" />
+                      <FotoceIcon name="schedule" class="text-[0.95rem] text-neutral-400" />
                       {{ formatInvoiceWhen(inv.created_at) }}
                     </span>
                   </div>
@@ -267,14 +267,14 @@ onMounted(async () => {
                   </p>
                   <div class="flex flex-wrap gap-2 sm:justify-end">
                     <template v-if="inv.status === 'approved'">
-                      <PinovaButton
+                      <FotoceButton
                         variant="primary"
                         size="sm"
                         class="text-xs"
                         :disabled="receiptLoadingId === inv.id"
                         @click="viewReceipt(inv)"
                       >
-                        <PinovaIcon name="description" class="text-[1rem]" />
+                        <FotoceIcon name="description" class="text-[1rem]" />
                         {{
                           receiptLoadingId === inv.id
                             ? t('billing.fetchReceiptBusy')
@@ -282,9 +282,9 @@ onMounted(async () => {
                               ? t('settings.subscription.openReceipt')
                               : t('billing.fetchReceipt')
                         }}
-                      </PinovaButton>
+                      </FotoceButton>
                     </template>
-                    <PinovaButton
+                    <FotoceButton
                       v-else-if="inv.checkout_url && inv.status === 'pending'"
                       variant="secondary"
                       size="sm"
@@ -293,9 +293,9 @@ onMounted(async () => {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <PinovaIcon name="open_in_new" class="text-[1rem]" />
+                      <FotoceIcon name="open_in_new" class="text-[1rem]" />
                       {{ t('settings.subscription.openCheckout') }}
-                    </PinovaButton>
+                    </FotoceButton>
                   </div>
                 </div>
               </div>

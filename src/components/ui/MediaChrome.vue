@@ -12,7 +12,7 @@
  * UX iOS-native :
  *  - Fade in/out 220ms (cubic-bezier iOS)
  *  - Forcer visible si modal stack active (back button important)
- *  - Skip auto-hide si `pinned`
+ *  - Skip auto-hide si `fotoned`
  *
  * Le composant N'IMPOSE PAS de slot — il propose des slots flexibles.
  */
@@ -127,7 +127,7 @@ defineExpose({ show, hide })
             aria-label="Retour"
             @click="$emit('back')"
           >
-            <PinovaIcon name="arrow_back_ios_new" />
+            <FotoceIcon name="arrow_back_ios_new" />
           </button>
           <div class="media-chrome__center">
             <slot name="title" />
@@ -234,7 +234,7 @@ defineExpose({ show, hide })
   padding: 0;
 }
 
-.media-chrome__btn--icon .pinova-icon {
+.media-chrome__btn--icon .fotoce-icon {
   font-size: 18px;
 }
 
@@ -267,7 +267,7 @@ defineExpose({ show, hide })
 /* Variant auto : adapter au theme courant (peu utilisé — par défaut dark). */
 .media-chrome--auto .media-chrome__btn {
   background-color: var(--glass-fill, rgba(255, 255, 255, 0.78));
-  color: var(--pinova-text-primary, #161417);
+  color: var(--fotoce-text-primary, #161417);
   border-color: var(--glass-border, rgba(255, 255, 255, 0.42));
 }
 

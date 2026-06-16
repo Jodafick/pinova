@@ -99,7 +99,7 @@ function syncBodyScrollLock() {
   const blocking = stackRef.value.some(
     (l) => l.presentation !== 'transparentOverlay' && l.presentation !== 'floatingCard',
   )
-  html.classList.toggle('pinova-layer-scroll-lock', blocking)
+  html.classList.toggle('fotoce-layer-scroll-lock', blocking)
 }
 
 /** Met à jour la couleur de la status bar en fonction de la couche au sommet. */
@@ -116,7 +116,7 @@ function syncStatusBar() {
     if (want === 'light') target = '#ffffff'
     else if (want === 'dark') target = '#0a0a0a'
     /* 'auto' : laisse target système. */
-    /* Surcharge : sur fullscreen immersif (PinDetail), on reste noir pour matcher le canevas. */
+    /* Surcharge : sur fullscreen immersif (FotoDetail), on reste noir pour matcher le canevas. */
     if (top.presentation === 'fullscreen') target = '#000000'
   }
   if (meta.getAttribute('content') !== target) meta.setAttribute('content', target)
@@ -169,7 +169,7 @@ function pushUrlForLayer(layerId: LayerId, url: string) {
   if (typeof window === 'undefined') return
   const backUrl = window.location.pathname + window.location.search + window.location.hash
   urlLayerEntries.set(layerId, { backUrl })
-  const state = { ...(window.history.state ?? {}), __pinovaLayer: layerId }
+  const state = { ...(window.history.state ?? {}), __fotoceLayer: layerId }
   window.history.pushState(state, '', url)
 }
 
@@ -198,7 +198,7 @@ function onPopState() {
    */
   const top = stackRef.value[stackRef.value.length - 1] ?? null
   if (!top) return
-  const stateLayerId = (window.history.state && (window.history.state as { __pinovaLayer?: string }).__pinovaLayer) || null
+  const stateLayerId = (window.history.state && (window.history.state as { __fotoceLayer?: string }).__fotoceLayer) || null
   if (!top.url) return
   if (stateLayerId !== top.id) {
     /* On ferme la couche sans repush history (déjà fait par le navigateur). */

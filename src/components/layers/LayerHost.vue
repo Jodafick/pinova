@@ -140,8 +140,8 @@ function presenterFor(layer: Layer) {
 /** Classes lifecycle pour permettre au CSS de couper anim/pointer-events. */
 function lifecycleClass(layer: Layer): string {
   const state = getLayerLifecycleState(layer.id)
-  if (state === 'sleeping') return 'pinova-layer-sleeping'
-  if (state === 'frozen') return 'pinova-layer-frozen'
+  if (state === 'sleeping') return 'fotoce-layer-sleeping'
+  if (state === 'frozen') return 'fotoce-layer-frozen'
   return ''
 }
 </script>
@@ -150,8 +150,8 @@ function lifecycleClass(layer: Layer): string {
   <Teleport to="body">
     <div
       v-if="stack.length > 0"
-      class="pinova-layer-host"
-      :class="{ 'pinova-layer-host--has-layers': stack.length > 0 }"
+      class="fotoce-layer-host"
+      :class="{ 'fotoce-layer-host--has-layers': stack.length > 0 }"
       aria-live="polite"
     >
       <component
@@ -170,29 +170,29 @@ function lifecycleClass(layer: Layer): string {
   Bloquer le scroll body quand une couche bloquante est ouverte.
   Une classe est ajoutée sur <html> par le layerManager.
 */
-html.pinova-layer-scroll-lock,
-html.pinova-layer-scroll-lock body {
+html.fotoce-layer-scroll-lock,
+html.fotoce-layer-scroll-lock body {
   overflow: hidden !important;
   /* Évite le saut de scrollbar sur desktop. */
   scrollbar-gutter: stable;
 }
 
 /* Empêche les rebond iOS d'apparaître quand la couche est ouverte. */
-html.pinova-layer-scroll-lock body {
+html.fotoce-layer-scroll-lock body {
   position: fixed;
   inset: 0;
   width: 100%;
   /* On garde la position du scroll via JS (layerManager). */
 }
 
-.pinova-layer-host {
+.fotoce-layer-host {
   position: fixed;
   inset: 0;
   z-index: 200;
   pointer-events: none;
 }
 
-.pinova-layer-host > * {
+.fotoce-layer-host > * {
   pointer-events: auto;
 }
 

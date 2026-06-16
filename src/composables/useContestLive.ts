@@ -15,11 +15,11 @@ import { buildContestSelfRankCue, type ContestSelfRankCue } from './contestRankC
 import { useAuth } from './useAuth'
 import { API_BASE_URL } from '../config/env'
 import { useI18n } from '../i18n'
-import type { ContestPinRow, ContestSettingsDto, ContestViewerDto } from '../types/contest'
+import type { ContestFotoRow, ContestSettingsDto, ContestViewerDto } from '../types/contest'
 
 const DEFAULT_LEADERBOARD_PINS_CAP = 10
 
-function leaderboardPinsCap(): number {
+function leaderboardFotosCap(): number {
   const raw = contestState.settings?.leaderboard_display_pins
   if (typeof raw === 'number' && Number.isFinite(raw)) {
     return Math.max(1, Math.min(Math.floor(raw), 500))
@@ -42,16 +42,16 @@ type ContestLiveState = {
   usingPollingFallback: boolean
   error: string
   settings: ContestSettingsDto | null
-  topPins: ContestPinRow[]
+  topPins: ContestFotoRow[]
   viewer: ContestViewerDto | null
-  /** Bannière concours réservée au créateur dont le pin bouge au classement affiché. */
+  /** Bannière concours réservée au créateur dont le foto bouge au classement affiché. */
   selfRankCue: ContestSelfRankCue | null
   lastSequence: number
   reconnectAttempts: number
 }
 
 const contestState = reactive<ContestLiveState>({
-  /** True au démarrage : évite un premier rendu « concours chargé » vide (hero + 0 pin) avant le mount. */
+  /** True au démarrage : évite un premier rendu « concours chargé » vide (hero + 0 foto) avant le mount. */
   loading: true,
   connected: false,
   usingPollingFallback: false,
@@ -98,7 +98,7 @@ function scheduleContestSelfCueDismiss() {
 const wsUrl = `${API_BASE_URL.replace(/^http/i, 'ws').replace(/\/$/, '')}/api/contest/leaderboard/events/ws`
 const tabChannel =
   typeof window !== 'undefined' && 'BroadcastChannel' in window
-    ? new BroadcastChannel('pinova-contest-live')
+    ? new BroadcastChannel('fotoce-contest-live')
     : null
 
 /** Mis à jour chaque seconde pour que `contestRemainingMs` et le template se rafraîchissent (Date.now seul n'est pas réactif). */
@@ -110,21 +110,21 @@ const contestRemainingMs = computed(() => {
   return Math.max(0, new Date(contestState.settings.end_at).getTime() - Date.now())
 })
 
-/** Aligné backend : au plus un pin par créateur (meilleur score), rangs réaffichés 1…n */
-function dedupeBestPinPerCreator(rows: ContestPinRow[]): ContestPinRow[] {
-  const best = new Map<number, ContestPinRow>()
+/** Aligné backend : au plus un foto par créateur (meilleur score), rangs réaffichés 1…n */
+function dedupeBestPinPerCreator(rows: ContestFotoRow[]): ContestFotoRow[] {
+  const best = new Map<number, ContestFotoRow>()
   for (const row of rows) {
     const prev = best.get(row.creator_id)
     if (
       !prev ||
       row.score > prev.score ||
-      (row.score === prev.score && row.pin_id < prev.pin_id)
+      (row.score === prev.score && row.foto_id < prev.foto_id)
     ) {
       best.set(row.creator_id, row)
     }
   }
   return Array.from(best.values())
-    .sort((a, b) => b.score - a.score || a.pin_id - b.pin_id)
+    .sort((a, b) => b.score - a.score || a.foto_id - b.foto_id)
     .map((r, i) => ({ ...r, rank: i + 1 }))
 }
 
@@ -141,7 +141,7 @@ function tryContestSelfRankCueFromWs(event: ContestEvent, payload: Record<string
   if (prevDisplay === nextDisplay) return
   const now = Date.now()
   if (now - lastSelfContestCueAt < CLIENT_CONTEST_CUE_GAP_MS) return
-  const pinTitle = String(payload.pin_title || 'Pin')
+  const pinTitle = String(payload.pin_title || 'Foto')
   const cue = buildContestSelfRankCue(t, { prevDisplay, nextDisplay, pinTitle })
   if (!cue) return
   lastSelfContestCueAt = now
@@ -150,9 +150,9 @@ function tryContestSelfRankCueFromWs(event: ContestEvent, payload: Record<string
 }
 
 function upsertPinFromEvent(payload: Record<string, unknown>) {
-  const pinId = Number(payload.pin_id || payload.entity_id || 0)
-  if (!pinId) return
-  const index = contestState.topPins.findIndex((row) => row.pin_id === pinId)
+  const fotoId = Number(payload.foto_id || payload.entity_id || 0)
+  if (!fotoId) return
+  const index = contestState.topPins.findIndex((row) => row.foto_id === fotoId)
   const rank = Number(payload.rank || 0)
   const previousRank = Number(payload.previous_rank || 0)
   const score = Number(payload.score || 0)
@@ -173,9 +173,9 @@ function upsertPinFromEvent(payload: Record<string, unknown>) {
 
   if (index === -1) {
     contestState.topPins.push({
-      pin_id: pinId,
-      pin_slug: String(payload.pin_slug || ''),
-      pin_title: String(payload.pin_title || 'Pin'),
+      foto_id: fotoId,
+      foto_slug: String(payload.foto_slug || ''),
+      pin_title: String(payload.pin_title || 'Foto'),
       pin_image_url: String(payload.pin_image_url || ''),
       creator_id: Number(payload.creator_id || 0),
       creator_username: String(payload.creator_username || 'creator'),
@@ -204,7 +204,7 @@ function upsertPinFromEvent(payload: Record<string, unknown>) {
       engagement_total,
     }
   }
-  contestState.topPins = dedupeBestPinPerCreator(contestState.topPins).slice(0, leaderboardPinsCap())
+  contestState.topPins = dedupeBestPinPerCreator(contestState.topPins).slice(0, leaderboardFotosCap())
 }
 
 function pushEvent(event: ContestEvent) {
@@ -212,10 +212,10 @@ function pushEvent(event: ContestEvent) {
   contestState.lastSequence = Math.max(contestState.lastSequence, event.sequence || 0)
   const payload = (event.payload || {}) as Record<string, unknown>
   tryContestSelfRankCueFromWs(event, payload, contestLiveViewerUid)
-  if (event.entity_type === 'pin' || event.event_type.includes('pin_')) {
+  if (event.entity_type === 'foto' || event.event_type.includes('foto_')) {
     upsertPinFromEvent(payload)
   }
-  tabChannel?.postMessage({ type: 'contest-pin-event', event })
+  tabChannel?.postMessage({ type: 'contest-foto-event', event })
 }
 
 async function fetchCurrentContest() {
@@ -230,13 +230,13 @@ async function fetchCurrentContest() {
 async function fetchBoardsSnapshot() {
   type PinsPayload = {
     contest_key: string
-    results: ContestPinRow[]
+    results: ContestFotoRow[]
     viewer?: ContestViewerDto | null
   }
   const pinsResp = await api.get<PinsPayload>('contest/leaderboard/pins', {
-    params: { limit: leaderboardPinsCap() },
+    params: { limit: leaderboardFotosCap() },
   })
-  contestState.topPins = dedupeBestPinPerCreator(pinsResp.data.results || []).slice(0, leaderboardPinsCap())
+  contestState.topPins = dedupeBestPinPerCreator(pinsResp.data.results || []).slice(0, leaderboardFotosCap())
   contestState.viewer = pinsResp.data.viewer ?? null
 }
 
@@ -376,7 +376,7 @@ export function clearContestRankCue() {
 tabChannel?.addEventListener('message', (event: MessageEvent) => {
   if (!contestLiveTransportActive) return
   const payload = event.data || {}
-  if (payload?.type === 'contest-pin-event' && payload.event) {
+  if (payload?.type === 'contest-foto-event' && payload.event) {
     const evt = payload.event as ContestEvent
     if (evt.sequence > contestState.lastSequence) {
       pushEvent(evt)

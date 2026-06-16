@@ -1,8 +1,8 @@
 import api from '../api/index'
 import { setAnalyticsConsent } from './analytics'
 
-export const COOKIE_CONSENT_STORAGE_KEY = 'pinova_cookie_consent_v1'
-export const COOKIE_CONSENT_DECIDED_KEY = 'pinova_cookie_consent_decided'
+export const COOKIE_CONSENT_STORAGE_KEY = 'fotoce_cookie_consent_v1'
+export const COOKIE_CONSENT_DECIDED_KEY = 'fotoce_cookie_consent_decided'
 
 export type CookieConsentChoice = {
   necessary: boolean
@@ -30,13 +30,13 @@ export function hasCookieConsentDecision(): boolean {
 
 export function getAnonymousConsentId(): string {
   if (typeof window === 'undefined') return ''
-  const existing = window.localStorage.getItem('pinova_analytics_distinct_id')
+  const existing = window.localStorage.getItem('fotoce_analytics_distinct_id')
   if (existing?.trim()) return existing.trim()
   const id =
     typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
       : `anon_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-  window.localStorage.setItem('pinova_analytics_distinct_id', id)
+  window.localStorage.setItem('fotoce_analytics_distinct_id', id)
   return id
 }
 

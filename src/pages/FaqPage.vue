@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from '../i18n'
 import api from '../api/index'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 
 const { t, currentLang } = useI18n()
 
@@ -94,7 +94,7 @@ watch(currentLang, load, { immediate: true })
         to="/"
         class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-800 font-medium transition-colors"
       >
-        <PinovaIcon name="arrow_back" class="text-[18px]" />
+        <FotoceIcon name="arrow_back" class="text-[18px]" />
         {{ t('legal.backHome') }}
       </router-link>
     </nav>
@@ -103,7 +103,7 @@ watch(currentLang, load, { immediate: true })
       <div
         class="inline-flex items-center gap-2 rounded-full border border-pink-200/80 bg-pink-50/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-pink-700 mb-4"
       >
-        <PinovaIcon name="quiz" class="text-[16px]" />
+        <FotoceIcon name="quiz" class="text-[16px]" />
         {{ t('nav.faq') }}
       </div>
       <h1 class="text-3xl sm:text-4xl font-bold text-neutral-900 tracking-tight text-balance">
@@ -129,15 +129,15 @@ watch(currentLang, load, { immediate: true })
       v-else-if="error"
       class="app-card rounded-3xl p-10 text-center"
     >
-      <PinovaIcon name="cloud_off" class="text-red-400 text-[44px] mb-3 inline-block" />
+      <FotoceIcon name="cloud_off" class="text-red-400 text-[44px] mb-3 inline-block" />
       <p class="text-red-900/90 font-medium text-sm">{{ t('faq.loadError') }}</p>
-      <PinovaButton
+      <FotoceButton
         variant="secondary"
         class="mt-5 text-sm border-red-300/80 dark:border-red-700/70 text-red-800 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
         @click="load()"
       >
         {{ t('legal.retry') }}
-      </PinovaButton>
+      </FotoceButton>
     </div>
 
     <template v-else>
@@ -158,14 +158,14 @@ watch(currentLang, load, { immediate: true })
                 class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-black/[0.05] dark:ring-white/[0.08]"
                 :class="cardVisual(card.slug).iconBg"
               >
-                <PinovaIcon :name="cardVisual(card.slug).icon" class="text-[22px]" />
+                <FotoceIcon :name="cardVisual(card.slug).icon" class="text-[22px]" />
               </div>
               <div class="min-w-0 flex-1">
                 <h3 class="font-bold text-neutral-900 dark:text-neutral-100 text-sm leading-snug group-hover:text-pink-800 dark:group-hover:text-pink-600 transition-colors">
                   {{ card.title }}
                 </h3>
               </div>
-              <PinovaIcon name="chevron_right" class="text-neutral-300 dark:text-neutral-600 group-hover:text-pink-800 dark:group-hover:text-pink-600 text-xl shrink-0" />
+              <FotoceIcon name="chevron_right" class="text-neutral-300 dark:text-neutral-600 group-hover:text-pink-800 dark:group-hover:text-pink-600 text-xl shrink-0" />
             </div>
             <p class="text-xs app-text-muted leading-relaxed line-clamp-4 flex-1">
               {{ card.excerpt }}
@@ -207,10 +207,10 @@ watch(currentLang, load, { immediate: true })
                 class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-700/10 text-pink-700 transition-colors dark:bg-pink-600/20 dark:text-pink-600"
                 aria-hidden="true"
               >
-                <PinovaIcon name="quiz" class="text-[20px]" />
+                <FotoceIcon name="quiz" class="text-[20px]" />
               </span>
               <span class="flex-1 min-w-0 text-sm font-semibold text-neutral-900 dark:text-neutral-100">{{ row.question }}</span>
-              <PinovaIcon name="expand_more" class="text-neutral-400 dark:text-neutral-500 shrink-0 transition-all duration-200" :class="{ 'rotate-180 text-pink-700 dark:text-pink-600': openId === row.id }" />
+              <FotoceIcon name="expand_more" class="text-neutral-400 dark:text-neutral-500 shrink-0 transition-all duration-200" :class="{ 'rotate-180 text-pink-700 dark:text-pink-600': openId === row.id }" />
             </button>
             <Transition
               enter-active-class="transition-all duration-200 ease-out"
@@ -233,7 +233,7 @@ watch(currentLang, load, { immediate: true })
                   class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-pink-700 hover:text-pink-800 dark:text-pink-600 dark:hover:text-pink-600 dark:hover:opacity-80 transition-colors"
                 >
                   {{ relatedLabel(row.related_legal_slug) }}
-                  <PinovaIcon name="arrow_forward" class="text-[16px]" />
+                  <FotoceIcon name="arrow_forward" class="text-[16px]" />
                 </router-link>
               </div>
             </Transition>

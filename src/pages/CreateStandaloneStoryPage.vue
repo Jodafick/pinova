@@ -16,16 +16,16 @@ import {
   moderationScanVideoFile,
   moderationScanText,
 } from '../composables/useModeration'
-import { mapDjangoPinToFrontend } from '../composables/usePins'
+import { mapDjangoFotoToFrontend } from '../composables/useFotos'
 import { formatDrfErrorMessages } from '../utils/apiValidationErrors'
 import { consumePendingStoryCaptureFile } from '../utils/storyCaptureDraft'
 import { supportsBrowserStoryVideoEditing } from '../utils/supportsBrowserStoryVideoEditing'
 import { useIsLgDown } from '../composables/useIsLgDown'
 import { useEdgeSwipeBack } from '../composables/useEdgeSwipeBack'
-import { usePinovaHeaderSwipeDismiss } from '../composables/usePinovaHeaderSwipeDismiss'
+import { useFotoceHeaderSwipeDismiss } from '../composables/useFotoceHeaderSwipeDismiss'
 import { useLayer } from '../navigation/useLayer'
 import { STORY_VIDEO_MAX_SIZE_MB } from '../constants/mediaRequirements'
-import type { Pin } from '../types'
+import type { Foto } from '../types'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -61,7 +61,7 @@ const storyVideoPreviewUrl = ref<string | null>(null)
 const editingImageFile = ref<File | null>(null)
 const editingVideoFile = ref<File | null>(null)
 const galleryInput = ref<HTMLInputElement | null>(null)
-const publishedStory = ref<Pin | null>(null)
+const publishedStory = ref<Foto | null>(null)
 const storyViewerOpen = ref(false)
 const storyMetaMainRef = ref<HTMLElement | null>(null)
 const storyDescriptionMetaRef = ref<HTMLTextAreaElement | null>(null)
@@ -332,7 +332,7 @@ async function submit() {
     if (imageFile.value) fd.append('image', imageFile.value)
     if (storyVideoFile.value) fd.append('story_video', storyVideoFile.value)
 
-    const res = await api.post('pins/standalone-story/', fd, {
+    const res = await api.post('fotos/standalone-story/', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     const slug = typeof res.data?.slug === 'string' ? res.data.slug.trim() : ''
@@ -340,7 +340,7 @@ async function submit() {
       router.push('/')
       return
     }
-    publishedStory.value = mapDjangoPinToFrontend(res.data)
+    publishedStory.value = mapDjangoFotoToFrontend(res.data)
     storyViewerOpen.value = true
   } catch (err: unknown) {
     const lines = formatDrfErrorMessages(err)
@@ -414,11 +414,11 @@ useEdgeSwipeBack(storyCreateShellRef, {
   canAcceptPointerDown: (e) => {
     const el = e.target as HTMLElement | null
     if (!el) return true
-    return !el.closest('[data-pinova-no-edge-back]')
+    return !el.closest('[data-fotoce-no-edge-back]')
   },
 })
 
-usePinovaHeaderSwipeDismiss({
+useFotoceHeaderSwipeDismiss({
   gestureRootRef: storyHeaderSwipeRef,
   transformRef: storyCreateShellRef,
   enabled: () => isLgDown.value && !layer.value,
@@ -470,7 +470,7 @@ usePinovaHeaderSwipeDismiss({
           :aria-label="t('common.cancel')"
           @click="leaveStoryFlow()"
         >
-          <PinovaIcon name="close" class="text-xl" />
+          <FotoceIcon name="close" class="text-xl" />
         </button>
         <p class="text-sm font-black tracking-tight">{{ t('story.standalone.navShort') }}</p>
         <span class="h-9 w-9" />
@@ -486,7 +486,7 @@ usePinovaHeaderSwipeDismiss({
         <div class="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <label class="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">
             <span class="grid h-6 w-6 place-items-center rounded-lg bg-pink-700/15 dark:bg-pink-600/15 text-pink-700 dark:text-pink-600">
-              <PinovaIcon name="chat_bubble" class="text-sm" />
+              <FotoceIcon name="chat_bubble" class="text-sm" />
             </span>
             {{ t('story.standalone.caption') }}
           </label>
@@ -503,7 +503,7 @@ usePinovaHeaderSwipeDismiss({
           class="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-700 dark:from-pink-600 to-fuchsia-600 py-4 text-base font-black text-white shadow-lg shadow-pink-700/35 transition active:scale-[0.98]"
           @click="goCaptionToMedia"
         >
-          <PinovaIcon name="arrow_forward" class="text-xl" />
+          <FotoceIcon name="arrow_forward" class="text-xl" />
           {{ t('create.step.next') }}
         </button>
       </section>
@@ -519,14 +519,14 @@ usePinovaHeaderSwipeDismiss({
       <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-pink-700/10 dark:bg-pink-600/10 blur-2xl" />
       <div class="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-2xl" />
 
-      <header ref="storyHeaderSwipeRef" class="relative z-10 flex items-center justify-between" data-pinova-swipe-dismiss-handle>
+      <header ref="storyHeaderSwipeRef" class="relative z-10 flex items-center justify-between" data-fotoce-swipe-dismiss-handle>
         <button
           type="button"
           class="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white/80 active:scale-95 transition"
           :aria-label="t('common.cancel')"
           @click="leaveStoryFlow()"
         >
-          <PinovaIcon name="close" class="text-xl" />
+          <FotoceIcon name="close" class="text-xl" />
         </button>
         <p class="text-sm font-black tracking-tight">{{ t('story.standalone.navShort') }}</p>
         <span class="h-9 w-9" />
@@ -555,7 +555,7 @@ usePinovaHeaderSwipeDismiss({
           @click="galleryInput?.click()"
         >
           <span class="story-pick-icon bg-white/15 text-white">
-            <PinovaIcon name="imagesmode" class="text-3xl" />
+            <FotoceIcon name="imagesmode" class="text-3xl" />
           </span>
           <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/60">{{ t('story.standalone.galleryLabel') }}</span>
           <span class="text-2xl font-black tracking-tight">{{ t('story.standalone.chooseFile') }}</span>
@@ -568,7 +568,7 @@ usePinovaHeaderSwipeDismiss({
           @click="openStoryCameraCapture()"
         >
           <span class="story-pick-icon bg-white/5 text-pink-700 dark:text-pink-600">
-            <PinovaIcon name="videocam" class="text-3xl" />
+            <FotoceIcon name="videocam" class="text-3xl" />
           </span>
           <span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/35">{{ t('story.standalone.cameraLabel') }}</span>
           <span class="text-[1.35rem] font-black tracking-tight">{{ t('story.standalone.captureStory') }}</span>
@@ -606,7 +606,7 @@ usePinovaHeaderSwipeDismiss({
       <header
         ref="storyHeaderSwipeRef"
         class="relative z-30 flex shrink-0 items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]"
-        data-pinova-swipe-dismiss-handle
+        data-fotoce-swipe-dismiss-handle
       >
         <button
           type="button"
@@ -614,7 +614,7 @@ usePinovaHeaderSwipeDismiss({
           :aria-label="t('common.back')"
           @click="storyMetaBack()"
         >
-          <PinovaIcon name="chevron_left" class="text-xl" />
+          <FotoceIcon name="chevron_left" class="text-xl" />
         </button>
         <div class="flex shrink-0 items-center gap-2">
           <button
@@ -623,7 +623,7 @@ usePinovaHeaderSwipeDismiss({
             :disabled="mediaModerationPending || saving"
             @click="galleryInput?.click()"
           >
-            <PinovaIcon name="imagesmode" class="text-base" />
+            <FotoceIcon name="imagesmode" class="text-base" />
             {{ t('story.standalone.changeMedia') }}
           </button>
           <button
@@ -633,7 +633,7 @@ usePinovaHeaderSwipeDismiss({
             :disabled="mediaModerationPending || saving"
             @click="openStoryCameraCapture()"
           >
-            <PinovaIcon name="photo_camera" class="text-xl" />
+            <FotoceIcon name="photo_camera" class="text-xl" />
           </button>
         </div>
       </header>
@@ -691,7 +691,7 @@ usePinovaHeaderSwipeDismiss({
           <div class="story-glass-card story-enter-up">
             <label class="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/45">
               <span class="grid h-6 w-6 place-items-center rounded-lg bg-pink-700/15 dark:bg-pink-600/15 text-pink-700 dark:text-pink-600">
-                <PinovaIcon name="chat_bubble" class="text-sm" />
+                <FotoceIcon name="chat_bubble" class="text-sm" />
               </span>
               {{ t('story.standalone.caption') }}
             </label>
@@ -712,7 +712,7 @@ usePinovaHeaderSwipeDismiss({
             @click="submit()"
           >
             <span v-if="saving" class="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
-            <PinovaIcon v-else name="auto_stories" class="text-lg" />
+            <FotoceIcon v-else name="auto_stories" class="text-lg" />
             {{ saving ? t('create.publishing') : t('story.standalone.publish') }}
           </button>
         </div>

@@ -55,9 +55,9 @@ function retry() {
     probe.onload = () => window.location.reload()
     probe.onerror = () => {
       /* Reste offline : on déclenche un petit shake visuel. */
-      const banner = document.querySelector('.pinova-offline-banner')
-      banner?.classList.remove('pinova-offline-banner--shake')
-      requestAnimationFrame(() => banner?.classList.add('pinova-offline-banner--shake'))
+      const banner = document.querySelector('.fotoce-offline-banner')
+      banner?.classList.remove('fotoce-offline-banner--shake')
+      requestAnimationFrame(() => banner?.classList.add('fotoce-offline-banner--shake'))
     }
     probe.src = `/favicon-16x16.png?probe=${Date.now()}`
   }
@@ -70,20 +70,20 @@ const bannerLabel = computed(() => {
 </script>
 
 <template>
-  <transition name="pinova-offline-fade">
+  <transition name="fotoce-offline-fade">
     <div
       v-if="showBanner"
-      class="pinova-offline-banner"
+      class="fotoce-offline-banner"
       :class="{ 'is-back': justBackOnline }"
       role="status"
       aria-live="polite"
     >
-      <PinovaIcon :name="justBackOnline ? 'wifi' : 'wifi_off'" class="pinova-offline-banner__icon" />
-      <span class="pinova-offline-banner__label">{{ bannerLabel }}</span>
+      <FotoceIcon :name="justBackOnline ? 'wifi' : 'wifi_off'" class="fotoce-offline-banner__icon" />
+      <span class="fotoce-offline-banner__label">{{ bannerLabel }}</span>
       <button
         v-if="!justBackOnline"
         type="button"
-        class="pinova-offline-banner__retry"
+        class="fotoce-offline-banner__retry"
         @click="retry"
       >
         {{ t('common.retry') }}
@@ -93,7 +93,7 @@ const bannerLabel = computed(() => {
 </template>
 
 <style scoped>
-.pinova-offline-banner {
+.fotoce-offline-banner {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 8px);
   left: 50%;
@@ -116,20 +116,20 @@ const bannerLabel = computed(() => {
   pointer-events: auto;
 }
 
-.pinova-offline-banner.is-back {
+.fotoce-offline-banner.is-back {
   background-color: rgba(30, 130, 76, 0.92);
 }
 
-.pinova-offline-banner__icon {
+.fotoce-offline-banner__icon {
   font-size: 18px;
   flex-shrink: 0;
 }
 
-.pinova-offline-banner__label {
+.fotoce-offline-banner__label {
   white-space: nowrap;
 }
 
-.pinova-offline-banner__retry {
+.fotoce-offline-banner__retry {
   background: rgba(255, 255, 255, 0.18);
   border: 0;
   color: white;
@@ -140,16 +140,16 @@ const bannerLabel = computed(() => {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
-  transition: background-color var(--pinova-dur-ultraFast, 120ms) ease;
+  transition: background-color var(--fotoce-dur-ultraFast, 120ms) ease;
 }
-.pinova-offline-banner__retry:hover { background: rgba(255, 255, 255, 0.28); }
-.pinova-offline-banner__retry:active { background: rgba(255, 255, 255, 0.35); }
+.fotoce-offline-banner__retry:hover { background: rgba(255, 255, 255, 0.28); }
+.fotoce-offline-banner__retry:active { background: rgba(255, 255, 255, 0.35); }
 
-.pinova-offline-banner--shake {
-  animation: pinova-offline-shake 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+.fotoce-offline-banner--shake {
+  animation: fotoce-offline-shake 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
-@keyframes pinova-offline-shake {
+@keyframes fotoce-offline-shake {
   0%, 100% { transform: translateX(-50%) translateY(0); }
   20%      { transform: translateX(-50%) translateY(-2px); }
   40%      { transform: translateX(-46%) translateY(0); }
@@ -157,21 +157,21 @@ const bannerLabel = computed(() => {
   80%      { transform: translateX(-50%) translateY(-2px); }
 }
 
-.pinova-offline-fade-enter-active,
-.pinova-offline-fade-leave-active {
+.fotoce-offline-fade-enter-active,
+.fotoce-offline-fade-leave-active {
   transition:
-    transform var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    opacity var(--pinova-dur-fast, 180ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+    transform var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    opacity var(--fotoce-dur-fast, 180ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
-.pinova-offline-fade-enter-from,
-.pinova-offline-fade-leave-to {
+.fotoce-offline-fade-enter-from,
+.fotoce-offline-fade-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(-100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinova-offline-fade-enter-active,
-  .pinova-offline-fade-leave-active { transition: opacity 180ms ease; }
-  .pinova-offline-banner--shake { animation: none; }
+  .fotoce-offline-fade-enter-active,
+  .fotoce-offline-fade-leave-active { transition: opacity 180ms ease; }
+  .fotoce-offline-banner--shake { animation: none; }
 }
 </style>

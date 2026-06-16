@@ -7,7 +7,7 @@ let loading: Promise<void> | null = null
 
 export function ensureMaterialSymbolsLoaded(): Promise<void> {
   if (typeof document === 'undefined') return Promise.resolve()
-  if (document.getElementById('pinova-material-symbols-subset')) {
+  if (document.getElementById('fotoce-material-symbols-subset')) {
     return loading ?? Promise.resolve()
   }
   if (loading) return loading
@@ -15,7 +15,7 @@ export function ensureMaterialSymbolsLoaded(): Promise<void> {
   loading = new Promise((resolve) => {
     const href = materialSymbolsStylesheetHref()
     const link = document.createElement('link')
-    link.id = 'pinova-material-symbols-subset'
+    link.id = 'fotoce-material-symbols-subset'
     link.rel = 'stylesheet'
     link.href = href
     link.media = 'print'

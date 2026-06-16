@@ -41,7 +41,7 @@ export type MobilePostAuthRoute =
   | { kind: 'onboarding' }
   | { kind: 'contest' }
   | { kind: 'follow'; username: string }
-  | { kind: 'pin'; slug: string }
+  | { kind: 'foto'; slug: string }
   | { kind: 'feed' }
 
 export function resolveMobilePostAuthRoute(
@@ -52,8 +52,8 @@ export function resolveMobilePostAuthRoute(
   if (pending?.type === 'contest') return { kind: 'contest' }
   if (pending?.type === 'follow') return { kind: 'follow', username: pending.resourceId }
 
-  const pinSlug = pending?.metadata?.pinSlug || pending?.resourceId
-  if (pinSlug && pending) return { kind: 'pin', slug: pinSlug }
+  const fotoSlug = pending?.metadata?.fotoSlug || pending?.resourceId
+  if (fotoSlug && pending) return { kind: 'foto', slug: fotoSlug }
 
   return { kind: 'feed' }
 }

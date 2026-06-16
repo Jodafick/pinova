@@ -3,17 +3,17 @@ import { en } from './locales/en'
 import { fr } from './locales/fr'
 import { fon } from './locales/fon'
 import {
-  PINOVA_LANGUAGES,
+  FOTOCE_LANGUAGES,
   detectBrowserLangCode,
   getLanguageMeta,
   isSupportedLang,
   type LangCode,
-  type PinovaLanguage,
+  type FotoceLanguage,
 } from './languages.registry'
 
-export type { LangCode, PinovaLanguage }
+export type { LangCode, FotoceLanguage }
 export {
-  PINOVA_LANGUAGES,
+  FOTOCE_LANGUAGES,
   detectBrowserLangCode,
   getLanguageMeta,
   isSupportedLang,
@@ -23,9 +23,9 @@ export {
   REGION_LABELS,
 } from './languages.registry'
 
-const STORAGE_KEY = 'pinova_web_lang_v1'
+const STORAGE_KEY = 'fotoce_web_lang_v1'
 
-export const languages: PinovaLanguage[] = [...PINOVA_LANGUAGES]
+export const languages: FotoceLanguage[] = [...FOTOCE_LANGUAGES]
 
 const localeModules = import.meta.glob<Record<string, Record<string, string>>>('./locales/*.ts')
 
@@ -125,7 +125,7 @@ export const useI18n = () => {
     return str
   }
 
-  const currentLangMeta = computed(() => getLanguageMeta(currentLang.value) ?? PINOVA_LANGUAGES[1])
+  const currentLangMeta = computed(() => getLanguageMeta(currentLang.value) ?? FOTOCE_LANGUAGES[1])
   const isRtl = computed(() => !!currentLangMeta.value.rtl)
   const browserLang = computed(() => detectBrowserLangCode())
 

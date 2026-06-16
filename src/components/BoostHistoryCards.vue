@@ -57,18 +57,18 @@ const sorted = computed(() => [...props.rows].sort((a, b) => (b.starts_at || '')
       >
         <div class="h-14 w-11 shrink-0 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800">
           <OfflineImg
-            v-if="pinImageBySlug?.[row.pin_slug]"
-            :src="pinImageBySlug[row.pin_slug]"
+            v-if="pinImageBySlug?.[row.foto_slug]"
+            :src="pinImageBySlug[row.foto_slug]"
             :alt="row.pin_title"
             class="w-full h-full object-cover"
           />
           <div v-else class="h-full w-full grid place-items-center text-neutral-300">
-            <PinovaIcon name="image" class="text-xl" />
+            <FotoceIcon name="image" class="text-xl" />
           </div>
         </div>
         <div class="min-w-0 flex-1">
           <div class="flex items-start justify-between gap-2">
-            <p class="text-sm font-semibold truncate">{{ row.pin_title || row.pin_slug }}</p>
+            <p class="text-sm font-semibold truncate">{{ row.pin_title || row.foto_slug }}</p>
             <span class="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase" :class="statusClass(row.status)">
               {{ statusLabel(row.status) }}
             </span>
@@ -82,7 +82,7 @@ const sorted = computed(() => [...props.rows].sort((a, b) => (b.starts_at || '')
             v-if="row.status === 'expired' || row.status === 'canceled'"
             type="button"
             class="mt-2 text-xs font-bold text-pink-700"
-            @click="emit('boost-again', row.pin_slug)"
+            @click="emit('boost-again', row.foto_slug)"
           >
             {{ t('promote.boost.again') }} →
           </button>

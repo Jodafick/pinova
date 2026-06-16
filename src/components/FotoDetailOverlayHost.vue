@@ -3,12 +3,12 @@ import { computed, ref, watch, onActivated, onDeactivated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { PropType } from 'vue'
 import api from '../api/index'
-import type { FeedItem, Pin, User, SponsoredAd } from '../types'
-import { isFeedPin, isSponsoredAd } from '../types'
+import type { FeedItem, Foto, User, SponsoredAd } from '../types'
+import { isFeedFoto, isSponsoredAd } from '../types'
 import { findFeedOverlayIndex, siblingFeedItem } from '../utils/feedOverlayNavigation'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
-import { usePins, getFullMediaUrl, isAlreadyReportedError } from '../composables/usePins'
-import { getCachedPinDetail } from '../lib/cache/pinClientCache'
+import { useFotos, getFullMediaUrl, isAlreadyReportedError } from '../composables/useFotos'
+import { getCachedFotoDetail } from '../lib/cache/fotoClientCache'
 import {
   moderationScanImageFile,
   moderationScanText,
@@ -25,13 +25,13 @@ import { consumePinOverlayOrigin, type PinOverlayOriginRect } from '../utils/pin
 import { shareUrlWithFallback } from '../utils/shareFallback'
 import { safeHttpUrl } from '../utils/safeHttpUrl'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
-import PinDetailMobileFullscreen from './PinDetailMobileFullscreen.vue'
-import PinDetailDesktopModal from './PinDetailDesktopModal.vue'
+import FotoDetailMobileFullscreen from './FotoDetailMobileFullscreen.vue'
+import FotoDetailDesktopModal from './FotoDetailDesktopModal.vue'
 import SponsoredDetailMobileFullscreen from './SponsoredDetailMobileFullscreen.vue'
 import SponsoredDetailDesktopModal from './SponsoredDetailDesktopModal.vue'
 import ReportContentModal from './ReportContentModal.vue'
 import StoryLikersModal from './StoryLikersModal.vue'
-import PromotePinSheet from './PromotePinSheet.vue'
+import PromoteFotoSheet from './PromoteFotoSheet.vue'
 
 type CommentSubmitPayload = {
   text: string
@@ -69,7 +69,7 @@ const props = defineProps({
   feedItems: { type: Array as PropType<FeedItem[]>, default: () => [] },
 })
 
-const pins = computed(() => props.feedItems.filter(isFeedPin))
+const fotos = computed(() => props.feedItems.filter(isFeedFoto))
 
 const route = useRoute()
 const router = useRouter()
@@ -78,8 +78,8 @@ const { showAlert, showPrompt, showConfirm } = useAppModal()
 const { currentUser, isAuthenticated, toggleSavePin, fetchCurrentUser } = useAuth()
 const { promptGuest } = useGuestAuthGate()
 /**
- * Plusieurs pages utilisent KeepAlive et embarquent chacune un PinDetailOverlayHost.
- * Elles partagent la même `route` : sans garde, TOUTES afficheraient l’overlay pour `?pin=`.
+ * Plusieurs pages utilisent KeepAlive et embarquent chacune un FotoDetailOverlayHost.
+ * Elles partagent la même `route` : sans garde, TOUTES afficheraient l’overlay pour `?foto=`.
  */
 const pinOverlayHostPageActive = ref(true)
 
@@ -91,26 +91,26 @@ onDeactivated(() => {
   pinOverlayHostPageActive.value = false
 })
 const {
-  fetchPinBySlug,
+  fetchFotoBySlug,
   fetchComments,
   fetchCommentReplies,
   addComment,
   translateComment,
   toggleCommentLike,
-  translatePinDescription,
-  moderatePinComment,
-  deletePinComment,
-  reportPin,
+  translateFotoDescription,
+  moderateFotoComment,
+  deleteFotoComment,
+  reportFoto,
   reportComment,
   toggleFollow,
-  getPinDownload,
-  trackPinView,
+  getFotoDownload,
+  trackFotoView,
   formatCount,
-} = usePins()
+} = useFotos()
 const { detailVideoPreload, isLowDataMode } = useDataSaver()
 
 const overlaySlug = computed(() => {
-  const raw = route.query.pin
+  const raw = route.query.foto
   return typeof raw === 'string' && raw.trim() ? raw.trim() : ''
 })
 const overlaySponsoredId = computed(() => {
@@ -118,21 +118,21 @@ const overlaySponsoredId = computed(() => {
   return typeof raw === 'string' && raw.trim() ? raw.trim() : ''
 })
 const open = computed(() => !!overlaySlug.value || !!overlaySponsoredId.value)
-const propPin = computed(() => pins.value.find((p) => p.slug === overlaySlug.value) ?? null)
-const fetchedPin = ref<Pin | null>(null)
+const propPin = computed(() => fotos.value.find((p) => p.slug === overlaySlug.value) ?? null)
+const fetchedPin = ref<Foto | null>(null)
 
-/** Grille (aperçu) + réponse `pins/:slug/` : l’API écrase les champs enrichis. */
-function mergeListPinWithDetail(list: Pin | null, detail: Pin | null): Pin | null {
+/** Grille (aperçu) + réponse `fotos/:slug/` : l’API écrase les champs enrichis. */
+function mergeListPinWithDetail(list: Foto | null, detail: Foto | null): Foto | null {
   if (list && detail) return { ...list, ...detail }
   return list ?? detail
 }
 
-const pin = computed(() => {
+const foto = computed(() => {
   const slug = overlaySlug.value
   const detail = fetchedPin.value?.slug === slug ? fetchedPin.value : null
   return mergeListPinWithDetail(propPin.value, detail)
 })
-const activePin = computed(() => pin.value)
+const activePin = computed(() => foto.value)
 const activeSponsoredAd = computed((): SponsoredAd | null => {
   const id = overlaySponsoredId.value
   if (!id) return null
@@ -154,7 +154,7 @@ const showOverlayLoading = computed(
 )
 const activeFeedIndex = computed(() =>
   findFeedOverlayIndex(props.feedItems, {
-    pin: overlaySlug.value,
+    foto: overlaySlug.value,
     sponsored: overlaySponsoredId.value,
   }),
 )
@@ -165,11 +165,11 @@ const hasNextFeed = computed(() => {
 })
 const previousPin = computed(() => {
   const prev = siblingFeedItem(props.feedItems, activeFeedIndex.value, -1)
-  return prev && isFeedPin(prev) ? prev : null
+  return prev && isFeedFoto(prev) ? prev : null
 })
 const nextPin = computed(() => {
   const n = siblingFeedItem(props.feedItems, activeFeedIndex.value, 1)
-  return n && isFeedPin(n) ? n : null
+  return n && isFeedFoto(n) ? n : null
 })
 
 const detailImageFetchPriority = computed(() => (isLowDataMode.value ? 'low' : 'high'))
@@ -208,7 +208,7 @@ const followingAuthor = ref(false)
 const translatingDescription = ref(false)
 const submittingComment = ref(false)
 const reportModalOpen = ref(false)
-const reportTarget = ref<'pin' | 'comment'>('pin')
+const reportTarget = ref<'foto' | 'comment'>('foto')
 const reportCommentId = ref<number | null>(null)
 const promoteSheetOpen = ref(false)
 
@@ -224,7 +224,7 @@ function usernamesMatch(a?: string | null, b?: string | null) {
 }
 
 function replaceOverlaySlug(slug: string) {
-  const nextQuery: Record<string, string | string[] | undefined> = { ...route.query, pin: slug }
+  const nextQuery: Record<string, string | string[] | undefined> = { ...route.query, foto: slug }
   delete nextQuery.sponsored
   router.replace({ path: route.path, query: nextQuery })
 }
@@ -296,27 +296,27 @@ async function loadComments(reset = true) {
   if (response.next) commentsPage.value = pageToFetch + 1
 }
 
-async function resolveOverlayPin(slug: string) {
-  const fromList = pins.value.find((p) => p.slug === slug) ?? null
-  const fromCache = getCachedPinDetail(slug)
+async function resolveOverlayFoto(slug: string) {
+  const fromList = fotos.value.find((p) => p.slug === slug) ?? null
+  const fromCache = getCachedFotoDetail(slug)
   fetchedPin.value = fromCache ?? null
   const mergedPreview = mergeListPinWithDetail(fromList, fromCache)
   descriptionText.value = mergedPreview?.description || ''
   descriptionTranslated.value = false
   richComments.value = []
   commentsTotalCount.value = 0
-  void trackPinView(slug)
+  void trackFotoView(slug)
   const commentsTask = loadComments(true).catch((e) => {
     console.error('Erreur commentaires overlay', e)
   })
   try {
-    const full = await fetchPinBySlug(slug, { force: false })
+    const full = await fetchFotoBySlug(slug, { force: false })
     if (overlaySlug.value === slug) {
       fetchedPin.value = full
       descriptionText.value = full.description ?? descriptionText.value
     }
   } catch (err) {
-    console.error('Erreur chargement overlay pin', err)
+    console.error('Erreur chargement overlay foto', err)
     const detail = fetchedPin.value?.slug === slug ? fetchedPin.value : null
     if (!mergeListPinWithDetail(fromList, detail)) closeOverlay()
   }
@@ -328,7 +328,7 @@ watch(
   ([slug, active]) => {
     if (!slug || !active) return
     openingOriginRect.value = consumePinOverlayOrigin(slug)
-    void resolveOverlayPin(slug)
+    void resolveOverlayFoto(slug)
   },
   { immediate: true },
 )
@@ -340,7 +340,7 @@ function siblingFeed(direction: 1 | -1): FeedItem | null {
 function handleAdjacent(direction: 1 | -1) {
   const next = siblingFeed(direction)
   if (!next) return
-  if (isFeedPin(next)) replaceOverlaySlug(next.slug)
+  if (isFeedFoto(next)) replaceOverlaySlug(next.slug)
   else if (isSponsoredAd(next)) replaceOverlaySponsored(next.id)
 }
 
@@ -357,13 +357,13 @@ async function handleLike() {
   p.stats.reactions = Math.max(0, previousReactions + (p.liked ? 1 : -1))
   likingPin.value = true
   try {
-    const response = await api.post(`pins/${encodeURIComponent(p.slug)}/like/`)
+    const response = await api.post(`fotos/${encodeURIComponent(p.slug)}/like/`)
     p.liked = response.data.status === 'liked'
     p.stats.reactions = response.data.likes_count
   } catch (err) {
     p.liked = previousLiked
     p.stats.reactions = previousReactions
-    console.error('Erreur like pin overlay', err)
+    console.error('Erreur like foto overlay', err)
   } finally {
     likingPin.value = false
   }
@@ -391,18 +391,18 @@ async function handleSave() {
   const previousSaves = p.stats.saves || 0
   p.saved = !previousSaved
   p.stats.saves = Math.max(0, previousSaves + (p.saved ? 1 : -1))
-  toggleSavePin(p.id)
+  toggleSaveFoto(p.id)
   savingPin.value = true
   try {
-    const response = await api.post(`pins/${encodeURIComponent(p.slug)}/save/`)
+    const response = await api.post(`fotos/${encodeURIComponent(p.slug)}/save/`)
     p.saved = response.data.status === 'saved'
     p.stats.saves = response.data.saves_count
     void fetchCurrentUser({ force: true, silent: true })
   } catch (err) {
     p.saved = previousSaved
     p.stats.saves = previousSaves
-    toggleSavePin(p.id)
-    console.error('Erreur sauvegarde overlay pin', err)
+    toggleSaveFoto(p.id)
+    console.error('Erreur sauvegarde overlay foto', err)
   } finally {
     savingPin.value = false
   }
@@ -416,7 +416,7 @@ async function handleFollow() {
     return
   }
   const username = p.username
-  const affected = pins.value.filter((row) => row.username === username)
+  const affected = fotos.value.filter((row) => row.username === username)
   const previous = affected.map((row) => row.isFollowing)
   affected.forEach((row) => {
     row.isFollowing = !row.isFollowing
@@ -428,7 +428,7 @@ async function handleFollow() {
     affected.forEach((row, index) => {
       row.isFollowing = previous[index]
     })
-    console.error('Erreur follow overlay pin', err)
+    console.error('Erreur follow overlay foto', err)
   } finally {
     followingAuthor.value = false
   }
@@ -438,26 +438,26 @@ async function handleShare() {
   const p = activePin.value
   if (!p) return
   const shareTarget = new URL(route.fullPath, window.location.origin)
-  shareTarget.searchParams.set('pin', p.slug)
+  shareTarget.searchParams.set('foto', p.slug)
   await shareUrlWithFallback(
     { showAlert, showPrompt },
     {
       url: shareTarget.toString(),
-      title: p.title || 'Pinova',
+      title: p.title || 'Fotoce',
       text: (p.description || '').slice(0, 280),
-      copiedMessage: t('pin.share.copied'),
+      copiedMessage: t('foto.share.copied'),
       copyErrorMessage: t('profile.share.copyError'),
       copyErrorTitle: t('modal.errorTitle'),
-      manualTitle: t('pin.share.manualTitle'),
-      manualBody: t('pin.share.manualBody'),
+      manualTitle: t('foto.share.manualTitle'),
+      manualBody: t('foto.share.manualBody'),
     },
   )
   if (isAuthenticated.value) {
     try {
-      const response = await api.post(`pins/${encodeURIComponent(p.slug)}/record-share/`)
+      const response = await api.post(`fotos/${encodeURIComponent(p.slug)}/record-share/`)
       p.stats.shares = response.data?.shares_count ?? (p.stats.shares || 0) + 1
     } catch (err) {
-      console.warn('Erreur compteur partage overlay pin', err)
+      console.warn('Erreur compteur partage overlay foto', err)
     }
   }
 }
@@ -473,16 +473,16 @@ async function handleDownload() {
   try {
     const plan = currentUser.value?.subscription?.plan || 'free'
     const quality = plan === 'pro' ? 'hd' : 'standard'
-    const result = await getPinDownload(p.slug, quality)
+    const result = await getFotoDownload(p.slug, quality)
     const dl = safeHttpUrl(result.download_url)
     if (!dl) {
-      await showAlert(t('pin.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
+      await showAlert(t('foto.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
       return
     }
     window.open(dl, '_blank', 'noopener,noreferrer')
   } catch (err) {
-    console.error('Erreur téléchargement overlay pin', err)
-    await showAlert(t('pin.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
+    console.error('Erreur téléchargement overlay foto', err)
+    await showAlert(t('foto.download.error'), { variant: 'danger', title: t('modal.errorTitle') })
   } finally {
     downloadingPin.value = false
   }
@@ -494,7 +494,7 @@ async function handleTranslateDescription() {
   if (!isAuthenticated.value) {
     promptGuest('translate', {
       resourceId: p.slug,
-      metadata: { target: 'description', lang: targetLang.value, pinSlug: p.slug },
+      metadata: { target: 'description', lang: targetLang.value, fotoSlug: p.slug },
     })
     return
   }
@@ -505,7 +505,7 @@ async function handleTranslateDescription() {
   }
   translatingDescription.value = true
   try {
-    const result = await translatePinDescription(p.slug, targetLang.value)
+    const result = await translateFotoDescription(p.slug, targetLang.value)
     descriptionText.value = result?.translated || p.description
     descriptionTranslated.value = !!result?.translated && result.translated.trim() !== p.description.trim()
   } finally {
@@ -533,7 +533,7 @@ async function handleRichSubmit(payload: CommentSubmitPayload) {
   }
   if (p.canComment === false) {
     await showAlert(
-      p.commentsPolicy === 'closed' ? t('pin.comments.closedBanner') : t('pin.comments.followersOnlyBanner'),
+      p.commentsPolicy === 'closed' ? t('foto.comments.closedBanner') : t('foto.comments.followersOnlyBanner'),
       { variant: 'info' },
     )
     return
@@ -583,7 +583,7 @@ function handleLikeComment(id: number) {
   if (!isAuthenticated.value) {
     promptGuest('like', {
       resourceId: String(id),
-      metadata: { scope: 'comment', pinSlug: activePin.value?.slug },
+      metadata: { scope: 'comment', fotoSlug: activePin.value?.slug },
     })
     return
   }
@@ -621,7 +621,7 @@ async function handleTranslateComment(id: number) {
     if (!slug) return
     promptGuest('translate', {
       resourceId: String(id),
-      metadata: { target: 'comment', commentId: id, lang: targetLang.value, pinSlug: slug },
+      metadata: { target: 'comment', commentId: id, lang: targetLang.value, fotoSlug: slug },
     })
     return
   }
@@ -680,14 +680,14 @@ async function handleModerateComment(commentId: number, hidden: boolean) {
   const p = activePin.value
   if (!p) return
   try {
-    await moderatePinComment(p.slug, commentId, hidden)
+    await moderateFotoComment(p.slug, commentId, hidden)
     await loadComments(true)
   } catch {
     await showAlert(t('comment.moderation.error'), { variant: 'danger', title: t('modal.errorTitle') })
   }
 }
 
-function openReportPin() {
+function openReportFoto() {
   if (!activePin.value || !isAuthenticated.value) {
     promptGuest('generic')
     return
@@ -696,7 +696,7 @@ function openReportPin() {
     void showAlert(t('moderation.reportOwnDisabled'), { variant: 'info' })
     return
   }
-  reportTarget.value = 'pin'
+  reportTarget.value = 'foto'
   reportCommentId.value = null
   reportModalOpen.value = true
 }
@@ -715,8 +715,8 @@ async function handleSubmitReport(payload: { category: string; details: string }
   const p = activePin.value
   if (!p) return
   try {
-    if (reportTarget.value === 'pin') {
-      await reportPin(p.slug, payload)
+    if (reportTarget.value === 'foto') {
+      await reportFoto(p.slug, payload)
       p.viewerHasReported = true
     } else if (reportCommentId.value != null) {
       await reportComment(reportCommentId.value, payload)
@@ -748,7 +748,7 @@ async function handleDeleteComment(commentId: number) {
   })
   if (!ok) return
   try {
-    await deletePinComment(p.slug, commentId)
+    await deleteFotoComment(p.slug, commentId)
     await loadComments(true)
   } catch {
     await showAlert(t('comment.delete.error'), { variant: 'danger', title: t('modal.errorTitle') })
@@ -760,15 +760,15 @@ async function handleDeleteComment(commentId: number) {
   <Teleport to="body">
   <div
     v-if="showOverlayLoading"
-    class="fixed inset-0 z-[var(--pinova-z-pin-overlay,80)] flex items-center justify-center bg-black/85"
+    class="fixed inset-0 z-[var(--fotoce-z-foto-overlay,80)] flex items-center justify-center bg-black/85"
     aria-busy="true"
     :aria-label="t('common.loading')"
   >
-    <PinovaIcon name="progress_activity" spin class="text-4xl text-white/90 animate-spin" />
+    <FotoceIcon name="progress_activity" spin class="text-4xl text-white/90 animate-spin" />
   </div>
   </Teleport>
 
-    <PinDetailMobileFullscreen
+    <FotoDetailMobileFullscreen
       v-if="showPinOverlayUi && activePin"
       :pin="activePin"
     :previous-pin="previousPin"
@@ -778,7 +778,7 @@ async function handleDeleteComment(commentId: number) {
     :opening-origin-rect="openingOriginRect"
     :current-user="currentUser as User | null"
     :is-authenticated="isAuthenticated"
-    :is-pin-owner="isPinOwner"
+    :is-foto-owner="isPinOwner"
     :viewer-can-comment="viewerCanComment"
     :viewer-can-reveal-sensitive="viewerCanRevealSensitive"
     :blur-sensitive-by-default="blurSensitiveByDefault"
@@ -820,14 +820,14 @@ async function handleDeleteComment(commentId: number) {
     @prev-pin="handleAdjacent(-1)"
   />
 
-    <PinDetailDesktopModal
+    <FotoDetailDesktopModal
       v-if="showPinOverlayUi && activePin"
       :pin="activePin"
     :can-navigate-previous="hasPreviousFeed"
     :can-navigate-next="hasNextFeed"
     :current-user="currentUser as User | null"
     :is-authenticated="isAuthenticated"
-    :is-pin-owner="isPinOwner"
+    :is-foto-owner="isPinOwner"
     :viewer-can-comment="viewerCanComment"
     :viewer-can-reveal-sensitive="viewerCanRevealSensitive"
     :blur-sensitive-by-default="blurSensitiveByDefault"
@@ -900,7 +900,7 @@ async function handleDeleteComment(commentId: number) {
     @submit="handleSubmitReport"
   />
 
-  <PromotePinSheet
+  <PromoteFotoSheet
     v-if="activePin"
     :open="promoteSheetOpen"
     :pin-slug="activePin.slug"

@@ -8,7 +8,7 @@ const { t } = useI18n()
   <div
     class="app-skeleton-wave w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12"
     role="status"
-    :aria-label="t('pin.edit.loadingSkeleton')"
+    :aria-label="t('foto.edit.loadingSkeleton')"
   >
     <!-- Header (comme création / édition réelle) -->
     <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between mb-8">

@@ -1,8 +1,8 @@
 /**
- * Colors — palette Pinova définitive (rose accent + neutres OLED-friendly).
+ * Colors — palette Fotoce définitive (rose accent + neutres OLED-friendly).
  *
  * Principes :
- *  - Rose Pinova en accent unique, jamais dilué (consistance brand)
+ *  - Rose Fotoce en accent unique, jamais dilué (consistance brand)
  *  - Neutres iOS-like : gris légèrement teintés rose (apporte chaleur)
  *  - Dark mode OLED : noir profond (#050507) + grays calibrés pour AMOLED
  *    (jamais "gris plat", toujours subtilement teinté)
@@ -18,7 +18,7 @@ export interface ColorSwatch {
   dark: string
 }
 
-/** Rose Pinova — DNA de la marque. */
+/** Rose Fotoce — DNA de la marque. */
 export const ROSE = {
   /** Hover ultra-clair, fond rose subtil. */
   50:  '#fff1f5',
@@ -44,7 +44,7 @@ export const ROSE = {
 
 /**
  * Neutres iOS — légèrement teintés warm pour éviter le gris plat clinique.
- * Hue ~ 14° (tendance vers le rose Pinova) — donne cohérence brand.
+ * Hue ~ 14° (tendance vers le rose Fotoce) — donne cohérence brand.
  */
 export const NEUTRAL = {
   0:    '#ffffff',  /* Pure white. */
@@ -89,7 +89,7 @@ export const OLED = {
   borderHigh:   '#3a373d',
   /** Highlight (inset top, 1px). */
   highlight:    'rgba(255, 255, 255, 0.06)',
-  /** Highlight rose (cards Pinova featured). */
+  /** Highlight rose (cards Fotoce featured). */
   highlightRose: 'rgba(255, 145, 180, 0.04)',
 } as const
 
@@ -119,7 +119,7 @@ export const SEMANTIC: Record<string, ColorSwatch> = {
   'border-rose':         { light: ROSE[200],    dark: 'rgba(255, 145, 180, 0.22)' },
   'border-focus':        { light: ROSE[400],    dark: ROSE[400] },
 
-  /* Accent (rose Pinova) */
+  /* Accent (rose Fotoce) */
   'accent-default':      { light: ROSE[500],    dark: ROSE[400] },
   'accent-hover':        { light: ROSE[400],    dark: ROSE[300] },
   'accent-pressed':      { light: ROSE[600],    dark: ROSE[500] },
@@ -149,7 +149,7 @@ export const SEMANTIC: Record<string, ColorSwatch> = {
  * Format CSS direct pour usage immédiat en `background:`.
  */
 export const GRADIENTS = {
-  /** CTA principal Pinova (rose chaud → magenta). */
+  /** CTA principal Fotoce (rose chaud → magenta). */
   primary:        'linear-gradient(135deg, #ff4d7d 0%, #e0245e 55%, #c11550 100%)',
   /** Variant pressed (un poil plus saturé). */
   primaryPressed: 'linear-gradient(135deg, #e0245e 0%, #c11550 55%, #9d1245 100%)',

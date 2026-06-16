@@ -8,4 +8,4 @@ export {
   type PendingIntentScope,
   type PendingIntentType,
   type GuestAuthPayload,
-} from '@pinova/shared'
+} from '@fotoce/shared'

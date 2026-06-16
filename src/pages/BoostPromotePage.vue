@@ -23,7 +23,7 @@ const {
   campaignPacks,
   history,
   campaigns,
-  myPins,
+  myFotos,
   selectedSlug,
   selectedPin,
   pinsLoading,
@@ -50,7 +50,7 @@ const packageSlug = ref('')
 
 useCampaignDraft({ headline, body, ctaUrl, ctaLabel, packageSlug, targeting })
 
-const pinFromQuery = computed(() => String(route.query.pin || '').trim())
+const pinFromQuery = computed(() => String(route.query.foto || '').trim())
 
 function onCampaignMedia(payload: { file: File | null; previewUrl: string; mediaType: 'image' | 'video'; fileName: string }) {
   mediaFile.value = payload.file
@@ -77,23 +77,23 @@ onMounted(async () => {
 
 async function startBoost(packSlug: string) {
   if (!selectedSlug.value) return
-  trackEvent('boost_started', { pin_slug: selectedSlug.value, package: packSlug })
+  trackEvent('boost_started', { foto_slug: selectedSlug.value, package: packSlug })
   busy.value = true
   try {
-    const res = await api.post(`monetization/pins/${encodeURIComponent(selectedSlug.value)}/boost/`, { package: packSlug })
+    const res = await api.post(`monetization/fotos/${encodeURIComponent(selectedSlug.value)}/boost/`, { package: packSlug })
     const data = res.data as { checkout_url?: string; status?: string }
     if (data.checkout_url) {
       openCheckoutFlow(router, 'boost', data.checkout_url)
       return
     }
     if (data.status === 'active') {
-      await showAlert(t('pin.boost.success'), { variant: 'success' })
+      await showAlert(t('foto.boost.success'), { variant: 'success' })
       await loadCatalog()
       return
     }
-    await showAlert(t('pin.boost.error'), { variant: 'danger' })
+    await showAlert(t('foto.boost.error'), { variant: 'danger' })
   } catch {
-    await showAlert(t('pin.boost.error'), { variant: 'danger' })
+    await showAlert(t('foto.boost.error'), { variant: 'danger' })
   } finally {
     busy.value = false
   }
@@ -117,7 +117,7 @@ async function startCampaign() {
       mediaFile: mediaFile.value,
       mediaType: mediaType.value,
     })
-    const res = await api.post('monetization/pin-promo-campaigns/', fd)
+    const res = await api.post('monetization/foto-promo-campaigns/', fd)
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
       trackEvent('campaign_launched', { package: packageSlug.value, checkout: true })
@@ -142,7 +142,7 @@ async function startCampaign() {
 
 async function togglePause(id: number, status: string) {
   const next = status === 'active' ? 'paused' : 'active'
-  await api.patch(`monetization/pin-promo-campaigns/${id}/`, { status: next })
+  await api.patch(`monetization/foto-promo-campaigns/${id}/`, { status: next })
   await loadCatalog()
 }
 </script>
@@ -175,7 +175,7 @@ async function togglePause(id: number, status: string) {
       <section v-if="tab === 'boost'" class="app-card rounded-2xl p-4 sm:p-6 shadow-lg w-full min-w-0 overflow-hidden">
         <BoostWizardPanel
           :packs="boostPacks"
-          :my-pins="myPins"
+          :my-pins="myFotos"
           :selected-slug="selectedSlug"
           :selected-pin="selectedPin"
           :pins-loading="pinsLoading"
@@ -222,7 +222,7 @@ async function togglePause(id: number, status: string) {
           <div class="flex justify-between gap-2">
             <div class="min-w-0">
               <p class="font-semibold text-sm truncate">{{ c.headline || c.pin_title }}</p>
-              <p class="text-xs text-neutral-500 truncate">{{ c.cta_url || c.pin_slug }} · {{ c.status }}</p>
+              <p class="text-xs text-neutral-500 truncate">{{ c.cta_url || c.foto_slug }} · {{ c.status }}</p>
             </div>
             <button
               v-if="c.status === 'active' || c.status === 'paused'"

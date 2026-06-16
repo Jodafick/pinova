@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * ModalHeader — header iOS-style universel pour `PinovaModal`.
+ * ModalHeader — header iOS-style universel pour `FotoceModal`.
  *
  * Disposition :
  *   ┌────────────────────────────────────────────────┐
@@ -116,7 +116,7 @@ const rootClasses = computed(() => ({
   background-color: rgba(120, 120, 128, 0.36);
   margin: 8px auto 6px auto;
   flex-shrink: 0;
-  transition: background-color var(--pinova-dur-fast, 180ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+  transition: background-color var(--fotoce-dur-fast, 180ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 :global(.dark) .modal-header__handle {
@@ -178,7 +178,7 @@ const rootClasses = computed(() => ({
 
 /*
   Actions iOS — usage `class="modal-header__action"`.
-  Variante primaire `modal-header__action--primary` = rose Pinova.
+  Variante primaire `modal-header__action--primary` = rose Fotoce.
 */
 :deep(.modal-header__action) {
   border: 0;
@@ -187,10 +187,10 @@ const rootClasses = computed(() => ({
   min-height: 44px;
   font-size: 16px;
   font-weight: 500;
-  color: var(--pinova-rose-500, #e0245e);
+  color: var(--fotoce-rose-500, #e0245e);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity var(--pinova-dur-ultraFast, 120ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+  transition: opacity var(--fotoce-dur-ultraFast, 120ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 :deep(.modal-header__action:disabled) {

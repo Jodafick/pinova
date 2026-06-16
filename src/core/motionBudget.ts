@@ -100,7 +100,7 @@ export const motionSaver: Readonly<Ref<boolean>> = saverMode
 export function setMotionSaver(value: boolean): void {
   saverMode.value = value
   if (typeof document !== 'undefined') {
-    document.documentElement.classList.toggle('pinova-motion-saver', value)
+    document.documentElement.classList.toggle('fotoce-motion-saver', value)
   }
 }
 

@@ -17,7 +17,7 @@ const badges = [
       :key="badge.key"
       class="inline-flex items-center gap-1.5 rounded-full border border-neutral-200/80 bg-neutral-50/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300"
     >
-      <PinovaIcon :name="badge.icon" class="text-sm shrink-0" aria-hidden="true" />
+      <FotoceIcon :name="badge.icon" class="text-sm shrink-0" aria-hidden="true" />
       {{ t(badge.key) }}
     </span>
   </div>

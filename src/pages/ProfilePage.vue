@@ -3,11 +3,11 @@ import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watc
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useGuestAuthGate } from '../composables/useGuestAuthGate'
-import { usePins, mapDjangoPinToFrontend, isAlreadyReportedError } from '../composables/usePins'
-import type { User, Pin } from '../types'
-import { isFeedPin } from '../types'
-import PinGrid from '../components/PinGrid.vue'
-import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
+import { useFotos, mapDjangoFotoToFrontend, isAlreadyReportedError } from '../composables/useFotos'
+import type { User, Foto } from '../types'
+import { isFeedFoto } from '../types'
+import FotoGrid from '../components/FotoGrid.vue'
+import FotoDetailOverlayHost from '../components/FotoDetailOverlayHost.vue'
 import ProfileHeaderSkeleton from '../components/ProfileHeaderSkeleton.vue'
 import UserListSkeleton from '../components/UserListSkeleton.vue'
 import CreatorStatsSkeleton from '../components/CreatorStatsSkeleton.vue'
@@ -15,8 +15,8 @@ import StoryViewer from '../components/StoryViewer.vue'
 import StoryRingCover from '../components/StoryRingCover.vue'
 import AvatarDisc from '../components/AvatarDisc.vue'
 import UserSearchPickModal from '../components/UserSearchPickModal.vue'
-import PinovaModal from '../components/ui/PinovaModal.vue'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceModal from '../components/ui/FotoceModal.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 import ReportContentModal from '../components/ReportContentModal.vue'
 import ProfileMobileNavDrawer from '../components/ProfileMobileNavDrawer.vue'
 import { useI18n } from '../i18n'
@@ -29,13 +29,13 @@ import {
   setCachedProfileCreatedFirstPage,
   getSavedPinsPageFromDisk,
   setSavedPinsPageToDisk,
-  getCachedPinDetail,
-} from '../lib/cache/pinClientCache'
+  getCachedFotoDetail,
+} from '../lib/cache/fotoClientCache'
 import {
   prependPublishedPinToProfileGrid,
-  PROFILE_PUBLISH_PIN_QUERY,
+  PROFILE_PUBLISH_FOTO_QUERY,
 } from '../utils/postPublishNavigation'
-import { prefetchPinsMediaForOffline } from '../media/offlineCache'
+import { prefetchFotosMediaForOffline } from '../media/offlineCache'
 import { displayInitials } from '../utils/displayInitials'
 import { shareUrlWithFallback } from '../utils/shareFallback'
 import {
@@ -83,7 +83,7 @@ const {
   declineBoardInvitation,
 } = useAuth()
 const { promptGuest } = useGuestAuthGate()
-const { pins, toggleSave, fetchPins, fetchCreatorStats, reportProfile, blockUser } = usePins()
+const { fotos, toggleSave, fetchFotos, fetchCreatorStats, reportProfile, blockUser } = useFotos()
 
 const profileUser = ref<User | null>(null)
 /** False dès qu'on peut afficher l'identité (cache RAM/disk, ou `currentUser` pour mon profil). Le reste charge en tâche de fond. */
@@ -126,35 +126,35 @@ const profileUnavailableDesc = computed(() => {
 type Tab = 'created' | 'saved'
 const activeTab = ref<Tab>('created')
 
-const profilePins = ref<Pin[]>([])
-const profilePinsLoading = ref(false)
-const profilePinsLoadingMore = ref(false)
-const profilePinsHasMore = ref(true)
-const profilePinsNextPage = ref(1)
+const profileFotos = ref<Foto[]>([])
+const profileFotosLoading = ref(false)
+const profileFotosLoadingMore = ref(false)
+const profileFotosHasMore = ref(true)
+const profileFotosNextPage = ref(1)
 
 async function loadProfilePins(username: string, reset: boolean, opts?: { forceNetwork?: boolean }) {
   if (reset && !opts?.forceNetwork) {
     const pinsCacheKey = profileCreatedPinsCacheKey(username, currentLang.value)
     const warmPins = getCachedProfileCreatedFirstPage(pinsCacheKey)
     if (warmPins) {
-      profilePins.value = warmPins.pins
-      profilePinsHasMore.value = warmPins.hasMore
-      profilePinsNextPage.value = warmPins.nextPage
-      profilePinsLoading.value = false
-      prefetchPinsMediaForOffline(warmPins.pins)
+      profileFotos.value = warmPins.pins
+      profileFotosHasMore.value = warmPins.hasMore
+      profileFotosNextPage.value = warmPins.nextPage
+      profileFotosLoading.value = false
+      prefetchFotosMediaForOffline(warmPins.pins)
       return
     }
-    profilePins.value = []
-    profilePinsNextPage.value = 1
-    profilePinsHasMore.value = true
-    profilePinsLoading.value = true
+    profileFotos.value = []
+    profileFotosNextPage.value = 1
+    profileFotosHasMore.value = true
+    profileFotosLoading.value = true
   } else {
-    if (!profilePinsHasMore.value || profilePinsLoadingMore.value || profilePinsLoading.value) return
-    profilePinsLoadingMore.value = true
+    if (!profileFotosHasMore.value || profileFotosLoadingMore.value || profileFotosLoading.value) return
+    profileFotosLoadingMore.value = true
   }
   try {
-    const page = profilePinsNextPage.value
-    const res = await api.get('pins/', {
+    const page = profileFotosNextPage.value
+    const res = await api.get('fotos/', {
       params: {
         author: username,
         page,
@@ -162,43 +162,43 @@ async function loadProfilePins(username: string, reset: boolean, opts?: { forceN
         lang: currentLang.value,
       },
     })
-    const batch = (res.data.results || []).map(mapDjangoPinToFrontend)
-    profilePins.value.push(...batch)
+    const batch = (res.data.results || []).map(mapDjangoFotoToFrontend)
+    profileFotos.value.push(...batch)
     const hasMore = !!res.data.next
-    profilePinsHasMore.value = hasMore && batch.length > 0
-    if (hasMore && batch.length > 0) profilePinsNextPage.value = page + 1
+    profileFotosHasMore.value = hasMore && batch.length > 0
+    if (hasMore && batch.length > 0) profileFotosNextPage.value = page + 1
 
     if (reset && page === 1) {
       setCachedProfileCreatedFirstPage(
         profileCreatedPinsCacheKey(username, currentLang.value),
-        [...profilePins.value],
-        profilePinsHasMore.value,
-        profilePinsNextPage.value,
+        [...profileFotos.value],
+        profileFotosHasMore.value,
+        profileFotosNextPage.value,
       )
     }
-    prefetchPinsMediaForOffline(batch)
+    prefetchFotosMediaForOffline(batch)
   } catch (err) {
-    console.error('Erreur chargement pins du profil:', err)
+    console.error('Erreur chargement fotos du profil:', err)
     if (reset) {
       const uname = String(username || '').trim()
       if (uname) {
         const warm = getCachedProfileCreatedFirstPage(profileCreatedPinsCacheKey(uname, currentLang.value))
         if (warm) {
-          profilePins.value = warm.pins
-          profilePinsHasMore.value = warm.hasMore
-          profilePinsNextPage.value = warm.nextPage
-          prefetchPinsMediaForOffline(warm.pins)
+          profileFotos.value = warm.pins
+          profileFotosHasMore.value = warm.hasMore
+          profileFotosNextPage.value = warm.nextPage
+          prefetchFotosMediaForOffline(warm.pins)
         } else {
-          profilePins.value = []
+          profileFotos.value = []
         }
       } else {
-        profilePins.value = []
+        profileFotos.value = []
       }
     }
-    profilePinsHasMore.value = false
+    profileFotosHasMore.value = false
   } finally {
-    profilePinsLoading.value = false
-    profilePinsLoadingMore.value = false
+    profileFotosLoading.value = false
+    profileFotosLoadingMore.value = false
   }
 }
 
@@ -219,17 +219,17 @@ async function refreshProfileAfterPinPublish(slug: string) {
     }
     const mePage = currentUser.value.meCreatedPinsPage
     if (mePage?.results?.length) {
-      profilePins.value = [...mePage.results]
-      profilePinsHasMore.value = !!mePage.next
-      profilePinsNextPage.value = profilePinsHasMore.value ? 2 : 1
+      profileFotos.value = [...mePage.results]
+      profileFotosHasMore.value = !!mePage.next
+      profileFotosNextPage.value = profileFotosHasMore.value ? 2 : 1
       setCachedProfileCreatedFirstPage(
         profileCreatedPinsCacheKey(profileUser.value.username, currentLang.value),
-        [...profilePins.value],
-        profilePinsHasMore.value,
-        profilePinsNextPage.value,
+        [...profileFotos.value],
+        profileFotosHasMore.value,
+        profileFotosNextPage.value,
       )
     } else {
-      prependPublishedPinToProfileGrid(profilePins, slug, getCachedPinDetail(slug))
+      prependPublishedPinToProfileGrid(profileFotos, slug, getCachedFotoDetail(slug))
       const uname = profileUser.value.username
       if (uname) await loadProfilePins(uname, true, { forceNetwork: true })
     }
@@ -237,17 +237,17 @@ async function refreshProfileAfterPinPublish(slug: string) {
 }
 
 function publishedPinSlugFromRoute(): string {
-  const raw = route.query[PROFILE_PUBLISH_PIN_QUERY]
+  const raw = route.query[PROFILE_PUBLISH_FOTO_QUERY]
   return typeof raw === 'string' ? raw.trim() : ''
 }
 
-const savedPinsList = ref<Pin[]>([])
-const savedPinsLoading = ref(false)
-const savedPinsLoadingMore = ref(false)
-const savedPinsHasMore = ref(true)
-const savedPinsNextPage = ref(1)
+const savedFotosList = ref<Foto[]>([])
+const savedFotosLoading = ref(false)
+const savedFotosLoadingMore = ref(false)
+const savedFotosHasMore = ref(true)
+const savedFotosNextPage = ref(1)
 /** False jusqu'à ce que l'utilisateur ouvre l'onglet Enregistrés au moins une fois (session profil). */
-const savedPinsEverOpened = ref(false)
+const savedFotosEverOpened = ref(false)
 
 async function loadSavedPins(reset: boolean) {
   if (!currentUser.value) return
@@ -258,24 +258,24 @@ async function loadSavedPins(reset: boolean) {
   if (reset) {
     const fromDisk = getSavedPinsPageFromDisk(diskUser, lang)
     if (offline && fromDisk) {
-      savedPinsList.value = fromDisk.pins.map((p) => ({ ...p }))
-      savedPinsHasMore.value = fromDisk.hasMore
-      savedPinsNextPage.value = fromDisk.nextPage
-      savedPinsLoading.value = false
-      prefetchPinsMediaForOffline(fromDisk.pins)
+      savedFotosList.value = fromDisk.pins.map((p) => ({ ...p }))
+      savedFotosHasMore.value = fromDisk.hasMore
+      savedFotosNextPage.value = fromDisk.nextPage
+      savedFotosLoading.value = false
+      prefetchFotosMediaForOffline(fromDisk.pins)
       return
     }
-    savedPinsList.value = []
-    savedPinsNextPage.value = 1
-    savedPinsHasMore.value = true
-    savedPinsLoading.value = true
+    savedFotosList.value = []
+    savedFotosNextPage.value = 1
+    savedFotosHasMore.value = true
+    savedFotosLoading.value = true
   } else {
-    if (!savedPinsHasMore.value || savedPinsLoadingMore.value || savedPinsLoading.value) return
-    savedPinsLoadingMore.value = true
+    if (!savedFotosHasMore.value || savedFotosLoadingMore.value || savedFotosLoading.value) return
+    savedFotosLoadingMore.value = true
   }
   try {
-    const page = savedPinsNextPage.value
-    const res = await api.get('pins/', {
+    const page = savedFotosNextPage.value
+    const res = await api.get('fotos/', {
       params: {
         saved_by_me: '1',
         page,
@@ -283,35 +283,35 @@ async function loadSavedPins(reset: boolean) {
         lang,
       },
     })
-    const batch = (res.data.results || []).map(mapDjangoPinToFrontend)
-    savedPinsList.value.push(...batch)
+    const batch = (res.data.results || []).map(mapDjangoFotoToFrontend)
+    savedFotosList.value.push(...batch)
     const hasMore = !!res.data.next
-    savedPinsHasMore.value = hasMore && batch.length > 0
-    if (hasMore && batch.length > 0) savedPinsNextPage.value = page + 1
+    savedFotosHasMore.value = hasMore && batch.length > 0
+    if (hasMore && batch.length > 0) savedFotosNextPage.value = page + 1
 
     if (reset && page === 1) {
       setSavedPinsPageToDisk(diskUser, lang, {
-        pins: [...savedPinsList.value],
-        hasMore: savedPinsHasMore.value,
-        nextPage: savedPinsNextPage.value,
+        pins: [...savedFotosList.value],
+        hasMore: savedFotosHasMore.value,
+        nextPage: savedFotosNextPage.value,
       })
     }
-    prefetchPinsMediaForOffline(batch)
+    prefetchFotosMediaForOffline(batch)
   } catch (err) {
-    console.error('Erreur chargement pins enregistrés:', err)
+    console.error('Erreur chargement fotos enregistrés:', err)
     const warm = getSavedPinsPageFromDisk(diskUser, lang)
     if (warm) {
-      savedPinsList.value = warm.pins.map((p) => ({ ...p }))
-      savedPinsHasMore.value = warm.hasMore
-      savedPinsNextPage.value = warm.nextPage
-      prefetchPinsMediaForOffline(warm.pins)
+      savedFotosList.value = warm.pins.map((p) => ({ ...p }))
+      savedFotosHasMore.value = warm.hasMore
+      savedFotosNextPage.value = warm.nextPage
+      prefetchFotosMediaForOffline(warm.pins)
     } else if (reset) {
-      savedPinsList.value = []
+      savedFotosList.value = []
     }
-    savedPinsHasMore.value = false
+    savedFotosHasMore.value = false
   } finally {
-    savedPinsLoading.value = false
-    savedPinsLoadingMore.value = false
+    savedFotosLoading.value = false
+    savedFotosLoadingMore.value = false
   }
 }
 
@@ -320,12 +320,12 @@ function loadMoreSavedPins() {
 }
 
 function resetSavedPinsState() {
-  savedPinsEverOpened.value = false
-  savedPinsList.value = []
-  savedPinsNextPage.value = 1
-  savedPinsHasMore.value = true
-  savedPinsLoading.value = false
-  savedPinsLoadingMore.value = false
+  savedFotosEverOpened.value = false
+  savedFotosList.value = []
+  savedFotosNextPage.value = 1
+  savedFotosHasMore.value = true
+  savedFotosLoading.value = false
+  savedFotosLoadingMore.value = false
 }
 
 const profileShareQueryParams = computed(() => {
@@ -402,7 +402,7 @@ async function syncMyBoardsFromApi() {
     profileUser.value.boards = myBoards.map((board: any) => ({
       id: board.id,
       name: board.name,
-      pinCount: board.pin_count ?? board.pinCount ?? 0,
+      fotoCount: board.pin_count ?? board.fotoCount ?? 0,
       isPrivate: board.is_private ?? board.isPrivate ?? false,
       isOwner: board.is_owner !== false,
       ownerUsername:
@@ -429,7 +429,7 @@ const loadProfile = async () => {
 
   /** Hydrate `currentUser` une fois si JWT présent — nécessaire pour savoir si `/profile/:user` est « mon » profil. */
   const hasToken =
-    typeof window !== 'undefined' && !!window.localStorage.getItem('pinova_token')
+    typeof window !== 'undefined' && !!window.localStorage.getItem('fotoce_token')
   if (hasToken && !currentUser.value) {
     loading.value = true
     await fetchCurrentUser({ silent: true }).catch(() => undefined)
@@ -508,28 +508,28 @@ const loadProfile = async () => {
     const savedHydrated = isMyProfile.value && cu?.meSavedPinsPage != null
 
     if (createdHydrated) {
-      profilePins.value = [...(cu!.meCreatedPinsPage!.results || [])]
-      profilePinsHasMore.value = !!cu!.meCreatedPinsPage!.next
-      profilePinsNextPage.value = profilePinsHasMore.value ? 2 : 1
-      profilePinsLoading.value = false
+      profileFotos.value = [...(cu!.meCreatedPinsPage!.results || [])]
+      profileFotosHasMore.value = !!cu!.meCreatedPinsPage!.next
+      profileFotosNextPage.value = profileFotosHasMore.value ? 2 : 1
+      profileFotosLoading.value = false
       setCachedProfileCreatedFirstPage(
         profileCreatedPinsCacheKey(uname, currentLang.value),
-        [...profilePins.value],
-        profilePinsHasMore.value,
-        profilePinsNextPage.value,
+        [...profileFotos.value],
+        profileFotosHasMore.value,
+        profileFotosNextPage.value,
       )
     } else {
       await loadProfilePins(uname, true)
     }
 
     if (savedHydrated) {
-      savedPinsList.value = [...(cu!.meSavedPinsPage!.results || [])]
-      savedPinsHasMore.value = !!cu!.meSavedPinsPage!.next
-      savedPinsNextPage.value = savedPinsHasMore.value ? 2 : 1
-      savedPinsEverOpened.value = true
+      savedFotosList.value = [...(cu!.meSavedPinsPage!.results || [])]
+      savedFotosHasMore.value = !!cu!.meSavedPinsPage!.next
+      savedFotosNextPage.value = savedFotosHasMore.value ? 2 : 1
+      savedFotosEverOpened.value = true
     }
   } else {
-    profilePins.value = []
+    profileFotos.value = []
   }
 }
 
@@ -641,7 +641,7 @@ const handleFollow = async () => {
 
 onMounted(async () => {
   await loadProfile()
-  if (pins.value.length === 0) fetchPins()
+  if (fotos.value.length === 0) fetchFotos()
   await nextTick()
   attachInfiniteScroll()
 })
@@ -652,7 +652,7 @@ watch([() => route.params.username, () => route.query.share], () => {
 })
 
 watch(
-  () => route.query[PROFILE_PUBLISH_PIN_QUERY],
+  () => route.query[PROFILE_PUBLISH_FOTO_QUERY],
   (raw) => {
     const slug = typeof raw === 'string' ? raw.trim() : ''
     if (slug) void refreshProfileAfterPinPublish(slug)
@@ -671,13 +671,13 @@ watch(isMyProfile, (mine) => {
 watch(currentLang, () => {
   const uname = profileUser.value?.username
   if (uname) void loadProfilePins(uname, true)
-  if (savedPinsEverOpened.value && isMyProfile.value && currentUser.value) void loadSavedPins(true)
+  if (savedFotosEverOpened.value && isMyProfile.value && currentUser.value) void loadSavedPins(true)
 })
 watch(activeTab, (tab) => {
-  if (tab === 'saved' && isMyProfile.value && currentUser.value && !savedPinsEverOpened.value) {
-    savedPinsEverOpened.value = true
+  if (tab === 'saved' && isMyProfile.value && currentUser.value && !savedFotosEverOpened.value) {
+    savedFotosEverOpened.value = true
     // Données déjà hydratées depuis `GET me/` : pas refetch inutile
-    if (savedPinsList.value.length === 0) void loadSavedPins(true)
+    if (savedFotosList.value.length === 0) void loadSavedPins(true)
   }
 })
 
@@ -685,37 +685,37 @@ const showCreateBoard = ref(false)
 const newBoardName = ref('')
 const newBoardPrivate = ref(false)
 
-const createdPins = computed(() => profilePins.value)
+const createdPins = computed(() => profileFotos.value)
 
-/** Total créations visibles pour le visiteur (API `pins_count`), avec repli prudent. */
-const profilePinsTotalDisplay = computed(() => {
+/** Total créations visibles pour le visiteur (API `fotos_count`), avec repli prudent. */
+const profileFotosTotalDisplay = computed(() => {
   const n = profileUser.value?.pinsCount
   if (typeof n === 'number') return { n, pending: false }
   if (loading.value || !profileUser.value) return { n: null, pending: true }
-  if (profilePinsLoading.value) return { n: null, pending: true }
-  return { n: profilePins.value.length, pending: false }
+  if (profileFotosLoading.value) return { n: null, pending: true }
+  return { n: profileFotos.value.length, pending: false }
 })
 
 const displayPins = computed(() => {
-  return activeTab.value === 'created' ? createdPins.value : savedPinsList.value
+  return activeTab.value === 'created' ? createdPins.value : savedFotosList.value
 })
 
 const profileGridLoadingInitial = computed(() => {
   if (displayPins.value.length > 0) return false
-  return activeTab.value === 'created' ? profilePinsLoading.value : savedPinsLoading.value
+  return activeTab.value === 'created' ? profileFotosLoading.value : savedFotosLoading.value
 })
 
 const profileGridLoadingMore = computed(
-  () => profilePinsLoadingMore.value || savedPinsLoadingMore.value,
+  () => profileFotosLoadingMore.value || savedFotosLoadingMore.value,
 )
 
 const showProfileInfiniteSentinel = computed(() => {
   if (displayPins.value.length === 0) return false
   if (activeTab.value === 'created') {
-    return profilePinsHasMore.value || profilePinsLoadingMore.value
+    return profileFotosHasMore.value || profileFotosLoadingMore.value
   }
   if (!isMyProfile.value) return false
-  return savedPinsHasMore.value || savedPinsLoadingMore.value
+  return savedFotosHasMore.value || savedFotosLoadingMore.value
 })
 
 const infiniteScrollSentinel = ref<HTMLElement | null>(null)
@@ -734,11 +734,11 @@ function attachInfiniteScroll() {
     (entries) => {
       if (!entries[0]?.isIntersecting) return
       if (activeTab.value === 'created') {
-        if (profilePinsHasMore.value && !profilePinsLoading.value && !profilePinsLoadingMore.value) {
+        if (profileFotosHasMore.value && !profileFotosLoading.value && !profileFotosLoadingMore.value) {
           loadMoreCreatedPins()
         }
       } else if (activeTab.value === 'saved' && isMyProfile.value) {
-        if (savedPinsHasMore.value && !savedPinsLoading.value && !savedPinsLoadingMore.value) {
+        if (savedFotosHasMore.value && !savedFotosLoading.value && !savedFotosLoadingMore.value) {
           loadMoreSavedPins()
         }
       }
@@ -748,7 +748,7 @@ function attachInfiniteScroll() {
   infiniteScrollObserver.observe(el)
 }
 
-watch([activeTab, () => displayPins.value.length, profilePinsHasMore, savedPinsHasMore], () => {
+watch([activeTab, () => displayPins.value.length, profileFotosHasMore, savedFotosHasMore], () => {
   nextTick(() => attachInfiniteScroll())
 })
 
@@ -788,7 +788,7 @@ onDeactivated(() => {
 
 /*
  * Classes pilotant l'animation off-canvas via du CSS classique défini dans
- * `style.css` (`.pinova-profile-shell` + variante `--open`). Les valeurs
+ * `style.css` (`.fotoce-profile-shell` + variante `--open`). Les valeurs
  * Tailwind arbitraires avec virgules (`translate3d(78vw,18px,0)`) pouvaient
  * être mal générées dans certaines configs Android → shell sans transform,
  * fond blanc qui couvrait toute la page. Le passage en CSS classique
@@ -798,16 +798,17 @@ onDeactivated(() => {
 const profileNavShellSurfaceClass = computed(() => {
   if (!currentUser.value || !isMyProfile.value) return ''
   return profileNavDrawerOpen.value
-    ? 'pinova-profile-shell pinova-profile-shell--open'
-    : 'pinova-profile-shell'
+    ? 'fotoce-profile-shell fotoce-profile-shell--open'
+    : 'fotoce-profile-shell'
 })
 
 const profileNavShellInnerClass = computed(() => '')
 
 /** Espace sous la tab bar mobile (profil connecté / route /profile sans username). */
 const profileMobileTabBarPadClass = computed(() => {
+  if (profileNavDrawerOpen.value) return ''
   const username = String(route.params.username || '').trim()
-  if (!username || isMyProfile.value) return 'pinova-mobile-tab-bar-scroll-pad'
+  if (!username || isMyProfile.value) return 'fotoce-mobile-tab-bar-scroll-pad'
   return ''
 })
 
@@ -839,7 +840,7 @@ const profileNavDrawerViewportClass = computed(() => {
 const profileNavOffcanvasRootClass = computed(() => {
   /* Ancêtre off-canvas : le CSS mobile applique une transformation 2D GPU-safe. */
   if (!currentUser.value || !isMyProfile.value) return ''
-  return 'pinova-profile-offcanvas-root'
+  return 'fotoce-profile-offcanvas-root'
 })
 
 watch(
@@ -945,44 +946,44 @@ const handleToggleSave = async (slug: string) => {
     promptGuest('save', { resourceId: slug })
     return
   }
-  const pin =
-    pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug) ||
-    profilePins.value.find((p) => p.slug === slug) ||
-    savedPinsList.value.find((p) => p.slug === slug)
-  if (pin) {
-    toggleSavePin(pin.id)
+  const foto =
+    fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === slug) ||
+    profileFotos.value.find((p) => p.slug === slug) ||
+    savedFotosList.value.find((p) => p.slug === slug)
+  if (foto) {
+    toggleSaveFoto(pin.id)
   }
   try {
     const data = await toggleSave(slug)
-    const idx = savedPinsList.value.findIndex((p) => p.slug === slug)
+    const idx = savedFotosList.value.findIndex((p) => p.slug === slug)
     if (idx !== -1 && data && data.status !== 'saved') {
-      savedPinsList.value.splice(idx, 1)
+      savedFotosList.value.splice(idx, 1)
     }
-    const pp = profilePins.value.find((p) => p.slug === slug)
+    const pp = profileFotos.value.find((p) => p.slug === slug)
     if (pp && data) {
       pp.saved = data.status === 'saved'
       if (typeof data.saves_count === 'number') pp.stats.saves = data.saves_count
     }
-    const sp = savedPinsList.value.find((p) => p.slug === slug)
+    const sp = savedFotosList.value.find((p) => p.slug === slug)
     if (sp && data) {
       sp.saved = data.status === 'saved'
       if (typeof data.saves_count === 'number') sp.stats.saves = data.saves_count
     }
   } catch (err) {
-    if (pin) {
-      toggleSavePin(pin.id)
+    if (foto) {
+      toggleSaveFoto(pin.id)
     }
-    console.error('Erreur sauvegarde pin', err)
+    console.error('Erreur sauvegarde foto', err)
   }
 }
 
 const openPin = (slug: string) => {
-  router.push({ path: route.path, query: { ...route.query, pin: slug } })
+  router.push({ path: route.path, query: { ...route.query, foto: slug } })
 }
 
 function onPinDeletedFromGrid(slug: string) {
-  profilePins.value = profilePins.value.filter((p) => p.slug !== slug)
-  savedPinsList.value = savedPinsList.value.filter((p) => p.slug !== slug)
+  profileFotos.value = profileFotos.value.filter((p) => p.slug !== slug)
+  savedFotosList.value = savedFotosList.value.filter((p) => p.slug !== slug)
 }
 
 const openFollowersModal = async () => {
@@ -1092,7 +1093,7 @@ type BoardSuggestions = {
 }
 
 const boardSuggestions = ref<BoardSuggestions | null>(null)
-const activeStories = ref<Pin[]>([])
+const activeStories = ref<Foto[]>([])
 const storyViewerOpen = ref(false)
 const storyViewerInitialIndex = ref(0)
 const storyViewerInitialSegmentElapsed = ref(0)
@@ -1133,7 +1134,7 @@ function openStoryViewer() {
 }
 
 const organizeBoardId = ref<number | null>(null)
-const organizePins = ref<
+const organizeFotos = ref<
   Array<{ id: number; slug: string; title: string; image: string; position: number; scheduled_publish_at?: string | null }>
 >([])
 const organizeLoading = ref(false)
@@ -1156,10 +1157,10 @@ async function loadActiveStories(opts?: { force?: boolean }) {
     }
   }
   try {
-    const res = await api.get('pins/active-stories/', { params: { username: uname } })
-    const pins = (res.data.pins || []).map(mapDjangoPinToFrontend)
+    const res = await api.get('fotos/active-stories/', { params: { username: uname } })
+    const fotos = (res.data.pins || []).map(mapDjangoFotoToFrontend)
     activeStories.value = pins
-    setCachedProfileActiveStories(uname, pins)
+    setCachedProfileActiveStories(uname, fotos)
   } catch {
     activeStories.value = []
   }
@@ -1180,11 +1181,11 @@ async function openOrganizeBoard(boardId: number) {
   organizeTouchFrom.value = null
   organizeBoardId.value = boardId
   organizeLoading.value = true
-  organizePins.value = []
+  organizeFotos.value = []
   dragOrganizeIndex.value = null
   try {
-    const res = await api.get(`boards/${boardId}/ordered-pins/`)
-    organizePins.value = [...(res.data.pins || [])]
+    const res = await api.get(`boards/${boardId}/ordered-fotos/`)
+    organizeFotos.value = [...(res.data.pins || [])]
   } catch (err) {
     console.error(err)
     organizeBoardId.value = null
@@ -1200,7 +1201,7 @@ function closeOrganizeBoard() {
   organizeTouchFrom.value = null
   dragOrganizeIndex.value = null
   organizeBoardId.value = null
-  organizePins.value = []
+  organizeFotos.value = []
 }
 
 function onOrganizeSheetOpenUpdate(open: boolean) {
@@ -1234,13 +1235,13 @@ function onOrganizeHandlePointerDownProfile(e: PointerEvent, idx: number) {
   }
 }
 
-function reorderOrganizePinRowsProfile(from: number, to: number) {
+function reorderOrganizeFotoRowsProfile(from: number, to: number) {
   if (from === to) return
-  const arr = [...organizePins.value]
+  const arr = [...organizeFotos.value]
   const moved = arr.splice(from, 1)[0]
   if (moved === undefined) return
   arr.splice(to, 0, moved)
-  organizePins.value = arr
+  organizeFotos.value = arr
 }
 
 function onOrganizeRowPointerMoveProfile(e: PointerEvent) {
@@ -1254,7 +1255,7 @@ function onOrganizeRowPointerMoveProfile(e: PointerEvent) {
   if (!Number.isFinite(to)) return
   const from = organizeTouchFrom.value
   if (from === to) return
-  reorderOrganizePinRowsProfile(from, to)
+  reorderOrganizeFotoRowsProfile(from, to)
   organizeTouchFrom.value = to
 }
 
@@ -1268,8 +1269,8 @@ async function saveBoardOrder() {
   if (!organizeBoardId.value) return
   organizeSaving.value = true
   try {
-    await api.post(`boards/${organizeBoardId.value}/reorder-pins/`, {
-      pin_ids: organizePins.value.map((p) => p.id),
+    await api.post(`boards/${organizeBoardId.value}/reorder-fotos/`, {
+      foto_ids: organizeFotos.value.map((p) => p.id),
     })
     closeOrganizeBoard()
   } catch (err: any) {
@@ -1285,8 +1286,8 @@ async function saveBoardOrder() {
 function onOrganizeDragStart(index: number, event: DragEvent) {
   dragOrganizeIndex.value = index
   try {
-    event.dataTransfer?.setData('text/plain', `pinova-organize:${index}`)
-    event.dataTransfer?.setData('application/x-pinova-board-organize', String(index))
+    event.dataTransfer?.setData('text/plain', `fotoce-organize:${index}`)
+    event.dataTransfer?.setData('application/x-fotoce-board-organize', String(index))
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
   } catch {
     /* ignore */
@@ -1306,7 +1307,7 @@ function onOrganizeDrop(index: number) {
   const from = dragOrganizeIndex.value
   dragOrganizeIndex.value = null
   if (from === null || from === index) return
-  reorderOrganizePinRowsProfile(from, index)
+  reorderOrganizeFotoRowsProfile(from, index)
 }
 
 function applyBoardSuggestionName(name: string) {
@@ -1334,7 +1335,7 @@ async function handleShareProfile() {
     } else {
       url = window.location.href
     }
-    const title = `${profileUser.value.displayName} — Pinova`
+    const title = `${profileUser.value.displayName} — Fotoce`
     const text = (profileUser.value.bio || '').slice(0, 220)
     await shareUrlWithFallback(
       { showAlert, showPrompt },
@@ -1345,8 +1346,8 @@ async function handleShareProfile() {
         copiedMessage: t('profile.share.copied'),
         copyErrorMessage: t('profile.share.copyError'),
         copyErrorTitle: t('modal.errorTitle'),
-        manualTitle: t('pin.share.manualTitle'),
-        manualBody: t('pin.share.manualBody'),
+        manualTitle: t('foto.share.manualTitle'),
+        manualBody: t('foto.share.manualBody'),
       },
     )
   } catch {
@@ -1369,13 +1370,13 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       { showAlert, showPrompt },
       {
         url,
-        title: `${board.name} — Pinova`,
+        title: `${board.name} — Fotoce`,
         text: `@${ownerU}`,
         copiedMessage: t('profile.share.boardCopied'),
         copyErrorMessage: t('profile.share.copyError'),
         copyErrorTitle: t('modal.errorTitle'),
-        manualTitle: t('pin.share.manualTitle'),
-        manualBody: t('pin.share.manualBody'),
+        manualTitle: t('foto.share.manualTitle'),
+        manualBody: t('foto.share.manualBody'),
       },
     )
   } catch {
@@ -1387,7 +1388,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 <template>
   <div
     v-if="loading"
-    :class="['pinova-route-natural-height app-skeleton-wave w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12', profileMobileTabBarPadClass]"
+    :class="['fotoce-route-natural-height app-skeleton-wave w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12', profileMobileTabBarPadClass]"
   >
     <ProfileHeaderSkeleton />
 
@@ -1414,12 +1415,12 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       />
     </div>
 
-    <PinGrid class="w-full" :pins="[]" loading-initial />
+    <FotoGrid class="w-full" :pins="[]" loading-initial />
   </div>
 
   <div
     v-else-if="profileUser"
-    :class="['pinova-route-natural-height relative w-full min-w-0', profileNavOffcanvasRootClass, profileNavDrawerViewportClass]"
+    :class="['fotoce-route-natural-height relative w-full min-w-0', profileNavOffcanvasRootClass, profileNavDrawerViewportClass]"
   >
     <Teleport to="body">
       <ProfileMobileNavDrawer
@@ -1485,7 +1486,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           role="img"
           :aria-label="t('profile.proBadgeAria')"
         >
-          <PinovaIcon name="verified" class="text-base leading-none" aria-hidden="true" />
+          <FotoceIcon name="verified" class="text-base leading-none" aria-hidden="true" />
         </span>
         {{ profileUser.displayName }}
       </h1>
@@ -1510,7 +1511,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         </button>
         <span class="w-1 h-1 rounded-full bg-neutral-300 dark:bg-neutral-600 shrink-0" aria-hidden="true"></span>
         <span class="inline-flex items-center gap-1">
-          <strong v-if="!profilePinsTotalDisplay.pending" class="text-neutral-900 dark:text-neutral-100">{{ profilePinsTotalDisplay.n }}</strong>
+          <strong v-if="!profileFotosTotalDisplay.pending" class="text-neutral-900 dark:text-neutral-100">{{ profileFotosTotalDisplay.n }}</strong>
           <span
             v-else
             class="inline-block h-5 w-8 rounded-md bg-neutral-200 dark:bg-neutral-700 animate-pulse"
@@ -1522,47 +1523,47 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
       <div class="flex flex-wrap items-center justify-center gap-3 w-full">
         <template v-if="isMyProfile">
-          <PinovaButton variant="secondary" to="/settings" class="text-sm">
+          <FotoceButton variant="secondary" to="/settings" class="text-sm">
             {{ t('profile.editProfile') }}
-          </PinovaButton>
+          </FotoceButton>
         </template>
         <template v-else>
-          <PinovaButton
+          <FotoceButton
             class="text-sm"
             :variant="isFollowing ? 'secondary' : 'primary'"
             :loading="followingProfilePending"
             @click="handleFollow"
           >
-            {{ isFollowing ? t('pin.following') : t('pin.follow') }}
-          </PinovaButton>
+            {{ isFollowing ? t('foto.following') : t('foto.follow') }}
+          </FotoceButton>
         </template>
-        <PinovaButton
+        <FotoceButton
           v-if="isMyProfile"
           variant="secondary"
           to="/premium"
           class="text-sm inline-flex items-center gap-1.5 border-amber-300 text-amber-700 dark:text-amber-300"
         >
-          <PinovaIcon name="workspace_premium" class="text-base" />
+          <FotoceIcon name="workspace_premium" class="text-base" />
           Plan {{ currentPlanLabel }}
-        </PinovaButton>
-        <PinovaButton
+        </FotoceButton>
+        <FotoceButton
           variant="ghost"
           size="icon"
           :aria-label="t('profile.share.profileTitle')"
           @click="handleShareProfile"
         >
-          <PinovaIcon name="share" />
-        </PinovaButton>
+          <FotoceIcon name="share" />
+        </FotoceButton>
         <div v-if="currentUser && !isMyProfile && profileUser" ref="profileMoreMenuTriggerRef" class="relative flex items-center">
-          <PinovaButton
+          <FotoceButton
             variant="ghost"
             size="icon"
             :aria-expanded="profileMoreMenuOpen"
             :aria-label="t('profile.moreAriaLabel')"
             @click.stop="profileMoreMenuOpen = !profileMoreMenuOpen"
           >
-            <PinovaIcon name="more_horiz" class="text-[22px]" />
-          </PinovaButton>
+            <FotoceIcon name="more_horiz" class="text-[22px]" />
+          </FotoceButton>
         </div>
       </div>
     </section>
@@ -1578,7 +1579,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         <div v-if="boardSuggestions.new_board_hints?.length" class="mb-3">
           <p class="text-[11px] text-neutral-500 dark:text-neutral-400 mb-1">{{ t('profile.boards.suggestionsNew') }}</p>
           <div class="flex flex-wrap gap-2">
-            <PinovaButton
+            <FotoceButton
               v-for="hint in boardSuggestions.new_board_hints"
               :key="hint.topic_slug + hint.name"
               variant="secondary"
@@ -1587,7 +1588,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               @click="applyBoardSuggestionName(hint.name)"
             >
               + {{ hint.name }}
-            </PinovaButton>
+            </FotoceButton>
           </div>
         </div>
         <div v-if="boardSuggestions.existing_boards?.length">
@@ -1658,7 +1659,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           class="app-card-soft shrink-0 w-56 sm:w-64 snap-start border-2 border-dashed rounded-2xl aspect-[4/3] flex flex-col items-center justify-center gap-2 app-text-muted hover:border-pink-300 hover:text-pink-800 transition"
           @click="showCreateBoard = true"
         >
-          <PinovaIcon name="add" class="text-3xl" />
+          <FotoceIcon name="add" class="text-3xl" />
           <span class="text-sm font-medium">{{ t('profile.boards.new') }}</span>
         </button>
         <div
@@ -1685,13 +1686,13 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               v-else
               class="col-span-2 row-span-2 flex items-center justify-center bg-neutral-100 text-neutral-400"
             >
-              <PinovaIcon name="collections" class="text-4xl" />
+              <FotoceIcon name="collections" class="text-4xl" />
             </div>
           </div>
           <div class="absolute inset-0 bg-gradient-to-t from-neutral-900/72 via-neutral-900/12 to-transparent pointer-events-none"></div>
           <div class="absolute bottom-0 left-0 right-0 p-4 text-white pointer-events-none">
             <p class="font-semibold text-sm drop-shadow-sm">{{ board.name }}</p>
-            <p class="text-xs opacity-90">{{ t('explore.pinsCount', { count: board.pinCount }) }}</p>
+            <p class="text-xs opacity-90">{{ t('explore.pinsCount', { count: board.fotoCount }) }}</p>
             <p v-if="board.collaboratorCount" class="text-[11px] opacity-90">
               {{ board.collaboratorCount }} collab.
             </p>
@@ -1708,18 +1709,18 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               class="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-900/55 dark:bg-neutral-800/75 text-white shadow-md"
               :title="t('board.private')"
             >
-              <PinovaIcon name="lock" class="text-base" />
+              <FotoceIcon name="lock" class="text-base" />
             </span>
-            <PinovaButton
+            <FotoceButton
               variant="secondary"
               size="icon"
               :aria-label="t('profile.share.boardTitle')"
               @click.stop="shareBoardLink(board)"
             >
-              <PinovaIcon name="ios_share" class="text-lg" />
-            </PinovaButton>
+              <FotoceIcon name="ios_share" class="text-lg" />
+            </FotoceButton>
           </div>
-          <PinovaButton
+          <FotoceButton
             v-if="isMyProfile && board.isOwner !== false"
             variant="secondary"
             size="icon"
@@ -1727,9 +1728,9 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             :aria-label="t('profile.boards.reorganize')"
             @click.stop="openOrganizeBoard(board.id)"
           >
-            <PinovaIcon name="drag_indicator" class="text-lg" />
-          </PinovaButton>
-          <PinovaButton
+            <FotoceIcon name="drag_indicator" class="text-lg" />
+          </FotoceButton>
+          <FotoceButton
             v-if="isMyProfile && currentPlan !== 'free' && board.isOwner !== false"
             variant="secondary"
             size="sm"
@@ -1737,14 +1738,14 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             @click.stop="handleInviteCollaborator(board.id)"
           >
             + Collab
-          </PinovaButton>
+          </FotoceButton>
         </div>
 
       </div>
     </section>
 
-    <!-- Réorganiser pins du board — même PinovaModal que sur la page tableau -->
-    <PinovaModal
+    <!-- Réorganiser fotos du board — même FotoceModal que sur la page tableau -->
+    <FotoceModal
       :open="organizeBoardId !== null"
       presentation="tallSheet"
       presentation-lg="center"
@@ -1760,7 +1761,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           :aria-label="t('common.close')"
           @click="closeOrganizeBoard"
         >
-          <PinovaIcon name="close" class="text-[22px] leading-none" />
+          <FotoceIcon name="close" class="text-[22px] leading-none" />
         </button>
       </template>
 
@@ -1771,7 +1772,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         </div>
         <ul v-else class="space-y-2 touch-pan-y">
           <li
-            v-for="(p, idx) in organizePins"
+            v-for="(p, idx) in organizeFotos"
             :key="p.id"
             :data-organize-index="idx"
             class="lux-organize-row !cursor-default touch-pan-y"
@@ -1795,7 +1796,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
             />
             <div class="min-w-0 flex-1">
               <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{{ p.title }}</p>
-              <p v-if="p.scheduled_publish_at" class="text-[10px] text-amber-700 dark:text-amber-400">{{ t('pin.scheduledBadge') }}</p>
+              <p v-if="p.scheduled_publish_at" class="text-[10px] text-amber-700 dark:text-amber-400">{{ t('foto.scheduledBadge') }}</p>
             </div>
             <button
               type="button"
@@ -1806,7 +1807,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
               @dragstart.stop="onOrganizeDragStart(idx, $event)"
               @dragend="onOrganizeDragEnd"
             >
-              <PinovaIcon name="drag_indicator" class="text-[30px] leading-none" aria-hidden="true" />
+              <FotoceIcon name="drag_indicator" class="text-[30px] leading-none" aria-hidden="true" />
             </button>
           </li>
         </ul>
@@ -1814,20 +1815,20 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
 
       <template #footer>
         <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganizeBoard">
+          <FotoceButton variant="secondary" class="w-full sm:w-auto min-h-[44px] sm:min-w-[7rem]" @click="closeOrganizeBoard">
             {{ t('profile.boards.organizeClose') }}
-          </PinovaButton>
-          <PinovaButton
+          </FotoceButton>
+          <FotoceButton
             variant="primary"
             class="w-full sm:w-auto min-h-[44px] sm:min-w-[9rem]"
-            :disabled="organizeSaving || organizeLoading || organizePins.length === 0"
+            :disabled="organizeSaving || organizeLoading || organizeFotos.length === 0"
             @click="saveBoardOrder"
           >
             {{ organizeSaving ? t('common.loading') : t('profile.boards.organizeSave') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
       </template>
-    </PinovaModal>
+    </FotoceModal>
 
     <section
       v-if="isMyProfile && currentPlan === 'pro'"
@@ -1848,7 +1849,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       <CreatorStatsSkeleton v-if="creatorStatsLoading" />
       <div v-else class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
         <div class="rounded-xl bg-neutral-50/80 dark:bg-neutral-800/60 backdrop-blur-md ring-1 ring-black/5 dark:ring-white/5 py-3">
-          <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('creator.kpiPins') }}</p>
+          <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ t('creator.kpiFotos') }}</p>
           <p class="text-lg font-bold text-neutral-900 dark:text-neutral-100">{{ creatorStats?.totals?.pins ?? 0 }}</p>
         </div>
         <div class="rounded-xl bg-neutral-50/80 dark:bg-neutral-800/60 backdrop-blur-md ring-1 ring-black/5 dark:ring-white/5 py-3">
@@ -1870,8 +1871,8 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </div>
     </section>
 
-    <!-- Création tableau — PinovaModal (sheet mobile, centrée desktop) -->
-    <PinovaModal
+    <!-- Création tableau — FotoceModal (sheet mobile, centrée desktop) -->
+    <FotoceModal
       :open="showCreateBoard"
       presentation="bottomSheet"
       presentation-lg="center"
@@ -1907,22 +1908,22 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       </div>
       <template #footer>
         <div class="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <PinovaButton variant="secondary" class="w-full sm:w-auto min-h-[44px]" @click="onCreateBoardOpenChange(false)">
+          <FotoceButton variant="secondary" class="w-full sm:w-auto min-h-[44px]" @click="onCreateBoardOpenChange(false)">
             {{ t('common.cancel') }}
-          </PinovaButton>
-          <PinovaButton
+          </FotoceButton>
+          <FotoceButton
             variant="primary"
             class="w-full sm:w-auto min-h-[44px]"
             :disabled="!canSubmitBoardCreation"
             @click="handleCreateBoard"
           >
             {{ t('profile.boards.modal.create') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
       </template>
-    </PinovaModal>
+    </FotoceModal>
 
-    <PinovaModal
+    <FotoceModal
       :open="showFollowersModal || showFollowingModal"
       presentation="tallSheet"
       presentation-lg="center"
@@ -1956,14 +1957,14 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           </AvatarDisc>
           <div class="min-w-0">
             <p class="text-sm text-neutral-900 dark:text-neutral-100 truncate flex items-center gap-1">
-              <PinovaIcon v-if="item.is_pro" name="verified" class="text-amber-500 text-sm" />
+              <FotoceIcon v-if="item.is_pro" name="verified" class="text-amber-500 text-sm" />
               {{ item.display_name }}
             </p>
             <p class="text-xs text-neutral-500">@{{ item.username }}</p>
           </div>
         </button>
       </template>
-    </PinovaModal>
+    </FotoceModal>
 
     <!-- Tabs -->
     <div class="flex items-center justify-center gap-1 mb-6 border-b border-neutral-100 dark:border-neutral-800">
@@ -1989,7 +1990,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     </div>
 
     <!-- Pins grid -->
-    <PinGrid
+    <FotoGrid
       v-if="displayPins.length > 0 || profileGridLoadingInitial"
       class="w-full"
       :pins="displayPins"
@@ -2001,7 +2002,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
     />
 
     <div v-else-if="displayPins.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
-      <PinovaIcon :name="activeTab === 'created' ? 'add_photo_alternate' : 'bookmark_border'" class="text-5xl text-neutral-300 mb-3" />
+      <FotoceIcon :name="activeTab === 'created' ? 'add_photo_alternate' : 'bookmark_border'" class="text-5xl text-neutral-300 mb-3" />
       <h3 class="text-lg font-semibold text-neutral-700 mb-1">
         {{ activeTab === 'created' ? t('profile.empty.created.title') : t('profile.empty.saved.title') }}
       </h3>
@@ -2013,7 +2014,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         to="/create"
         class="inline-flex px-5 py-2.5 rounded-full bg-pink-700 dark:bg-pink-600 text-white text-sm font-semibold hover:bg-pink-800 dark:hover:opacity-90 transition no-underline"
       >
-        {{ t('home.createPin') }}
+        {{ t('home.createFoto') }}
       </router-link>
       <router-link
         v-else
@@ -2031,7 +2032,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
       aria-hidden="true"
     />
 
-    <PinDetailOverlayHost :feed-items="displayPins" />
+    <FotoDetailOverlayHost :feed-items="displayPins" />
 
     <StoryViewer
       v-if="currentUser && activeStories.length > 0"
@@ -2051,7 +2052,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
         :style="profileMoreMenuFloatingStyles"
         @pointerdown.stop
       >
-        <PinovaButton
+        <FotoceButton
           v-if="!profileUser.viewerHasReportedProfile"
           variant="ghost"
           block
@@ -2060,11 +2061,11 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           @click="profileMoreMenuOpen = false; reportProfileOpen = true"
         >
           {{ t('profile.moreReport') }}
-        </PinovaButton>
+        </FotoceButton>
         <div v-else class="px-3 py-2 text-xs text-neutral-500">
           {{ t('profile.moreAlreadyReported') }}
         </div>
-        <PinovaButton
+        <FotoceButton
           v-if="!isTargetBlocked"
           variant="ghost"
           block
@@ -2074,7 +2075,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
           @click="handleBlockProfile"
         >
           {{ t('profile.moreBlock') }}
-        </PinovaButton>
+        </FotoceButton>
       </div>
     </Teleport>
 
@@ -2097,7 +2098,7 @@ async function shareBoardLink(board: NonNullable<User['boards']>[number]) {
   </div>
 
   <div v-else class="w-full min-w-0 max-w-md mx-auto px-6 py-20 text-center space-y-4">
-    <PinovaIcon name="person_off" class="text-6xl text-neutral-300" />
+    <FotoceIcon name="person_off" class="text-6xl text-neutral-300" />
     <h1 class="text-xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100">{{ profileUnavailableTitle }}</h1>
     <p class="text-sm text-neutral-600 leading-relaxed">{{ profileUnavailableDesc }}</p>
     <div class="flex flex-wrap items-center justify-center gap-3 pt-2">

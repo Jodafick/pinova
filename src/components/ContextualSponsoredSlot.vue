@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import api from '../api/index'
-import { mapSponsoredFromApi } from '../composables/usePins'
+import { mapSponsoredFromApi } from '../composables/useFotos'
 import type { SponsoredAd } from '../types'
 import SponsoredNativeStrip from './SponsoredNativeStrip.vue'
 import { useAuth } from '../composables/useAuth'

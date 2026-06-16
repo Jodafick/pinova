@@ -50,19 +50,19 @@ const chain = computed(() => {
           class="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
           :class="certified ? 'bg-emerald-500' : 'bg-neutral-400'"
         >
-          <PinovaIcon :name="certified ? 'verified' : 'gpp_bad'" class="text-white text-lg fill-1" />
+          <FotoceIcon :name="certified ? 'verified' : 'gpp_bad'" class="text-white text-lg fill-1" />
         </div>
         <div class="text-left min-w-0">
           <p class="text-sm font-bold text-neutral-900 flex items-center gap-1.5">
             {{ t('provenance.title') }}
-            <PinovaIcon name="lock" class="text-xs" :class="certified ? 'text-emerald-600' : 'text-neutral-400'" />
+            <FotoceIcon name="lock" class="text-xs" :class="certified ? 'text-emerald-600' : 'text-neutral-400'" />
           </p>
           <p class="text-[11px] text-neutral-500 truncate">
             {{ t('provenance.subtitle') }}
           </p>
         </div>
       </div>
-      <PinovaIcon name="expand_more" class="text-neutral-400 transition-transform" :class="{ 'rotate-180': open }" />
+      <FotoceIcon name="expand_more" class="text-neutral-400 transition-transform" :class="{ 'rotate-180': open }" />
     </button>
 
     <div v-if="open" class="px-4 pb-4">
@@ -75,7 +75,7 @@ const chain = computed(() => {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
               <p class="text-sm font-bold text-neutral-900">{{ creator }}</p>
-              <PinovaIcon :name="certified ? 'verified' : 'gpp_bad'" class="text-base fill-1" :class="certified ? 'text-emerald-600' : 'text-neutral-400'" />
+              <FotoceIcon :name="certified ? 'verified' : 'gpp_bad'" class="text-base fill-1" :class="certified ? 'text-emerald-600' : 'text-neutral-400'" />
             </div>
             <p class="text-xs text-neutral-500">{{ t('provenance.creator') }}</p>
             <p class="text-[10px] text-neutral-400 mt-1">
@@ -105,13 +105,13 @@ const chain = computed(() => {
                     class="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded font-bold"
                     :class="step.type === 'creation' ? 'bg-pink-100 text-pink-700' : step.type === 'remix' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'"
                   >{{ step.label }}</span>
-                  <PinovaIcon name="verified" class="text-xs text-emerald-600 fill-1" />
+                  <FotoceIcon name="verified" class="text-xs text-emerald-600 fill-1" />
                 </div>
                 <p class="text-[11px] text-neutral-500">{{ step.date }}</p>
               </div>
             </div>
             <p v-if="chain.length === 0" class="text-xs text-neutral-400 italic">
-              Aucune activité de provenance disponible pour ce pin.
+              Aucune activité de provenance disponible pour ce foto.
             </p>
           </div>
         </div>
@@ -122,10 +122,10 @@ const chain = computed(() => {
             {{ t('provenance.hash') }}
           </p>
           <div class="flex items-center gap-2 bg-neutral-50 rounded-lg px-3 py-2 font-mono text-[10px] text-neutral-600">
-            <PinovaIcon name="tag" class="text-sm" />
+            <FotoceIcon name="tag" class="text-sm" />
             <span class="truncate flex-1">{{ hash || '0x7f4a8b...c9e2d1' }}</span>
             <button class="text-neutral-400 hover:text-neutral-700">
-              <PinovaIcon name="content_copy" class="text-sm" />
+              <FotoceIcon name="content_copy" class="text-sm" />
             </button>
           </div>
           <p class="text-[10px] text-neutral-400 mt-2">

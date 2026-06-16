@@ -4,15 +4,15 @@ import { RouterLink } from 'vue-router'
 
 import ContestPinMetrics from './ContestPinMetrics.vue'
 import { useI18n } from '../../i18n'
-import type { ContestPinRow } from '../../types/contest'
+import type { ContestFotoRow } from '../../types/contest'
 import type { ReferralLeaderboardRowDto } from '../../types/referral'
 
 const props = withDefaults(
   defineProps<{
-    variant: 'pin' | 'referral'
-    rank2: ContestPinRow | ReferralLeaderboardRowDto | null
-    rank1: ContestPinRow | ReferralLeaderboardRowDto | null
-    rank3: ContestPinRow | ReferralLeaderboardRowDto | null
+    variant: 'foto' | 'referral'
+    rank2: ContestFotoRow | ReferralLeaderboardRowDto | null
+    rank1: ContestFotoRow | ReferralLeaderboardRowDto | null
+    rank3: ContestFotoRow | ReferralLeaderboardRowDto | null
     youCreatorId?: number | null
     youReferrerId?: number | null
   }>(),
@@ -22,7 +22,7 @@ const props = withDefaults(
 const { t } = useI18n()
 
 type PodiumRank = 1 | 2 | 3
-type PodiumRow = ContestPinRow | ReferralLeaderboardRowDto
+type PodiumRow = ContestFotoRow | ReferralLeaderboardRowDto
 
 const columns = computed(() => [
   { podiumRank: 2 as PodiumRank, row: props.rank2 },
@@ -32,21 +32,21 @@ const columns = computed(() => [
 
 const showPodium = computed(() => columns.value.some((c) => c.row != null))
 
-function isPinRow(r: PodiumRow | null): r is ContestPinRow {
-  return r != null && 'pin_id' in r
+function isFotoRow(r: PodiumRow | null): r is ContestFotoRow {
+  return r != null && 'foto_id' in r
 }
 
 function rowScore(r: PodiumRow): number {
-  return isPinRow(r) ? r.score : r.total_score
+  return isFotoRow(r) ? r.score : r.total_score
 }
 
 function pinTitle(r: PodiumRow): string {
-  if (isPinRow(r)) return r.pin_title || t('contest.row.pinPlaceholder')
+  if (isFotoRow(r)) return r.pin_title || t('contest.row.pinPlaceholder')
   return `@${r.username}`
 }
 
 function pinSubtitle(r: PodiumRow): string {
-  if (isPinRow(r)) return `@${r.creator_username}`
+  if (isFotoRow(r)) return `@${r.creator_username}`
   return ''
 }
 
@@ -91,18 +91,18 @@ function trendText(r: PodiumRow | null): string {
 
 function isYouRow(r: PodiumRow | null): boolean {
   if (r == null) return false
-  if (props.variant === 'pin' && isPinRow(r)) {
+  if (props.variant === 'foto' && isFotoRow(r)) {
     return props.youCreatorId != null && r.creator_id === props.youCreatorId
   }
-  if (props.variant === 'referral' && !isPinRow(r)) {
+  if (props.variant === 'referral' && !isFotoRow(r)) {
     return props.youReferrerId != null && r.referrer_id === props.youReferrerId
   }
   return false
 }
 
 function linkForRow(r: PodiumRow | null) {
-  if (props.variant !== 'pin' || !isPinRow(r)) return null
-  return `/pin/${encodeURIComponent(r.pin_slug)}`
+  if (props.variant !== 'foto' || !isFotoRow(r)) return null
+  return `/foto/${encodeURIComponent(r.foto_slug)}`
 }
 
 function cardRingClass(rank: PodiumRank): string {
@@ -236,7 +236,7 @@ function cardBorderClass(rank: PodiumRank, you: boolean): string {
               "
             />
             <ContestPinMetrics
-              v-if="variant === 'pin' && isPinRow(col.row)"
+              v-if="variant === 'foto' && isFotoRow(col.row)"
               class="relative z-[1] podium-dm"
               variant="podium"
               :likes="col.row.likes"

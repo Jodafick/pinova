@@ -9,7 +9,7 @@ const { t } = useI18n()
 <template>
   <div class="min-h-[70vh] flex flex-col items-center justify-center text-center px-6">
     <div class="w-24 h-24 rounded-full bg-pink-100 flex items-center justify-center mb-6">
-      <PinovaIcon name="explore_off" class="text-5xl text-pink-700 dark:text-pink-600" />
+      <FotoceIcon name="explore_off" class="text-5xl text-pink-700 dark:text-pink-600" />
     </div>
     <h1 class="text-4xl font-bold text-neutral-900 mb-3">404</h1>
     <h2 class="text-xl font-semibold text-neutral-700 mb-2">{{ t('notFound.title') }}</h2>

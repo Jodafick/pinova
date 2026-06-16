@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import type { User } from '../types'
 import api, { AUTH_INVALIDATED_EVENT } from '../api/index'
 import { readApiErrorCode } from '../constants/authErrors'
-import { clearPinClientCaches } from '../lib/cache/pinClientCache'
+import { clearPinClientCaches } from '../lib/cache/fotoClientCache'
 import { clearNotificationsClientCache } from '../lib/cache/notificationsClientCache'
 import { runBackground, shallowJsonEqual } from '../lib/cache/staleRevalidate'
 import {
@@ -21,11 +21,11 @@ import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 import { clearStoredReferralCode, getStoredReferralCode } from './useReferralIntent'
 import { useI18n } from '../i18n'
 import { extractDrfFieldErrors } from '../utils/apiValidationErrors'
-import { translatePinovaErrorToken, translatePinovaNonFieldToken } from '../utils/formErrorMessages'
+import { translateFotoceErrorToken, translateFotoceNonFieldToken } from '../utils/formErrorMessages'
 import { mapProfileExtendedFromApi } from '../utils/mapProfileExtended'
 import { applyAccentColor, syncAppearanceFromProfile } from './useAppearance'
 import { clearPendingIntent } from '../lib/pendingIntentStorage'
-import { parseActivationFunnelState } from '@pinova/shared'
+import { parseActivationFunnelState } from '@fotoce/shared'
 import { applyPremiumTrackingPolicy, identifyUser, resetAnalytics, trackOnce } from '../lib/analytics'
 import { syncRetentionCohorts } from '../lib/retentionAnalytics'
 import { setSentryUser } from '../lib/sentry'
@@ -41,8 +41,8 @@ export { DEFAULT_AVATAR_COLOR_CLASS }
 const defaultUser: User = {
   id: 1,
   username: 'admin',
-  displayName: 'Admin Pinova',
-  email: 'admin@pinova.local',
+  displayName: 'Admin Fotoce',
+  email: 'admin@fotoce.local',
   hasUsablePassword: true,
   preferredLanguage: 'fr',
   preferredCurrency: 'XOF',
@@ -55,7 +55,7 @@ const defaultUser: User = {
   bio: 'Développeur et passionné de design.',
   followers: 120,
   following: 85,
-  savedPins: [],
+  savedFotos: [],
   blockedUsernames: [],
   subscription: {
     plan: 'free',
@@ -77,7 +77,7 @@ const isAuthenticated = computed(() => currentUser.value !== null)
 /** Plus utilisé pour bloquer l’UI ; conservé pour compat éventuelle (toujours false). */
 const isInitializing = ref(false)
 const inMemoryAccessToken = ref<string | null>(
-  typeof window !== 'undefined' ? window.localStorage.getItem('pinova_token') : null,
+  typeof window !== 'undefined' ? window.localStorage.getItem('fotoce_token') : null,
 )
 let hasAuthInvalidationListener = false
 const CURRENT_USER_CACHE_TTL_MS = 30 * 60 * 1000
@@ -93,12 +93,12 @@ let updateProfileInFlight:
   | null = null
 
 /** Réponse brute `GET me/` pour réhydrater la session hors ligne / avant le premier round-trip. */
-const PINOVA_ME_PAYLOAD_KEY = 'pinova_me_payload_v1'
+const FOTOCE_ME_PAYLOAD_KEY = 'fotoce_me_payload_v1'
 
 function persistMePayloadFromApi(data: unknown) {
   if (typeof window === 'undefined' || data == null || typeof data !== 'object') return
   try {
-    window.localStorage.setItem(PINOVA_ME_PAYLOAD_KEY, JSON.stringify(data))
+    window.localStorage.setItem(FOTOCE_ME_PAYLOAD_KEY, JSON.stringify(data))
   } catch {
     /* quota / mode privé */
   }
@@ -107,7 +107,7 @@ function persistMePayloadFromApi(data: unknown) {
 function clearMePayloadCache() {
   if (typeof window === 'undefined') return
   try {
-    window.localStorage.removeItem(PINOVA_ME_PAYLOAD_KEY)
+    window.localStorage.removeItem(FOTOCE_ME_PAYLOAD_KEY)
   } catch {
     /* ignore */
   }
@@ -118,7 +118,7 @@ function hydrateCurrentUserFromMeCacheWhenTokenPresent() {
   if (typeof window === 'undefined') return
   try {
     if (!inMemoryAccessToken.value || currentUser.value) return
-    const raw = window.localStorage.getItem(PINOVA_ME_PAYLOAD_KEY)
+    const raw = window.localStorage.getItem(FOTOCE_ME_PAYLOAD_KEY)
     if (!raw) return
     const parsed = JSON.parse(raw)
     if (parsed && typeof parsed === 'object' && parsed.username != null) {
@@ -172,7 +172,7 @@ function mapUserBoardsFromApi(raw: unknown): User['boards'] {
     rows.push({
       id,
       name: String(b.name ?? ''),
-      pinCount: Number(b.pinCount ?? b.pin_count ?? 0),
+      fotoCount: Number(b.fotoCount ?? b.pin_count ?? 0),
       isPrivate: !!(b.isPrivate ?? b.is_private),
       collaboratorCount: Number(b.collaboratorCount ?? b.collaborator_count ?? 0),
       previewImages: normalizeBoardPreviewList(b.preview_images ?? b.previewImages),
@@ -242,7 +242,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     followers: profile.followers_count || 0,
     following: profile.following_count || 0,
     isFollowing: profile.is_following || false,
-    savedPins: djangoUser.saved_pins || [],
+    savedFotos: djangoUser.saved_pins || [],
     profileShareToken: profile.share_token ? String(profile.share_token) : undefined,
     subscription: {
       plan: djangoUser.subscription?.plan || profile.subscription_plan || 'free',
@@ -284,7 +284,7 @@ function mapDjangoUserToFrontend(djangoUser: any): User {
     },
     boards,
     meCreatedPinsPage: meBundle?.createdPinsPage,
-    meSavedPinsPage: meBundle?.savedPinsPage,
+    meSavedPinsPage: meBundle?.savedFotosPage,
     birthDate: birthNormalized,
     pinsCount: typeof djangoUser.pins_count === 'number' ? djangoUser.pins_count : undefined,
     activationFunnel: parseActivationFunnelState(profile.activation_funnel_json),
@@ -307,8 +307,8 @@ export type FetchUserProfileResult = {
 
 /**
  * GET `me/` puis mise à jour de `currentUser`, du cache profil et du snapshot
- * `pinova_me_payload_v1` dans localStorage.
- * Exporté pour les actions hors `useAuth()` (ex. follow depuis `usePins`).
+ * `fotoce_me_payload_v1` dans localStorage.
+ * Exporté pour les actions hors `useAuth()` (ex. follow depuis `useFotos`).
  */
 async function fetchCurrentUserFromNetwork(_opts?: { silent?: boolean }) {
   devLog('📡 Fetching user from API...')
@@ -456,7 +456,7 @@ export function useAuth() {
     inMemoryAccessToken.value = null
     delete api.defaults.headers.common.Authorization
     if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('pinova_token')
+      window.localStorage.removeItem('fotoce_token')
       clearStoredRefreshToken()
       clearMePayloadCache()
     }
@@ -471,12 +471,12 @@ export function useAuth() {
     if (token) {
       api.defaults.headers.common.Authorization = `Bearer ${token}`
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem('pinova_token', token)
+        window.localStorage.setItem('fotoce_token', token)
       }
     } else {
       delete api.defaults.headers.common.Authorization
       if (typeof window !== 'undefined') {
-        window.localStorage.removeItem('pinova_token')
+        window.localStorage.removeItem('fotoce_token')
       }
     }
   }
@@ -630,7 +630,7 @@ export function useAuth() {
         storeRefreshToken(response.data.refresh)
       } else if (!USE_HTTPONLY_REFRESH_COOKIE && typeof window !== 'undefined' && response.data?.access) {
         console.warn(
-          '[Pinova auth] Pas de refresh_token dans la réponse login — session courte uniquement ; vérifiez le backend (dj-rest-auth + SIMPLE_JWT).',
+          '[Fotoce auth] Pas de refresh_token dans la réponse login — session courte uniquement ; vérifiez le backend (dj-rest-auth + SIMPLE_JWT).',
         )
       }
       // 1re requête authentifiée : `me/` (évite le TTL qui skip le fetch si on avait posé `user` du login).
@@ -650,13 +650,13 @@ export function useAuth() {
       const data = err.response?.data as Record<string, unknown> | undefined
       const fe = extractDrfFieldErrors(data)
       const fieldErrors: { email?: string; password?: string } = {}
-      if (fe.email?.[0]) fieldErrors.email = translatePinovaErrorToken(fe.email[0], t)
-      if (fe.password?.[0]) fieldErrors.password = translatePinovaErrorToken(fe.password[0], t)
+      if (fe.email?.[0]) fieldErrors.email = translateFotoceErrorToken(fe.email[0], t)
+      if (fe.password?.[0]) fieldErrors.password = translateFotoceErrorToken(fe.password[0], t)
 
       const nfe = data?.non_field_errors
       let errorMsg = t('login.error.generic')
       if (Array.isArray(nfe) && typeof nfe[0] === 'string' && nfe[0].trim()) {
-        errorMsg = translatePinovaNonFieldToken(nfe[0], t)
+        errorMsg = translateFotoceNonFieldToken(nfe[0], t)
       } else if (typeof data?.detail === 'string' && data.detail.trim()) {
         errorMsg = data.detail.trim()
       } else if (fe.email?.[0] || fe.password?.[0]) {
@@ -755,7 +755,7 @@ export function useAuth() {
         storeRefreshToken(response.data.refresh)
       } else if (!USE_HTTPONLY_REFRESH_COOKIE && typeof window !== 'undefined' && response.data?.access) {
         console.warn(
-          '[Pinova auth] Pas de refresh_token dans la réponse connexion sociale — vérifiez le backend.',
+          '[Fotoce auth] Pas de refresh_token dans la réponse connexion sociale — vérifiez le backend.',
         )
       }
       await fetchCurrentUser({ force: true })
@@ -813,13 +813,13 @@ export function useAuth() {
     devLog('🚪 Logged out from all devices.')
   }
 
-  function toggleSavePin(pinId: number) {
+  function toggleSaveFoto(fotoId: number) {
     if (!currentUser.value) return
-    const index = currentUser.value.savedPins.indexOf(pinId)
+    const index = currentUser.value.savedFotos.indexOf(fotoId)
     if (index === -1) {
-      currentUser.value.savedPins.push(pinId)
+      currentUser.value.savedFotos.push(fotoId)
     } else {
-      currentUser.value.savedPins.splice(index, 1)
+      currentUser.value.savedFotos.splice(index, 1)
     }
   }
 
@@ -867,7 +867,7 @@ export function useAuth() {
       is_private: !!(b.is_private ?? b.isPrivate),
       /** Absent avant backend : défaut réservé (true). */
       is_owner: b.is_owner === undefined ? true : !!b.is_owner,
-      pin_count: Number(b.pin_count ?? b.pinCount ?? 0),
+      pin_count: Number(b.pin_count ?? b.fotoCount ?? 0),
       collaborator_count: Number(b.collaborator_count ?? b.collaboratorCount ?? 0),
       preview_images: normalizeBoardPreviewList(b.preview_images ?? b.previewImages),
       share_token: b.share_token as string | undefined,

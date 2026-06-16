@@ -24,7 +24,7 @@ async function acceptNecessaryOnly() {
 <template>
   <div
     v-if="visible"
-    class="fixed inset-x-0 bottom-0 z-[9999] p-4 pointer-events-none"
+    class="fotoce-cookie-consent-banner fixed inset-x-0 bottom-0 z-[9999] p-4 pointer-events-none"
     role="dialog"
     aria-live="polite"
     aria-label="Cookie consent"

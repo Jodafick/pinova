@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'pinova_story_ring_v1'
+const STORAGE_KEY = 'fotoce_story_ring_v1'
 
 export type StoryRingProgressEntry = {
   slugSignature: string
@@ -10,7 +10,7 @@ export type StoryRingProgressEntry = {
 
 export type StorySessionEndPayload = {
   username: string
-  pinSlugs: string[]
+  fotoSlugs: string[]
   resumeIndex: number
   allCaughtUp: boolean
   segmentElapsedMs?: number
@@ -21,7 +21,7 @@ function normUser(u: string) {
 }
 
 export function slugSignatureFromPins(pins: { slug: string }[]): string {
-  return pins.map((p) => p.slug).join('|')
+  return fotos.map((p) => p.slug).join('|')
 }
 
 export function readStoryRingProgress(): Record<string, StoryRingProgressEntry> {
@@ -49,8 +49,8 @@ function writeStoryRingProgress(map: Record<string, StoryRingProgressEntry>) {
 /** Met à jour la progression après fermeture du viewer (même onglet). */
 export function upsertStoryRingSession(payload: StorySessionEndPayload) {
   const key = normUser(payload.username)
-  if (!key || !payload.pinSlugs.length) return
-  const slugSignature = payload.pinSlugs.join('|')
+  if (!key || !payload.fotoSlugs.length) return
+  const slugSignature = payload.fotoSlugs.join('|')
   const map = readStoryRingProgress()
   const elapsed =
     typeof payload.segmentElapsedMs === 'number' && Number.isFinite(payload.segmentElapsedMs)
@@ -71,7 +71,7 @@ export function initialStoryIndexForUser(username: string, pins: { slug: string 
   const sig = slugSignatureFromPins(pins)
   const p = readStoryRingProgress()[key]
   if (!p || p.slugSignature !== sig) return 0
-  return Math.min(Math.max(0, p.resumeIndex), pins.length - 1)
+  return Math.min(Math.max(0, p.resumeIndex), fotos.length - 1)
 }
 
 /** Ms déjà parcourues sur le segment courant (si même bague / même index que à la fermeture). */

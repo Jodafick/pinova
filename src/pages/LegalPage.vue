@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { useI18n } from '../i18n'
 import api from '../api/index'
 import { CONTACT_EMAIL as FALLBACK_EMAIL } from '../config/env'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 
 const route = useRoute()
 const { t, currentLang } = useI18n()
@@ -20,7 +20,7 @@ const contactEmail = ref('')
 const mailtoLegalContact = computed(() => {
   if (slug.value !== 'contact') return ''
   const email = contactEmail.value.trim() || FALLBACK_EMAIL
-  return `mailto:${email}?subject=${encodeURIComponent('Pinova')}`
+  return `mailto:${email}?subject=${encodeURIComponent('Fotoce')}`
 })
 
 /** Paragraphes : découpage sur lignes vides pour un rendu plus aéré que `pre-wrap`. */
@@ -117,7 +117,7 @@ watch([slug, currentLang], load, { immediate: true })
         to="/"
         class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-pink-800 font-medium transition-colors"
       >
-        <PinovaIcon name="arrow_back" class="text-[18px]" />
+        <FotoceIcon name="arrow_back" class="text-[18px]" />
         {{ t('legal.backHome') }}
       </router-link>
     </nav>
@@ -156,11 +156,11 @@ watch([slug, currentLang], load, { immediate: true })
       v-else-if="error === 'invalid'"
       class="app-card-soft rounded-3xl p-10 sm:p-12 text-center"
     >
-      <PinovaIcon name="error" class="text-neutral-400 text-[48px] mb-4 inline-block" />
+      <FotoceIcon name="error" class="text-neutral-400 text-[48px] mb-4 inline-block" />
       <p class="text-neutral-700 font-medium">{{ t('legal.invalid') }}</p>
-      <PinovaButton variant="primary" to="/" class="mt-6 text-sm">
+      <FotoceButton variant="primary" to="/" class="mt-6 text-sm">
         {{ t('legal.backHome') }}
-      </PinovaButton>
+      </FotoceButton>
     </div>
 
     <!-- Erreur chargement -->
@@ -168,15 +168,15 @@ watch([slug, currentLang], load, { immediate: true })
       v-else-if="error"
       class="app-card rounded-3xl p-10 sm:p-12 text-center border-rose-300/70"
     >
-      <PinovaIcon name="cloud_off" class="text-red-400 text-[44px] mb-4 inline-block" />
+      <FotoceIcon name="cloud_off" class="text-red-400 text-[44px] mb-4 inline-block" />
       <p class="text-red-900/90 font-medium text-sm">{{ t('legal.loadError') }}</p>
-      <PinovaButton
+      <FotoceButton
         variant="secondary"
         class="mt-6 text-sm border-rose-300 text-rose-700 dark:text-rose-300"
         @click="load()"
       >
         {{ t('legal.retry') }}
-      </PinovaButton>
+      </FotoceButton>
     </div>
 
     <!-- Document -->
@@ -191,7 +191,7 @@ watch([slug, currentLang], load, { immediate: true })
             class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 ring-black/[0.05]"
             :class="docVisual.iconBg"
           >
-            <PinovaIcon :name="docVisual.icon" class="text-[28px]" />
+            <FotoceIcon :name="docVisual.icon" class="text-[28px]" />
           </div>
           <div class="min-w-0 flex-1 pt-0.5 space-y-3">
             <span
@@ -236,14 +236,14 @@ watch([slug, currentLang], load, { immediate: true })
           v-if="slug === 'contact'"
           class="mt-10 pt-8 border-t app-divider-subtle"
         >
-          <PinovaButton
+          <FotoceButton
             variant="primary"
             :href="mailtoLegalContact"
             class="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm shadow-md"
           >
-            <PinovaIcon name="outgoing_mail" class="text-xl" />
+            <FotoceIcon name="outgoing_mail" class="text-xl" />
             {{ t('contact.emailCta') }}
-          </PinovaButton>
+          </FotoceButton>
           <p class="mt-3 text-sm text-pink-700 dark:text-pink-600 font-medium break-all">
             {{ contactEmail.trim() || FALLBACK_EMAIL }}
           </p>

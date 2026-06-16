@@ -1,5 +1,5 @@
 /**
- * Remplace les <span class="material-symbols-outlined"> par <PinovaIcon />.
+ * Remplace les <span class="material-symbols-outlined"> par <FotoceIcon />.
  * Migration conservative : une ligne par span, contenu simple uniquement.
  */
 import fs from 'node:fs'
@@ -36,7 +36,7 @@ function cleanStaticClasses(classAttr) {
     .join(' ')
 }
 
-function buildPinovaIcon(attrs, icon) {
+function buildFotoceIcon(attrs, icon) {
   const filled =
     attrs.includes('pin-mobile-filled') || attrs.includes('pin-desktop-filled')
   const spin =
@@ -67,7 +67,7 @@ function buildPinovaIcon(attrs, icon) {
   if (ariaMatch) parts.push(`aria-hidden="${ariaMatch[1]}"`)
   if (ariaLabelMatch) parts.push(`aria-label="${ariaLabelMatch[1]}"`)
 
-  return `<PinovaIcon ${parts.join(' ')} />`
+  return `<FotoceIcon ${parts.join(' ')} />`
 }
 
 function transformLine(line) {
@@ -80,7 +80,7 @@ function transformLine(line) {
   )
   if (nested) {
     const [, indent, attrs, iconName] = nested
-    return indent + buildPinovaIcon(attrs, { static: iconName })
+    return indent + buildFotoceIcon(attrs, { static: iconName })
   }
 
   const dynamic = normalized.match(
@@ -88,7 +88,7 @@ function transformLine(line) {
   )
   if (dynamic) {
     const [, indent, attrs, expr] = dynamic
-    return indent + buildPinovaIcon(attrs, { dynamic: expr.slice(2, -2).trim() })
+    return indent + buildFotoceIcon(attrs, { dynamic: expr.slice(2, -2).trim() })
   }
 
   const stat = normalized.match(
@@ -96,7 +96,7 @@ function transformLine(line) {
   )
   if (stat) {
     const [, indent, attrs, iconName] = stat
-    return indent + buildPinovaIcon(attrs, { static: iconName })
+    return indent + buildFotoceIcon(attrs, { static: iconName })
   }
 
   return line
@@ -109,10 +109,10 @@ function transformMultilineBlock(content) {
   return content.replace(re, (match, attrs, inner) => {
     const trimmed = inner.trim()
     if (trimmed.startsWith('{{')) {
-      return buildPinovaIcon(attrs, { dynamic: trimmed.slice(2, -2).trim() })
+      return buildFotoceIcon(attrs, { dynamic: trimmed.slice(2, -2).trim() })
     }
     if (/^[a-z0-9_]+$/i.test(trimmed)) {
-      return buildPinovaIcon(attrs, { static: trimmed })
+      return buildFotoceIcon(attrs, { static: trimmed })
     }
     return match
   })

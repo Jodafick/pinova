@@ -8,7 +8,7 @@ export function markBootPhase(name: string): void {
   const t = performance.now()
   marks.set(name, t)
   if (import.meta.env.DEV) {
-    performance.mark(`pinova:${name}`)
+    performance.mark(`fotoce:${name}`)
   }
 }
 

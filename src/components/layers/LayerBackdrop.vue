@@ -28,50 +28,50 @@ function onTap() {
 
 <template>
   <div
-    class="pinova-layer-backdrop"
+    class="fotoce-layer-backdrop"
     :class="[
-      `pinova-layer-backdrop--${tint || 'neutral'}`,
-      blur ? 'pinova-layer-backdrop--blur' : null,
+      `fotoce-layer-backdrop--${tint || 'neutral'}`,
+      blur ? 'fotoce-layer-backdrop--blur' : null,
     ]"
-    :style="{ '--pinova-backdrop-opacity': opacity ?? 0.55 } as Record<string, string | number>"
+    :style="{ '--fotoce-backdrop-opacity': opacity ?? 0.55 } as Record<string, string | number>"
     aria-hidden="true"
     @click="onTap"
   />
 </template>
 
 <style>
-.pinova-layer-backdrop {
+.fotoce-layer-backdrop {
   position: absolute;
   inset: 0;
-  background-color: rgba(12, 12, 17, var(--pinova-backdrop-opacity, 0.55));
+  background-color: rgba(12, 12, 17, var(--fotoce-backdrop-opacity, 0.55));
   /* Animation par défaut. */
-  animation: pinova-backdrop-in 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: fotoce-backdrop-in 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   /* GPU friendly. */
   will-change: opacity;
 }
 
-.pinova-layer-backdrop--rose {
+.fotoce-layer-backdrop--rose {
   background:
     radial-gradient(circle at 50% -10%, rgba(251, 207, 232, 0.22), transparent 42%),
-    rgba(12, 12, 17, var(--pinova-backdrop-opacity, 0.55));
+    rgba(12, 12, 17, var(--fotoce-backdrop-opacity, 0.55));
 }
 
-.pinova-layer-backdrop--black {
-  background: rgba(0, 0, 0, var(--pinova-backdrop-opacity, 0.7));
+.fotoce-layer-backdrop--black {
+  background: rgba(0, 0, 0, var(--fotoce-backdrop-opacity, 0.7));
 }
 
-.pinova-layer-backdrop--blur {
+.fotoce-layer-backdrop--blur {
   backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
 }
 
-@keyframes pinova-backdrop-in {
+@keyframes fotoce-backdrop-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinova-layer-backdrop {
+  .fotoce-layer-backdrop {
     animation-duration: 0.01ms !important;
   }
 }

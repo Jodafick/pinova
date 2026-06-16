@@ -1,29 +1,29 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { usePins } from '../composables/usePins'
+import { useFotos } from '../composables/useFotos'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import { displayInitials } from '../utils/displayInitials'
 import AvatarDisc from './AvatarDisc.vue'
-import PinovaModal from './ui/PinovaModal.vue'
-import type { PinLikerEntry } from '../types'
+import FotoceModal from './ui/FotoceModal.vue'
+import type { FotoLikerEntry } from '../types'
 
 const props = defineProps<{
   modelValue: boolean
-  pinSlug: string | null
+  fotoSlug: string | null
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
 }>()
 
-const { fetchPinLikers } = usePins()
+const { fetchFotoLikers } = useFotos()
 const { t, currentLang } = useI18n()
 
 const loading = ref(false)
 const errorMsg = ref('')
-const likers = ref<PinLikerEntry[]>([])
+const likers = ref<FotoLikerEntry[]>([])
 const total = ref(0)
 
 function formatWhen(iso: string) {
@@ -38,7 +38,7 @@ function formatWhen(iso: string) {
 }
 
 watch(
-  () => [props.modelValue, props.pinSlug] as const,
+  () => [props.modelValue, props.fotoSlug] as const,
   async ([open, slug]) => {
     if (!open || !slug) return
     loading.value = true
@@ -46,7 +46,7 @@ watch(
     likers.value = []
     total.value = 0
     try {
-      const data = await fetchPinLikers(slug)
+      const data = await fetchFotoLikers(slug)
       likers.value = data.likers
       total.value = data.count
     } catch {
@@ -63,8 +63,8 @@ function close() {
 </script>
 
 <template>
-  <PinovaModal
-    :open="modelValue && !!pinSlug"
+  <FotoceModal
+    :open="modelValue && !!fotoSlug"
     presentation="bottomSheet"
     :title="t('story.likers.title', { count: total })"
     @update:open="(v: boolean) => emit('update:modelValue', v)"
@@ -104,5 +104,5 @@ function close() {
         </li>
       </ul>
     </div>
-  </PinovaModal>
+  </FotoceModal>
 </template>

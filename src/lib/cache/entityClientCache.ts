@@ -1,8 +1,8 @@
 /**
- * Cache mémoire longue durée pour profils et tableaux (aligné sur la rétention pin détail).
+ * Cache mémoire longue durée pour profils et tableaux (aligné sur la rétention foto détail).
  * Vidé au logout avec les autres caches client.
  */
-import type { Pin, User } from '../../types'
+import type { Foto, User } from '../../types'
 
 export type BoardDetailSnapshot = {
   boardName: string
@@ -11,13 +11,13 @@ export type BoardDetailSnapshot = {
   viewerCanManage: boolean
   boardIsPrivate: boolean
   boardIsOwner: boolean
-  boardPins: Pin[]
+  boardFotos: Foto[]
 }
 
 const ENTITY_TTL_MS = 7 * 24 * 60 * 60 * 1000 /* 7 jours */
-const PROFILE_LS_PREFIX = 'pinova_entity_profile_v1:'
+const PROFILE_LS_PREFIX = 'fotoce_entity_profile_v1:'
 const PROFILE_LS_MAX_ENTRIES = 48
-const BOARD_LS_PREFIX = 'pinova_entity_board_v1:'
+const BOARD_LS_PREFIX = 'fotoce_entity_board_v1:'
 const BOARD_LS_MAX_ENTRIES = 32
 
 function boardLocalStorageKey(cacheKey: string): string {
@@ -228,7 +228,7 @@ export function getCachedBoardDetail(key: string): BoardDetailSnapshot | null {
   if (hit && Date.now() - hit.t <= ENTITY_TTL_MS) {
     return {
       ...hit.snapshot,
-      boardPins: hit.snapshot.boardPins.map((p) => ({ ...p })),
+      boardFotos: hit.snapshot.boardFotos.map((p) => ({ ...p })),
     }
   }
   if (hit) boardByKey.delete(key)
@@ -238,7 +238,7 @@ export function getCachedBoardDetail(key: string): BoardDetailSnapshot | null {
     boardByKey.set(key, { t: fromDisk.t, snapshot: { ...fromDisk.snapshot } })
     return {
       ...fromDisk.snapshot,
-      boardPins: fromDisk.snapshot.boardPins.map((p) => ({ ...p })),
+      boardFotos: fromDisk.snapshot.boardFotos.map((p) => ({ ...p })),
     }
   }
   return null
@@ -250,12 +250,12 @@ export function setCachedBoardDetail(key: string, snapshot: BoardDetailSnapshot)
     t: Date.now(),
     snapshot: {
       ...snapshot,
-      boardPins: snapshot.boardPins.map((p) => ({ ...p })),
+      boardFotos: snapshot.boardFotos.map((p) => ({ ...p })),
     },
   })
   persistBoardSnapshotToStorage(key, {
     ...snapshot,
-    boardPins: snapshot.boardPins.map((p) => ({ ...p })),
+    boardFotos: snapshot.boardFotos.map((p) => ({ ...p })),
   })
 }
 

@@ -49,7 +49,7 @@ function reset() {
             <h2 class="text-lg font-bold">{{ t('promote.targeting.title') }}</h2>
           </div>
           <button type="button" class="h-9 w-9 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center" @click="emit('close')">
-            <PinovaIcon name="close" />
+            <FotoceIcon name="close" />
           </button>
         </div>
         <div class="flex-1 overflow-y-auto px-5 py-4">

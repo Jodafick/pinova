@@ -14,7 +14,7 @@
  * Usage :
  *
  *   const { data, error, refresh } = useSWR(
- *     ['pins', 'feed', 'home'],
+ *     ['fotos', 'feed', 'home'],
  *     () => api.get('/pins/feed/').then(r => r.data),
  *     { ttl: 30_000, staleTime: 5_000 },
  *   )

@@ -11,7 +11,7 @@ import { appendCampaignToFormData, emptyTargeting, type CampaignTargeting } from
 import { openCheckoutFlow } from '../utils/checkoutFlow'
 
 const props = withDefaults(
-  defineProps<{ open: boolean; pinSlug?: string; initialMode?: 'boost' | 'campaign' }>(),
+  defineProps<{ open: boolean; fotoSlug?: string; initialMode?: 'boost' | 'campaign' }>(),
   { initialMode: 'boost' },
 )
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -22,7 +22,7 @@ const { showAlert } = useAppModal()
 const {
   boostPacks,
   campaignPacks,
-  myPins,
+  myFotos,
   selectedSlug,
   selectedPin,
   history,
@@ -74,9 +74,9 @@ watch(
     mode.value = props.initialMode
     resetCampaignForm()
     await loadCatalog()
-    if (props.initialMode === 'boost' || props.pinSlug) {
-      await loadMyPins(props.pinSlug)
-      if (props.pinSlug) selectedSlug.value = props.pinSlug
+    if (props.initialMode === 'boost' || props.fotoSlug) {
+      await loadMyPins(props.fotoSlug)
+      if (props.fotoSlug) selectedSlug.value = props.fotoSlug
     }
     const catalog = props.initialMode === 'campaign' ? campaignPacks.value : boostPacks.value
     if (catalog[0]) {
@@ -86,27 +86,27 @@ watch(
 )
 
 async function startBoost(packSlug: string) {
-  const pin = selectedSlug.value
+  const foto = selectedSlug.value
   if (!pin) {
     await showAlert(t('promote.boost.pickPinFirst'), { variant: 'warning' })
     return
   }
   busy.value = true
   try {
-    const res = await api.post(`monetization/pins/${encodeURIComponent(pin)}/boost/`, { package: packSlug })
+    const res = await api.post(`monetization/fotos/${encodeURIComponent(foto)}/boost/`, { package: packSlug })
     const data = res.data as { checkout_url?: string; status?: string }
     if (data.checkout_url) {
       openCheckoutFlow(router, 'boost', data.checkout_url)
       return
     }
     if (data.status === 'active') {
-      await showAlert(t('pin.boost.success'), { variant: 'success' })
+      await showAlert(t('foto.boost.success'), { variant: 'success' })
       emit('close')
       return
     }
-    await showAlert(t('pin.boost.error'), { variant: 'danger' })
+    await showAlert(t('foto.boost.error'), { variant: 'danger' })
   } catch {
-    await showAlert(t('pin.boost.error'), { variant: 'danger' })
+    await showAlert(t('foto.boost.error'), { variant: 'danger' })
   } finally {
     busy.value = false
   }
@@ -130,7 +130,7 @@ async function startCampaign() {
       mediaFile: mediaFile.value,
       mediaType: mediaType.value,
     })
-    const res = await api.post('monetization/pin-promo-campaigns/', fd)
+    const res = await api.post('monetization/foto-promo-campaigns/', fd)
     const data = res.data as { checkout_url?: string; status?: string; sandbox?: boolean }
     if (data.checkout_url) {
       openCheckoutFlow(router, 'campaign', data.checkout_url)
@@ -178,7 +178,7 @@ async function startCampaign() {
               :aria-label="t('common.close')"
               @click="emit('close')"
             >
-              <PinovaIcon name="close" class="text-xl" />
+              <FotoceIcon name="close" class="text-xl" />
             </button>
           </div>
 
@@ -206,7 +206,7 @@ async function startCampaign() {
           <BoostWizardPanel
             v-if="mode === 'boost'"
             :packs="boostPacks"
-            :my-pins="myPins"
+            :my-pins="myFotos"
             :selected-slug="selectedSlug"
             :selected-pin="selectedPin"
             :pins-loading="pinsLoading"

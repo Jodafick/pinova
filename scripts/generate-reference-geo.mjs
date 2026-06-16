@@ -11,7 +11,7 @@ import { createRequire } from 'node:module'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
-const MOBILE_ROOT = path.resolve(ROOT, '..', 'Pinova-Mobile')
+const MOBILE_ROOT = path.resolve(ROOT, '..', 'Fotoce-Mobile')
 const REF_TARGETS = [
   path.join(ROOT, 'src', 'data', 'reference'),
   path.join(MOBILE_ROOT, 'src', 'data', 'reference'),

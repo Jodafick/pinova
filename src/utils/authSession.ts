@@ -1,12 +1,12 @@
 /**
  * Stratégie refresh JWT web :
  * - prod (`import.meta.env.PROD`) : refresh HttpOnly cookie (backend JWT_AUTH_HTTPONLY=True)
- * - dev : fallback localStorage `pinova_refresh_token` (backend JWT_AUTH_HTTPONLY=False)
+ * - dev : fallback localStorage `fotoce_refresh_token` (backend JWT_AUTH_HTTPONLY=False)
  */
 
 export const USE_HTTPONLY_REFRESH_COOKIE = import.meta.env.PROD
 
-const REFRESH_KEY = 'pinova_refresh_token'
+const REFRESH_KEY = 'fotoce_refresh_token'
 
 export function readStoredRefreshToken(): string | null {
   if (USE_HTTPONLY_REFRESH_COOKIE || typeof window === 'undefined') return null

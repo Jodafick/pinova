@@ -4,7 +4,7 @@ import {
   parseCheckoutSocialProofResponse,
   type CheckoutSocialProof,
   type CheckoutSocialProofApiPayload,
-} from '@pinova/shared'
+} from '@fotoce/shared'
 
 export type { CheckoutSocialProof }
 

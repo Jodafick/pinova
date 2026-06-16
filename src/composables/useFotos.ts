@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
-import type { FeedItem, PartnerAd, Pin, PinLikersResponse, PinPromo, SponsoredAd } from '../types'
-import { isFeedPin } from '../types'
+import type { FeedItem, PartnerAd, Foto, FotoLikersResponse, FotoPromo, SponsoredAd } from '../types'
+import { isFeedFoto } from '../types'
 import api from '../api/index'
 import { trackEvent, trackOnce } from '../lib/analytics'
 import { API_BASE_URL } from '../config/env'
@@ -9,13 +9,13 @@ import {
   feedFirstPageCacheKey,
   getCachedFeedFirstPage,
   setCachedFeedFirstPage,
-  getCachedPinDetail,
-  setCachedPinDetail,
-  invalidatePinDetailClientCache,
+  getCachedFotoDetail,
+  setCachedFotoDetail,
+  invalidateFotoDetailClientCache,
   clearFeedFirstPageClientCache,
-  invalidateProfileCreatedPinsCacheForUsername,
-} from '../lib/cache/pinClientCache'
-import { prefetchPinsMediaForOffline } from '../media/offlineCache'
+  invalidateProfileCreatedFotosCacheForUsername,
+} from '../lib/cache/fotoClientCache'
+import { prefetchFotosMediaForOffline } from '../media/offlineCache'
 import { DEFAULT_AVATAR_COLOR_CLASS } from '../constants/avatar'
 import { fetchCurrentUser } from './useAuth'
 import { runBackground, shallowJsonEqual } from '../lib/cache/staleRevalidate'
@@ -58,13 +58,13 @@ export function mapPartnerAdFromApi(raw: Record<string, unknown>): PartnerAd {
   }
 }
 
-export function mapPinPromoFromApi(raw: Record<string, unknown>): PinPromo {
+export function mapFotoPromoFromApi(raw: Record<string, unknown>): FotoPromo {
   return {
-    feedType: 'pin_promo',
-    id: String(raw.id ?? `pin-promo-${raw.campaign_id}`),
+    feedType: 'foto_promo',
+    id: String(raw.id ?? `foto-promo-${raw.campaign_id}`),
     campaignId: Number(raw.campaign_id ?? 0),
-    pinSlug: String(raw.pin_slug ?? ''),
-    pinId: Number(raw.pin_id ?? 0),
+    fotoSlug: String(raw.foto_slug ?? ''),
+    fotoId: Number(raw.foto_id ?? 0),
     title: String(raw.title ?? ''),
     body: String(raw.body ?? ''),
     sponsorName: String(raw.sponsor_name ?? ''),
@@ -72,7 +72,7 @@ export function mapPinPromoFromApi(raw: Record<string, unknown>): PinPromo {
     imageUrl: getFullMediaUrl(String(raw.media_url ?? raw.image_url ?? '')),
     mediaUrl: getFullMediaUrl(String(raw.media_url ?? raw.image_url ?? '')),
     mediaType: (raw.media_type === 'video' ? 'video' : 'image') as 'image' | 'video',
-    ctaLabel: String(raw.cta_label ?? 'Voir le pin'),
+    ctaLabel: String(raw.cta_label ?? 'Voir le foto'),
     ctaUrl: String(raw.cta_url ?? ''),
     topic: String(raw.topic ?? ''),
   }
@@ -81,89 +81,89 @@ export function mapPinPromoFromApi(raw: Record<string, unknown>): PinPromo {
 export function mapSponsoredFromApi(raw: Record<string, unknown>): SponsoredAd | null {
   const ft = String(raw.feed_type ?? '')
   if (ft === 'partner_ad') return mapPartnerAdFromApi(raw)
-  if (ft === 'pin_promo') return mapPinPromoFromApi(raw)
+  if (ft === 'foto_promo') return mapFotoPromoFromApi(raw)
   return null
 }
 
 export function mapFeedRow(raw: Record<string, unknown>): FeedItem | null {
   if (raw == null || typeof raw !== 'object') return null
-  const ft = String(raw.feed_type ?? 'pin')
+  const ft = String(raw.feed_type ?? 'foto')
   if (ft === 'partner_ad') return mapPartnerAdFromApi(raw)
-  if (ft === 'pin_promo') return mapPinPromoFromApi(raw)
+  if (ft === 'foto_promo') return mapFotoPromoFromApi(raw)
   try {
-    return mapDjangoPinToFrontend(raw)
+    return mapDjangoFotoToFrontend(raw)
   } catch {
     return null
   }
 }
 
-export function feedPinsOnly(items: FeedItem[]): Pin[] {
-  return items.filter((x): x is Pin => isFeedPin(x))
+export function feedFotosOnly(items: FeedItem[]): Foto[] {
+  return items.filter((x): x is Foto => isFeedFoto(x))
 }
 
-export function mapDjangoPinToFrontend(djangoPin: any): Pin {
-  const author = djangoPin.author_profile || {}
-  const isStory = !!djangoPin.is_story
+export function mapDjangoFotoToFrontend(djangoFoto: any): Foto {
+  const author = djangoFoto.author_profile || {}
+  const isStory = !!djangoFoto.is_story
   const storyDisplayRaw =
-    isStory && djangoPin.story_display_image_url ? String(djangoPin.story_display_image_url).trim() : ''
-  const mainImageRaw = djangoPin.image ? String(djangoPin.image).trim() : ''
+    isStory && djangoFoto.story_display_image_url ? String(djangoFoto.story_display_image_url).trim() : ''
+  const mainImageRaw = djangoFoto.image ? String(djangoFoto.image).trim() : ''
   const imageUrl = storyDisplayRaw
     ? getFullMediaUrl(storyDisplayRaw)
     : mainImageRaw
       ? getFullMediaUrl(mainImageRaw)
       : ''
-  const feedRaw = djangoPin.feed_image_url ? String(djangoPin.feed_image_url).trim() : ''
+  const feedRaw = djangoFoto.feed_image_url ? String(djangoFoto.feed_image_url).trim() : ''
   const feedImageUrl = feedRaw ? getFullMediaUrl(feedRaw) : imageUrl || undefined
   return {
-    id: djangoPin.id,
-    slug: djangoPin.slug,
-    title: djangoPin.title,
-    description: djangoPin.description,
+    id: djangoFoto.id,
+    slug: djangoFoto.slug,
+    title: djangoFoto.title,
+    description: djangoFoto.description,
     imageUrl,
     feedImageUrl,
-    storyVideoUrl: djangoPin.story_video_url ? getFullMediaUrl(djangoPin.story_video_url) : '',
+    storyVideoUrl: djangoFoto.story_video_url ? getFullMediaUrl(djangoFoto.story_video_url) : '',
     user: author.display_name || author.username || 'Inconnu',
     username: author.username || 'inconnu',
     userId: author.id,
     userAvatarUrl: getFullMediaUrl(author.avatar),
     userAvatarColor: author.avatar_color || DEFAULT_AVATAR_COLOR_CLASS,
     authorTipsInternalEnabled: !!author.tips_internal_enabled,
-    link: djangoPin.link || '',
+    link: djangoFoto.link || '',
     stats: { 
-      saves: djangoPin.saves_count || 0, 
-      reactions: djangoPin.likes_count || 0,
-      shares: djangoPin.shares_count || djangoPin.share_count || 0,
+      saves: djangoFoto.saves_count || 0, 
+      reactions: djangoFoto.likes_count || 0,
+      shares: djangoFoto.shares_count || djangoFoto.share_count || 0,
     },
-    topic: (djangoPin.topic_meta?.originalName ?? djangoPin.topic) || 'Général',
-    topicDisplay: (djangoPin.topic_meta?.name ?? djangoPin.topic) || 'Général',
-    visibility: djangoPin.visibility || 'public',
-    commentsPolicy: djangoPin.comments_policy || 'open',
-    canComment: djangoPin.can_comment !== false,
-    hashtags: djangoPin.hashtags || [],
-    privateTags: djangoPin.private_tags || [],
-    boards: (djangoPin.boards || []).map((board: any) => ({
+    topic: (djangoFoto.topic_meta?.originalName ?? djangoFoto.topic) || 'Général',
+    topicDisplay: (djangoFoto.topic_meta?.name ?? djangoFoto.topic) || 'Général',
+    visibility: djangoFoto.visibility || 'public',
+    commentsPolicy: djangoFoto.comments_policy || 'open',
+    canComment: djangoFoto.can_comment !== false,
+    hashtags: djangoFoto.hashtags || [],
+    privateTags: djangoFoto.private_tags || [],
+    boards: (djangoFoto.boards || []).map((board: any) => ({
       id: board.id,
       name: board.name,
       isPrivate: !!board.is_private,
       position: typeof board.position === 'number' ? board.position : undefined,
-      ownerUsername: board.owner_username || djangoPin.author_profile?.username || undefined,
+      ownerUsername: board.owner_username || djangoFoto.author_profile?.username || undefined,
     })),
-    scheduledPublishAt: djangoPin.scheduled_publish_at || null,
-    createdAt: djangoPin.created_at,
+    scheduledPublishAt: djangoFoto.scheduled_publish_at || null,
+    createdAt: djangoFoto.created_at,
     liked:
-      djangoPin.is_liked === true ||
-      djangoPin.is_liked === 1 ||
-      djangoPin.isLiked === true,
-    saved: djangoPin.is_saved || false,
+      djangoFoto.is_liked === true ||
+      djangoFoto.is_liked === 1 ||
+      djangoFoto.isLiked === true,
+    saved: djangoFoto.is_saved || false,
     isFollowing: author.is_following || false,
     authorFollowersCount: typeof author.followers_count === 'number' ? author.followers_count : 0,
-    isStory: !!djangoPin.is_story,
-    /** Story Plus/Pro sans pin en grille après 24 h (purge serveur). */
-    storyEphemeral: !!djangoPin.story_ephemeral,
-    storyExpiresAt: djangoPin.story_expires_at ?? undefined,
-    mediaSensitiveBlur: !!djangoPin.media_sensitive_blur,
-    viewerHasReported: !!djangoPin.viewer_has_reported,
-    isBoosted: !!djangoPin.is_boosted,
+    isStory: !!djangoFoto.is_story,
+    /** Story Plus/Pro sans foto en grille après 24 h (purge serveur). */
+    storyEphemeral: !!djangoFoto.story_ephemeral,
+    storyExpiresAt: djangoFoto.story_expires_at ?? undefined,
+    mediaSensitiveBlur: !!djangoFoto.media_sensitive_blur,
+    viewerHasReported: !!djangoFoto.viewer_has_reported,
+    isBoosted: !!djangoFoto.is_boosted,
   }
 }
 
@@ -172,14 +172,14 @@ export function isAlreadyReportedError(err: unknown): boolean {
   return ax.response?.status === 409 || ax.response?.data?.error === 'already_reported'
 }
 
-/** Une seule requête `pins/:slug/` à la fois par slug (évite doublons au swipe / remount). */
-const pinDetailInFlight = new Map<string, Promise<Pin>>()
+/** Une seule requête `fotos/:slug/` à la fois par slug (évite doublons au swipe / remount). */
+const fotoDetailInFlight = new Map<string, Promise<Foto>>()
 
-export function usePins() {
+export function useFotos() {
   const { currentLang } = useI18n()
   // État local par instance de composant/page.
   // Évite les fuites d'état cross-page avec KeepAlive (feeds qui se remplacent mutuellement).
-  const pins = ref<FeedItem[]>([])
+  const fotos = ref<FeedItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const currentPage = ref(1)
@@ -198,8 +198,8 @@ export function usePins() {
     delete store[key]
   }
 
-  const isPinSavePending = (slug: string) => !!savePendingBySlug.value[slug]
-  const isPinLikePending = (slug: string) => !!likePendingBySlug.value[slug]
+  const isFotoSavePending = (slug: string) => !!savePendingBySlug.value[slug]
+  const isFotoLikePending = (slug: string) => !!likePendingBySlug.value[slug]
   const isAuthorFollowPending = (username: string) => !!followPendingByUsername.value[username]
 
   /** Incrémenté à chaque `reset` — ignore les réponses HTTP obsolètes (courses / changement de topic). */
@@ -207,9 +207,9 @@ export function usePins() {
 
   const topics = computed(() => {
     const counts = new Map<string, { count: number; label: string }>()
-    feedPinsOnly(pins.value).forEach((pin) => {
-      const canonical = pin.topic
-      const label = pin.topicDisplay ?? pin.topic
+    feedFotosOnly(fotos.value).forEach((foto) => {
+      const canonical = foto.topic
+      const label = foto.topicDisplay ?? foto.topic
       const prev = counts.get(canonical)
       counts.set(canonical, {
         count: (prev?.count ?? 0) + 1,
@@ -222,7 +222,7 @@ export function usePins() {
       .map(([canonical, v]) => ({ canonical, label: v.label }))
   })
 
-  const loadPinCollection = async (
+  const loadFotoCollection = async (
     endpoint: string,
     reset = false,
     extraParams: Record<string, string | number | null | undefined> = {},
@@ -240,7 +240,7 @@ export function usePins() {
     const ticket = feedLoadGeneration
 
     const applyFirstPage = (items: FeedItem[], next: boolean) => {
-      pins.value = items.slice()
+      fotos.value = items.slice()
       currentPage.value = 2
       hasNextPage.value = next
       loading.value = false
@@ -260,17 +260,17 @@ export function usePins() {
         if (ticket !== feedLoadGeneration) return false
 
         const { rows: pinsData, next } = extractFeedPageRows(response.data)
-        const newPins: FeedItem[] = []
+        const newFotos: FeedItem[] = []
         for (const raw of pinsData) {
           if (raw == null || typeof raw !== 'object') continue
           const mapped = mapFeedRow(raw as Record<string, unknown>)
-          if (mapped) newPins.push(mapped)
+          if (mapped) newFotos.push(mapped)
         }
 
-        if (newPins.length > 0 || pinsData.length === 0) {
-          setCachedFeedFirstPage(feedKey, newPins.slice(), !!next)
-          if (!shallowJsonEqual(newPins, pins.value)) {
-            applyFirstPage(newPins, !!next)
+        if (newFotos.length > 0 || pinsData.length === 0) {
+          setCachedFeedFirstPage(feedKey, newFotos.slice(), !!next)
+          if (!shallowJsonEqual(newFotos, fotos.value)) {
+            applyFirstPage(newFotos, !!next)
           } else {
             hasNextPage.value = !!next
             currentPage.value = 2
@@ -293,7 +293,7 @@ export function usePins() {
       }
       currentPage.value = 1
       hasNextPage.value = true
-      pins.value = []
+      fotos.value = []
     }
 
     if (opts?.revalidate) {
@@ -324,24 +324,24 @@ export function usePins() {
       if (ticket !== feedLoadGeneration) return
 
       const { rows: pinsData, next } = extractFeedPageRows(response.data)
-      const newPins: FeedItem[] = []
+      const newFotos: FeedItem[] = []
       for (const raw of pinsData) {
         if (raw == null || typeof raw !== 'object') continue
         const mapped = mapFeedRow(raw as Record<string, unknown>)
-        if (mapped) newPins.push(mapped)
-        else console.warn('[usePins] Ligne de flux ignorée (mapping)')
+        if (mapped) newFotos.push(mapped)
+        else console.warn('[useFotos] Ligne de flux ignorée (mapping)')
       }
 
-      if (newPins.length > 0) {
-        pins.value = [...pins.value, ...newPins]
+      if (newFotos.length > 0) {
+        fotos.value = [...fotos.value, ...newFotos]
         currentPage.value += 1
         hasNextPage.value = !!next
         if (pageAtStart === 1) {
-          setCachedFeedFirstPage(feedKey, pins.value.slice(), !!next)
+          setCachedFeedFirstPage(feedKey, fotos.value.slice(), !!next)
         }
       } else {
         hasNextPage.value =
-          pinsData.length > 0 && newPins.length === 0 ? false : !!next
+          pinsData.length > 0 && newFotos.length === 0 ? false : !!next
       }
     } catch (err) {
       hasNextPage.value = false
@@ -354,41 +354,41 @@ export function usePins() {
     }
   }
 
-  async function fetchPins(
+  async function fetchFotos(
     reset = false,
     topic?: string | null,
     opts?: { bypassCache?: boolean },
   ) {
     try {
-      await loadPinCollection('pins/', reset, topic ? { topic } : {}, opts)
+      await loadFotoCollection('fotos/', reset, topic ? { topic } : {}, opts)
     } catch (err) {
-      console.warn('❌ Erreur lors de la récupération des pins.')
+      console.warn('❌ Erreur lors de la récupération des fotos.')
     }
   }
 
-  async function fetchPinBySlug(slug: string, options?: { force?: boolean }) {
-    if (!slug) throw new Error('fetchPinBySlug: slug vide')
+  async function fetchFotoBySlug(slug: string, options?: { force?: boolean }) {
+    if (!slug) throw new Error('fetchFotoBySlug: slug vide')
     if (!options?.force) {
-      const hit = getCachedPinDetail(slug)
+      const hit = getCachedFotoDetail(slug)
       if (hit) {
-        const idx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
-        if (idx >= 0 && isFeedPin(pins.value[idx])) {
-          pins.value[idx] = { ...pins.value[idx], ...hit }
+        const idx = fotos.value.findIndex((p) => isFeedFoto(p) && p.slug === slug)
+        if (idx >= 0 && isFeedFoto(fotos.value[idx])) {
+          fotos.value[idx] = { ...fotos.value[idx], ...hit }
         } else {
-          pins.value.push(hit)
+          fotos.value.push(hit)
         }
         runBackground(async () => {
           try {
-            const response = await api.get(`pins/${encodeURIComponent(slug)}/`, {
+            const response = await api.get(`fotos/${encodeURIComponent(slug)}/`, {
               params: { lang: currentLang.value },
             })
-            const mapped = mapDjangoPinToFrontend(response.data)
+            const mapped = mapDjangoFotoToFrontend(response.data)
             if (shallowJsonEqual(mapped, hit)) return
-            setCachedPinDetail(slug, mapped)
-            prefetchPinsMediaForOffline([mapped])
-            const liveIdx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
-            if (liveIdx >= 0 && isFeedPin(pins.value[liveIdx])) {
-              pins.value[liveIdx] = { ...pins.value[liveIdx], ...mapped }
+            setCachedFotoDetail(slug, mapped)
+            prefetchFotosMediaForOffline([mapped])
+            const liveIdx = fotos.value.findIndex((p) => isFeedFoto(p) && p.slug === slug)
+            if (liveIdx >= 0 && isFeedFoto(fotos.value[liveIdx])) {
+              fotos.value[liveIdx] = { ...fotos.value[liveIdx], ...mapped }
             }
           } catch {
             /* revalidation silencieuse */
@@ -396,66 +396,66 @@ export function usePins() {
         })
         return hit
       }
-      const inflight = pinDetailInFlight.get(slug)
+      const inflight = fotoDetailInFlight.get(slug)
       if (inflight) return inflight
     } else {
-      invalidatePinDetailClientCache(slug)
-      pinDetailInFlight.delete(slug)
+      invalidateFotoDetailClientCache(slug)
+      fotoDetailInFlight.delete(slug)
     }
 
     const run = (async () => {
       try {
-        const response = await api.get(`pins/${encodeURIComponent(slug)}/`, {
+        const response = await api.get(`fotos/${encodeURIComponent(slug)}/`, {
           params: { lang: currentLang.value },
         })
-        const mapped = mapDjangoPinToFrontend(response.data)
-        setCachedPinDetail(slug, mapped)
-        prefetchPinsMediaForOffline([mapped])
-        const idx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
-        if (idx >= 0 && isFeedPin(pins.value[idx])) {
-          pins.value[idx] = { ...pins.value[idx], ...mapped }
+        const mapped = mapDjangoFotoToFrontend(response.data)
+        setCachedFotoDetail(slug, mapped)
+        prefetchFotosMediaForOffline([mapped])
+        const idx = fotos.value.findIndex((p) => isFeedFoto(p) && p.slug === slug)
+        if (idx >= 0 && isFeedFoto(fotos.value[idx])) {
+          fotos.value[idx] = { ...fotos.value[idx], ...mapped }
         } else {
-          pins.value.push(mapped)
+          fotos.value.push(mapped)
         }
         return mapped
       } finally {
-        pinDetailInFlight.delete(slug)
+        fotoDetailInFlight.delete(slug)
       }
     })()
 
-    pinDetailInFlight.set(slug, run)
+    fotoDetailInFlight.set(slug, run)
     return run
   }
 
-  async function patchPinCommentsPolicy(slug: string, commentsPolicy: 'open' | 'followers_only' | 'closed') {
-    const response = await api.patch(`pins/${slug}/`, { comments_policy: commentsPolicy })
-    const mapped = mapDjangoPinToFrontend(response.data)
-    invalidatePinDetailClientCache(slug)
-    setCachedPinDetail(slug, mapped)
-    prefetchPinsMediaForOffline([mapped])
-    const idx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
-    if (idx >= 0 && isFeedPin(pins.value[idx])) {
-      pins.value[idx] = { ...pins.value[idx], ...mapped }
+  async function patchFotoCommentsPolicy(slug: string, commentsPolicy: 'open' | 'followers_only' | 'closed') {
+    const response = await api.patch(`fotos/${slug}/`, { comments_policy: commentsPolicy })
+    const mapped = mapDjangoFotoToFrontend(response.data)
+    invalidateFotoDetailClientCache(slug)
+    setCachedFotoDetail(slug, mapped)
+    prefetchFotosMediaForOffline([mapped])
+    const idx = fotos.value.findIndex((p) => isFeedFoto(p) && p.slug === slug)
+    if (idx >= 0 && isFeedFoto(fotos.value[idx])) {
+      fotos.value[idx] = { ...fotos.value[idx], ...mapped }
     }
     return mapped
   }
 
-  async function moderatePinComment(pinSlug: string, commentId: number, hidden: boolean) {
-    const response = await api.post(`pins/${pinSlug}/comments/${commentId}/moderate/`, { hidden })
+  async function moderateFotoComment(fotoSlug: string, commentId: number, hidden: boolean) {
+    const response = await api.post(`fotos/${fotoSlug}/comments/${commentId}/moderate/`, { hidden })
     return response.data
   }
 
-  async function deletePinComment(pinSlug: string, commentId: number) {
-    await api.delete(`pins/${pinSlug}/comments/${commentId}/`)
+  async function deleteFotoComment(fotoSlug: string, commentId: number) {
+    await api.delete(`fotos/${fotoSlug}/comments/${commentId}/`)
   }
 
-  async function reportPin(pinSlug: string, payload: { category: string; details: string }) {
-    const response = await api.post(`pins/${encodeURIComponent(pinSlug)}/report/`, payload)
+  async function reportFoto(fotoSlug: string, payload: { category: string; details: string }) {
+    const response = await api.post(`fotos/${encodeURIComponent(fotoSlug)}/report/`, payload)
     return response.data
   }
 
   async function reportComment(commentId: number, payload: { category: string; details: string }) {
-    const response = await api.post(`pins/comments/${commentId}/report/`, payload)
+    const response = await api.post(`fotos/comments/${commentId}/report/`, payload)
     return response.data
   }
 
@@ -475,10 +475,10 @@ export function usePins() {
 
   async function fetchRecommendations(reset = false, opts?: { bypassCache?: boolean }) {
     try {
-      await loadPinCollection('pins/recommendations/', reset, {}, opts)
+      await loadFotoCollection('fotos/recommendations/', reset, {}, opts)
     } catch (err) {
       console.warn('Error fetching recommendations, falling back to all pins')
-      await fetchPins(reset, null, opts)
+      await fetchFotos(reset, null, opts)
     }
   }
 
@@ -488,14 +488,14 @@ export function usePins() {
     opts?: { bypassCache?: boolean; revalidate?: boolean },
   ) {
     try {
-      await loadPinCollection('pins/home-feed/', reset, topic ? { topic } : {}, opts)
+      await loadFotoCollection('fotos/home-feed/', reset, topic ? { topic } : {}, opts)
     } catch (err) {
       console.warn('Error fetching home feed, fallback to recommendations')
       await fetchRecommendations(reset, opts)
     }
   }
 
-  async function fetchDiscoverPins(
+  async function fetchDiscoverFotos(
     reset = false,
     topic?: string | null,
     textQuery?: string | null,
@@ -506,69 +506,69 @@ export function usePins() {
       if (topic) extra.topic = topic
       const tq = (textQuery ?? '').trim()
       if (tq) extra.q = tq
-      await loadPinCollection('pins/discover/', reset, extra, opts)
+      await loadFotoCollection('fotos/discover/', reset, extra, opts)
     } catch (err) {
-      console.warn('Error fetching discover pins, fallback to public pins')
-      await fetchPins(reset, topic, opts)
+      console.warn('Error fetching discover fotos, fallback to public pins')
+      await fetchFotos(reset, topic, opts)
     }
   }
 
-  async function fetchFollowingPins(
+  async function fetchFollowingFotos(
     reset = false,
     opts?: { bypassCache?: boolean; revalidate?: boolean },
   ) {
     try {
-      await loadPinCollection('pins/following/', reset, {}, opts)
+      await loadFotoCollection('fotos/following/', reset, {}, opts)
     } catch (err) {
       console.warn('Error fetching following pins')
       if (reset) {
-        pins.value = []
+        fotos.value = []
         hasNextPage.value = false
       }
     }
   }
 
-  async function toggleLike(pinSlug: string) {
-    const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === pinSlug)
-    const previousLiked = pin?.liked ?? false
-    const previousReactions = pin?.stats.reactions ?? 0
-    if (pin) {
-      pin.liked = !previousLiked
-      pin.stats.reactions = Math.max(0, previousReactions + (pin.liked ? 1 : -1))
+  async function toggleLike(fotoSlug: string) {
+    const foto = fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === fotoSlug)
+    const previousLiked = foto?.liked ?? false
+    const previousReactions = foto?.stats.reactions ?? 0
+    if (foto) {
+      foto.liked = !previousLiked
+      foto.stats.reactions = Math.max(0, previousReactions + (pin.liked ? 1 : -1))
     }
-    setPendingFlag(likePendingBySlug.value, pinSlug, true)
+    setPendingFlag(likePendingBySlug.value, fotoSlug, true)
     try {
-      const response = await api.post(`pins/${pinSlug}/like/`)
-      if (pin) {
-        pin.liked = response.data.status === 'liked'
-        pin.stats.reactions = response.data.likes_count
+      const response = await api.post(`fotos/${fotoSlug}/like/`)
+      if (foto) {
+        foto.liked = response.data.status === 'liked'
+        foto.stats.reactions = response.data.likes_count
       }
       if (response.data.status === 'liked') {
-        trackEvent('pin_liked', { pin_slug: pinSlug })
-        trackOnce('first_like', { pin_slug: pinSlug })
+        trackEvent('foto_liked', { foto_slug: fotoSlug })
+        trackOnce('first_like', { foto_slug: fotoSlug })
       }
-      invalidatePinDetailClientCache(pinSlug)
+      invalidateFotoDetailClientCache(fotoSlug)
       return response.data
     } catch (err) {
-      if (pin) {
-        pin.liked = previousLiked
-        pin.stats.reactions = previousReactions
+      if (foto) {
+        foto.liked = previousLiked
+        foto.stats.reactions = previousReactions
       }
       console.error('Error toggling like:', err)
       throw err
     } finally {
-      setPendingFlag(likePendingBySlug.value, pinSlug, false)
+      setPendingFlag(likePendingBySlug.value, fotoSlug, false)
     }
   }
 
   async function fetchComments(
-    pinSlug: string,
+    fotoSlug: string,
     page = 1,
     sort: 'recent' | 'relevant' = 'recent',
     highlightCommentId?: number | null,
   ) {
     try {
-      const response = await api.get(`pins/${pinSlug}/comments/`, {
+      const response = await api.get(`fotos/${fotoSlug}/comments/`, {
         params: {
           page,
           sort,
@@ -598,7 +598,7 @@ export function usePins() {
     highlightCommentId?: number | null,
   ) {
     try {
-      const response = await api.get(`pins/comments/${commentId}/replies/`, {
+      const response = await api.get(`fotos/comments/${commentId}/replies/`, {
         params: {
           page,
           sort,
@@ -622,15 +622,15 @@ export function usePins() {
   }
 
   async function addComment(
-    pinSlug: string,
+    fotoSlug: string,
     payload: FormData | { text: string; gif?: string | null; parentId?: number | null },
   ) {
     try {
       /** Ne pas fixer `Content-Type` à la main sur FormData : axios ajoute le boundary requis ; sinon `parentId` / médias sont ignorés côté Django. */
-      const response = await api.post(`pins/${pinSlug}/comments/`, payload)
-      const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === pinSlug)
-      if (pin) {
-        pin.stats.reactions += 0 // On pourrait mettre à jour le count ici si on l'avait séparément
+      const response = await api.post(`fotos/${fotoSlug}/comments/`, payload)
+      const foto = fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === fotoSlug)
+      if (foto) {
+        foto.stats.reactions += 0 // On pourrait mettre à jour le count ici si on l'avait séparément
       }
       return response.data
     } catch (err) {
@@ -639,27 +639,27 @@ export function usePins() {
     }
   }
 
-  async function translatePinDescription(pinSlug: string, targetLang = 'fr') {
-    const response = await api.post(`pins/${pinSlug}/translate-description/`, {
+  async function translateFotoDescription(fotoSlug: string, targetLang = 'fr') {
+    const response = await api.post(`fotos/${fotoSlug}/translate-description/`, {
       target_lang: targetLang,
     })
     return response.data
   }
 
   async function translateComment(commentId: number, targetLang = 'fr') {
-    const response = await api.post(`pins/comments/${commentId}/translate/`, {
+    const response = await api.post(`fotos/comments/${commentId}/translate/`, {
       target_lang: targetLang,
     })
     return response.data
   }
 
   async function toggleCommentLike(commentId: number) {
-    const response = await api.post(`pins/comments/${commentId}/like/`)
+    const response = await api.post(`fotos/comments/${commentId}/like/`)
     return response.data
   }
 
-  async function getPinDownload(pinSlug: string, quality: 'standard' | 'hd' | '4k' = 'standard') {
-    const response = await api.get(`pins/${pinSlug}/download/`, {
+  async function getFotoDownload(fotoSlug: string, quality: 'standard' | 'hd' | '4k' = 'standard') {
+    const response = await api.get(`fotos/${fotoSlug}/download/`, {
       params: { quality },
     })
     return response.data
@@ -669,7 +669,7 @@ export function usePins() {
     days = 7,
     params?: { page?: number; page_size?: number },
   ) {
-    const response = await api.get('pins/creator-weekly-stats/', {
+    const response = await api.get('fotos/creator-weekly-stats/', {
       params: { days, ...params },
     })
     return response.data
@@ -679,7 +679,7 @@ export function usePins() {
     params?: { top_page?: number; top_page_size?: number; totalsOnly?: boolean },
   ) {
     const { totalsOnly, ...rest } = params || {}
-    const response = await api.get('pins/creator-stats/', {
+    const response = await api.get('fotos/creator-stats/', {
       params: {
         ...rest,
         ...(totalsOnly ? { totals_only: true } : {}),
@@ -693,7 +693,7 @@ export function usePins() {
     days?: number
     limit?: number
   }) {
-    const response = await api.get('pins/creator-engagement/', {
+    const response = await api.get('fotos/creator-engagement/', {
       params: {
         action: params.action,
         days: params.days ?? 30,
@@ -703,142 +703,142 @@ export function usePins() {
     return response.data
   }
 
-  async function fetchCreatorRecentPins(params?: { page?: number; page_size?: number }) {
-    const response = await api.get('pins/creator-recent-pins/', { params })
+  async function fetchCreatorRecentFotos(params?: { page?: number; page_size?: number }) {
+    const response = await api.get('fotos/creator-recent-fotos/', { params })
     return response.data
   }
 
   async function fetchCreatorCommentInbox(params?: { limit?: number; offset?: number }) {
-    const response = await api.get('pins/creator-comment-inbox/', { params })
+    const response = await api.get('fotos/creator-comment-inbox/', { params })
     return response.data
   }
 
   async function downloadCreatorStatsCsv(): Promise<Blob> {
-    const response = await api.get('pins/creator-stats-export/', { responseType: 'blob' })
+    const response = await api.get('fotos/creator-stats-export/', { responseType: 'blob' })
     return response.data as Blob
   }
 
-  async function fetchProvenance(pinSlug: string) {
-    const response = await api.get(`pins/${pinSlug}/provenance/`)
+  async function fetchProvenance(fotoSlug: string) {
+    const response = await api.get(`fotos/${fotoSlug}/provenance/`)
     return response.data
   }
 
-  async function fetchPrivateTags(pinSlug: string) {
-    const response = await api.get(`pins/${pinSlug}/private-tags/`)
+  async function fetchPrivateTags(fotoSlug: string) {
+    const response = await api.get(`fotos/${fotoSlug}/private-tags/`)
     return response.data.tags || []
   }
 
-  async function savePrivateTags(pinSlug: string, tags: string[]) {
-    const response = await api.post(`pins/${pinSlug}/private-tags/`, { tags })
+  async function savePrivateTags(fotoSlug: string, tags: string[]) {
+    const response = await api.post(`fotos/${fotoSlug}/private-tags/`, { tags })
     return response.data.tags || []
   }
 
-  async function addPin(pinData: FormData) {
+  async function addFoto(fotoData: FormData) {
     loading.value = true
     try {
       // Pour Django, on envoie un FormData car il y a une image
-      const response = await api.post('pins/', pinData, {
+      const response = await api.post('fotos/', fotoData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       })
-      const newPin = mapDjangoPinToFrontend(response.data)
-      pins.value.unshift(newPin)
+      const newFoto = mapDjangoFotoToFrontend(response.data)
+      fotos.value.unshift(newFoto)
       clearFeedFirstPageClientCache()
-      invalidateProfileCreatedPinsCacheForUsername(newPin.username)
-      setCachedPinDetail(newPin.slug, newPin)
-      return newPin
+      invalidateProfileCreatedFotosCacheForUsername(newFoto.username)
+      setCachedFotoDetail(newFoto.slug, newFoto)
+      return newFoto
     } catch (err) {
-      console.error('Erreur lors de l\'ajout du pin:', err)
+      console.error('Erreur lors de l\'ajout du foto:', err)
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  async function updatePin(slug: string, pinData: FormData) {
+  async function updateFoto(slug: string, fotoData: FormData) {
     loading.value = true
     try {
-      const response = await api.patch(`pins/${slug}/`, pinData, {
+      const response = await api.patch(`fotos/${slug}/`, fotoData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       })
-      const mapped = mapDjangoPinToFrontend(response.data)
-      invalidatePinDetailClientCache(slug)
+      const mapped = mapDjangoFotoToFrontend(response.data)
+      invalidateFotoDetailClientCache(slug)
       clearFeedFirstPageClientCache()
-      invalidateProfileCreatedPinsCacheForUsername(mapped.username)
-      const idx = pins.value.findIndex((p) => isFeedPin(p) && p.slug === slug)
-      if (idx >= 0 && isFeedPin(pins.value[idx])) {
-        pins.value[idx] = mapped
+      invalidateProfileCreatedFotosCacheForUsername(mapped.username)
+      const idx = fotos.value.findIndex((p) => isFeedFoto(p) && p.slug === slug)
+      if (idx >= 0 && isFeedFoto(fotos.value[idx])) {
+        fotos.value[idx] = mapped
       } else {
-        pins.value.push(mapped)
+        fotos.value.push(mapped)
       }
-      setCachedPinDetail(mapped.slug, mapped)
+      setCachedFotoDetail(mapped.slug, mapped)
       return mapped
     } catch (err) {
-      console.error('Erreur lors de la mise à jour du pin:', err)
+      console.error('Erreur lors de la mise à jour du foto:', err)
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  async function deletePin(slug: string) {
-    const victim = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
+  async function deleteFoto(slug: string) {
+    const victim = fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === slug)
     const authorU = victim?.username
-    await api.delete(`pins/${slug}/`)
-    pins.value = pins.value.filter((p) => !isFeedPin(p) || p.slug !== slug)
-    invalidatePinDetailClientCache(slug)
+    await api.delete(`fotos/${slug}/`)
+    fotos.value = fotos.value.filter((p) => !isFeedFoto(p) || p.slug !== slug)
+    invalidateFotoDetailClientCache(slug)
     clearFeedFirstPageClientCache()
-    if (authorU) invalidateProfileCreatedPinsCacheForUsername(authorU)
+    if (authorU) invalidateProfileCreatedFotosCacheForUsername(authorU)
   }
 
-  /** Hydrate le store `pins` depuis le cache détail si besoin (évite un flash skeleton sur `/pin/:slug`). */
-  function seedPinDetailCacheIntoStore(slug: string): Pin | undefined {
+  /** Hydrate le store `fotos` depuis le cache détail si besoin (évite un flash skeleton sur `/foto/:slug`). */
+  function seedFotoDetailCacheIntoStore(slug: string): Foto | undefined {
     if (!slug) return undefined
-    const existing = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
+    const existing = fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === slug)
     if (existing) return existing
-    const hit = getCachedPinDetail(slug)
+    const hit = getCachedFotoDetail(slug)
     if (hit) {
-      pins.value.push({ ...hit })
+      fotos.value.push({ ...hit })
       return hit
     }
     return undefined
   }
 
-  function getPin(slug: string): Pin | undefined {
-    return pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
+  function getFoto(slug: string): Foto | undefined {
+    return fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === slug)
   }
 
   async function toggleSave(slug: string) {
-    const pin = pins.value.find((p): p is Pin => isFeedPin(p) && p.slug === slug)
-    const previousSaved = pin?.saved ?? false
-    const previousSaves = pin?.stats.saves ?? 0
-    if (pin) {
-      pin.saved = !previousSaved
-      pin.stats.saves = Math.max(0, previousSaves + (pin.saved ? 1 : -1))
+    const foto = fotos.value.find((p): p is Foto => isFeedFoto(p) && p.slug === slug)
+    const previousSaved = foto?.saved ?? false
+    const previousSaves = foto?.stats.saves ?? 0
+    if (foto) {
+      foto.saved = !previousSaved
+      foto.stats.saves = Math.max(0, previousSaves + (pin.saved ? 1 : -1))
     }
     setPendingFlag(savePendingBySlug.value, slug, true)
     try {
-      const response = await api.post(`pins/${slug}/save/`)
-      if (pin) {
-        pin.saved = response.data.status === 'saved'
-        pin.stats.saves = response.data.saves_count
+      const response = await api.post(`fotos/${slug}/save/`)
+      if (foto) {
+        foto.saved = response.data.status === 'saved'
+        foto.stats.saves = response.data.saves_count
       }
       if (response.data.status === 'saved') {
-        trackEvent('pin_saved', { pin_slug: slug })
-        trackOnce('first_save', { pin_slug: slug })
+        trackEvent('foto_saved', { foto_slug: slug })
+        trackOnce('first_save', { foto_slug: slug })
         const { recordEngagementMoment } = await import('../utils/engagementMoments')
-        recordEngagementMoment('pin_saved')
+        recordEngagementMoment('foto_saved')
       }
       void fetchCurrentUser({ force: true, silent: true })
-      invalidatePinDetailClientCache(slug)
+      invalidateFotoDetailClientCache(slug)
       return response.data
     } catch (err) {
-      if (pin) {
-        pin.saved = previousSaved
-        pin.stats.saves = previousSaves
+      if (foto) {
+        foto.saved = previousSaved
+        foto.stats.saves = previousSaves
       }
       console.error('Error toggling save:', err)
       throw err
@@ -848,21 +848,21 @@ export function usePins() {
   }
 
   async function toggleFollow(username: string) {
-    const affectedPins = pins.value.filter(
-      (pin): pin is Pin => isFeedPin(pin) && pin.username === username,
+    const affectedFotos = fotos.value.filter(
+      (foto): foto is Foto => isFeedFoto(foto) && foto.username === username,
     )
-    const previousFollowState = affectedPins.map((pin) => pin.isFollowing)
-    affectedPins.forEach((pin) => {
-      pin.isFollowing = !pin.isFollowing
+    const previousFollowState = affectedFotos.map((foto) => foto.isFollowing)
+    affectedFotos.forEach((foto) => {
+      foto.isFollowing = !pin.isFollowing
     })
     setPendingFlag(followPendingByUsername.value, username, true)
     try {
       const response = await api.post(`profiles/${username}/follow/`)
       const isFollowed = response.data.status === 'followed'
 
-      // Update all pins from this author
-      pins.value.forEach((item) => {
-        if (isFeedPin(item) && item.username === username) {
+      // Update all fotos from this author
+      fotos.value.forEach((item) => {
+        if (isFeedFoto(item) && item.username === username) {
           item.isFollowing = isFollowed
         }
       })
@@ -871,8 +871,8 @@ export function usePins() {
 
       return response.data
     } catch (err) {
-      affectedPins.forEach((pin, index) => {
-        pin.isFollowing = previousFollowState[index]
+      affectedFotos.forEach((pin, index) => {
+        foto.isFollowing = previousFollowState[index]
       })
       console.error('Error toggling follow:', err)
       throw err
@@ -890,10 +890,10 @@ export function usePins() {
     return String(Math.floor(n))
   }
 
-  async function trackPinView(pinSlug: string) {
-    trackEvent('pin_viewed', { pin_slug: pinSlug })
+  async function trackFotoView(fotoSlug: string) {
+    trackEvent('foto_viewed', { foto_slug: fotoSlug })
     try {
-      await api.post(`pins/${pinSlug}/view/`)
+      await api.post(`fotos/${fotoSlug}/view/`)
     } catch (err) {
       // non-blocking analytics call
     }
@@ -902,68 +902,68 @@ export function usePins() {
   async function trackSearchInteraction(query: string) {
     trackEvent('search_performed', { query: query.trim().slice(0, 120) })
     try {
-      await api.post('pins/search-interactions/', { query })
+      await api.post('fotos/search-interactions/', { query })
     } catch (err) {
       // non-blocking analytics call
     }
   }
 
-  async function fetchPinLikers(pinSlug: string): Promise<PinLikersResponse> {
-    const res = await api.get(`pins/${encodeURIComponent(pinSlug)}/likes/`)
-    return res.data as PinLikersResponse
+  async function fetchFotoLikers(fotoSlug: string): Promise<FotoLikersResponse> {
+    const res = await api.get(`fotos/${encodeURIComponent(fotoSlug)}/likes/`)
+    return res.data as FotoLikersResponse
   }
 
   return {
-    pins,
+    fotos,
     topics,
     loading,
     error,
     hasNextPage,
     isFetchingNextPage,
-    fetchPins,
-    fetchPinBySlug,
-    patchPinCommentsPolicy,
-    moderatePinComment,
-    deletePinComment,
-    reportPin,
+    fetchFotos,
+    fetchFotoBySlug,
+    patchFotoCommentsPolicy,
+    moderateFotoComment,
+    deleteFotoComment,
+    reportFoto,
     reportComment,
     reportProfile,
     blockUser,
     unblockUser,
     fetchRecommendations,
     fetchHomeFeed,
-    fetchDiscoverPins,
-    fetchFollowingPins,
-    addPin,
-    updatePin,
-    deletePin,
-    getPin,
-    seedPinDetailCacheIntoStore,
+    fetchDiscoverFotos,
+    fetchFollowingFotos,
+    addFoto,
+    updateFoto,
+    deleteFoto,
+    getFoto,
+    seedFotoDetailCacheIntoStore,
     toggleSave,
     toggleLike,
     toggleFollow,
-    isPinSavePending,
-    isPinLikePending,
+    isFotoSavePending,
+    isFotoLikePending,
     isAuthorFollowPending,
     fetchComments,
     fetchCommentReplies,
     addComment,
-    translatePinDescription,
+    translateFotoDescription,
     translateComment,
     toggleCommentLike,
-    getPinDownload,
+    getFotoDownload,
     fetchCreatorStats,
     fetchCreatorWeeklyStats,
     fetchCreatorEngagement,
-    fetchCreatorRecentPins,
+    fetchCreatorRecentFotos,
     fetchCreatorCommentInbox,
     downloadCreatorStatsCsv,
     fetchProvenance,
     fetchPrivateTags,
     savePrivateTags,
-    trackPinView,
+    trackFotoView,
     trackSearchInteraction,
-    fetchPinLikers,
+    fetchFotoLikers,
     formatCount,
   }
 }

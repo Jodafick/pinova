@@ -7,4 +7,4 @@ export {
   passwordStrengthScore,
   passwordStrengthLabelKey,
   type PasswordRuleId,
-} from '@pinova/shared'
+} from '@fotoce/shared'

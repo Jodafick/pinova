@@ -19,14 +19,14 @@
  *
  *   const installExpRef = ref<InstanceType<typeof PwaInstallExperience>>()
  *   <PwaInstallExperience ref="installExpRef" />
- *   <button @click="installExpRef?.open()">Installer Pinova</button>
+ *   <button @click="installExpRef?.open()">Installer Fotoce</button>
  *
  *   // Ou: helper global
  *   import { openPwaInstall } from './PwaInstallExperience.vue'
  *   openPwaInstall()
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import PinovaModal from '../ui/PinovaModal.vue'
+import FotoceModal from '../ui/FotoceModal.vue'
 import { usePwaContext } from '../../composables/usePwaContext'
 import { useI18n } from '../../i18n'
 import { registerPwaInstallOpener } from '../../utils/pwaInstallBridge'
@@ -96,7 +96,7 @@ defineExpose({ open, close, isSnoozed, scenario })
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     v-if="scenario !== 'unsupported'"
     v-model:open="isOpen"
     presentation="tallSheet"
@@ -120,7 +120,7 @@ defineExpose({ open, close, isSnoozed, scenario })
       <div
         class="pwa-install__hero-logo relative grid size-[72px] place-items-center overflow-hidden rounded-[22px] bg-white shadow-lg shadow-pink-600/25 ring-1 ring-black/5 dark:bg-neutral-800 dark:shadow-black/40 dark:ring-white/10"
       >
-        <img src="/logo.png" alt="Pinova" width="68" height="68" class="size-16 object-cover" />
+        <img src="/logo.png" alt="Fotoce" width="68" height="68" class="size-16 object-cover" />
       </div>
     </div>
 
@@ -145,15 +145,15 @@ defineExpose({ open, close, isSnoozed, scenario })
       </p>
       <ul class="mb-5 flex list-none flex-col gap-2 p-0">
         <li class="flex items-center gap-2.5 text-[15px] text-neutral-800 dark:text-neutral-100">
-          <PinovaIcon name="flash_on" class="shrink-0 text-[22px] text-pink-600 dark:text-pink-400" />
+          <FotoceIcon name="flash_on" class="shrink-0 text-[22px] text-pink-600 dark:text-pink-400" />
           <span>{{ t('pwa.install.bullet.fast') }}</span>
         </li>
         <li class="flex items-center gap-2.5 text-[15px] text-neutral-800 dark:text-neutral-100">
-          <PinovaIcon name="offline_bolt" class="shrink-0 text-[22px] text-pink-600 dark:text-pink-400" />
+          <FotoceIcon name="offline_bolt" class="shrink-0 text-[22px] text-pink-600 dark:text-pink-400" />
           <span>{{ t('pwa.install.bullet.offline') }}</span>
         </li>
         <li class="flex items-center gap-2.5 text-[15px] text-neutral-800 dark:text-neutral-100">
-          <PinovaIcon name="notifications_active" class="shrink-0 text-[22px] text-pink-600 dark:text-pink-400" />
+          <FotoceIcon name="notifications_active" class="shrink-0 text-[22px] text-pink-600 dark:text-pink-400" />
           <span>{{ t('pwa.install.bullet.notifs') }}</span>
         </li>
       </ul>
@@ -167,7 +167,7 @@ defineExpose({ open, close, isSnoozed, scenario })
         class="w-full flex items-center justify-center gap-2 rounded-2xl border-0 bg-gradient-to-br from-pink-600 to-pink-500 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-pink-600/30 transition [transition-property:transform,filter] active:scale-[0.98] active:brightness-[0.96] dark:shadow-pink-900/45"
         @click="clickInstall"
       >
-        <PinovaIcon name="install_mobile" class="text-[22px]" />
+        <FotoceIcon name="install_mobile" class="text-[22px]" />
         {{ t('pwa.install.installNow') }}
       </button>
       <button
@@ -192,13 +192,13 @@ defineExpose({ open, close, isSnoozed, scenario })
         <div
           class="mb-2.5 flex items-center justify-center gap-1.5 rounded-xl bg-black/[0.06] px-3 py-2 text-[13px] font-semibold text-neutral-800 dark:bg-white/10 dark:text-neutral-100"
         >
-          <PinovaIcon name="lock" class="pwa-install__safari-lock !text-sm opacity-60" />
-          <span class="pwa-install__safari-host tracking-tight">pinova…</span>
+          <FotoceIcon name="lock" class="pwa-install__safari-lock !text-sm opacity-60" />
+          <span class="pwa-install__safari-host tracking-tight">fotoce…</span>
         </div>
         <div class="flex items-center justify-center gap-4 px-1 pb-1 pt-2">
-          <PinovaIcon name="chevron_backward" class="pwa-install__glass-icon-btn text-[22px] leading-none text-neutral-900 dark:text-white block translate-y-px opacity-[0.38]" />
-          <PinovaIcon name="ios_share" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse text-[22px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
-          <PinovaIcon name="more_horiz" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
+          <FotoceIcon name="chevron_backward" class="pwa-install__glass-icon-btn text-[22px] leading-none text-neutral-900 dark:text-white block translate-y-px opacity-[0.38]" />
+          <FotoceIcon name="ios_share" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse text-[22px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
+          <FotoceIcon name="more_horiz" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--pulse text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
         </div>
       </div>
 
@@ -212,7 +212,7 @@ defineExpose({ open, close, isSnoozed, scenario })
             1
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
-            <PinovaIcon name="more_horiz" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
+            <FotoceIcon name="more_horiz" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step1') }}
             </p>
@@ -227,7 +227,7 @@ defineExpose({ open, close, isSnoozed, scenario })
             2
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
-            <PinovaIcon name="ios_share" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
+            <FotoceIcon name="ios_share" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step2') }}
             </p>
@@ -242,7 +242,7 @@ defineExpose({ open, close, isSnoozed, scenario })
             3
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
-            <PinovaIcon name="add_box" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
+            <FotoceIcon name="add_box" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step3') }}
             </p>
@@ -257,7 +257,7 @@ defineExpose({ open, close, isSnoozed, scenario })
             4
           </div>
           <div class="flex min-w-0 flex-1 items-center gap-3">
-            <PinovaIcon name="touch_app" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
+            <FotoceIcon name="touch_app" class="pwa-install__glass-icon-btn pwa-install__glass-icon-btn--sm text-[21px] leading-none text-neutral-900 dark:text-white block translate-y-px" />
             <p class="m-0 flex-1 text-[14.5px] leading-snug text-neutral-800 dark:text-neutral-100">
               {{ t('pwa.install.step4') }}
             </p>
@@ -274,7 +274,7 @@ defineExpose({ open, close, isSnoozed, scenario })
     </template>
 
     <template v-else />
-  </PinovaModal>
+  </FotoceModal>
 </template>
 
 <style scoped>

@@ -37,7 +37,7 @@ onMounted(async () => {
 
       <div v-else-if="success" class="animate-fade-in">
         <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-6">
-          <PinovaIcon name="verified" class="text-green-600 text-3xl" />
+          <FotoceIcon name="verified" class="text-green-600 text-3xl" />
         </div>
         <h2 class="text-2xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.success.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ t('verifyEmail.success.desc') }}</p>
@@ -48,7 +48,7 @@ onMounted(async () => {
 
       <div v-else class="animate-fade-in">
         <div class="w-16 h-16 rounded-full bg-pink-50 flex items-center justify-center mx-auto mb-6">
-          <PinovaIcon name="error_outline" class="text-pink-700 text-3xl" />
+          <FotoceIcon name="error_outline" class="text-pink-700 text-3xl" />
         </div>
         <h2 class="text-2xl font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-2">{{ t('verifyEmail.error.title') }}</h2>
         <p class="text-neutral-500 dark:text-neutral-400">{{ error }}</p>

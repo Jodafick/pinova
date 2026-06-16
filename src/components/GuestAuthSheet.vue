@@ -5,7 +5,7 @@ import { useTokenClient } from 'vue3-google-signin'
 import { GOOGLE_SIGN_IN_SCOPES } from '../config/env'
 import { useAuth } from '../composables/useAuth'
 import { redirectAfterAuth } from '../utils/postAuthRedirect'
-import PinovaButton from './ui/PinovaButton.vue'
+import FotoceButton from './ui/FotoceButton.vue'
 
 const props = defineProps<{
   open: boolean
@@ -80,20 +80,20 @@ function goRegister() {
               <p class="text-xs font-semibold text-pink-600/90 dark:text-pink-400 mt-2">{{ t('guestGate.socialProof') }}</p>
             </div>
             <button type="button" class="h-9 w-9 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center" @click="emit('close')">
-              <PinovaIcon name="close" />
+              <FotoceIcon name="close" />
             </button>
           </div>
         </div>
         <div class="p-5 space-y-3">
-          <PinovaButton
+          <FotoceButton
             data-testid="guest-auth-register"
             variant="primary"
             block
             @click="goRegister"
           >
             {{ t('guestGate.ctaRegister') }}
-          </PinovaButton>
-          <PinovaButton
+          </FotoceButton>
+          <FotoceButton
             v-if="googleReady"
             variant="secondary"
             block
@@ -101,10 +101,10 @@ function goRegister() {
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5 shrink-0" alt="" />
             {{ t('login.googleCta') }}
-          </PinovaButton>
-          <PinovaButton variant="ghost" block @click="goLogin">
+          </FotoceButton>
+          <FotoceButton variant="ghost" block @click="goLogin">
             {{ t('guestGate.ctaLogin') }}
-          </PinovaButton>
+          </FotoceButton>
         </div>
       </div>
     </div>

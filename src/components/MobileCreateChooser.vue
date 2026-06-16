@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '../i18n'
-import PinovaModal from './ui/PinovaModal.vue'
+import FotoceModal from './ui/FotoceModal.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -67,7 +67,7 @@ function onStoryLinkClick(ev: MouseEvent) {
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     :open="modalOpen"
     presentation="tallSheet"
     :show-header="false"
@@ -86,7 +86,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           :aria-label="t('common.close')"
           @click="close"
         >
-          <PinovaIcon name="close" class="text-[22px] leading-none" />
+          <FotoceIcon name="close" class="text-[22px] leading-none" />
         </button>
       </div>
 
@@ -103,7 +103,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           @click="onPinLinkClick"
         >
           <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-amber-600 text-white shadow-lg shadow-amber-900/20 dark:bg-amber-500">
-            <PinovaIcon name="bolt" class="text-2xl" />
+            <FotoceIcon name="bolt" class="text-2xl" />
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-black">{{ t('create.mobile.quickTitle') }}</span>
@@ -117,7 +117,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           @click="onPinLinkClick"
         >
           <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-pink-700 text-white shadow-lg shadow-pink-900/20 dark:bg-pink-600">
-            <PinovaIcon name="add_photo_alternate" class="text-2xl" />
+            <FotoceIcon name="add_photo_alternate" class="text-2xl" />
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-black">{{ t('create.mobile.pinTitle') }}</span>
@@ -132,7 +132,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           @click="onStoryLinkClick"
         >
           <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white shadow-lg bg-violet-600 shadow-violet-900/20">
-            <PinovaIcon name="auto_stories" class="text-2xl" />
+            <FotoceIcon name="auto_stories" class="text-2xl" />
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-black">{{ t('create.mobile.storyTitle') }}</span>
@@ -146,7 +146,7 @@ function onStoryLinkClick(ev: MouseEvent) {
           disabled
         >
           <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white shadow-lg bg-neutral-400 shadow-black/10">
-            <PinovaIcon name="auto_stories" class="text-2xl" />
+            <FotoceIcon name="auto_stories" class="text-2xl" />
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-black">{{ t('create.mobile.storyTitle') }}</span>
@@ -159,5 +159,5 @@ function onStoryLinkClick(ev: MouseEvent) {
         {{ t('create.mobile.sourceChooserFootnote') }}
       </p>
     </div>
-  </PinovaModal>
+  </FotoceModal>
 </template>

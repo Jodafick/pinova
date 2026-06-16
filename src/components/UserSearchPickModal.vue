@@ -4,8 +4,8 @@ import { useI18n } from '../i18n'
 import { fetchMentionUsersPage, type SuggestUserRow } from '../composables/useUserSuggestSearch'
 import { displayInitials } from '../utils/displayInitials'
 import AvatarDisc from './AvatarDisc.vue'
-import PinovaModal from './ui/PinovaModal.vue'
-import PinovaButton from './ui/PinovaButton.vue'
+import FotoceModal from './ui/FotoceModal.vue'
+import FotoceButton from './ui/FotoceButton.vue'
 
 type InviteDisambiguationRow = { username: string; display_name: string }
 
@@ -119,7 +119,7 @@ function pickUser(username: string) {
 
 function onKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return
-  /* Escape : géré par PinovaModal — on n'intercepte plus pour éviter le double-handling. */
+  /* Escape : géré par FotoceModal — on n'intercepte plus pour éviter le double-handling. */
   if (!results.value.length && e.key !== 'Tab') return
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -161,7 +161,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
-  <PinovaModal
+  <FotoceModal
     :open="modelValue"
     presentation="tallSheet"
     presentation-lg="center"
@@ -173,7 +173,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   >
     <div class="px-4 pt-2 pb-2">
       <div class="app-input-surface flex items-center gap-2 rounded-2xl px-3 py-2.5 transition">
-        <PinovaIcon name="person_search" class="text-neutral-400 text-xl" />
+        <FotoceIcon name="person_search" class="text-neutral-400 text-xl" />
         <input
           ref="inputRef"
           v-model="searchQuery"
@@ -267,10 +267,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
     <template #footer>
       <div class="flex justify-end gap-2 px-2">
-        <PinovaButton variant="secondary" size="sm" @click="close">
+        <FotoceButton variant="secondary" size="sm" @click="close">
           {{ t('common.cancel') }}
-        </PinovaButton>
+        </FotoceButton>
       </div>
     </template>
-  </PinovaModal>
+  </FotoceModal>
 </template>

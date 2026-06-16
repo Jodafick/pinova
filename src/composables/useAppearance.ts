@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 export type AppearanceMode = 'light' | 'dark'
 export type AppearancePreference = 'light' | 'dark' | 'system'
 
-const STORAGE_KEY = 'pinova-appearance'
-const PREF_STORAGE_KEY = 'pinova-appearance-pref'
+const STORAGE_KEY = 'fotoce-appearance'
+const PREF_STORAGE_KEY = 'fotoce-appearance-pref'
 
 /** Mode effectif appliqué (light/dark). */
 const mode = ref<AppearanceMode>('light')
@@ -66,13 +66,13 @@ export function initAppearance(): void {
 export function applyAppearanceClass(m: AppearanceMode): void {
   if (typeof document === 'undefined') return
   document.documentElement.classList.toggle('dark', m === 'dark')
-  document.documentElement.dataset.pinovaAccent =
-    (typeof document !== 'undefined' && document.documentElement.dataset.pinovaAccent) || 'rose'
+  document.documentElement.dataset.fotoceAccent =
+    (typeof document !== 'undefined' && document.documentElement.dataset.fotoceAccent) || 'rose'
 }
 
 export function applyAccentColor(accentId: string): void {
   if (typeof document === 'undefined') return
-  document.documentElement.dataset.pinovaAccent = accentId || 'rose'
+  document.documentElement.dataset.fotoceAccent = accentId || 'rose'
 }
 
 function persistAppearance(pref: AppearancePreference, effective: AppearanceMode): void {

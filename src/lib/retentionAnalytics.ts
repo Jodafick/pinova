@@ -3,7 +3,7 @@ import {
   syncRetentionCohortEvents,
   type RetentionCohortContext,
   type RetentionCohortProps,
-} from '@pinova/shared'
+} from '@fotoce/shared'
 
 export type { RetentionCohortProps }
 

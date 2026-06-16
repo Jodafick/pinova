@@ -15,14 +15,14 @@ describe('guest conversion funnel', () => {
   it('expose les propriétés PostHog quand un intent invité est en attente', () => {
     savePendingIntent({
       type: 'like',
-      resourceId: 'test-pin-slug',
-      metadata: { pinSlug: 'test-pin-slug' },
+      resourceId: 'test-foto-slug',
+      metadata: { fotoSlug: 'test-foto-slug' },
     })
 
     expect(guestConversionProps()).toEqual({
       from_guest_conversion: true,
       guest_action: 'like',
-      guest_resource_id: 'test-pin-slug',
+      guest_resource_id: 'test-foto-slug',
     })
   })
 
@@ -30,13 +30,13 @@ describe('guest conversion funnel', () => {
     savePendingIntent({
       type: 'like',
       resourceId: 'summer-vibes',
-      metadata: { pinSlug: 'summer-vibes', returnPath: '/pin/summer-vibes' },
+      metadata: { fotoSlug: 'summer-vibes', returnPath: '/foto/summer-vibes' },
     })
 
     const pending = peekPendingIntent()
     expect(pending?.type).toBe('like')
     expect(pending?.resourceId).toBe('summer-vibes')
-    expect(pending?.metadata?.returnPath).toBe('/pin/summer-vibes')
+    expect(pending?.metadata?.returnPath).toBe('/foto/summer-vibes')
     expect(sessionStorage.getItem(PENDING_INTENT_STORAGE_KEY)).toBeTruthy()
   })
 

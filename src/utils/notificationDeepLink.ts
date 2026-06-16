@@ -1,13 +1,13 @@
 import type { Router } from 'vue-router'
-import { pushPinDetailOverlay } from './pinOverlayNavigation'
+import { pushFotoDetailOverlay } from './fotoOverlayNavigation'
 
 /**
  * Données minimales pour router comme une notification API / un clic push (service worker).
  */
 export type WebNotificationNavInput = {
   metadata?: Record<string, unknown> | null
-  pin_slug?: string | null
-  pin_id?: number | null
+  foto_slug?: string | null
+  foto_id?: number | null
   comment_id?: number | string | null
   action_url?: string | null
   notification_type?: string | null
@@ -24,7 +24,7 @@ function parseCommentQueryId(raw: unknown): string | undefined {
 
 /**
  * Navigation unique pour liste déroulante header, page /notifications, et push web.
- * Aligné sur `Pinova-Mobile` `navigateFromNotificationNavInput` (types metadata, contest, parrainage).
+ * Aligné sur `Fotoce-Mobile` `navigateFromNotificationNavInput` (types metadata, contest, parrainage).
  */
 export function navigateWebNotificationDeepLink(
   router: Router,
@@ -34,15 +34,15 @@ export function navigateWebNotificationDeepLink(
 ): void {
   const meta = input.metadata && typeof input.metadata === 'object' ? input.metadata : {}
   const metadataKind = String(meta.kind || '').trim().toLowerCase()
-  const pinSlug = (input.pin_slug || '').trim()
+  const fotoSlug = (input.foto_slug || '').trim()
   const commentId = parseCommentQueryId(input.comment_id)
-  const isStoryPin = Boolean(meta.is_story && pinSlug)
+  const isStoryPin = Boolean(meta.is_story && fotoSlug)
   const nType = String(input.notification_type || '').trim().toLowerCase()
   const senderUser = String(input.sender_username || '').trim()
 
   const overlayPush = () => {
-    if (!pinSlug) return false
-    pushPinDetailOverlay(router, pinSlug, {
+    if (!fotoSlug) return false
+    pushFotoDetailOverlay(router, fotoSlug, {
       commentId,
       routeContext: mode === 'notificationsPage' ? routeContext : undefined,
       preferNotificationsFallback: mode === 'header',
@@ -56,7 +56,7 @@ export function navigateWebNotificationDeepLink(
   }
 
   if (metadataKind === 'contest_rank_update' || metadataKind === 'contest_display_rank_change') {
-    if (pinSlug) {
+    if (fotoSlug) {
       if (overlayPush()) return
     }
     router.push('/contest/live')
@@ -77,14 +77,14 @@ export function navigateWebNotificationDeepLink(
     return
   }
 
-  if (isStoryPin && pinSlug) {
-    const q: Record<string, string> = { story: pinSlug }
+  if (isStoryPin && fotoSlug) {
+    const q: Record<string, string> = { story: fotoSlug }
     if (commentId) q.commentId = commentId
     router.push({ path: '/', query: q })
     return
   }
 
-  if (pinSlug) {
+  if (fotoSlug) {
     if (overlayPush()) return
   }
 
@@ -93,7 +93,7 @@ export function navigateWebNotificationDeepLink(
     return
   }
 
-  if (input.pin_id) {
+  if (input.foto_id) {
     router.push('/')
     return
   }

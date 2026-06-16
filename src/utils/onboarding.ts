@@ -1,4 +1,4 @@
-import { userNeedsOnboarding } from '@pinova/shared'
+import { userNeedsOnboarding } from '@fotoce/shared'
 import type { User } from '../types'
 
 export { userNeedsOnboarding }

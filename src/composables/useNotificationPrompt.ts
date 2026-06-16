@@ -8,10 +8,10 @@ import { isWebPushBackendReady, isWebPushSupported } from '../utils/webPushClien
 import { onEngagementMoment, type EngagementMoment } from '../utils/engagementMoments'
 import { canShowPromptAfter, setNotificationPromptOpen } from '../utils/promptCoordinator'
 
-const DECLINED_KEY = 'pinova_notif_prompt_declined'
-const SNOOZE_KEY = 'pinova_notif_prompt_snooze_until'
-const COMPLETED_KEY = 'pinova_notif_prompt_completed'
-const SESSION_FALLBACK_KEY = 'pinova_notif_prompt_fallback_session'
+const DECLINED_KEY = 'fotoce_notif_prompt_declined'
+const SNOOZE_KEY = 'fotoce_notif_prompt_snooze_until'
+const COMPLETED_KEY = 'fotoce_notif_prompt_completed'
+const SESSION_FALLBACK_KEY = 'fotoce_notif_prompt_fallback_session'
 
 /** Délai après un moment d’engagement (laisser savourer l’action avant la demande). */
 const MOMENT_DELAY_MS = 4500
@@ -56,7 +56,7 @@ function storageAllowsPrompt(): boolean {
 
 function momentToReason(moment: EngagementMoment): NotificationPromptReason {
   if (moment === 'user_followed') return 'follow'
-  if (moment === 'pin_saved') return 'save'
+  if (moment === 'foto_saved') return 'save'
   return 'default'
 }
 

@@ -13,13 +13,13 @@ type FlagDefinition = {
 
 const FLAG_DEFS: Record<FeatureFlag, FlagDefinition> = {
   onboarding_v2: {
-    storageKey: 'pinova_flag_onboarding_v2',
+    storageKey: 'fotoce_flag_onboarding_v2',
     envKey: 'VITE_FEATURE_ONBOARDING_V2',
     rolloutPercent: 100,
   },
 }
 
-const DISTINCT_STORAGE = 'pinova_analytics_distinct_id'
+const DISTINCT_STORAGE = 'fotoce_analytics_distinct_id'
 
 function readStorage(key: string): string | null {
   if (typeof window === 'undefined') return null

@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { CreatorMilestoneId } from '@pinova/shared'
+import type { CreatorMilestoneId } from '@fotoce/shared'
 
 export type PublishedPinPayload = {
   slug: string
@@ -36,7 +36,7 @@ export function closeCreatorSuggestions() {
   suggestionsOpen.value = false
 }
 
-export function clearPendingPublishedPin() {
+export function clearPendingPublishedFoto() {
   pendingPublishedPin.value = null
 }
 

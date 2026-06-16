@@ -64,7 +64,7 @@ async function copyText(text: string, msgKey: 'link' | 'code') {
 function shareNative() {
   const url = linkWeb.value
   if (!url) return
-  const payload = { title: 'Pinova', text: t('referral.invite.shareText', { code: myCode.value }), url }
+  const payload = { title: 'Fotoce', text: t('referral.invite.shareText', { code: myCode.value }), url }
   if (navigator.share) {
     void navigator.share(payload).catch(() => undefined)
   } else {

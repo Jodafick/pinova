@@ -4,7 +4,7 @@
  * "premium iOS" inspirée du mobile RN (feedWashTop / feedWashBottom / glassFill).
  *
  * Composé de :
- *  - Un wash rose subtil en haut (fade pin → transparent) qui rend la scroll-area
+ *  - Un wash rose subtil en haut (fade foto → transparent) qui rend la scroll-area
  *    plus chaleureuse et adoucit l'éventuelle status bar.
  *  - Un wash bas (transparent → fade neutral) qui crée une "fondue" sous la tab bar.
  *  - Optionnel : couche glass (saturate + blur) au-dessus pour les pages plein écran.

@@ -1,6 +1,6 @@
 /**
  * Scan NSFW local (nsfwjs + TensorFlow.js) — chunk séparé, chargé uniquement
- * sur /create, /story/create, /pin/:slug/edit ou double-vérification client.
+ * sur /create, /story/create, /foto/:slug/edit ou double-vérification client.
  */
 import {
   STORY_VIDEO_MIN_SIZE_MB,

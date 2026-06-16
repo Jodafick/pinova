@@ -146,8 +146,8 @@ onBeforeUnmount(() => {
 <template>
   <Teleport to="body">
     <div
-      class="pinova-toast-host"
-      :class="prefersReducedMotion ? 'pinova-toast-host--rm' : ''"
+      class="fotoce-toast-host"
+      :class="prefersReducedMotion ? 'fotoce-toast-host--rm' : ''"
       :style="{
         paddingTop: `calc(${safeTop}px + 0.75rem)`,
         paddingBottom: `calc(${safeBottom}px + 1rem)`,
@@ -156,15 +156,15 @@ onBeforeUnmount(() => {
       aria-atomic="true"
       role="status"
     >
-      <transition-group name="pinova-toast" tag="div" class="pinova-toast-stack">
+      <transition-group name="fotoce-toast" tag="div" class="fotoce-toast-stack">
         <div
           v-for="toast in list"
           :key="toast.id"
-          class="pinova-toast"
+          class="fotoce-toast"
           :class="[
-            `pinova-toast--${toast.kind}`,
-            toast.surface === 'notification' ? 'pinova-toast--notification' : 'pinova-toast--default',
-            draggingId === toast.id ? 'pinova-toast--dragging' : '',
+            `fotoce-toast--${toast.kind}`,
+            toast.surface === 'notification' ? 'fotoce-toast--notification' : 'fotoce-toast--default',
+            draggingId === toast.id ? 'fotoce-toast--dragging' : '',
           ]"
           :style="offsetStyle(toast)"
           @pointerdown="onPointerDown($event, toast.id)"
@@ -172,27 +172,27 @@ onBeforeUnmount(() => {
           @pointerup="onPointerUp($event, toast)"
           @pointercancel="onPointerUp($event, toast)"
         >
-          <PinovaIcon :name="iconFor(toast.kind)" class="pinova-toast__icon" />
-          <div class="pinova-toast__body">
-            <p class="pinova-toast__message">{{ toast.message }}</p>
-            <p v-if="toast.description" class="pinova-toast__desc">{{ toast.description }}</p>
-            <p v-if="toast.surface === 'notification' && isLgDown && toast.actionLabel" class="pinova-toast__hint">
+          <FotoceIcon :name="iconFor(toast.kind)" class="fotoce-toast__icon" />
+          <div class="fotoce-toast__body">
+            <p class="fotoce-toast__message">{{ toast.message }}</p>
+            <p v-if="toast.description" class="fotoce-toast__desc">{{ toast.description }}</p>
+            <p v-if="toast.surface === 'notification' && isLgDown && toast.actionLabel" class="fotoce-toast__hint">
               ← / ↑ {{ t('notifications.live.dismissHint') }}
             </p>
           </div>
           <button
             v-if="toast.actionLabel"
             type="button"
-            class="pinova-toast__action max-lg:hidden"
+            class="fotoce-toast__action max-lg:hidden"
             @click.stop="handleAction(toast)"
           >{{ toast.actionLabel }}</button>
           <button
             type="button"
-            class="pinova-toast__close"
+            class="fotoce-toast__close"
             :aria-label="t('common.close')"
             @click.stop="closeToast(toast)"
           >
-            <PinovaIcon name="close" class="text-[18px] leading-none" />
+            <FotoceIcon name="close" class="text-[18px] leading-none" />
           </button>
         </div>
       </transition-group>
@@ -201,7 +201,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.pinova-toast-host {
+.fotoce-toast-host {
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
 }
 
 @media (min-width: 1024px) {
-  .pinova-toast-host {
+  .fotoce-toast-host {
     justify-content: flex-end;
     align-items: flex-end;
     padding-left: 1rem;
@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
   }
 }
 
-.pinova-toast-stack {
+.fotoce-toast-stack {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
@@ -233,13 +233,13 @@ onBeforeUnmount(() => {
 }
 
 @media (min-width: 1024px) {
-  .pinova-toast-stack {
+  .fotoce-toast-stack {
     width: min(100%, 22rem);
     margin-left: auto;
   }
 }
 
-.pinova-toast {
+.fotoce-toast {
   pointer-events: auto;
   position: relative;
   display: flex;
@@ -263,11 +263,11 @@ onBeforeUnmount(() => {
   user-select: none;
 }
 
-.pinova-toast--dragging {
+.fotoce-toast--dragging {
   cursor: grabbing;
 }
 
-.pinova-toast--notification {
+.fotoce-toast--notification {
   border-color: rgba(244, 114, 182, 0.22);
   background: rgba(24, 20, 26, 0.78);
   box-shadow:
@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-:global(html.dark) .pinova-toast {
+:global(html.dark) .fotoce-toast {
   background: rgba(238, 232, 240, 0.88);
   border-color: rgba(0, 0, 0, 0.06);
   color: rgba(28, 24, 28, 0.96);
@@ -286,12 +286,12 @@ onBeforeUnmount(() => {
     inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
-:global(html.dark) .pinova-toast--notification {
+:global(html.dark) .fotoce-toast--notification {
   background: rgba(250, 245, 248, 0.9);
   border-color: rgba(190, 24, 93, 0.14);
 }
 
-.pinova-toast__icon {
+.fotoce-toast__icon {
   flex: none;
   width: 28px;
   height: 28px;
@@ -303,34 +303,34 @@ onBeforeUnmount(() => {
   font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
   color: rgba(255, 255, 255, 0.92);
 }
-:global(html.dark) .pinova-toast__icon { color: rgba(28, 24, 28, 0.88); }
+:global(html.dark) .fotoce-toast__icon { color: rgba(28, 24, 28, 0.88); }
 
-.pinova-toast--success .pinova-toast__icon { color: #6ee7b7; }
-.pinova-toast--warning .pinova-toast__icon { color: #fcd34d; }
-.pinova-toast--error   .pinova-toast__icon { color: #fda4af; }
-.pinova-toast--info    .pinova-toast__icon { color: #f9a8d4; }
-.pinova-toast--notification .pinova-toast__icon { color: #f472b6; }
-:global(html.dark) .pinova-toast--success .pinova-toast__icon { color: #047857; }
-:global(html.dark) .pinova-toast--warning .pinova-toast__icon { color: #b45309; }
-:global(html.dark) .pinova-toast--error   .pinova-toast__icon { color: #be123c; }
-:global(html.dark) .pinova-toast--info    .pinova-toast__icon { color: #be185d; }
-:global(html.dark) .pinova-toast--notification .pinova-toast__icon { color: #db2777; }
+.fotoce-toast--success .fotoce-toast__icon { color: #6ee7b7; }
+.fotoce-toast--warning .fotoce-toast__icon { color: #fcd34d; }
+.fotoce-toast--error   .fotoce-toast__icon { color: #fda4af; }
+.fotoce-toast--info    .fotoce-toast__icon { color: #f9a8d4; }
+.fotoce-toast--notification .fotoce-toast__icon { color: #f472b6; }
+:global(html.dark) .fotoce-toast--success .fotoce-toast__icon { color: #047857; }
+:global(html.dark) .fotoce-toast--warning .fotoce-toast__icon { color: #b45309; }
+:global(html.dark) .fotoce-toast--error   .fotoce-toast__icon { color: #be123c; }
+:global(html.dark) .fotoce-toast--info    .fotoce-toast__icon { color: #be185d; }
+:global(html.dark) .fotoce-toast--notification .fotoce-toast__icon { color: #db2777; }
 
-.pinova-toast__body { flex: 1; min-width: 0; padding-block: 1px; }
-.pinova-toast__message {
+.fotoce-toast__body { flex: 1; min-width: 0; padding-block: 1px; }
+.fotoce-toast__message {
   margin: 0;
   font-size: 0.875rem;
   line-height: 1.35;
   font-weight: 600;
   letter-spacing: 0.005em;
 }
-.pinova-toast__desc {
+.fotoce-toast__desc {
   margin: 0.125rem 0 0;
   font-size: 0.75rem;
   line-height: 1.4;
   opacity: 0.78;
 }
-.pinova-toast__hint {
+.fotoce-toast__hint {
   margin: 0.35rem 0 0;
   font-size: 0.65rem;
   line-height: 1.3;
@@ -338,7 +338,7 @@ onBeforeUnmount(() => {
   letter-spacing: 0.02em;
 }
 
-.pinova-toast__action {
+.fotoce-toast__action {
   flex: none;
   font-size: 0.75rem;
   font-weight: 700;
@@ -354,12 +354,12 @@ onBeforeUnmount(() => {
   touch-action: manipulation;
   transition: background-color 160ms ease;
 }
-.pinova-toast__action:hover { background: rgba(255, 255, 255, 0.12); }
-.pinova-toast__action:active { background: rgba(255, 255, 255, 0.16); }
-:global(html.dark) .pinova-toast__action { color: #be185d; background: rgba(0, 0, 0, 0.05); }
-:global(html.dark) .pinova-toast__action:hover { background: rgba(0, 0, 0, 0.08); }
+.fotoce-toast__action:hover { background: rgba(255, 255, 255, 0.12); }
+.fotoce-toast__action:active { background: rgba(255, 255, 255, 0.16); }
+:global(html.dark) .fotoce-toast__action { color: #be185d; background: rgba(0, 0, 0, 0.05); }
+:global(html.dark) .fotoce-toast__action:hover { background: rgba(0, 0, 0, 0.08); }
 
-.pinova-toast__close {
+.fotoce-toast__close {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -373,48 +373,48 @@ onBeforeUnmount(() => {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.pinova-toast__close:hover { background: rgba(255, 255, 255, 0.14); }
-:global(html.dark) .pinova-toast__close {
+.fotoce-toast__close:hover { background: rgba(255, 255, 255, 0.14); }
+:global(html.dark) .fotoce-toast__close {
   background: rgba(0, 0, 0, 0.06);
   color: rgba(28, 24, 28, 0.78);
 }
 
-.pinova-toast-enter-from {
+.fotoce-toast-enter-from {
   transform: translate3d(0, -14px, 0) scale(0.98);
   opacity: 0;
 }
-.pinova-toast-enter-active {
+.fotoce-toast-enter-active {
   transition: transform 260ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms ease-out;
 }
-.pinova-toast-leave-to {
+.fotoce-toast-leave-to {
   transform: translate3d(0, -8px, 0) scale(0.98);
   opacity: 0;
 }
-.pinova-toast-leave-active {
+.fotoce-toast-leave-active {
   transition: transform 200ms cubic-bezier(0.4, 0, 1, 1), opacity 180ms ease-in;
 }
 
 @media (min-width: 1024px) {
-  .pinova-toast-enter-from {
+  .fotoce-toast-enter-from {
     transform: translate3d(0, 16px, 0) scale(0.98);
   }
-  .pinova-toast-leave-to {
+  .fotoce-toast-leave-to {
     transform: translate3d(0, 10px, 0) scale(0.98);
   }
 }
 
-.pinova-toast-move {
+.fotoce-toast-move {
   transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.pinova-toast-host--rm .pinova-toast-enter-active,
-.pinova-toast-host--rm .pinova-toast-leave-active,
-.pinova-toast-host--rm .pinova-toast-move {
+.fotoce-toast-host--rm .fotoce-toast-enter-active,
+.fotoce-toast-host--rm .fotoce-toast-leave-active,
+.fotoce-toast-host--rm .fotoce-toast-move {
   transition: opacity 120ms linear !important;
   transform: none !important;
 }
-.pinova-toast-host--rm .pinova-toast-enter-from,
-.pinova-toast-host--rm .pinova-toast-leave-to {
+.fotoce-toast-host--rm .fotoce-toast-enter-from,
+.fotoce-toast-host--rm .fotoce-toast-leave-to {
   transform: none;
 }
 </style>

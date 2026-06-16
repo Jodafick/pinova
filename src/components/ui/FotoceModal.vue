@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
- * PinovaModal — système de modales unifié inspiré de iOS 18, Apple Music,
+ * FotoceModal — système de modales unifié inspiré de iOS 18, Apple Music,
  * TikTok et React Native Bottom Sheet.
  *
  * UN seul composant pour TOUS les cas :
  *
- *   <PinovaModal v-model:open="show" presentation="bottomSheet" title="Filtres">
+ *   <FotoceModal v-model:open="show" presentation="bottomSheet" title="Filtres">
  *     ... contenu ...
- *   </PinovaModal>
+ *   </FotoceModal>
  *
  * Types supportés :
  *  - 'center'      : modal centré classique (confirmation, choix court)
@@ -31,7 +31,7 @@
  *
  * IMPORTANT : pour les modales liées à une route (`/settings`, etc.), préférez
  * le système layers (`installRouterLayerBridge`) qui synchronise l'URL.
- * PinovaModal est destinée aux modales LOCALES déclenchées par un état
+ * FotoceModal est destinée aux modales LOCALES déclenchées par un état
  * réactif (filtres, confirmation, picker, etc.).
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
@@ -43,7 +43,7 @@ import { emitMicroFeedback } from '../../composables/useMicroFeedback'
 import { SPRINGS } from '../../theme/motion'
 import { getAdaptiveGesture } from '../../navigation/adaptiveNavigator'
 import { GLASS } from '../../theme/glass'
-import { acquirePinovaBodyScrollLock, releasePinovaBodyScrollLock } from '../../utils/pinovaModalBodyLock'
+import { acquireFotoceBodyScrollLock, releaseFotoceBodyScrollLock } from '../../utils/fotoceModalBodyLock'
 import ModalHeader from './ModalHeader.vue'
 
 type Presentation = 'center' | 'bottomSheet' | 'tallSheet' | 'fullscreen' | 'floating'
@@ -289,7 +289,7 @@ watch(isOpenInternal, (open) => {
   const shell = document.getElementById('app-shell')
   if (!shell) return
   if (open && !lastDepthApplied) {
-    shell.style.transition = `transform var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1)), filter var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1))`
+    shell.style.transition = `transform var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1)), filter var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1))`
     /* Sheet/fullscreen → scale léger + saturate réduit. Center / floating → moins agressif. */
     const intense = resolvedPresentation.value === 'fullscreen' || resolvedPresentation.value === 'bottomSheet' || resolvedPresentation.value === 'tallSheet'
     shell.style.transform = intense ? 'scale3d(0.97, 0.97, 1)' : 'scale3d(0.99, 0.99, 1)'
@@ -309,10 +309,10 @@ watch(
   (m) => {
     if (typeof document === 'undefined') return
     if (m) {
-      acquirePinovaBodyScrollLock()
+      acquireFotoceBodyScrollLock()
       bodyScrollLockHeld.value = true
     } else if (bodyScrollLockHeld.value) {
-      releasePinovaBodyScrollLock()
+      releaseFotoceBodyScrollLock()
       bodyScrollLockHeld.value = false
     }
   },
@@ -343,7 +343,7 @@ onBeforeUnmount(() => {
   removeTallSheetBleedMql = null
   document.removeEventListener('keydown', onKeydown)
   if (bodyScrollLockHeld.value) {
-    releasePinovaBodyScrollLock()
+    releaseFotoceBodyScrollLock()
     bodyScrollLockHeld.value = false
   }
   if (lastDepthApplied) {
@@ -428,7 +428,7 @@ const surfaceStyles = computed<Record<string, string>>(() => {
     /* center / floating */
     base.borderRadius = `${GLASS.radius.md}px`
     base.maxWidth = `${props.maxWidth}px`
-    /* Borne la hauteur pour que `.pinova-modal-body` (flex + overflow) scrolle au lieu de dépasser l'écran. */
+    /* Borne la hauteur pour que `.fotoce-modal-body` (flex + overflow) scrolle au lieu de dépasser l'écran. */
     base.maxHeight = 'min(90svh, calc(100lvh - 32px), calc(100svh - 32px))'
     base.paddingBottom = `${keyboardHeight.value}px`
   }
@@ -438,13 +438,13 @@ const surfaceStyles = computed<Record<string, string>>(() => {
 
 /* Classes selon presentation : transitions distinctes (sheet bottom, center pop, etc.). */
 const transitionName = computed(() => {
-  if (isReducedMotion()) return 'pinova-modal-fade'
+  if (isReducedMotion()) return 'fotoce-modal-fade'
   switch (resolvedPresentation.value) {
     case 'bottomSheet':
-    case 'tallSheet':   return 'pinova-modal-sheet'
-    case 'center':      return 'pinova-modal-pop'
-    case 'fullscreen':  return 'pinova-modal-fs'
-    case 'floating':    return 'pinova-modal-floating'
+    case 'tallSheet':   return 'fotoce-modal-sheet'
+    case 'center':      return 'fotoce-modal-pop'
+    case 'fullscreen':  return 'fotoce-modal-fs'
+    case 'floating':    return 'fotoce-modal-floating'
   }
 })
 
@@ -456,13 +456,13 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
     <transition :name="`${transitionName}-backdrop`" appear>
       <div
         v-if="mounted"
-        class="pinova-modal-root"
-        :class="[`pinova-modal-root--${resolvedPresentation}`]"
+        class="fotoce-modal-root"
+        :class="[`fotoce-modal-root--${resolvedPresentation}`]"
         :data-open="isOpenInternal || undefined"
       >
         <div
           v-if="resolvedPresentation !== 'floating'"
-          class="pinova-modal-backdrop"
+          class="fotoce-modal-backdrop"
           :style="{ backgroundColor: scrimColor }"
           @click="onBackdropClick"
         />
@@ -471,8 +471,8 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
           <div
             v-if="isOpenInternal"
             ref="surfaceRef"
-            class="pinova-modal-surface"
-            :class="[`pinova-modal-surface--${resolvedPresentation}`]"
+            class="fotoce-modal-surface"
+            :class="[`fotoce-modal-surface--${resolvedPresentation}`]"
             :style="surfaceStyles"
             role="dialog"
             aria-modal="true"
@@ -481,7 +481,7 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
           >
             <div
               v-if="!showHeader && (resolvedPresentation === 'bottomSheet' || resolvedPresentation === 'tallSheet')"
-              class="pinova-modal-sheet-drag-affordance"
+              class="fotoce-modal-sheet-drag-affordance"
               aria-hidden="true"
             />
             <ModalHeader
@@ -497,11 +497,11 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
               <template v-if="$slots.headerEnd"   #end><slot name="headerEnd" /></template>
             </ModalHeader>
 
-            <div ref="modalBodyRef" class="pinova-modal-body">
+            <div ref="modalBodyRef" class="fotoce-modal-body">
               <slot />
             </div>
 
-            <div v-if="$slots.footer" class="pinova-modal-footer">
+            <div v-if="$slots.footer" class="fotoce-modal-footer">
               <slot name="footer" />
             </div>
           </div>
@@ -513,7 +513,7 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 
 <style scoped>
 /* ─── Root container ─── */
-.pinova-modal-root {
+.fotoce-modal-root {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -526,8 +526,8 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
   user-select: none;
 }
 
-.pinova-modal-root--center,
-.pinova-modal-root--floating {
+.fotoce-modal-root--center,
+.fotoce-modal-root--floating {
   align-items: center;
   padding: 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -541,8 +541,8 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
   overflow: hidden;
 }
 
-.pinova-modal-root--bottomSheet,
-.pinova-modal-root--tallSheet {
+.fotoce-modal-root--bottomSheet,
+.fotoce-modal-root--tallSheet {
   flex-direction: column;
   justify-content: flex-end;
   align-items: stretch;
@@ -555,12 +555,12 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
   box-sizing: border-box;
 }
 
-.pinova-modal-root--fullscreen {
+.fotoce-modal-root--fullscreen {
   align-items: stretch;
   align-content: stretch;
 }
 
-.pinova-modal-backdrop {
+.fotoce-modal-backdrop {
   position: absolute;
   inset: 0;
   /* La couleur est appliquée inline via scrimColor. */
@@ -569,19 +569,19 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
   -webkit-backdrop-filter: blur(10px) saturate(1.08);
 }
 
-.pinova-modal-root--fullscreen .pinova-modal-backdrop {
+.fotoce-modal-root--fullscreen .fotoce-modal-backdrop {
   backdrop-filter: blur(16px) saturate(1.1);
   -webkit-backdrop-filter: blur(16px) saturate(1.1);
 }
 
-.pinova-modal-root--tallSheet .pinova-modal-backdrop,
-.pinova-modal-root--bottomSheet .pinova-modal-backdrop {
+.fotoce-modal-root--tallSheet .fotoce-modal-backdrop,
+.fotoce-modal-root--bottomSheet .fotoce-modal-backdrop {
   backdrop-filter: blur(14px) saturate(1.1);
   -webkit-backdrop-filter: blur(14px) saturate(1.1);
 }
 
 /* ─── Surface (glass) ─── */
-.pinova-modal-surface {
+.fotoce-modal-surface {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -602,26 +602,26 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
   user-select: auto;
 }
 
-.pinova-modal-surface--center,
-.pinova-modal-surface--floating {
+.fotoce-modal-surface--center,
+.fotoce-modal-surface--floating {
   max-width: 480px;
   width: 100%;
   margin: auto;
 }
 
-.pinova-modal-surface--floating {
+.fotoce-modal-surface--floating {
   /* Pas de shadow agressive pour les floating cards. */
   box-shadow: var(--glass-shadow-md);
 }
 
-.pinova-modal-surface--fullscreen {
+.fotoce-modal-surface--fullscreen {
   max-width: none;
   border: 0;
   border-radius: 0;
 }
 
-.pinova-modal-surface--bottomSheet,
-.pinova-modal-surface--tallSheet {
+.fotoce-modal-surface--bottomSheet,
+.fotoce-modal-surface--tallSheet {
   height: auto;
   align-self: stretch;
   width: 100%;
@@ -629,29 +629,29 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 }
 
 /* Hauteur pilotée par les styles inline pour `tallSheet` (100dvh). */
-.pinova-modal-surface--tallSheet {
+.fotoce-modal-surface--tallSheet {
   min-height: 0;
 }
 
-.pinova-modal-surface--bottomSheet .pinova-modal-body,
-.pinova-modal-surface--tallSheet .pinova-modal-body {
+.fotoce-modal-surface--bottomSheet .fotoce-modal-body,
+.fotoce-modal-surface--tallSheet .fotoce-modal-body {
   flex: 1 1 auto;
   min-height: 0;
 }
 
 /* Header / poignée : le navigateur ne doit pas prendre le pan vertical à la place du drag JS (surtout iOS). */
-.pinova-modal-surface--bottomSheet :deep(.modal-header),
-.pinova-modal-surface--tallSheet :deep(.modal-header),
-.pinova-modal-surface--fullscreen :deep(.modal-header) {
+.fotoce-modal-surface--bottomSheet :deep(.modal-header),
+.fotoce-modal-surface--tallSheet :deep(.modal-header),
+.fotoce-modal-surface--fullscreen :deep(.modal-header) {
   touch-action: none;
 }
 
-.pinova-modal-surface--bottomSheet .pinova-modal-body,
-.pinova-modal-surface--tallSheet .pinova-modal-body {
+.fotoce-modal-surface--bottomSheet .fotoce-modal-body,
+.fotoce-modal-surface--tallSheet .fotoce-modal-body {
   touch-action: pan-y;
 }
 
-.pinova-modal-sheet-drag-affordance {
+.fotoce-modal-sheet-drag-affordance {
   flex-shrink: 0;
   display: flex;
   justify-content: center;
@@ -660,11 +660,11 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
   touch-action: none;
 }
 
-.pinova-modal-surface--tallSheet .pinova-modal-sheet-drag-affordance {
+.fotoce-modal-surface--tallSheet .fotoce-modal-sheet-drag-affordance {
   padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
 }
 
-.pinova-modal-sheet-drag-affordance::after {
+.fotoce-modal-sheet-drag-affordance::after {
   content: '';
   width: 38px;
   height: 4px;
@@ -672,11 +672,11 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
   background-color: rgba(120, 120, 128, 0.36);
 }
 
-:global(.dark) .pinova-modal-sheet-drag-affordance::after {
+:global(.dark) .fotoce-modal-sheet-drag-affordance::after {
   background-color: rgba(255, 255, 255, 0.22);
 }
 
-.pinova-modal-body {
+.fotoce-modal-body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -691,7 +691,7 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
  * Safe-area bas : déjà dans `paddingBottom` inline de la surface (useSafeArea).
  * Pas de fond / blur séparé : la surface vitrée du modal continue derrière les boutons.
  */
-.pinova-modal-footer {
+.fotoce-modal-footer {
   flex-shrink: 0;
   padding: 10px 16px 12px;
   background: transparent;
@@ -699,98 +699,98 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 }
 
 /* ─── Backdrop transitions ─── */
-.pinova-modal-sheet-backdrop-enter-active,
-.pinova-modal-sheet-backdrop-leave-active,
-.pinova-modal-pop-backdrop-enter-active,
-.pinova-modal-pop-backdrop-leave-active,
-.pinova-modal-fs-backdrop-enter-active,
-.pinova-modal-fs-backdrop-leave-active,
-.pinova-modal-floating-backdrop-enter-active,
-.pinova-modal-floating-backdrop-leave-active,
-.pinova-modal-fade-backdrop-enter-active,
-.pinova-modal-fade-backdrop-leave-active {
-  transition: opacity var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+.fotoce-modal-sheet-backdrop-enter-active,
+.fotoce-modal-sheet-backdrop-leave-active,
+.fotoce-modal-pop-backdrop-enter-active,
+.fotoce-modal-pop-backdrop-leave-active,
+.fotoce-modal-fs-backdrop-enter-active,
+.fotoce-modal-fs-backdrop-leave-active,
+.fotoce-modal-floating-backdrop-enter-active,
+.fotoce-modal-floating-backdrop-leave-active,
+.fotoce-modal-fade-backdrop-enter-active,
+.fotoce-modal-fade-backdrop-leave-active {
+  transition: opacity var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
-.pinova-modal-sheet-backdrop-enter-from,
-.pinova-modal-pop-backdrop-enter-from,
-.pinova-modal-fs-backdrop-enter-from,
-.pinova-modal-floating-backdrop-enter-from,
-.pinova-modal-fade-backdrop-enter-from,
-.pinova-modal-sheet-backdrop-leave-to,
-.pinova-modal-pop-backdrop-leave-to,
-.pinova-modal-fs-backdrop-leave-to,
-.pinova-modal-floating-backdrop-leave-to,
-.pinova-modal-fade-backdrop-leave-to { opacity: 0; }
+.fotoce-modal-sheet-backdrop-enter-from,
+.fotoce-modal-pop-backdrop-enter-from,
+.fotoce-modal-fs-backdrop-enter-from,
+.fotoce-modal-floating-backdrop-enter-from,
+.fotoce-modal-fade-backdrop-enter-from,
+.fotoce-modal-sheet-backdrop-leave-to,
+.fotoce-modal-pop-backdrop-leave-to,
+.fotoce-modal-fs-backdrop-leave-to,
+.fotoce-modal-floating-backdrop-leave-to,
+.fotoce-modal-fade-backdrop-leave-to { opacity: 0; }
 
 /* ─── Sheet motion (bottom slide + spring) ─── */
-.pinova-modal-sheet-enter-active,
-.pinova-modal-sheet-leave-active {
+.fotoce-modal-sheet-enter-active,
+.fotoce-modal-sheet-leave-active {
   transition:
-    transform var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    opacity var(--pinova-dur-fast, 180ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+    transform var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    opacity var(--fotoce-dur-fast, 180ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
-.pinova-modal-sheet-enter-from,
-.pinova-modal-sheet-leave-to {
+.fotoce-modal-sheet-enter-from,
+.fotoce-modal-sheet-leave-to {
   transform: translate3d(0, 100%, 0) !important;
   opacity: 0.6;
 }
 
 /* ─── Center pop ─── */
-.pinova-modal-pop-enter-active,
-.pinova-modal-pop-leave-active {
+.fotoce-modal-pop-enter-active,
+.fotoce-modal-pop-leave-active {
   transition:
-    transform var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    opacity var(--pinova-dur-fast, 180ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+    transform var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    opacity var(--fotoce-dur-fast, 180ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
-.pinova-modal-pop-enter-from,
-.pinova-modal-pop-leave-to {
+.fotoce-modal-pop-enter-from,
+.fotoce-modal-pop-leave-to {
   transform: scale3d(0.88, 0.88, 1) !important;
   opacity: 0;
 }
 
 /* ─── Fullscreen slide-up ─── */
-.pinova-modal-fs-enter-active,
-.pinova-modal-fs-leave-active {
+.fotoce-modal-fs-enter-active,
+.fotoce-modal-fs-leave-active {
   transition:
-    transform var(--pinova-dur-slow, 380ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1)),
-    opacity var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+    transform var(--fotoce-dur-slow, 380ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1)),
+    opacity var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
-.pinova-modal-fs-enter-from,
-.pinova-modal-fs-leave-to {
+.fotoce-modal-fs-enter-from,
+.fotoce-modal-fs-leave-to {
   transform: translate3d(0, 100%, 0) !important;
   opacity: 0;
 }
 
 /* ─── Floating spring small ─── */
-.pinova-modal-floating-enter-active,
-.pinova-modal-floating-leave-active {
+.fotoce-modal-floating-enter-active,
+.fotoce-modal-floating-leave-active {
   transition:
-    transform var(--pinova-dur-medium, 260ms) var(--pinova-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    opacity var(--pinova-dur-fast, 180ms) var(--pinova-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
+    transform var(--fotoce-dur-medium, 260ms) var(--fotoce-ease-iosOvershoot, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    opacity var(--fotoce-dur-fast, 180ms) var(--fotoce-ease-iosOut, cubic-bezier(0.22, 1, 0.36, 1));
 }
-.pinova-modal-floating-enter-from,
-.pinova-modal-floating-leave-to {
+.fotoce-modal-floating-enter-from,
+.fotoce-modal-floating-leave-to {
   transform: scale3d(0.92, 0.92, 1) translate3d(0, 12px, 0) !important;
   opacity: 0;
 }
 
 /* ─── Fade fallback (reduced motion) ─── */
-.pinova-modal-fade-enter-active,
-.pinova-modal-fade-leave-active {
-  transition: opacity var(--pinova-dur-fast, 180ms) ease;
+.fotoce-modal-fade-enter-active,
+.fotoce-modal-fade-leave-active {
+  transition: opacity var(--fotoce-dur-fast, 180ms) ease;
 }
-.pinova-modal-fade-enter-from,
-.pinova-modal-fade-leave-to { opacity: 0; }
+.fotoce-modal-fade-enter-from,
+.fotoce-modal-fade-leave-to { opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .pinova-modal-sheet-enter-from,
-  .pinova-modal-sheet-leave-to,
-  .pinova-modal-pop-enter-from,
-  .pinova-modal-pop-leave-to,
-  .pinova-modal-fs-enter-from,
-  .pinova-modal-fs-leave-to,
-  .pinova-modal-floating-enter-from,
-  .pinova-modal-floating-leave-to {
+  .fotoce-modal-sheet-enter-from,
+  .fotoce-modal-sheet-leave-to,
+  .fotoce-modal-pop-enter-from,
+  .fotoce-modal-pop-leave-to,
+  .fotoce-modal-fs-enter-from,
+  .fotoce-modal-fs-leave-to,
+  .fotoce-modal-floating-enter-from,
+  .fotoce-modal-floating-leave-to {
     transform: none !important;
   }
 }
@@ -798,7 +798,7 @@ const ariaLabelledByFinal = computed(() => props.ariaLabelledBy || undefined)
 
 <!-- Body scroll-lock global : ajouté hors scoped pour cibler body. -->
 <style>
-body.pinova-modal-scroll-lock {
+body.fotoce-modal-scroll-lock {
   overflow: hidden;
 }
 </style>

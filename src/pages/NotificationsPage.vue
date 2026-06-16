@@ -9,16 +9,16 @@ import {
 import { useAuth, DEFAULT_AVATAR_COLOR_CLASS } from '../composables/useAuth'
 import { useI18n } from '../i18n'
 import AvatarDisc from '../components/AvatarDisc.vue'
-import PinDetailOverlayHost from '../components/PinDetailOverlayHost.vue'
+import FotoDetailOverlayHost from '../components/FotoDetailOverlayHost.vue'
 import { displayInitials } from '../utils/displayInitials'
 import { subscribeUnreadCountFromHeader, subscribeNotificationLive } from '../lib/notificationRefresh'
 import {
   setMobileHeaderSubtitle,
   setMobileMarkAllReadTrailing,
 } from '../composables/mobileHeaderContext'
-import PinovaButton from '../components/ui/PinovaButton.vue'
-import PinovaEmptyState from '../components/ui/PinovaEmptyState.vue'
-import PinovaErrorState from '../components/ui/PinovaErrorState.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
+import FotoceEmptyState from '../components/ui/FotoceEmptyState.vue'
+import FotoceErrorState from '../components/ui/FotoceErrorState.vue'
 import NotificationListSkeleton from '../components/NotificationListSkeleton.vue'
 import {
   getCachedNotificationsFirstPage,
@@ -39,8 +39,8 @@ type NotificationRow = {
   sender_avatar_url?: string | null
   sender_avatar_color?: string | null
   is_read: boolean
-  pin_slug?: string | null
-  pin_id?: number | null
+  foto_slug?: string | null
+  foto_id?: number | null
   comment_id?: number | null
   action_url?: string | null
   metadata?: Record<string, unknown> | null
@@ -179,8 +179,8 @@ async function handleClick(notification: NotificationRow) {
       : null
   const input: WebNotificationNavInput = {
     metadata: meta,
-    pin_slug: notification.pin_slug ?? null,
-    pin_id: notification.pin_id ?? null,
+    foto_slug: notification.foto_slug ?? null,
+    foto_id: notification.foto_id ?? null,
     comment_id: notification.comment_id ?? null,
     action_url: notification.action_url ?? null,
     notification_type: notification.notification_type ?? null,
@@ -209,8 +209,8 @@ onMounted(() => {
         sender_avatar_url: payload.sender_avatar_url ?? null,
         sender_avatar_color: payload.sender_avatar_color ?? null,
         is_read: !!payload.is_read,
-        pin_slug: payload.pin_slug ?? null,
-        pin_id: payload.pin_id ?? null,
+        foto_slug: payload.foto_slug ?? null,
+        foto_id: payload.foto_id ?? null,
         comment_id: payload.comment_id ?? null,
         action_url: payload.action_url ?? null,
         metadata: payload.metadata ?? null,
@@ -295,15 +295,15 @@ watch(
             {{ t('notifications.unreadCount', { count: unreadCount }) }}
           </p>
         </div>
-        <PinovaButton
+        <FotoceButton
           v-if="unreadCount > 0"
           variant="secondary"
           size="sm"
           @click="markAllAsRead"
         >
-          <PinovaIcon name="done_all" class="text-base leading-none" />
+          <FotoceIcon name="done_all" class="text-base leading-none" />
           {{ t('header.notifications.markAllRead') }}
-        </PinovaButton>
+        </FotoceButton>
       </header>
 
       <NotificationListSkeleton v-if="showInitialSkeleton" />
@@ -312,23 +312,23 @@ watch(
         v-else-if="error && !hasItems"
         class="rounded-2xl border border-white/50 bg-white/55 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50"
       >
-        <PinovaErrorState
+        <FotoceErrorState
           icon="cloud_off"
           :title="t('notifications.loadError')"
         >
           <template #action>
-            <PinovaButton variant="primary" size="sm" block @click="load(true)">
+            <FotoceButton variant="primary" size="sm" block @click="load(true)">
               {{ t('common.retry') }}
-            </PinovaButton>
+            </FotoceButton>
           </template>
-        </PinovaErrorState>
+        </FotoceErrorState>
       </div>
 
       <div
         v-else-if="!hasItems"
         class="rounded-2xl border border-dashed border-neutral-200/90 bg-white/50 backdrop-blur-xl dark:border-neutral-700/80 dark:bg-neutral-900/45"
       >
-        <PinovaEmptyState
+        <FotoceEmptyState
           icon="notifications_off"
           :title="t('header.notifications.empty')"
           :description="t('notifications.emptyHint')"
@@ -397,13 +397,13 @@ watch(
           :disabled="loadingMore"
           @click="load(false)"
         >
-          <PinovaIcon v-if="loadingMore" name="progress_activity" spin class="animate-spin text-base" />
+          <FotoceIcon v-if="loadingMore" name="progress_activity" spin class="animate-spin text-base" />
           <span v-else>{{ t('header.notifications.loadMore') }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Fiche pin en surcouche (même mécanisme que home / profil) sans quitter la page. -->
-    <PinDetailOverlayHost :feed-items="[]" />
+    <!-- Fiche foto en surcouche (même mécanisme que home / profil) sans quitter la page. -->
+    <FotoDetailOverlayHost :feed-items="[]" />
   </div>
 </template>

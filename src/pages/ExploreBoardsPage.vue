@@ -95,7 +95,7 @@ watch(
 </script>
 
 <template>
-  <div class="w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8 space-y-6">
+  <div class="fotoce-route-natural-height w-full min-w-0 px-3 sm:px-6 lg:px-10 xl:px-16 py-6 sm:py-8 space-y-6">
     <header class="space-y-1">
       <h1 class="max-lg:hidden text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
         {{ t('explore.allBoards') }}
@@ -107,7 +107,7 @@ watch(
         v-if="searchQ"
         class="text-xs font-medium text-pink-700 dark:text-pink-600 mt-2 inline-flex items-center gap-1 rounded-full bg-pink-50 dark:bg-pink-950/40 px-3 py-1 border border-pink-100 dark:border-pink-900/50"
       >
-        <PinovaIcon name="search" class="text-sm" />
+        <FotoceIcon name="search" class="text-sm" />
         {{ searchQ }}
       </p>
     </header>
@@ -151,7 +151,7 @@ watch(
               v-else
               class="col-span-2 row-span-2 flex items-center justify-center bg-gradient-to-br from-pink-100 to-neutral-100 dark:from-pink-950/50 dark:to-neutral-900"
             >
-              <PinovaIcon name="collections" class="text-4xl text-pink-700 dark:text-pink-600 opacity-90" />
+              <FotoceIcon name="collections" class="text-4xl text-pink-700 dark:text-pink-600 opacity-90" />
             </div>
           </div>
           <div
@@ -161,7 +161,7 @@ watch(
             <p class="font-semibold text-sm leading-tight drop-shadow-sm line-clamp-2">{{ board.name }}</p>
             <p class="text-[11px] sm:text-xs opacity-92 mt-0.5 truncate">@{{ board.ownerUsername }}</p>
             <p class="text-[11px] font-semibold text-pink-700 dark:text-pink-600/95 mt-1">
-              {{ t('header.search.boardPinsCount', { count: board.pinCount }) }}
+              {{ t('header.search.boardFotosCount', { count: board.fotoCount }) }}
             </p>
           </div>
         </router-link>

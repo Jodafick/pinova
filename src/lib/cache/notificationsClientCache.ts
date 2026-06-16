@@ -1,6 +1,6 @@
 /** Cache disque page 1 des notifications (cold start + retour arrière sans flash). */
 
-const DISK_PREFIX = 'pinova_disk_notifications_p1_v1:'
+const DISK_PREFIX = 'fotoce_disk_notifications_p1_v1:'
 const TTL_MS = 15 * 60 * 1000
 
 export type CachedNotificationsPage = {

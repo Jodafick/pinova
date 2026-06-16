@@ -10,7 +10,7 @@ import TrustCenterSection from '../components/TrustCenterSection.vue'
 import CheckoutTrustBadges from '../components/CheckoutTrustBadges.vue'
 import { openCheckoutFlow, PENDING_SUBSCRIPTION_TX_KEY } from '../utils/checkoutFlow'
 import { trackEvent } from '../lib/analytics'
-import PinovaButton from '../components/ui/PinovaButton.vue'
+import FotoceButton from '../components/ui/FotoceButton.vue'
 
 const { t, currentLang } = useI18n()
 const router = useRouter()
@@ -442,7 +442,7 @@ const handlePopupCallbackReturn = async () => {
   if (window.opener && !window.opener.closed) {
     window.opener.postMessage(
       {
-        type: 'pinova_payment_callback_url',
+        type: 'fotoce_payment_callback_url',
         callback_url: window.location.href,
         callback_query: Object.fromEntries(params.entries()),
         status: statusValue,
@@ -522,7 +522,7 @@ const handlePaymentMessage = async (event: MessageEvent) => {
   if (typeof window === 'undefined') return
   if (event.origin !== window.location.origin) return
   const payload = event.data || {}
-  if (payload.type !== 'pinova_payment_callback_url') return
+  if (payload.type !== 'fotoce_payment_callback_url') return
   const callbackUrl = String(payload.callback_url || '')
   const callbackQuery = payload.callback_query || {}
   const transactionId = String(
@@ -587,12 +587,12 @@ onUnmounted(() => {
     <!-- Hero -->
     <div class="max-lg:mb-8 lg:mb-12 xl:mb-14">
       <div
-        class="pinova-glass-rose text-center rounded-[1.75rem] px-5 py-9 sm:px-10 sm:py-11 ring-1 ring-white/45 dark:ring-white/[0.09] shadow-xl shadow-pink-900/[0.08] dark:shadow-black/50"
+        class="fotoce-glass-rose text-center rounded-[1.75rem] px-5 py-9 sm:px-10 sm:py-11 ring-1 ring-white/45 dark:ring-white/[0.09] shadow-xl shadow-pink-900/[0.08] dark:shadow-black/50"
       >
       <div
         class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-4 backdrop-blur-md bg-white/60 dark:bg-white/[0.08] text-pink-900 dark:text-pink-400 ring-1 ring-pink-200/65 dark:ring-pink-500/25 shadow-sm"
       >
-        <PinovaIcon name="block" class="text-sm" />
+        <FotoceIcon name="block" class="text-sm" />
         {{ t('premium.adFree') }}
       </div>
       <h1 class="text-4xl sm:text-[3.5rem] font-auth-title font-auth-title--black text-neutral-900 dark:text-neutral-100 mb-3">
@@ -626,7 +626,7 @@ onUnmounted(() => {
 
       <div
         v-if="recommendedPlan"
-        class="pinova-glass-strong rounded-3xl border-2 border-pink-700 dark:border-pink-600 ring-4 ring-pink-100 dark:ring-pink-600/25 p-6 sm:p-8 relative max-w-xl mx-auto"
+        class="fotoce-glass-strong rounded-3xl border-2 border-pink-700 dark:border-pink-600 ring-4 ring-pink-100 dark:ring-pink-600/25 p-6 sm:p-8 relative max-w-xl mx-auto"
       >
         <div
           class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider shadow-md backdrop-blur-sm ring-1 ring-white/35 dark:ring-white/15 bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white"
@@ -657,12 +657,12 @@ onUnmounted(() => {
             :key="i"
             class="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-200"
           >
-            <PinovaIcon name="check_circle" class="text-base mt-0.5 shrink-0 text-emerald-500 dark:text-emerald-400" />
+            <FotoceIcon name="check_circle" class="text-base mt-0.5 shrink-0 text-emerald-500 dark:text-emerald-400" />
             <span>{{ feature.label }}</span>
           </li>
         </ul>
 
-        <PinovaButton
+        <FotoceButton
           variant="primary"
           block
           size="lg"
@@ -672,7 +672,7 @@ onUnmounted(() => {
           @click="handleRecommendedCheckout"
         >
           {{ recommendedPlan.cta }}
-        </PinovaButton>
+        </FotoceButton>
         <CheckoutTrustBadges class="mt-4" />
         <p class="text-[11px] text-neutral-400 dark:text-neutral-500 text-center mt-3">
           {{ t('premium.funnel.paymentHint') }}
@@ -685,7 +685,7 @@ onUnmounted(() => {
           class="inline-flex items-center gap-1.5 text-sm font-semibold text-pink-700 dark:text-pink-400 hover:underline"
           @click="toggleComparePlans"
         >
-          <PinovaIcon :name="showComparePlans ? 'expand_less' : 'compare_arrows'" class="text-lg" />
+          <FotoceIcon :name="showComparePlans ? 'expand_less' : 'compare_arrows'" class="text-lg" />
           {{ showComparePlans ? t('premium.funnel.hideCompare') : t('premium.funnel.comparePlans') }}
         </button>
 
@@ -696,7 +696,7 @@ onUnmounted(() => {
           <p class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{{ t('premium.trial.title') }}</p>
           <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{{ t('premium.trial.sub') }}</p>
           <div class="mt-3 flex w-full justify-stretch sm:justify-start">
-            <PinovaButton
+            <FotoceButton
               variant="secondary"
               size="sm"
               block
@@ -705,7 +705,7 @@ onUnmounted(() => {
               @click="handleStartTrial"
             >
               {{ trialPending ? t('premium.trial.busy') : t('premium.trial.cta') }}
-            </PinovaButton>
+            </FotoceButton>
           </div>
         </div>
       </div>
@@ -801,7 +801,7 @@ onUnmounted(() => {
         v-for="plan in plans"
         :key="plan.id"
         :data-plan-slide="plan.id"
-        class="pinova-glass-strong rounded-3xl border-2 p-6 relative transition-all max-lg:snap-center max-lg:shrink-0 max-lg:w-[82vw] max-lg:max-w-[360px] lg:max-w-none max-lg:origin-center max-lg:transition-[transform,opacity] max-lg:duration-300 max-lg:ease-out"
+        class="fotoce-glass-strong rounded-3xl border-2 p-6 relative transition-all max-lg:snap-center max-lg:shrink-0 max-lg:w-[82vw] max-lg:max-w-[360px] lg:max-w-none max-lg:origin-center max-lg:transition-[transform,opacity] max-lg:duration-300 max-lg:ease-out"
         :class="[
           plan.color,
           activeCarouselPlanId === plan.id
@@ -846,7 +846,7 @@ onUnmounted(() => {
           </template>
         </p>
 
-        <PinovaButton
+        <FotoceButton
           :variant="plan.id === 'plus' ? 'primary' : plan.id === 'pro' ? 'secondary' : 'ghost'"
           block
           class="mb-6"
@@ -855,7 +855,7 @@ onUnmounted(() => {
           @click="handleCheckout(plan.id)"
         >
           {{ plan.cta }}
-        </PinovaButton>
+        </FotoceButton>
 
         <ul class="space-y-2.5">
           <li
@@ -864,7 +864,7 @@ onUnmounted(() => {
             class="flex items-start gap-2 text-sm"
             :class="feature.included ? 'text-neutral-700 dark:text-neutral-200' : 'text-neutral-300 dark:text-neutral-600'"
           >
-            <PinovaIcon :name="feature.included ? 'check_circle' : 'cancel'" class="text-base mt-0.5 shrink-0" :class="feature.included ? 'text-emerald-500 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'" />
+            <FotoceIcon :name="feature.included ? 'check_circle' : 'cancel'" class="text-base mt-0.5 shrink-0" :class="feature.included ? 'text-emerald-500 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'" />
             <span>{{ feature.label }}</span>
           </li>
         </ul>
@@ -879,7 +879,7 @@ onUnmounted(() => {
     <!-- FAQ -->
     <div>
       <div class="max-w-2xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 backdrop-blur-md bg-white/50 dark:bg-white/[0.05] ring-1 ring-black/[0.07] dark:ring-white/12">
-        <PinovaButton
+        <FotoceButton
           variant="secondary"
           size="sm"
           class="text-xs"
@@ -887,7 +887,7 @@ onUnmounted(() => {
           @click="confirmPendingPaymentFromButton"
         >
           {{ confirmPending ? t('premium.payment.checking') : t('premium.payment.confirmCta') }}
-        </PinovaButton>
+        </FotoceButton>
         <p v-if="paymentInfoMessage" class="text-xs text-neutral-600 dark:text-neutral-300">{{ paymentInfoMessage }}</p>
       </div>
       <h2 class="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-6 text-center">{{ t('premium.faq.title') }}</h2>
@@ -895,11 +895,11 @@ onUnmounted(() => {
         <details
           v-for="(faq, i) in faqs"
           :key="i"
-          class="pinova-glass rounded-2xl group ring-1 ring-white/35 dark:ring-white/[0.08]"
+          class="fotoce-glass rounded-2xl group ring-1 ring-white/35 dark:ring-white/[0.08]"
         >
           <summary class="px-5 py-4 cursor-pointer flex items-center justify-between text-sm font-semibold text-neutral-900 dark:text-neutral-100">
             {{ faq.q }}
-            <PinovaIcon name="expand_more" class="text-neutral-400 group-open:rotate-180 transition-transform" />
+            <FotoceIcon name="expand_more" class="text-neutral-400 group-open:rotate-180 transition-transform" />
           </summary>
           <div class="px-5 pb-4 text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
             {{ faq.a }}

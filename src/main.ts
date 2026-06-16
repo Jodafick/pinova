@@ -18,7 +18,7 @@ import { initPwaStandaloneTopInset } from './utils/pwaSafeTopInset'
 import { initInputAbstraction } from './navigation/inputAbstraction'
 import { scheduleDeferredBoot } from './core/bootDeferred'
 import { markBootPhase } from './core/bootMarks'
-import PinovaIcon from './components/ui/PinovaIcon.vue'
+import FotoceIcon from './components/ui/FotoceIcon.vue'
 import { ensureMaterialSymbolsLoaded } from './utils/loadMaterialSymbols'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import { queryClient, installQueryPersister } from './data'
@@ -50,7 +50,7 @@ registerServiceWorkerDeferred()
 
 const app = createApp(App)
 
-app.component('PinovaIcon', PinovaIcon)
+app.component('FotoceIcon', FotoceIcon)
 
 app.directive('press', vPress)
 app.directive('spring', vSpring)
@@ -71,7 +71,7 @@ installRouterLayerBridge(router, {
     'mobile-google-auth-callback',
     'create',
     'create-standalone-story',
-    'edit-pin',
+    'edit-foto',
     'onboarding',
   ],
 })
@@ -85,7 +85,7 @@ markBootPhase('app_mounted')
 scheduleDeferredBoot(app, router)
 
 void proactiveRefreshIfStale().catch((err) =>
-  console.warn('[Pinova] proactiveRefreshIfStale', err),
+  console.warn('[Fotoce] proactiveRefreshIfStale', err),
 )
 
 function deferNonCriticalAssets() {
